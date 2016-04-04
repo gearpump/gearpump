@@ -45,7 +45,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
 object GearpumpNimbus extends AkkaApp with ArgumentsParser {
-  private val THRIFT_PORT = StormUtil.getThriftPort
+  private val THRIFT_PORT = StormUtil.getThriftPort()
   private val OUTPUT = "output"
   private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpNimbus])
 

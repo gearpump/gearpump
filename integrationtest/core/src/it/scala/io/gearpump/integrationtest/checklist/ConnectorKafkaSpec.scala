@@ -19,6 +19,7 @@ package io.gearpump.integrationtest.checklist
 
 import io.gearpump.integrationtest.{Util, TestSpecBase}
 import io.gearpump.integrationtest.kafka._
+import org.scalatest.TestData
 
 /**
  * The test spec checks the Kafka datasource connector
@@ -39,8 +40,8 @@ class ConnectorKafkaSpec extends TestSpecBase {
     super.afterAll()
   }
 
-  override def afterEach() = {
-    super.afterEach()
+  override def afterEach(test: TestData) = {
+    super.afterEach(test)
     if (producer != null) {
       producer.stop()
       producer = null
@@ -67,7 +68,8 @@ class ConnectorKafkaSpec extends TestSpecBase {
 
       // verify
       expectAppIsRunning(appId, "KafkaReadWrite")
-      Util.retryUntil(kafkaCluster.getLatestOffset(sinkTopic) == messageNum)
+      Util.retryUntil(()=>kafkaCluster.getLatestOffset(sinkTopic) == messageNum,
+        "kafka all message written")
     }
   }
 
@@ -95,21 +97,22 @@ class ConnectorKafkaSpec extends TestSpecBase {
 
       // verify #1
       expectAppIsRunning(appId, "KafkaReadWrite")
-      Util.retryUntil(restClient.queryStreamingAppDetail(appId).clock > 0)
+      Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
 
       // verify #2
       val executorToKill = restClient.queryExecutorBrief(appId).map(_.executorId).max
       restClient.killExecutor(appId, executorToKill) shouldBe true
-      Util.retryUntil(restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill)
+      Util.retryUntil(()=>restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill,
+        s"executor $executorToKill killed")
 
       // verify #3
       val detector = new MessageLossDetector(producer.lastWriteNum)
       val kafkaReader = new SimpleKafkaReader(detector, sinkTopic,
         host = kafkaCluster.advertisedHost, port = kafkaCluster.advertisedPort)
-      Util.retryUntil({
+      Util.retryUntil(()=>{
         kafkaReader.read()
         detector.allReceived
-      })
+      }, "kafka all message read")
     }
   }
 

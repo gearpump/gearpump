@@ -20,6 +20,7 @@ package io.gearpump.cluster.worker
 import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
+import io.gearpump.WorkerId
 import io.gearpump.cluster.WorkerToMaster.RegisterNewWorker
 import io.gearpump.cluster.{TestUtil, MasterHarness}
 import io.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
@@ -40,7 +41,7 @@ class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with Mas
   override def config = TestUtil.DEFAULT_CONFIG
 
   val appId = 1
-  val workerId = 1
+  val workerId: WorkerId = WorkerId(1, 0L)
   val executorId = 1
   var masterProxy: TestProbe = null
   var mockMaster: TestProbe = null

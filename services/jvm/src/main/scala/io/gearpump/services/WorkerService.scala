@@ -21,12 +21,14 @@ package io.gearpump.services
 import akka.actor.{ActorSystem, ActorRef}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.{Materializer}
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryWorkerConfig}
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, WorkerConfig}
 import io.gearpump.util.ActorUtil._
 import io.gearpump.util.Constants
+import io.gearpump.services.util.UpickleUtil._
 
 import scala.util.{Failure, Success}
 
@@ -37,8 +39,9 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
   private val systemConfig = system.settings.config
   private val concise = systemConfig.getBoolean(Constants.GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE)
 
-  override def doRoute(implicit mat: Materializer) = pathPrefix("worker" / IntNumber) { workerId =>
+  override def doRoute(implicit mat: Materializer) = pathPrefix("worker" / Segment) { workerIdString =>
     pathEnd {
+      val workerId = WorkerId.parse(workerIdString)
       onComplete(askWorker[WorkerData](master, workerId, GetWorkerData(workerId))) {
         case Success(value: WorkerData) =>
           complete(write(value.workerDescription))
@@ -46,6 +49,7 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
       }
     } ~
     path("config") {
+      val workerId = WorkerId.parse(workerIdString)
       onComplete(askWorker[WorkerConfig](master, workerId, QueryWorkerConfig(workerId))) {
         case Success(value: WorkerConfig) =>
           val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
@@ -55,6 +59,7 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
       }
     } ~
     path("metrics" / RestPath ) { path =>
+      val workerId = WorkerId.parse(workerIdString)
       parameter(ReadOption.Key ? ReadOption.ReadLatest) { readOption =>
         val query = QueryHistoryMetrics(path.head.toString, readOption)
         onComplete(askWorker[HistoryMetrics](master, workerId, query)) {

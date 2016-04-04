@@ -19,10 +19,11 @@
 package io.gearpump.cluster.appmaster
 
 import akka.actor.{ActorRef, Address, PoisonPill}
+import io.gearpump.WorkerId
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.util.ActorSystemBooter.BindLifeCycle
 
-case class WorkerInfo(workerId: Int, ref: ActorRef)
+case class WorkerInfo(workerId: WorkerId, ref: ActorRef)
 
 /**
  * This contains JVM configurations to start an executor system

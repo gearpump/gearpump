@@ -20,6 +20,7 @@ package io.gearpump.cluster.appmaster
 
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestProbe
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.{ExecutorJVMConfig, AppJar, TestUtil}
@@ -34,9 +35,9 @@ import scala.concurrent.duration._
 
 class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   val appId = 0
-  val workerId = 0
+  val workerId = WorkerId(0, 0L)
   val resource = Resource(1)
-  val resourceRequest = ResourceRequest(resource)
+  val resourceRequest = ResourceRequest(resource, WorkerId.unspecified)
   val mockJar = AppJar("for_test", FilePath("PATH"))
   val emptyJvmConfig = ExecutorSystemJvmConfig(Array.empty, Array.empty, Some(mockJar), "")
   val start = StartExecutorSystems(Array(resourceRequest), emptyJvmConfig)

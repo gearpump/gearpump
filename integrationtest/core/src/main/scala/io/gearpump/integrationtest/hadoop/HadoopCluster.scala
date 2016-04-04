@@ -1,6 +1,6 @@
 package io.gearpump.integrationtest.hadoop
 
-import io.gearpump.integrationtest.Docker
+import io.gearpump.integrationtest.{Util, Docker}
 import org.apache.log4j.Logger
 
 object HadoopCluster {
@@ -26,7 +26,13 @@ class HadoopCluster {
 
   def start(): Unit = {
     Docker.createAndStartContainer(HADOOP_HOST, HADOOP_DOCKER_IMAGE, "")
+
+    Util.retryUntil(()=>isAlive, "Hadoop cluster is alive")
     LOG.info("Hadoop cluster is started.")
+  }
+
+  private def isAlive: Boolean = {
+    Docker.executeSilently(HADOOP_HOST, "/usr/local/hadoop/bin/hadoop fs -ls /")
   }
 
   def getDefaultFS: String = {

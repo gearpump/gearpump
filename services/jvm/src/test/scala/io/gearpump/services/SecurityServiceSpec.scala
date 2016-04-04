@@ -21,6 +21,7 @@ package io.gearpump.services
 import akka.http.scaladsl.testkit.{RouteTestTimeout}
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
+import io.gearpump.services.util.UpickleUtil._
 import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 import akka.actor.{ActorSystem}
 import akka.http.scaladsl.server._

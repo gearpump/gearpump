@@ -20,6 +20,7 @@ package io.gearpump.cluster.appmaster
 
 import akka.actor._
 import com.typesafe.config.Config
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster._
@@ -105,7 +106,7 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
     case LaunchExecutorSystemRejected(resource, reason, session) =>
       if (isSessionAlive(session)) {
         LOG.error(s"Failed to launch executor system, due to $reason, will ask master to allocate new resources $resource")
-        resourceAgents.get(session).map(_ ! RequestResource(appId, ResourceRequest(resource)))
+        resourceAgents.get(session).map(_ ! RequestResource(appId, ResourceRequest(resource, WorkerId.unspecified)))
       }
   }
 

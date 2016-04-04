@@ -82,7 +82,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   private val systemConfig = context.system.settings.config
   private var lastFailure = LastFailure(0L, null)
 
-  private val appMasterBrief = ExecutorBrief(APPMASTER_DEFAULT_EXECUTOR_ID, self.path.toString, Option(appContext.workerInfo).map(_.workerId).getOrElse(-1), "active")
+  private val appMasterBrief = ExecutorBrief(APPMASTER_DEFAULT_EXECUTOR_ID,
+    self.path.toString, Option(appContext.workerInfo).map(_.workerId).getOrElse(WorkerId.unspecified), "active")
 
   private val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
 
@@ -93,7 +94,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
   private val appMasterExecutorSummary = ExecutorSummary(
     APPMASTER_DEFAULT_EXECUTOR_ID,
-    Option(appContext.workerInfo).map(_.workerId).getOrElse(-1),
+    Option(appContext.workerInfo).map(_.workerId).getOrElse(WorkerId.unspecified),
     self.path.toString,
     logFile.getAbsolutePath,
     status = "Active",
@@ -198,22 +199,22 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
         }
 
         StreamAppMasterSummary(
-          appId,
-          app.name,
-          processors,
-          graph.vertexHierarchyLevelMap(),
-          graph.mapEdge {(node1, edge, node2) =>
-            edge.partitionerFactory.name
-          },
-          address,
-          clock,
-          executors,
+          appId = appId,
+          appName = app.name,
+          actorPath = address,
+          clock = clock,
           status = MasterToAppMaster.AppMasterActive,
           startTime = startTime,
           uptime = System.currentTimeMillis() - startTime,
           user = username,
           homeDirectory = userDir,
           logFile = logFile.getAbsolutePath,
+          processors = processors,
+          processorLevels = graph.vertexHierarchyLevelMap(),
+          dag = graph.mapEdge {(node1, edge, node2) =>
+            edge.partitionerFactory.name
+          },
+          executors = executors,
           historyMetricsConfig = getHistoryMetricsConfig
         )
       }
@@ -334,6 +335,6 @@ object AppMaster {
 
   class ServiceNotAvailableException(reason: String) extends Exception(reason)
 
-  case class ExecutorBrief(executorId: ExecutorId, executor: String, workerId: Int, status: String)
+  case class ExecutorBrief(executorId: ExecutorId, executor: String, workerId: WorkerId, status: String)
 
 }

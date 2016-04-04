@@ -67,8 +67,8 @@ class KafkaCluster(val advertisedHost: String, zkChroot: String = "") {
         "ZK_CHROOT" -> zkChroot),
       tunnelPorts = Set(ZOOKEEPER_PORT, BROKER_PORT)
     )
-    Util.retryUntil(isAlive)
-    LOG.info("kafka cluster is started.")
+    Util.retryUntil(()=>isAlive, "kafka cluster is alive")
+    LOG.debug("kafka cluster is started.")
   }
 
   def isAlive: Boolean = {
@@ -82,9 +82,7 @@ class KafkaCluster(val advertisedHost: String, zkChroot: String = "") {
   private lazy val hostIPAddr = Docker.getContainerIPAddr(KAFKA_HOST)
 
   def listTopics(): String = {
-    Docker.execAndCaptureOutput(KAFKA_HOST,
-      s"$KAFKA_HOME/bin/kafka-topics.sh" +
-        s" --zookeeper $getZookeeperConnectString -list")
+    kafkaListTopics(KAFKA_HOST, KAFKA_HOME, getZookeeperConnectString)
   }
 
   def getZookeeperConnectString: String = {
@@ -96,30 +94,43 @@ class KafkaCluster(val advertisedHost: String, zkChroot: String = "") {
   }
 
   def createTopic(topic: String, partitions: Int = 1): Unit = {
-    Docker.exec(KAFKA_HOST,
+    LOG.debug(s"|=> Create kafka topic $topic with $partitions partitions")
+
+    Docker.executeSilently(KAFKA_HOST,
       s"$KAFKA_HOME/bin/kafka-topics.sh" +
         s" --zookeeper $getZookeeperConnectString" +
         s" --create --topic $topic --partitions $partitions --replication-factor 1")
   }
 
   def produceDataToKafka(topic: String, messageNum: Int): Unit = {
-    Docker.exec(KAFKA_HOST,
+    Docker.executeSilently(KAFKA_HOST,
       s"$KAFKA_HOME/bin/kafka-topics.sh" +
         s" --zookeeper $getZookeeperConnectString" +
         s" --create --topic $topic --partitions 1 --replication-factor 1")
 
-    Docker.exec(KAFKA_HOST,
+    Docker.executeSilently(KAFKA_HOST,
       s"$KAFKA_HOME/bin/kafka-producer-perf-test.sh" +
         s" --broker-list $getBrokerListConnectString" +
         s" --topic $topic --messages $messageNum")
   }
 
   def getLatestOffset(topic: String): Int = {
-    val output = Docker.execAndCaptureOutput(KAFKA_HOST,
-      s"$KAFKA_HOME/bin/kafka-run-class.sh kafka.tools.GetOffsetShell" +
-        s" --broker-list $getBrokerListConnectString " +
+    kafkaFetchLatestOffset(KAFKA_HOST, topic, KAFKA_HOME, getBrokerListConnectString)
+  }
+
+  private def kafkaListTopics(container: String, kafkaHome: String, zookeeperConnectionString: String): String = {
+    LOG.debug(s"|=> Kafka list topics...")
+    Docker.execute(container,
+      s"$kafkaHome/bin/kafka-topics.sh" +
+        s" --zookeeper $zookeeperConnectionString -list")
+  }
+
+  private def kafkaFetchLatestOffset(container: String, topic: String, kafkaHome: String, brokersList: String): Int = {
+    LOG.debug(s"|=> Get latest offset of topic $topic...")
+    val output = Docker.execute(container,
+      s"$kafkaHome/bin/kafka-run-class.sh kafka.tools.GetOffsetShell" +
+        s" --broker-list $brokersList " +
         s" --topic $topic --time -1")
     output.split(":")(2).toInt
   }
-
 }

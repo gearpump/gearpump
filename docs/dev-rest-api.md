@@ -165,7 +165,7 @@ Sample Response:
 ```
 [
   {
-    "workerId": 1,
+    "workerId": "1",
     "state": "active",
     "actorPath": "akka.tcp://master@127.0.0.1:3000/user/Worker0",
     "aliveFor": "431565",
@@ -188,7 +188,7 @@ Sample Response:
     "jvmName": "11788@lisa"
   },
   {
-    "workerId": 0,
+    "workerId": "0",
     "state": "active",
     "actorPath": "akka.tcp://master@127.0.0.1:3000/user/Worker1",
     "aliveFor": "431546",
@@ -397,7 +397,7 @@ Sample Response:
 
 ```
 {
-  "workerId": 0,
+  "workerId": "0",
   "state": "active",
   "actorPath": "akka.tcp://master@127.0.0.1:3000/user/Worker1",
   "aliveFor": "831069",
@@ -738,19 +738,19 @@ Sample Response:
     {
       "executorId": 0,
       "executor": "akka.tcp://app1system0@127.0.0.1:52240/remote/akka.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/0#-1554950276",
-      "workerId": 1,
+      "workerId": "1",
       "status": "active"
     },
     {
       "executorId": 1,
       "executor": "akka.tcp://app1system1@127.0.0.1:52241/remote/akka.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/1#928082134",
-      "workerId": 0,
+      "workerId": "0",
       "status": "active"
     },
     {
       "executorId": -1,
       "executor": "akka://app1-executor-1/user/daemon/appdaemon1/$c/appmaster",
-      "workerId": 1,
+      "workerId": "1",
       "status": "active"
     }
   ],
@@ -1087,7 +1087,7 @@ Sample Response:
 ```
 {
   "id": 1,
-  "workerId": 0,
+  "workerId": "0",
   "actorPath": "akka.tcp://app1system1@127.0.0.1:52241/remote/akka.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/1",
   "logFile": "logs/",
   "status": "active",

@@ -26,7 +26,11 @@ object MasterStatus {
 }
 
 
-case class MasterNode(host: String, port: Int)
+case class MasterNode(host: String, port: Int) {
+  def toTuple: (String, Int) = {
+    (host, port)
+  }
+}
 
 /**
  * Master information for REST API call

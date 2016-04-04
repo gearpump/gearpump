@@ -21,7 +21,7 @@ import com.typesafe.config.ConfigFactory
 import io.gearpump.streaming.Constants
 import io.gearpump.streaming.appmaster.TaskLocator.Localities
 import io.gearpump.streaming.task.{StartTime, TaskContext, TaskId}
-import io.gearpump.Message
+import io.gearpump.{WorkerId, Message}
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import io.gearpump.cluster.{TestUtil, ClusterConfig, UserConfig}
 import io.gearpump.partitioner.{HashPartitioner, Partitioner}
@@ -47,8 +47,8 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
     "schedule tasks on different workers properly according user's configuration" in {
 
       val localities = Localities(
-        Map(1 -> Array(TaskId(0,0), TaskId(0,1), TaskId(1,0), TaskId(1,1)),
-            2 -> Array(TaskId(0,2), TaskId(0,3))
+        Map(WorkerId(1, 0L) -> Array(TaskId(0,0), TaskId(0,1), TaskId(1,0), TaskId(1,1)),
+          WorkerId(2, 0L) -> Array(TaskId(0,2), TaskId(0,3))
       ))
 
       val localityConfig = ConfigFactory.parseString(Localities.toJson(localities))
@@ -59,8 +59,8 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
         config.withValue(s"$GEARPUMP_STREAMING_LOCALITIES.$appName", localityConfig.root))
 
       val expectedRequests =
-        Array( ResourceRequest(Resource(4), 1, relaxation = Relaxation.SPECIFICWORKER),
-          ResourceRequest(Resource(2), 2, relaxation = Relaxation.SPECIFICWORKER))
+        Array( ResourceRequest(Resource(4), WorkerId(1, 0L), relaxation = Relaxation.SPECIFICWORKER),
+          ResourceRequest(Resource(2), WorkerId(2, 0L), relaxation = Relaxation.SPECIFICWORKER))
 
       taskScheduler.setDAG(dag)
       val resourceRequests = taskScheduler.getResourceRequests()
@@ -71,14 +71,14 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
       val tasksOnWorker1 = ArrayBuffer[Int]()
       val tasksOnWorker2 = ArrayBuffer[Int]()
       for (i <- 0 until 4) {
-        tasksOnWorker1.append(taskScheduler.schedule(1, executorId = 0, Resource(1)).head.processorId)
+        tasksOnWorker1.append(taskScheduler.schedule(WorkerId(1, 0L), executorId = 0, Resource(1)).head.processorId)
       }
       for (i <- 0 until 2) {
-        tasksOnWorker2.append(taskScheduler.schedule(2, executorId = 1, Resource(1)).head.processorId)
+        tasksOnWorker2.append(taskScheduler.schedule(WorkerId(2, 0L), executorId = 1, Resource(1)).head.processorId)
       }
 
       //allocate more resource, and no tasks to launch
-      assert(taskScheduler.schedule(3, executorId = 3, Resource(1)) == List.empty[TaskId])
+      assert(taskScheduler.schedule(WorkerId(3, 0L), executorId = 3, Resource(1)) == List.empty[TaskId])
 
       //on worker1, executor 0
       assert(tasksOnWorker1.sorted.sameElements(Array(0, 0, 1, 1)))
@@ -88,9 +88,9 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
 
       val rescheduledResources = taskScheduler.executorFailed(executorId = 1)
 
-      assert(rescheduledResources.sameElements(Array(ResourceRequest(Resource(2), relaxation = Relaxation.ONEWORKER))))
+      assert(rescheduledResources.sameElements(Array(ResourceRequest(Resource(2), WorkerId.unspecified, relaxation = Relaxation.ONEWORKER))))
 
-      val launchedTask = taskScheduler.schedule(workerId  = 3, executorId = 3, Resource(2))
+      val launchedTask = taskScheduler.schedule(WorkerId(3, 0L), executorId = 3, Resource(2))
 
       //start the failed 2 tasks Task(0, 0) and Task(0, 1)
       assert(launchedTask.length == 2)
@@ -101,11 +101,11 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
       val taskScheduler = new TaskSchedulerImpl(appId = 0, appName, config)
 
       val expectedRequests =
-        Array( ResourceRequest(Resource(4), 1, relaxation = Relaxation.SPECIFICWORKER),
-          ResourceRequest(Resource(2), 2, relaxation = Relaxation.SPECIFICWORKER))
+        Array( ResourceRequest(Resource(4), WorkerId(1, 0L), relaxation = Relaxation.SPECIFICWORKER),
+          ResourceRequest(Resource(2), WorkerId(2, 0L), relaxation = Relaxation.SPECIFICWORKER))
 
       taskScheduler.setDAG(dag)
-      val tasks = taskScheduler.schedule(1, executorId = 0, Resource(4))
+      val tasks = taskScheduler.schedule(WorkerId(1, 0L), executorId = 0, Resource(4))
       assert(tasks.filter(_.processorId == 0).length == 2)
       assert(tasks.filter(_.processorId == 1).length == 2)
     }

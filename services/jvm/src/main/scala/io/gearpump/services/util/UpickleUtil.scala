@@ -18,6 +18,7 @@
 
 package io.gearpump.services.util
 
+import io.gearpump.WorkerId
 import io.gearpump.util.Graph
 import upickle.Js
 
@@ -30,5 +31,15 @@ object UpickleUtil {
       val vertexList = upickle.default.readJs[List[Int]](verties._2)
       val edgeList = upickle.default.readJs[List[(Int, String, Int)]](edges._2)
       Graph(vertexList, edgeList)
+  }
+
+  implicit val workerIdReader: upickle.default.Reader[WorkerId] = upickle.default.Reader[WorkerId] {
+    case Js.Str(str) =>
+      WorkerId.parse(str)
+  }
+
+  implicit val workerIdWriter: upickle.default.Writer[WorkerId] = upickle.default.Writer[WorkerId] {
+    case workerId: WorkerId =>
+      Js.Str(WorkerId.render(workerId))
   }
 }

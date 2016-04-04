@@ -19,6 +19,7 @@ package io.gearpump.examples.distributedshell
 
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestProbe}
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers, RegisterAppMaster}
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerList, AppMasterRegistered}
@@ -37,7 +38,7 @@ class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
   val appId = 0
   val userName = "test"
   val masterExecutorId = 0
-  val workerList = List(1, 2, 3)
+  val workerList = List(WorkerId(1, 0L), WorkerId(2, 0L), WorkerId(3, 0L))
   val resource = Resource(1)
   val appJar = None
   val appDescription = AppDescription("app0", classOf[DistShellAppMaster].getName, UserConfig.empty)
@@ -57,7 +58,7 @@ class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
       workerList.foreach { workerId =>
         mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), workerId, relaxation = Relaxation.SPECIFICWORKER)))
       }
-      mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(resource, mockWorker1.ref, 1))))
+      mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(resource, mockWorker1.ref, WorkerId(1, 0L)))))
       mockWorker1.expectMsgClass(classOf[LaunchExecutor])
       mockWorker1.reply(RegisterActorSystem(ActorUtil.getSystemAddress(system).toString))
     }

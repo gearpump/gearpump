@@ -26,6 +26,7 @@ import java.util.concurrent.{Executors, TimeUnit}
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import com.typesafe.config.{Config, ConfigFactory}
+import io.gearpump.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
@@ -63,7 +64,7 @@ private[cluster] class Worker(masterProxy : ActorRef) extends Actor with TimeOut
   private var resource = Resource.empty
   private var allocatedResources = Map[ActorRef, Resource]()
   private var executorsInfo = Map[ActorRef, ExecutorSlots]()
-  private var id = -1
+  private var id: WorkerId = WorkerId.unspecified
   private val createdTime = System.currentTimeMillis()
   private var masterInfo: MasterInfo = null
   private var executorNameToActor = Map.empty[String, ActorRef]

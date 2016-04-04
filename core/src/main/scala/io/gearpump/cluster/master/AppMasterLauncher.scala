@@ -40,7 +40,7 @@ import org.slf4j.Logger
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
-
+import io.gearpump.WorkerId
 /**
  *
  * AppMasterLauncher is a child Actor of AppManager, it is responsible
@@ -59,7 +59,7 @@ class AppMasterLauncher(
   val appMasterAkkaConfig: Config = app.clusterConfig
 
   LOG.info(s"Ask Master resource to start AppMaster $appId...")
-  master ! RequestResource(appId, ResourceRequest(Resource(1)))
+  master ! RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified))
 
   def receive : Receive = waitForResourceAllocation
 
@@ -91,7 +91,7 @@ class AppMasterLauncher(
     case ExecutorLaunchRejected(reason, ex) =>
       LOG.error(s"Executor Launch failed reason：$reason", ex)
       LOG.info(s"reallocate resource $resource to start appmaster")
-      master ! RequestResource(appId, ResourceRequest(resource))
+      master ! RequestResource(appId, ResourceRequest(resource, WorkerId.unspecified))
       context.become(waitForResourceAllocation)
     case RegisterActorSystem(systemPath) =>
       LOG.info(s"Received RegisterActorSystem $systemPath for AppMaster")

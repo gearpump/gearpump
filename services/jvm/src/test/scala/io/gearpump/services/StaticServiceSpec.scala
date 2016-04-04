@@ -24,6 +24,7 @@ import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.Constants
+import io.gearpump.services.util.UpickleUtil._
 import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 
 import scala.util.Try

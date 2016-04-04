@@ -44,6 +44,7 @@ import io.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplicati
 import io.gearpump.util.ActorUtil._
 import io.gearpump.util.FileDirective._
 import io.gearpump.util.{Constants, Graph, Util}
+import io.gearpump.services.util.UpickleUtil._
 
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
@@ -154,7 +155,6 @@ class MasterService(val master: ActorRef,
     path("submitdag") {
       post {
         entity(as[String]) { request =>
-          import io.gearpump.services.util.UpickleUtil._
           val msg = java.net.URLDecoder.decode(request, "UTF-8")
           val submitApplicationRequest = read[SubmitApplicationRequest](msg)
           import submitApplicationRequest.{appName, dag, processors, userconfig}
