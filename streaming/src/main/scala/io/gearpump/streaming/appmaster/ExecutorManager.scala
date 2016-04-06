@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,17 @@
 
 package io.gearpump.streaming.appmaster
 
+import scala.concurrent.duration._
+import scala.util.{Failure, Try}
+
+
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
-import io.gearpump.WorkerId
+import org.apache.commons.lang.exception.ExceptionUtils
+
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import io.gearpump.cluster.appmaster.WorkerInfo
@@ -33,10 +39,6 @@ import io.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import io.gearpump.streaming.appmaster.ExecutorManager._
 import io.gearpump.streaming.executor.Executor
 import io.gearpump.util.{LogUtil, Util}
-import org.apache.commons.lang.exception.ExceptionUtils
-
-import scala.concurrent.duration._
-import scala.util.Try
 
 /**
  * ExecutorManager manage all executors.
@@ -45,7 +47,6 @@ import scala.util.Try
  * a new ExecutorSystem from user.
  *
  * Please use ExecutorManager.props() to construct this actor
- *
  */
 private[appmaster] class ExecutorManager(
     userConfig: UserConfig,
@@ -63,7 +64,7 @@ private[appmaster] class ExecutorManager(
   implicit val actorSystem = context.system
   private val systemConfig = context.system.settings.config
 
-  private var executors =  Map.empty[Int, ExecutorInfo]
+  private var executors = Map.empty[Int, ExecutorInfo]
 
   def receive: Receive = waitForTaskManager
 
@@ -73,13 +74,18 @@ private[appmaster] class ExecutorManager(
       context.become(service orElse terminationWatch)
   }
 
-  override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+  override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10,
+    withinTimeRange = 1.minute) {
     case ex: Throwable =>
       val executorId = Try(sender.path.name.toInt)
       executorId match {
         case scala.util.Success(id) => {
           executors -= id
-          LOG.error(s"Executor $id throws exception, stop it...\n" + ExceptionUtils.getStackTrace(ex))
+          LOG.error(s"Executor $id throws exception, stop it...\n" +
+            ExceptionUtils.getStackTrace(ex))
+        }
+        case Failure(ex) => {
+          LOG.error(s"Sender ${sender.path} is dead, but seems it is not an executor...")
         }
       }
       Stop
@@ -92,19 +98,20 @@ private[appmaster] class ExecutorManager(
       import executorSystem.{address, executorSystemId, resource => executorResource, worker}
 
       val executorId = executorSystemId
-      val executorContext = ExecutorContext(executorId, worker, appId, appName, appMaster = context.parent, executorResource)
+      val executorContext = ExecutorContext(executorId, worker, appId, appName,
+        appMaster = context.parent, executorResource)
       executors += executorId -> ExecutorInfo(executorId, null, worker, boundedJar)
 
-      //start executor
-      val executor = context.actorOf(executorFactory(executorContext, userConfig, address, executorId),
-        executorId.toString)
+      // start executor
+      val executor = context.actorOf(executorFactory(executorContext, userConfig,
+        address, executorId), executorId.toString)
       executorSystem.bindLifeCycleWith(executor)
     case StartExecutorSystemTimeout =>
       taskManager ! StartExecutorsTimeOut
 
     case RegisterExecutor(executor, executorId, resource, worker) =>
       LOG.info(s"executor $executorId has been launched")
-      //watch for executor termination
+      // watch for executor termination
       context.watch(executor)
       val executorInfo = executors.get(executorId).get
       executors += executorId -> executorInfo.copy(executor = executor)
@@ -113,7 +120,7 @@ private[appmaster] class ExecutorManager(
     // broadcast message to all executors
     case BroadCast(msg) =>
       LOG.info(s"Broadcast ${msg.getClass.getSimpleName} to all executors")
-      context.children.foreach(_ forward  msg)
+      context.children.foreach(_ forward msg)
 
     // unicast message to single executor
     case UniCast(executorId, msg) =>
@@ -138,9 +145,9 @@ private[appmaster] class ExecutorManager(
             worker ! ChangeExecutorResource(appId, executorId, Resource(0))
         }
       }
-    }
+  }
 
-  def terminationWatch : Receive = {
+  def terminationWatch: Receive = {
     case Terminated(actor) =>
       val executorId = Try(actor.path.name.toInt)
       executorId match {
@@ -149,14 +156,17 @@ private[appmaster] class ExecutorManager(
           LOG.error(s"Executor $id is down")
           taskManager ! ExecutorStopped(id)
         }
-        case scala.util.Failure(ex) => LOG.error(s"failed to get the executor Id from path string ${actor.path}" , ex)
+        case scala.util.Failure(ex) =>
+          LOG.error(s"failed to get the executor Id from path string ${actor.path}", ex)
       }
   }
 
   private def getExecutorJvmConfig(jar: Option[AppJar]): ExecutorSystemJvmConfig = {
     val executorAkkaConfig = clusterConfig
     val jvmSetting = Util.resolveJvmSetting(executorAkkaConfig.withFallback(systemConfig)).executor
-    ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs, jar, username, executorAkkaConfig)
+
+    ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs, jar,
+      username, executorAkkaConfig)
   }
 }
 
@@ -168,26 +178,30 @@ private[appmaster] object ExecutorManager {
 
   case object GetExecutorInfo
 
-  case class ExecutorStarted(executorId: Int, resource: Resource, workerId: WorkerId, boundedJar: Option[AppJar])
+  case class ExecutorStarted(
+      executorId: Int, resource: Resource, workerId: WorkerId, boundedJar: Option[AppJar])
   case class ExecutorStopped(executorId: Int)
 
   case class SetTaskManager(taskManager: ActorRef)
 
   case object StartExecutorsTimeOut
 
-  def props(userConfig: UserConfig, appContext: AppMasterContext, clusterConfig: Config, appName: String): Props = {
+  def props(
+      userConfig: UserConfig, appContext: AppMasterContext, clusterConfig: Config, appName: String)
+    : Props = {
     val executorFactory =
-        (executorContext: ExecutorContext,
-         userConfig: UserConfig,
-         address: Address,
-         executorId: ExecutorId) =>
-      Props(classOf[Executor], executorContext, userConfig)
-        .withDeploy(Deploy(scope = RemoteScope(address)))
+      (executorContext: ExecutorContext,
+        userConfig: UserConfig,
+        address: Address,
+        executorId: ExecutorId) =>
+        Props(classOf[Executor], executorContext, userConfig)
+          .withDeploy(Deploy(scope = RemoteScope(address)))
 
     Props(new ExecutorManager(userConfig, appContext, executorFactory, clusterConfig, appName))
   }
 
   case class ExecutorResourceUsageSummary(resources: Map[ExecutorId, Resource])
 
-  case class ExecutorInfo(executorId: ExecutorId, executor: ActorRef, worker: WorkerInfo, boundedJar: Option[AppJar])
+  case class ExecutorInfo(
+      executorId: ExecutorId, executor: ActorRef, worker: WorkerInfo, boundedJar: Option[AppJar])
 }

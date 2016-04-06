@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@
 
 package io.gearpump.streaming.kafka.lib.consumer
 
-import io.gearpump.streaming.kafka.lib.KafkaUtil
 import kafka.api.{FetchRequestBuilder, OffsetRequest}
 import kafka.common.ErrorMapping._
 import kafka.common.TopicAndPartition
@@ -26,8 +25,11 @@ import kafka.consumer.{ConsumerConfig, SimpleConsumer}
 import kafka.message.MessageAndOffset
 import kafka.utils.Utils
 
+import io.gearpump.streaming.kafka.lib.KafkaUtil
+
 object KafkaConsumer {
-  def apply(topic: String, partition: Int, startOffsetTime: Long, config: ConsumerConfig): KafkaConsumer = {
+  def apply(topic: String, partition: Int, startOffsetTime: Long, config: ConsumerConfig)
+    : KafkaConsumer = {
     val connectZk = KafkaUtil.connectZookeeper(config)
     val broker = KafkaUtil.getBroker(connectZk(), topic, partition)
     val soTimeout = config.socketTimeoutMs
@@ -40,7 +42,7 @@ object KafkaConsumer {
         .addFetch(topic, partition, offset, fetchSize)
         .build()
 
-    val response = consumer.fetch(request)
+      val response = consumer.fetch(request)
       response.errorCode(topic, partition) match {
         case NoError => response.messageSet(topic, partition).iterator
         case error => throw exceptionFor(error)
@@ -51,13 +53,14 @@ object KafkaConsumer {
 }
 
 /**
- * uses kafka kafka.consumer.SimpleConsumer to consume and iterate over messages from a kafka kafka.common.TopicAndPartition.
+ * uses kafka kafka.consumer.SimpleConsumer to consume and iterate over
+ * messages from a kafka kafka.common.TopicAndPartition.
  */
 class KafkaConsumer(consumer: SimpleConsumer,
-                    topic: String,
-                    partition: Int,
-                    getIterator: (Long) => Iterator[MessageAndOffset],
-                    startOffsetTime: Long = OffsetRequest.EarliestTime) {
+    topic: String,
+    partition: Int,
+    getIterator: (Long) => Iterator[MessageAndOffset],
+    startOffsetTime: Long = OffsetRequest.EarliestTime) {
   private val earliestOffset = consumer
     .earliestOrLatestOffset(TopicAndPartition(topic, partition), startOffsetTime, -1)
   private var nextOffset: Long = earliestOffset
@@ -97,6 +100,4 @@ class KafkaConsumer(consumer: SimpleConsumer,
   def close(): Unit = {
     consumer.close()
   }
-
-
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,16 +27,13 @@ import akka.stream.actor.ActorSubscriber
 import akka.stream.gearpump.materializer.LocalMaterializerImpl.MaterializedModule
 import akka.stream.gearpump.module.ReduceModule
 import akka.stream.gearpump.util.MaterializedValueOps
-import akka.stream.impl.GenJunctions.{UnzipWithModule, ZipWithModule}
-import akka.stream.impl.Junctions.{BalanceModule, BroadcastModule, ConcatModule, FanInModule, FanOutModule, FlexiMergeModule, FlexiRouteModule, JunctionModule, MergeModule, MergePreferredModule}
-import akka.stream.impl.Stages.{Fold, DirectProcessor, Identity, StageModule}
+import akka.stream.impl.Stages.{DirectProcessor, Fold, StageModule}
 import akka.stream.impl.StreamLayout.Module
-import akka.stream.impl.io.SslTlsCipherActor
-import akka.stream.impl.{ActorProcessorFactory, ActorPublisher, Balance, Broadcast, Concat, ExposedPublisher, FairMerge, FanIn, FanOut, FlexiMerge, FlexiRoute, MaterializedValuePublisher, MaterializedValueSource, SinkModule, SourceModule, UnfairMerge, VirtualProcessor}
-import akka.stream.io.SslTls.TlsModule
-import akka.stream.{ActorMaterializerSettings, Attributes, Graph => AkkaGraph, InPort, MaterializationContext, Materializer, Optimizations, OutPort, Shape}
-import io.gearpump.util.Graph
+import akka.stream.impl.{ActorProcessorFactory, ActorPublisher, ExposedPublisher, FanIn, FanOut, SinkModule, SourceModule, VirtualProcessor}
+import akka.stream.{ActorMaterializerSettings, Attributes, Graph => AkkaGraph, InPort, MaterializationContext, Materializer, OutPort, Shape}
 import org.reactivestreams.{Processor, Publisher, Subscriber}
+
+import io.gearpump.util.Graph
 
 /**
  * This materializer is functional equivalent to [[akka.stream.impl.ActorMaterializerImpl]]
@@ -61,14 +58,14 @@ class LocalMaterializerImpl (
     optimizations: Optimizations)
   extends LocalMaterializer(
     system, settings, dispatchers, supervisor,
-    haveShutDown, flowNameCounter, namePrefix, optimizations){
+    haveShutDown, flowNameCounter, namePrefix, optimizations) {
 
   override def materialize(graph: Graph[Module, Edge], inputMatValues: Map[Module, Any]): Map[Module, Any] = {
-    val materializedGraph = graph.mapVertex{module =>
+    val materializedGraph = graph.mapVertex { module =>
       materializeAtomic(module)
     }
 
-    materializedGraph.edges.foreach{nodeEdgeNode =>
+    materializedGraph.edges.foreach { nodeEdgeNode =>
       val (node1, edge, node2) = nodeEdgeNode
       val from = edge.from
       val to = edge.to
@@ -77,7 +74,7 @@ class LocalMaterializerImpl (
       publisher.subscribe(subscriber)
     }
 
-    val matValues = inputMatValues ++ materializedGraph.vertices.map{vertex =>
+    val matValues = inputMatValues ++ materializedGraph.vertices.map { vertex =>
       (vertex.module, vertex.matValue)
     }.toMap
 
@@ -139,7 +136,7 @@ class LocalMaterializerImpl (
         MaterializedModule(source, mat, outputs = outputs)
 
       case reduce: ReduceModule[Any] =>
-      //TODO: remove this after the official akka-stream API support the Reduce Module
+        //TODO: remove this after the official akka-stream API support the Reduce Module
         val stage = LocalMaterializerImpl.toFoldModule(reduce)
         val (processor, mat) = processorFor(stage, effectiveAttributes, effectiveSettings(effectiveAttributes))
         val inputs = Map[InPort, Subscriber[_]](stage.inPort -> processor)
@@ -177,88 +174,90 @@ class LocalMaterializerImpl (
   }
 
   private def processorFor(op: StageModule,
-                           effectiveAttributes: Attributes,
-                           effectiveSettings: ActorMaterializerSettings): (Processor[Any, Any], Any) = op match {
+    effectiveAttributes: Attributes,
+    effectiveSettings: ActorMaterializerSettings): (Processor[Any, Any], Any) = op match {
     case DirectProcessor(processorFactory, _) => processorFactory()
-    case Identity(attr)                       => (new VirtualProcessor, ())
+    case Identity(attr) => (new VirtualProcessor, ())
     case _ =>
       val (opprops, mat) = ActorProcessorFactory.props(LocalMaterializerImpl.this, op, effectiveAttributes)
       ActorProcessorFactory[Any, Any](
             actorOf(opprops, stageName(effectiveAttributes), effectiveSettings.dispatcher)) -> mat
   }
 
-private def materializeJunction(
+  private def materializeJunction(
     op: JunctionModule,
     effectiveAttributes: Attributes,
     effectiveSettings: ActorMaterializerSettings): MaterializedModule = {
-  op match {
-    case fanin: FanInModule =>
-      val (props, inputs, output) = fanin match {
+    op match {
+      case fanin: FanInModule =>
+        val (props, inputs, output) = fanin match {
 
-        case MergeModule(shape, _) =>
-          (FairMerge.props(effectiveSettings, shape.inSeq.size), shape.inSeq, shape.out)
+          case MergeModule(shape, _) =>
+            (FairMerge.props(effectiveSettings, shape.inSeq.size), shape.inSeq, shape.out)
 
-        case f: FlexiMergeModule[_, Shape] =>
-          val flexi = f.flexi(f.shape)
-          val shape: Shape = f.shape
-          (FlexiMerge.props(effectiveSettings, f.shape, flexi), shape.inlets, shape.outlets.head)
+          case f: FlexiMergeModule[_, Shape] =>
+            val flexi = f.flexi(f.shape)
+            val shape: Shape = f.shape
+            (FlexiMerge.props(effectiveSettings, f.shape, flexi), shape.inlets, shape.outlets.head)
 
-        case MergePreferredModule(shape, _) =>
-          (UnfairMerge.props(effectiveSettings, shape.inlets.size), shape.preferred +: shape.inSeq, shape.out)
+          case MergePreferredModule(shape, _) =>
+            (UnfairMerge.props(effectiveSettings, shape.inlets.size), shape.preferred +: shape.inSeq, shape.out)
 
-        case ConcatModule(shape, _) =>
-          require(shape.inSeq.size == 2, "currently only supporting concatenation of exactly two inputs") // TODO
-          (Concat.props(effectiveSettings), shape.inSeq, shape.out)
+          case ConcatModule(shape, _) =>
+            require(shape.inSeq.size == 2, "currently only supporting concatenation of exactly two inputs") // TODO
+            (Concat.props(effectiveSettings), shape.inSeq, shape.out)
 
-        case zip: ZipWithModule =>
-          (zip.props(effectiveSettings), zip.shape.inlets, zip.outPorts.head)
-      }
+          case zip: ZipWithModule =>
+            (zip.props(effectiveSettings), zip.shape.inlets, zip.outPorts.head)
+        }
 
-      val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
-      val publisher = new ActorPublisher[Any](impl)
-      // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
-      impl ! ExposedPublisher(publisher)
+        val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
+        val publisher = new ActorPublisher[Any](impl)
+        // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
+        impl ! ExposedPublisher(publisher)
 
-      val inputMapping: Map[InPort, Subscriber[_]] = inputs.zipWithIndex.map{ pair =>
-        val (in, id) = pair
-        (in, FanIn.SubInput[Any](impl, id))
-      }.toMap
+        val inputMapping: Map[InPort, Subscriber[_]] = inputs.zipWithIndex.map { pair =>
+          val (in, id) = pair
+          (in, FanIn.SubInput[Any](impl, id))
+        }.toMap
 
-      val outMapping = Map(output -> publisher)
-      MaterializedModule(fanin, (), inputMapping, outMapping)
+        val outMapping = Map(output -> publisher)
+        MaterializedModule(fanin, (), inputMapping, outMapping)
 
-    case fanout: FanOutModule =>
-      val (props, in, outs) = fanout match {
+      case fanout: FanOutModule =>
+        val (props, in, outs) = fanout match {
 
-        case r: FlexiRouteModule[t, Shape] =>
-          val flexi = r.flexi(r.shape)
-          val shape: Shape = r.shape
-          (FlexiRoute.props(effectiveSettings, r.shape, flexi), shape.inlets.head: InPort, r.shape.outlets)
+          case r: FlexiRouteModule[t, Shape] =>
+            val flexi = r.flexi(r.shape)
+            val shape: Shape = r.shape
+            (FlexiRoute.props(effectiveSettings, r.shape, flexi), shape.inlets.head: InPort, r.shape.outlets)
 
-        case BroadcastModule(shape, eagerCancel, _) =>
-          (Broadcast.props(effectiveSettings, eagerCancel, shape.outArray.size), shape.in, shape.outArray.toSeq)
+          case BroadcastModule(shape, eagerCancel, _) =>
+            (Broadcast.props(effectiveSettings, eagerCancel, shape.outArray.size), shape.in, shape.outArray.toSeq)
 
-        case BalanceModule(shape, waitForDownstreams, _) =>
-          (Balance.props(effectiveSettings, shape.outArray.size, waitForDownstreams), shape.in, shape.outArray.toSeq)
+          case BalanceModule(shape, waitForDownstreams, _) =>
+            (Balance.props(effectiveSettings, shape.outArray.size, waitForDownstreams), shape.in, shape.outArray.toSeq)
 
-        case unzip: UnzipWithModule =>
-          (unzip.props(effectiveSettings), unzip.inPorts.head, unzip.shape.outlets)
-      }
-      val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
-      val size = outs.size
-      def factory(id: Int) =
-        new ActorPublisher[Any](impl) { override val wakeUpMsg = FanOut.SubstreamSubscribePending(id) }
-      val publishers =
-        if (outs.size < 8) Vector.tabulate(size)(factory)
-        else List.tabulate(size)(factory)
+          case unzip: UnzipWithModule =>
+            (unzip.props(effectiveSettings), unzip.inPorts.head, unzip.shape.outlets)
+        }
+        val impl = actorOf(props, stageName(effectiveAttributes), effectiveSettings.dispatcher)
+        val size = outs.size
+        def factory(id: Int) =
+          new ActorPublisher[Any](impl) {
+            override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
+          }
+        val publishers =
+          if (outs.size < 8) Vector.tabulate(size)(factory)
+          else List.tabulate(size)(factory)
 
-      impl ! FanOut.ExposedPublishers(publishers)
-      val outputs: Map[OutPort, Publisher[_]] = publishers.iterator.zip(outs.iterator).map { case (pub, out) =>
-        (out, pub)
-      }.toMap
+        impl ! FanOut.ExposedPublishers(publishers)
+        val outputs: Map[OutPort, Publisher[_]] = publishers.iterator.zip(outs.iterator).map { case (pub, out) =>
+          (out, pub)
+        }.toMap
 
-      val inputs: Map[InPort, Subscriber[_]] = Map(in -> ActorSubscriber[Any](impl))
-      MaterializedModule(fanout, (), inputs, outputs)
+        val inputs: Map[InPort, Subscriber[_]] = Map(in -> ActorSubscriber[Any](impl))
+        MaterializedModule(fanout, (), inputs, outputs)
     }
   }
 
@@ -269,11 +268,11 @@ private def materializeJunction(
 }
 
 object LocalMaterializerImpl {
-  case class MaterializedModule(val module: Module, val matValue: Any, inputs: Map[InPort, Subscriber[_]] = Map.empty[InPort, Subscriber[_]] , outputs: Map[OutPort, Publisher[_]] = Map.empty[OutPort, Publisher[_]])
+  case class MaterializedModule(val module: Module, val matValue: Any, inputs: Map[InPort, Subscriber[_]] = Map.empty[InPort, Subscriber[_]], outputs: Map[OutPort, Publisher[_]] = Map.empty[OutPort, Publisher[_]])
 
   def toFoldModule(reduce: ReduceModule[Any]): Fold = {
     val f = reduce.f
-    val aggregator = {(zero: Any, input: Any) =>
+    val aggregator = { (zero: Any, input: Any) =>
       if (zero == null) {
         input
       } else {

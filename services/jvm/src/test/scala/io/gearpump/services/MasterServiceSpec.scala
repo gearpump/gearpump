@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,55 +19,56 @@
 package io.gearpump.services
 
 import java.io.File
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
 
 import akka.actor.ActorRef
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Cache-Control`, `Set-Cookie`}
-import akka.stream.scaladsl.Source
+import akka.http.scaladsl.model.headers.`Cache-Control`
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import akka.stream.scaladsl.{FileIO, Source}
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.WorkerId
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ResolveWorkerId, SubmitApplication}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.worker.WorkerSummary
-import io.gearpump.services.MasterService.{SubmitApplicationRequest, BuiltinPartitioners}
 import io.gearpump.jarstore.JarStoreService
-import io.gearpump.streaming.ProcessorDescription
-import io.gearpump.util.{Constants, Graph}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import scala.concurrent.{Future, ExecutionContext}
-import scala.concurrent.duration._
-import scala.util.{Success, Try}
-import akka.stream.scaladsl.FileIO
+import io.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
+// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.streaming.ProcessorDescription
+import io.gearpump.util.Graph
 
-class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
-  Matchers with BeforeAndAfterAll {
+class MasterServiceSpec extends FlatSpec with ScalatestRouteTest
+  with Matchers with BeforeAndAfterAll {
   import upickle.default.{read, write}
 
   override def testConfig: Config = TestUtil.UI_CONFIG
 
-  def actorRefFactory = system
+  private def actorRefFactory = system
   val workerId = 0
   val mockWorker = TestProbe()
 
   lazy val jarStoreService = JarStoreService.get(system.settings.config)
 
-  def master = mockMaster.ref
+  private def master = mockMaster.ref
 
   def jarStore: JarStoreService = jarStoreService
 
-  def masterRoute = new MasterService(master, jarStore, system).route
+  private def masterRoute = new MasterService(master, jarStore, system).route
 
   mockWorker.setAutoPilot {
     new AutoPilot {
-      def run(sender: ActorRef, msg: Any) = msg match {
+      def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
         case GetWorkerData(workerId) =>
           sender ! WorkerData(WorkerSummary.empty.copy(state = "active", workerId = workerId))
           KeepRunning
@@ -81,11 +82,11 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
   val mockMaster = TestProbe()
   mockMaster.setAutoPilot {
     new AutoPilot {
-      def run(sender: ActorRef, msg: Any) = msg match {
+      def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
         case GetMasterData =>
           sender ! MasterData(null)
           KeepRunning
-        case  AppMastersDataRequest =>
+        case AppMastersDataRequest =>
           sender ! AppMastersData(List.empty[AppMasterData])
           KeepRunning
         case GetAllWorkers =>
@@ -127,7 +128,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
   it should "return a json structure of appMastersData for GET request" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
     (Get(s"/api/$REST_VERSION/master/applist") ~> masterRoute) ~> check {
-      //check the type
+      // check the type
       read[AppMastersData](responseAs[String])
     }
     mockMaster.expectMsg(AppMastersDataRequest)
@@ -136,7 +137,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
   it should "return a json structure of worker data for GET request" in {
     implicit val customTimeout = RouteTestTimeout(25.seconds)
     Get(s"/api/$REST_VERSION/master/workerlist") ~> masterRoute ~> check {
-      //check the type
+      // check the type
       val workerListJson = responseAs[String]
       val workers = read[List[WorkerSummary]](workerListJson)
       assert(workers.size > 0)
@@ -151,7 +152,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
 
   it should "return config for master" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/master/config") ~> masterRoute) ~> check{
+    (Get(s"/api/$REST_VERSION/master/config") ~> masterRoute) ~> check {
       val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
@@ -170,7 +171,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
   }
 
   private def entity(file: File)(implicit ec: ExecutionContext): Future[RequestEntity] = {
-    val entity =  HttpEntity(MediaTypes.`application/octet-stream`, file.length(),
+    val entity = HttpEntity(MediaTypes.`application/octet-stream`, file.length(),
       FileIO.fromFile(file, chunkSize = 100000))
 
     val body = Source.single(
@@ -185,7 +186,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
 
   "MetricsQueryService" should "return history metrics" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/master/metrics/master") ~> masterRoute)~> check {
+    (Get(s"/api/$REST_VERSION/master/metrics/master") ~> masterRoute) ~> check {
       val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
@@ -200,7 +201,8 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest with
     )
     val dag = Graph(0 ~ "partitioner" ~> 1)
     val jsonValue = write(SubmitApplicationRequest("complexdag", processors, dag, null))
-    Post(s"/api/$REST_VERSION/master/submitdag", HttpEntity(ContentTypes.`application/json`, jsonValue)) ~> masterRoute ~> check {
+    Post(s"/api/$REST_VERSION/master/submitdag",
+      HttpEntity(ContentTypes.`application/json`, jsonValue)) ~> masterRoute ~> check {
       val responseBody = responseAs[String]
       val submitApplicationResultValue = read[SubmitApplicationResultValue](responseBody)
       assert(submitApplicationResultValue.appId >= 0, "invalid appid")

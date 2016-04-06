@@ -7,25 +7,25 @@ angular.module('dashboard')
 
   // todo: refactoring required
   .controller('StreamingAppProcessorTaskChartsCtrl', ['$scope', 'helper', 'models',
-    function($scope, helper, models) {
+    function ($scope, helper, models) {
       'use strict';
 
       // rebuild the charts when `tasks` is changed.
-      $scope.$watchCollection('tasks', function(tasks) {
+      $scope.$watchCollection('tasks', function (tasks) {
         if (!tasks.selected) {
           console.warn('should not load this page');
           return;
         }
         // todo: For the time being we can only query one task
-        $scope.selectedTaskIds = _.map(tasks.selected, function(taskName) {
+        $scope.selectedTaskIds = _.map(tasks.selected, function (taskName) {
           return Number(taskName.substr(1));
         });
 
         var range = {start: $scope.selectedTaskIds[0], stop: $scope.selectedTaskIds[0]};
         models.$get.appTaskLatestMetricValues(
-          $scope.app.appId, $scope.processor.id, /*metricName=*/'', range).then(function(metrics0) {
+          $scope.app.appId, $scope.processor.id, /*metricName=*/'', range).then(function (metrics0) {
             $scope.selectedMetrics = metrics0.$data();
-            metrics0.$subscribe($scope, function(metrics) {
+            metrics0.$subscribe($scope, function (metrics) {
               $scope.selectedMetrics = metrics;
             });
           });
@@ -36,20 +36,20 @@ angular.module('dashboard')
           height: '108px',
           margin: {right: 15},
           visibleDataPointsNum: recentChartPoints,
-          data: _.times(recentChartPoints, function() {
+          data: _.times(recentChartPoints, function () {
             return {x: '', y: '-'};
           }),
           seriesNames: tasks.selected
         };
 
         var throughputChartOptions = angular.merge({
-          valueFormatter: function(value) {
+          valueFormatter: function (value) {
             return helper.readableMetricValue(value) + ' msg/s';
           }
         }, lineChartOptionBase);
 
         var durationChartOptions = angular.merge({
-          valueFormatter: function(value) {
+          valueFormatter: function (value) {
             return helper.readableMetricValue(value) + ' ms';
           }
         }, lineChartOptionBase);
@@ -67,7 +67,7 @@ angular.module('dashboard')
           options: durationChartOptions
         };
 
-        $scope.$watchCollection('selectedMetrics', function(metrics) {
+        $scope.$watchCollection('selectedMetrics', function (metrics) {
           if (angular.isObject(metrics)) {
             updateMetricsCharts(metrics);
           }
@@ -102,7 +102,7 @@ angular.module('dashboard')
         }
 
         function extractSelectedMetricField(metrics, field) {
-          return _.map($scope.selectedTaskIds, function(taskId) {
+          return _.map($scope.selectedTaskIds, function (taskId) {
             return helper.metricRounded(metrics[taskId][field]);
           });
         }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,18 @@
 
 package io.gearpump.streaming.examples.complexdag
 
-import io.gearpump.cluster.ClientToMaster.SubmitApplication
-import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import io.gearpump.cluster.{TestUtil, MasterHarness}
-import io.gearpump.util.Util
+import scala.concurrent.Future
+import scala.util.Success
+
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
-import scala.util.Success
-import scala.concurrent.Future
 
-class DagSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
+import io.gearpump.cluster.ClientToMaster.SubmitApplication
+import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
+import io.gearpump.cluster.{MasterHarness, TestUtil}
+
+class DagSpec extends PropSpec with PropertyChecks
+  with Matchers with BeforeAndAfterAll with MasterHarness {
 
   override def beforeAll {
     startActorSystem()
@@ -37,7 +39,7 @@ class DagSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
     shutdownActorSystem()
   }
 
-  override def config = TestUtil.DEFAULT_CONFIG
+  protected override def config = TestUtil.DEFAULT_CONFIG
 
   property("Dag should succeed to submit application with required arguments") {
     val requiredArgs = Array.empty[String]
@@ -45,7 +47,9 @@ class DagSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
     val masterReceiver = createMockMaster()
     val args = requiredArgs
 
-    Future{Dag.main(masterConfig, args)}
+    Future {
+      Dag.main(masterConfig, args)
+    }
     masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
     masterReceiver.reply(SubmitApplicationResult(Success(0)))
   }

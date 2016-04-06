@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,20 @@
 
 package io.gearpump.transport
 
-import akka.actor._
-import akka.agent.Agent
-import io.gearpump.transport.netty.Client.Close
-import io.gearpump.transport.netty.{Context, TaskMessage}
-import io.gearpump.util.LogUtil
-import org.slf4j.Logger
-
 import scala.collection.immutable.LongMap
 import scala.concurrent._
 
+import akka.actor._
+import akka.agent.Agent
+import org.slf4j.Logger
+
+import io.gearpump.transport.netty.Client.Close
+import io.gearpump.transport.netty.{Context, TaskMessage}
+import io.gearpump.util.LogUtil
+
 trait ActorLookupById {
+
+  /** Lookup actor ref for local task actor by providing a TaskId (TaskId.toLong) */
   def lookupLocalActor(id: Long): Option[ActorRef]
 }
 
@@ -40,8 +43,9 @@ trait ActorLookupById {
  */
 class Express(val system: ExtendedActorSystem) extends Extension with ActorLookupById {
 
-  import io.gearpump.transport.Express._
   import system.dispatcher
+
+  import io.gearpump.transport.Express._
   val localActorMap = Agent(LongMap.empty[ActorRef])
   val remoteAddressMap = Agent(Map.empty[Long, HostPort])
 
@@ -59,15 +63,16 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     LOG.info(s"binding to netty server $localHost")
 
     system.registerOnTermination(new Runnable {
-      override def run = context.close
+      override def run(): Unit = context.close()
     })
     (context, serverPort, localHost)
   }
 
-  def unregisterLocalActor(id : Long) : Unit = {
+  def unregisterLocalActor(id: Long): Unit = {
     localActorMap.sendOff(_ - id)
   }
 
+  /** Start Netty client actors to connect to remote machines */
   def startClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
     val clientsToClose = remoteClientMap.get().filterKeys(!hostPorts.contains(_)).keySet
     closeClients(clientsToClose)
@@ -85,7 +90,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   def closeClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
     remoteClientMap.alter { map =>
-      map.filterKeys(hostPorts.contains).foreach{ hostAndClient =>
+      map.filterKeys(hostPorts.contains).foreach { hostAndClient =>
         val (_, client) = hostAndClient
         client ! Close
       }
@@ -93,36 +98,38 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     }
   }
 
-  def registerLocalActor(id : Long, actor: ActorRef): Unit = {
+  def registerLocalActor(id: Long, actor: ActorRef): Unit = {
     LOG.info(s"RegisterLocalActor: $id, actor: ${actor.path.name}")
     init
     localActorMap.sendOff(_ + (id -> actor))
   }
 
-  def lookupLocalActor(id: Long) = localActorMap.get().get(id)
+  def lookupLocalActor(id: Long): Option[ActorRef] = localActorMap.get().get(id)
 
-  def lookupRemoteAddress(id : Long) = remoteAddressMap.get().get(id)
+  def lookupRemoteAddress(id: Long): Option[HostPort] = remoteAddressMap.get().get(id)
 
-  //transport to remote address
+  /** Send message to remote task */
   def transport(taskMessage: TaskMessage, remote: HostPort): Unit = {
 
     val remoteClient = remoteClientMap.get.get(remote)
     if (remoteClient.isDefined) {
       remoteClient.get.tell(taskMessage, Actor.noSender)
     } else {
-      val errorMsg = s"Clients has not been launched properly before transporting messages, the destination is $remote"
+      val errorMsg = s"Clients has not been launched properly before transporting messages, " +
+        s"the destination is $remote"
       LOG.error(errorMsg)
       throw new Exception(errorMsg)
     }
   }
 }
 
+/** A customized transport layer by using Akka extension */
 object Express extends ExtensionId[Express] with ExtensionIdProvider {
   val LOG: Logger = LogUtil.getLogger(getClass)
 
   override def get(system: ActorSystem): Express = super.get(system)
 
-  override def lookup = Express
+  override def lookup: ExtensionId[Express] = Express
 
   override def createExtension(system: ExtendedActorSystem): Express = new Express(system)
 }

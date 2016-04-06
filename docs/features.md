@@ -8,7 +8,7 @@ description: Gearpump Technical Highlights
 ### Technical highlights of Gearpump
 
 
-Gearpump is a performant, flexible, fault-tolerant, and responsive streaming platform with a lot of nice features, its technical highlights include:
+Gearpump is a high performance, flexible, fault-tolerant, and responsive streaming platform with a lot of nice features, its technical highlights include:
 
 #### Actors everywhere
 

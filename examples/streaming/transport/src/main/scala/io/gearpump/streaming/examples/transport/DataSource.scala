@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,35 +17,36 @@
  */
 package io.gearpump.streaming.examples.transport
 
-import io.gearpump.streaming.examples.transport.generator.{MockCity, PassRecordGenerator}
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
 import scala.concurrent.duration._
 
-class DataSource(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf){
-  import taskContext.{output, parallelism, taskId, scheduleOnce}
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.examples.transport.generator.{MockCity, PassRecordGenerator}
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 
-  import system.dispatcher
+class DataSource(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+  import taskContext.{output, parallelism, scheduleOnce, taskId}
   private val overdriveThreshold = conf.getInt(VelocityInspector.OVER_DRIVE_THRESHOLD).get
   private val vehicleNum = conf.getInt(DataSource.VEHICLE_NUM).get / parallelism
   private val citySize = conf.getInt(DataSource.MOCK_CITY_SIZE).get
   private val mockCity = new MockCity(citySize)
-  private val recordGenerators: Array[PassRecordGenerator] = 
+  private val recordGenerators: Array[PassRecordGenerator] =
     PassRecordGenerator.create(vehicleNum, getIdentifier(taskId), mockCity, overdriveThreshold)
-  
+
   override def onStart(startTime: StartTime): Unit = {
     self ! Message("start", System.currentTimeMillis())
   }
 
   override def onNext(msg: Message): Unit = {
-    recordGenerators.foreach(generator => 
+    recordGenerators.foreach(generator =>
       output(Message(generator.getNextPassRecord(), System.currentTimeMillis())))
-    scheduleOnce(1 second)(self ! Message("continue", System.currentTimeMillis()))
+    scheduleOnce(1.second)(self ! Message("continue", System.currentTimeMillis()))
   }
-  
+
   private def getIdentifier(taskId: TaskId): String = {
+    // scalastyle:off non.ascii.character.disallowed
     s"沪A${taskId.processorId}${taskId.index}"
+    // scalastyle:on non.ascii.character.disallowed
   }
 }
 

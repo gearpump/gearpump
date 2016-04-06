@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,17 @@
 
 package io.gearpump.util
 
-import java.util.concurrent.{TimeoutException, TimeUnit}
+import java.util.concurrent.{TimeUnit, TimeoutException}
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import com.typesafe.config.Config
-import io.gearpump.cluster.ClusterConfig
-import io.gearpump.util.LogUtil.ProcessType
 import org.slf4j.Logger
 
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success, Try}
+import io.gearpump.cluster.ClusterConfig
+import io.gearpump.util.LogUtil.ProcessType
 
 /**
  * ActorSystemBooter start a new JVM process to boot an actor system.
@@ -35,11 +36,10 @@ import scala.util.{Failure, Success, Try}
  *
  * It send the system address to "report back actor"
  */
-
-class ActorSystemBooter(config : Config) {
+class ActorSystemBooter(config: Config) {
   import io.gearpump.util.ActorSystemBooter._
 
-  def boot(name : String, reportBackActor : String) : ActorSystem = {
+  def boot(name: String, reportBackActor: String): ActorSystem = {
     val system = ActorSystem(name, config)
     // daemon path: http://{system}@{ip}:{port}/daemon
     system.actorOf(Props(classOf[Daemon], name, reportBackActor), "daemon")
@@ -47,11 +47,11 @@ class ActorSystemBooter(config : Config) {
   }
 }
 
-object ActorSystemBooter  {
+object ActorSystemBooter {
 
-  def apply(config : Config) : ActorSystemBooter = new ActorSystemBooter(config)
+  def apply(config: Config): ActorSystemBooter = new ActorSystemBooter(config)
 
-  def main (args: Array[String]) {
+  def main(args: Array[String]) {
     val name = args(0)
     val reportBack = args(1)
     val config = ClusterConfig.default()
@@ -59,7 +59,7 @@ object ActorSystemBooter  {
     LogUtil.loadConfiguration(config, ProcessType.APPLICATION)
 
     val debugPort = Option(System.getProperty(Constants.GEARPUMP_REMOTE_DEBUG_PORT))
-    debugPort.foreach{ port =>
+    debugPort.foreach { port =>
       val LOG: Logger = LogUtil.getLogger(ActorSystemBooter.getClass)
       LOG.info("==========================================")
       LOG.info("Remote debug port: " + port)
@@ -69,22 +69,23 @@ object ActorSystemBooter  {
     val system = apply(config).boot(name, reportBack)
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
-      override def run() : Unit = {
+      override def run(): Unit = {
         val LOG: Logger = LogUtil.getLogger(ActorSystemBooter.getClass)
-        LOG.info("Maybe we have received a SIGINT signal from parent process, start to cleanup resources....")
-        system.shutdown()
+        LOG.info("Maybe we have received a SIGINT signal from parent process, " +
+          "start to cleanup resources....")
+        system.terminate()
       }
-    });
+    })
 
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
-  case class BindLifeCycle(actor : ActorRef)
-  case class CreateActor(prop : Props, name : String)
-  case class ActorCreated(actor : ActorRef, name : String)
-  case class CreateActorFailed(name : String, reason: Throwable)
+  case class BindLifeCycle(actor: ActorRef)
+  case class CreateActor(prop: Props, name: String)
+  case class ActorCreated(actor: ActorRef, name: String)
+  case class CreateActorFailed(name: String, reason: Throwable)
 
-  case class RegisterActorSystem(systemPath : String)
+  case class RegisterActorSystem(systemPath: String)
 
   /**
    * This actor system will watch for parent,
@@ -95,23 +96,24 @@ object ActorSystemBooter  {
 
   object RegisterActorSystemTimeOut
 
-  class Daemon(val name : String, reportBack : String) extends Actor {
+  class Daemon(val name: String, reportBack: String) extends Actor {
     val LOG: Logger = LogUtil.getLogger(getClass, context = name)
 
     val username = Option(System.getProperty(Constants.GEARPUMP_USERNAME)).getOrElse("not_defined")
     LOG.info(s"RegisterActorSystem to ${reportBack}, current user: $username")
-    
+
     val reportBackActor = context.actorSelection(reportBack)
     reportBackActor ! RegisterActorSystem(ActorUtil.getSystemAddress(context.system).toString)
 
     implicit val executionContext = context.dispatcher
-    val timeout = context.system.scheduler.scheduleOnce(Duration(25, TimeUnit.SECONDS), self, RegisterActorSystemFailed(new TimeoutException))
+    val timeout = context.system.scheduler.scheduleOnce(Duration(25, TimeUnit.SECONDS),
+      self, RegisterActorSystemFailed(new TimeoutException))
 
     context.become(waitForRegisterResult)
 
-    def receive : Receive = null
+    def receive: Receive = null
 
-    def waitForRegisterResult : Receive = {
+    def waitForRegisterResult: Receive = {
       case ActorSystemRegistered(parent) =>
         timeout.cancel()
         context.watch(parent)
@@ -122,11 +124,11 @@ object ActorSystemBooter  {
         context.stop(self)
     }
 
-    def waitCommand : Receive = {
+    def waitCommand: Receive = {
       case BindLifeCycle(actor) =>
         LOG.info(s"ActorSystem $name Binding life cycle with actor: $actor")
         context.watch(actor)
-      case create @ CreateActor(props : Props, name : String) =>
+      case create@CreateActor(props: Props, name: String) =>
         LOG.info(s"creating actor $name")
         val actor = Try(context.actorOf(props, name))
         actor match {
@@ -142,9 +144,9 @@ object ActorSystemBooter  {
         context.stop(self)
     }
 
-    override def postStop : Unit = {
+    override def postStop(): Unit = {
       LOG.info(s"ActorSystem $name is shutting down...")
-      context.system.shutdown()
+      context.system.terminate()
     }
   }
 }

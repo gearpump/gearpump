@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,18 +17,16 @@
  */
 package io.gearpump.integrationtest.minicluster
 
-import java.io.File
+import scala.sys.process._
 
 import io.gearpump.integrationtest.Docker
-
-import scala.sys.process._
 
 /**
  * A helper to instantiate the base image for different usage.
  */
 class BaseContainer(val host: String, command: String,
-                    masterAddrs: List[(String, Int)],
-                    tunnelPorts: Set[Int] = Set.empty) {
+    masterAddrs: List[(String, Int)],
+    tunnelPorts: Set[Int] = Set.empty) {
 
   private val IMAGE_NAME = "stanleyxu2005/gearpump-launcher"
   private val DOCKER_IMAGE_GEARPUMP_HOME = "/opt/gearpump"
@@ -59,5 +57,4 @@ class BaseContainer(val host: String, command: String,
   def killAndRemove(): Unit = {
     Docker.killAndRemoveContainer(host)
   }
-
 }

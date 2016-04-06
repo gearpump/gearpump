@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,16 +25,16 @@ import akka.stream.gearpump.module.{SinkBridgeModule, SourceBridgeModule}
 import akka.stream.gearpump.task.SinkBridgeTask.SinkBridgeTaskClient
 import akka.stream.gearpump.task.SourceBridgeTask.SourceBridgeTaskClient
 import akka.stream.impl.StreamLayout.Module
-import io.gearpump.cluster.ClusterConfig
+
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.cluster.embedded.{EmbeddedCluster}
-import io.gearpump.streaming.{StreamApplication, ProcessorId}
+import io.gearpump.cluster.embedded.EmbeddedCluster
+import io.gearpump.streaming.ProcessorId
 import io.gearpump.util.Graph
 
 /**
  *
  * [[RemoteGraph]] is a [[SubGraph]] of the application DSL Graph, which only
- *  contain modules that can be materialized in remote Gearpump cluster.
+ * contain modules that can be materialized in remote Gearpump cluster.
  *
  * @param graph
  */
@@ -50,7 +50,7 @@ object RemoteGraph {
   class RemoteGraphMaterializer(useInProcessCluster: Boolean, system: ActorSystem) extends SubGraphMaterializer {
     private val local = if (useInProcessCluster) {
       val cluster = EmbeddedCluster()
-      cluster.start
+      cluster.start()
       Some(cluster)
     } else {
       None
@@ -63,7 +63,7 @@ object RemoteGraph {
 
     override def materialize(subGraph: SubGraph, inputMatValues: Map[Module, Any]): Map[Module, Any] = {
       val graph = subGraph.graph
-      
+
       if (graph.isEmpty) {
         inputMatValues
       } else {
@@ -98,9 +98,9 @@ object RemoteGraph {
       inputMatValues ++ resolve(matValues)
     }
 
-    override def shutdown: Unit = {
+    override def shutdown(): Unit = {
       context.close()
-      local.map(_.stop)
+      local.map(_.stop())
     }
   }
 }

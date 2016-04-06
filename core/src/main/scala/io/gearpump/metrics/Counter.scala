@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +21,9 @@ package io.gearpump.metrics
 import io.gearpump.codahale.metrics.{Counter => CodaHaleCounter}
 
 /**
- * sampleRate: take a data point for every sampleRate...
+ * @see io.gearpump.codahale.metrics.Counter
  */
-class Counter(val name : String, counter : CodaHaleCounter, sampleRate : Int = 1) {
+class Counter(val name: String, counter: CodaHaleCounter, sampleRate: Int = 1) {
   private var sampleCount = 0L
   private var toBeIncremented = 0L
 

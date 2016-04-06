@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
 
-import java.io.DataInput;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +30,7 @@ public class MessageDecoder extends FrameDecoder {
   private ITransportMessageSerializer serializer;
   private WrappedChannelBuffer dataInput = new WrappedChannelBuffer();
 
-  public MessageDecoder(ITransportMessageSerializer serializer){
+  public MessageDecoder(ITransportMessageSerializer serializer) {
     this.serializer = serializer;
   }
 
@@ -44,7 +43,7 @@ public class MessageDecoder extends FrameDecoder {
    *  payload ... byte[]     *
    */
   protected List<TaskMessage> decode(ChannelHandlerContext ctx, Channel channel,
-                                     ChannelBuffer buf) {
+      ChannelBuffer buf) {
     this.dataInput.setChannelBuffer(buf);
 
     final int SESION_LENGTH = 4; //int

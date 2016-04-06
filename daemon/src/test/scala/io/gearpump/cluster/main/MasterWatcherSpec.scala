@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,15 +17,16 @@
  */
 package io.gearpump.cluster.main
 
-import akka.actor.{ActorSystem, Props}
-import akka.testkit.{TestActorRef, TestProbe}
-import com.typesafe.config.Config
-import io.gearpump.cluster.{TestUtil, MasterHarness}
-import io.gearpump.cluster.{MasterHarness, TestUtil}
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.language.postfixOps
+
+
+import akka.actor.{ActorSystem, Props}
+import akka.testkit.TestProbe
+import com.typesafe.config.Config
+import org.scalatest.{FlatSpec, Matchers}
+
+import io.gearpump.cluster.TestUtil
 
 class MasterWatcherSpec extends FlatSpec with Matchers {
   def config: Config = TestUtil.MASTER_CONFIG
@@ -37,8 +38,8 @@ class MasterWatcherSpec extends FlatSpec with Matchers {
 
     val masterWatcher = system.actorOf(Props(classOf[MasterWatcher], "watcher"))
     actorWatcher watch masterWatcher
-    actorWatcher.expectTerminated(masterWatcher, 5 seconds)
-    system.shutdown()
-    system.awaitTermination()
+    actorWatcher.expectTerminated(masterWatcher, 5.seconds)
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 }

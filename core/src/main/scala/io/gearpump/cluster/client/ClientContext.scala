@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,9 +20,16 @@ package io.gearpump.cluster.client
 
 import java.util.concurrent.TimeUnit
 
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.util.Try
+
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
-import com.typesafe.config.{ConfigValueFactory, Config}
+import com.typesafe.config.{Config, ConfigValueFactory}
+import org.slf4j.Logger
+
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, ReplayFromTimestampWindowTrailingEdge}
 import io.gearpump.cluster.MasterToClient.ReplayApplicationResult
 import io.gearpump.cluster._
@@ -30,17 +37,12 @@ import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
-import org.slf4j.Logger
-
-import scala.collection.JavaConversions._
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.Duration
-import scala.util.Try
 
 /**
  * ClientContext is a user facing util to submit/manage an application.
+ *
+ * TODO: add interface to query master here
  */
-//TODO: add interface to query master here
 class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
 
   def this(system: ActorSystem) = {
@@ -54,7 +56,7 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
-  implicit val system = Option(sys).getOrElse(ActorSystem(s"client${Util.randInt}" , config))
+  implicit val system = Option(sys).getOrElse(ActorSystem(s"client${Util.randInt()}", config))
   LOG.info(s"Starting system ${system.name}")
   val shouldCleanupSystem = Option(sys).isEmpty
 
@@ -62,8 +64,10 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   jarStoreService.init(config, system)
 
   private lazy val master: ActorRef = {
-    val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
-    val master = Option(_master).getOrElse(system.actorOf(MasterProxy.props(masters), s"masterproxy${system.name}"))
+    val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
+      .flatMap(Util.parseHostList)
+    val master = Option(_master).getOrElse(system.actorOf(MasterProxy.props(masters),
+      s"masterproxy${system.name}"))
     LOG.info(s"Creating master proxy ${master} for master list: $masters")
     master
   }
@@ -86,7 +90,8 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
     val appName = checkAndAddNamePrefix(app.name, System.getProperty(GEARPUMP_APP_NAME_PREFIX))
     val submissionConfig = getSubmissionConfig(config)
       .withValue(APPLICATION_EXECUTOR_NUMBER, ConfigValueFactory.fromAnyRef(executorNum))
-    val appDescription = AppDescription(appName, app.appMaster.getName, app.userConfig, submissionConfig)
+    val appDescription =
+      AppDescription(appName, app.appMaster.getName, app.userConfig, submissionConfig)
     val appJar = Option(jar).map(loadFile)
     client.submitApplication(appDescription, appJar)
   }
@@ -99,9 +104,11 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
     ClusterConfig.filterOutDefaultConfig(config)
   }
 
-  def replayFromTimestampWindowTrailingEdge(appId : Int): ReplayApplicationResult = {
+  def replayFromTimestampWindowTrailingEdge(appId: Int): ReplayApplicationResult = {
     import scala.concurrent.ExecutionContext.Implicits.global
-    val result = Await.result(ActorUtil.askAppMaster[ReplayApplicationResult](master, appId,ReplayFromTimestampWindowTrailingEdge(appId)), Duration.Inf)
+    val result = Await.result(
+      ActorUtil.askAppMaster[ReplayApplicationResult](master,
+        appId, ReplayFromTimestampWindowTrailingEdge(appId)), Duration.Inf)
     result
   }
 
@@ -115,30 +122,30 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
     client.listApplications
   }
 
-  def shutdown(appId : Int) : Unit = {
+  def shutdown(appId: Int): Unit = {
     val client = getMasterClient
     client.shutdownApplication(appId)
   }
 
-  def resolveAppID(appId: Int) : ActorRef = {
+  def resolveAppID(appId: Int): ActorRef = {
     val client = getMasterClient
     client.resolveAppId(appId)
   }
 
-  def close() : Unit = {
+  def close(): Unit = {
     if (shouldCleanupSystem) {
       LOG.info(s"Shutting down system ${system.name}")
-      system.shutdown()
+      system.terminate()
     }
   }
 
-  private def loadFile(jarPath : String) : AppJar = {
+  private def loadFile(jarPath: String): AppJar = {
     val jarFile = new java.io.File(jarPath)
     val path = jarStoreService.copyFromLocal(jarFile)
     AppJar(jarFile.getName, path)
   }
 
-  private def checkAndAddNamePrefix(appName: String, namePrefix: String) : String = {
+  private def checkAndAddNamePrefix(appName: String, namePrefix: String): String = {
     val fullName = if (namePrefix != null && namePrefix != "") {
       namePrefix + "_" + appName
     } else {
@@ -163,12 +170,17 @@ object ClientContext {
 
   def apply(): ClientContext = new ClientContext(ClusterConfig.default(), null, null)
 
-  def apply(system: ActorSystem) = new ClientContext(ClusterConfig.default(), system, null)
+  def apply(system: ActorSystem): ClientContext = {
+    new ClientContext(ClusterConfig.default(), system, null)
+  }
 
-  def apply(system: ActorSystem, master: ActorRef) = new ClientContext(ClusterConfig.default(), system, master)
+  def apply(system: ActorSystem, master: ActorRef): ClientContext = {
+    new ClientContext(ClusterConfig.default(), system, master)
+  }
 
   def apply(config: Config): ClientContext = new ClientContext(config, null, null)
 
-  def apply(config: Config, system: ActorSystem, master: ActorRef): ClientContext
-    = new ClientContext(config, system, master)
+  def apply(config: Config, system: ActorSystem, master: ActorRef): ClientContext = {
+    new ClientContext(config, system, master)
+  }
 }

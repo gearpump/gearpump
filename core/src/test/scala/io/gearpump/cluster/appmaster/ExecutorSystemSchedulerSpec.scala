@@ -18,20 +18,23 @@
 
 package io.gearpump.cluster.appmaster
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestProbe
-import io.gearpump.WorkerId
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
-import io.gearpump.cluster.{ExecutorJVMConfig, AppJar, TestUtil}
 import io.gearpump.cluster.appmaster.ExecutorSystemLauncher._
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler._
 import io.gearpump.cluster.appmaster.ExecutorSystemSchedulerSpec.{ExecutorSystemLauncherStarted, MockExecutorSystemLauncher}
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
+import io.gearpump.cluster.{AppJar, TestUtil}
 import io.gearpump.jarstore.FilePath
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
-import scala.concurrent.duration._
 
 class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   val appId = 0
@@ -43,7 +46,7 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
   val start = StartExecutorSystems(Array(resourceRequest), emptyJvmConfig)
 
   implicit var system: ActorSystem = null
-  var worker:TestProbe = null
+  var worker: TestProbe = null
   var workerInfo: WorkerInfo = null
   var masterProxy: TestProbe = null
   var launcher: TestProbe = null
@@ -58,20 +61,21 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
     client = TestProbe()
 
     val scheduler = system.actorOf(
-      Props(new ExecutorSystemScheduler(appId, masterProxy.ref,
-        (appId: Int, session:Session) => Props(new MockExecutorSystemLauncher(launcher, session)))))
+      Props(new ExecutorSystemScheduler(appId, masterProxy.ref, (appId: Int, session: Session) => {
+        Props(new MockExecutorSystemLauncher(launcher, session))
+      })))
 
     client.send(scheduler, start)
     masterProxy.expectMsg(RequestResource(appId, resourceRequest))
   }
 
   override def afterEach(): Unit = {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   private def launcherStarted(launcher: TestProbe): Option[ExecutorSystemLauncherStarted] = {
-    val launcherStarted = launcher.receiveOne(15 seconds)
+    val launcherStarted = launcher.receiveOne(15.seconds)
 
     launcherStarted match {
       case start: ExecutorSystemLauncherStarted => Some(start)
@@ -91,16 +95,18 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
     launcher.expectMsg(LaunchExecutorSystem(workerInfo, systemId, resource))
 
     val executorSystemProbe = TestProbe()
-    val executorSystem = ExecutorSystem(systemId, null, executorSystemProbe.ref, resource, workerInfo)
+    val executorSystem =
+      ExecutorSystem(systemId, null, executorSystemProbe.ref, resource, workerInfo)
     launcher.reply(LaunchExecutorSystemSuccess(executorSystem, session))
     client.expectMsg(ExecutorSystemStarted(executorSystem, Some(mockJar)))
   }
 
   it should "report failure when resource cannot be allocated" in {
-    client.expectMsg(30 seconds, StartExecutorSystemTimeout)
+    client.expectMsg(30.seconds, StartExecutorSystemTimeout)
   }
 
-  it should "schedule new resouce on new worker when target worker reject creating executor system" in {
+  it should "schedule new resouce on new worker " +
+    "when target worker reject creating executor system" in {
     masterProxy.reply(ResourceAllocated(Array(ResourceAllocation(resource, worker.ref, workerId))))
     val ExecutorSystemLauncherStarted(session) = launcherStarted(launcher).get
 
@@ -110,7 +116,8 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
     masterProxy.expectMsg(RequestResource(appId, resourceRequest))
   }
 
-  it should "report failure when resource is allocated, but timeout when starting the executor system" in {
+  it should "report failure when resource is allocated, but timeout " +
+    "when starting the executor system" in {
     masterProxy.reply(ResourceAllocated(Array(ResourceAllocation(resource, worker.ref, workerId))))
     val ExecutorSystemLauncherStarted(session) = launcherStarted(launcher).get
 

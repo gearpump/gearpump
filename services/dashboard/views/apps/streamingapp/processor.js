@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -19,7 +19,7 @@ angular.module('dashboard')
 
   .controller('StreamingAppProcessorCtrl', ['$scope', '$interval', '$stateParams', '$propertyTableBuilder',
     'i18n', 'models', 'conf', 'helper',
-    function($scope, $interval, $stateParams, $ptb, i18n, models, conf, helper) {
+    function ($scope, $interval, $stateParams, $ptb, i18n, models, conf, helper) {
       'use strict';
 
       $scope.whatIsProcessor = i18n.terminology.processor;
@@ -63,10 +63,10 @@ angular.module('dashboard')
 
       // query task metrics
       var promise;
-      $scope.$on('$destroy', function() {
+      $scope.$on('$destroy', function () {
         $interval.cancel(promise);
       });
-      $scope.$watch('metricName', function() {
+      $scope.$watch('metricName', function () {
         queryMetrics();
       });
 
@@ -78,7 +78,7 @@ angular.module('dashboard')
         if (!requesting && $scope.metricName) {
           requesting = true;
           models.$get.appTaskLatestMetricValues(
-            $scope.app.appId, $scope.processor.id, $scope.metricName, $scope.taskRange).then(function(metrics) {
+            $scope.app.appId, $scope.processor.id, $scope.metricName, $scope.taskRange).then(function (metrics) {
               if (metrics.hasOwnProperty($scope.metricName)) {
                 $scope.taskMetrics = metrics[$scope.metricName];
               }
@@ -94,10 +94,10 @@ angular.module('dashboard')
       $scope.taskRange = {
         start: 0,
         stop: $scope.shouldPaginateTasks ?
-          $scope.queryLimit - 1 : $scope.processor.parallelism - 1
+        $scope.queryLimit - 1 : $scope.processor.parallelism - 1
       };
 
-      $scope.$watch('taskRange', function(range) {
+      $scope.$watch('taskRange', function (range) {
         if (range.hasOwnProperty('start')) {
           updateTaskSelection(range);
         }
@@ -106,9 +106,9 @@ angular.module('dashboard')
       function updateTaskSelection(range) {
         $scope.tasks = {
           selected: [],
-          available: function() {
+          available: function () {
             var count = range.stop - range.start + 1;
-            return _.times(count, function(i) {
+            return _.times(count, function (i) {
               return 'T' + (i + range.start);
             });
           }()
@@ -122,17 +122,17 @@ angular.module('dashboard')
           seriesNames: [''],
           barMinWidth: 4,
           barMinSpacing: 1,
-          valueFormatter: function(value) {
+          valueFormatter: function (value) {
             var unit = $scope.metricType === 'meter' ? 'msg/s' : 'ms';
             return helper.readableMetricValue(value) + ' ' + unit;
           },
-          data: _.map($scope.tasks.available.length, function(taskName) {
+          data: _.map($scope.tasks.available.length, function (taskName) {
             return {x: taskName, y: 0};
           })
         }
       };
 
-      $scope.$watch('taskMetrics', function(metricsSelection) {
+      $scope.$watch('taskMetrics', function (metricsSelection) {
         if (angular.isObject(metricsSelection)) {
           updateBarChartData(metricsSelection);
         }
@@ -144,12 +144,12 @@ angular.module('dashboard')
           return;
         }
 
-        var data = _.map($scope.tasks.available, function(taskName) {
+        var data = _.map($scope.tasks.available, function (taskName) {
           return {x: taskName};
         });
         var i = 0;
         var metricField = $scope.metricType === 'meter' ? 'movingAverage1m' : 'mean';
-        _.forEach(metricsSelection, function(metric) {
+        _.forEach(metricsSelection, function (metric) {
           data[i].y = helper.metricRounded(metric[metricField]);
           i++;
         });

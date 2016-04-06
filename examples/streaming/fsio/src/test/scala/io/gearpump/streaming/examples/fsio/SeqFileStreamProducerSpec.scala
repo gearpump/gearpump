@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,26 +17,26 @@
  */
 package io.gearpump.streaming.examples.fsio
 
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.examples.fsio.HadoopConfig
-import io.gearpump.streaming.task.StartTime
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import MockUtil._
+import scala.collection.mutable.ArrayBuffer
+
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile.Writer
 import org.apache.hadoop.io.{SequenceFile, Text}
-import org.mockito.ArgumentMatcher
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
-import scala.collection.mutable.ArrayBuffer
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.MockUtil._
+import io.gearpump.streaming.task.StartTime
 
-class SeqFileStreamProducerSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter{
+class SeqFileStreamProducerSpec
+  extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+
   val kvPairs = new ArrayBuffer[(String, String)]
   val inputFile = "SeqFileStreamProducer_Test"
   val sequenceFilePath = new Path(inputFile)
@@ -53,7 +53,8 @@ class SeqFileStreamProducerSpec extends PropSpec with PropertyChecks with Matche
 
   before {
     fs.deleteOnExit(sequenceFilePath)
-    val writer = SequenceFile.createWriter(hadoopConf, Writer.file(sequenceFilePath), Writer.keyClass(textClass), Writer.valueClass(textClass))
+    val writer = SequenceFile.createWriter(hadoopConf, Writer.file(sequenceFilePath),
+      Writer.keyClass(textClass), Writer.valueClass(textClass))
     forAll(kvGenerator) { kv =>
       _key.set(kv._1)
       _value.set(kv._2)
@@ -63,9 +64,11 @@ class SeqFileStreamProducerSpec extends PropSpec with PropertyChecks with Matche
     writer.close()
   }
 
-  property("SeqFileStreamProducer should read the key-value pairs from a sequence file and deliver them") {
+  property("SeqFileStreamProducer should read the key-value pairs from " +
+    "a sequence file and deliver them") {
 
-    val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProducer.INPUT_PATH, inputFile)).withHadoopConf(new Configuration())
+    val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProducer.INPUT_PATH,
+      inputFile)).withHadoopConf(new Configuration())
 
     val context = MockUtil.mockTaskContext
 
@@ -74,7 +77,8 @@ class SeqFileStreamProducerSpec extends PropSpec with PropertyChecks with Matche
     producer.onNext(Message("start"))
 
     val expected = kvPairs.map(kv => kv._1 + "++" + kv._2).toSet
-    verify(context).output(argMatch[Message](msg => expected.contains(msg.msg.asInstanceOf[String])))
+    verify(context).output(argMatch[Message](msg =>
+      expected.contains(msg.msg.asInstanceOf[String])))
   }
 
   after {

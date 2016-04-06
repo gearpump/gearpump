@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,7 +30,9 @@ import kafka.common.TopicAndPartition
  * streamProducer1 gets (topicA, partition2), (topicB, partition2)
  */
 class KafkaDefaultGrouper extends KafkaGrouper {
-  def group(taskNum: Int, taskIndex: Int, topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition] = {
-    topicAndPartitions.indices.filter(_ % taskNum == taskIndex).map(i => topicAndPartitions(i)).toArray
+  def group(taskNum: Int, taskIndex: Int, topicAndPartitions: Array[TopicAndPartition])
+    : Array[TopicAndPartition] = {
+    topicAndPartitions.indices.filter(_ % taskNum == taskIndex)
+      .map(i => topicAndPartitions(i)).toArray
   }
 }

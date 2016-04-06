@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,21 +24,23 @@ import java.util.{HashMap => JHashMap, Map => JMap}
 import akka.actor.ActorSystem
 import backtype.storm.Config
 import backtype.storm.generated._
+import org.apache.storm.shade.org.json.simple.JSONValue
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
 import io.gearpump.experiments.storm.topology._
 import io.gearpump.experiments.storm.util.StormConstants._
 import io.gearpump.streaming.task.{TaskContext, TaskId}
 import io.gearpump.util.Util
-import org.apache.storm.shade.org.json.simple.JSONValue
 
 object StormUtil {
 
 
   /**
-   * convert storm task id to gearpump [[TaskId]]
-   * the high 16 bit of an Int is TaskId.processorId
-   * the low 16 bit of an Int is TaskId.index
+   * Convert storm task id to gearpump [[io.gearpump.streaming.task.TaskId]]
+   *
+   * The high 16 bit of an Int is TaskId.processorId
+   * The low 16 bit of an Int is TaskId.index
    */
   def stormTaskIdToGearpump(id: Integer): TaskId = {
     val index = id & 0xFFFF
@@ -61,7 +63,9 @@ object StormUtil {
   /**
    * @return a configured [[GearpumpStormComponent]]
    */
-  def getGearpumpStormComponent(taskContext: TaskContext, conf: UserConfig)(implicit system: ActorSystem): GearpumpStormComponent = {
+  def getGearpumpStormComponent(
+      taskContext: TaskContext, conf: UserConfig)(implicit system: ActorSystem)
+    : GearpumpStormComponent = {
     val topology = conf.getValue[StormTopology](STORM_TOPOLOGY).get
     val stormConfig = conf.getValue[JMap[AnyRef, AnyRef]](STORM_CONFIG).get
     val componentId = conf.getString(STORM_COMPONENT).get
@@ -77,8 +81,8 @@ object StormUtil {
   }
 
   /**
-   * parse config in json to map
-   * return empty map for invalid json string
+   * Parses config in json to map, returns empty map for invalid json string
+   *
    * @param json config in json
    * @return config in map
    */
@@ -95,7 +99,8 @@ object StormUtil {
   def getInt(conf: JMap[_, _], name: String): Option[Int] = {
     Option(conf.get(name)).map {
       case number: Number => number.intValue
-      case invalid => throw new IllegalArgumentException(s"$name must be Java Integer; actual: ${invalid.getClass}")
+      case invalid => throw new IllegalArgumentException(
+        s"$name must be Java Integer; actual: ${invalid.getClass}")
     }
   }
 
@@ -105,7 +110,8 @@ object StormUtil {
   def getBoolean(conf: JMap[_, _], name: AnyRef): Option[Boolean] = {
     Option(conf.get(name)).map {
       case b: JBoolean => b.booleanValue()
-      case invalid => throw new IllegalArgumentException(s"$name must be a Java Boolean; acutal: ${invalid.getClass}")
+      case invalid => throw new IllegalArgumentException(
+        s"$name must be a Java Boolean; acutal: ${invalid.getClass}")
     }
   }
 
@@ -126,7 +132,7 @@ object StormUtil {
   }
 
   def getThriftPort(): Int = {
-    Util.findFreePort.getOrElse(
+    Util.findFreePort().getOrElse(
       throw new Exception("unable to find free port for thrift server"))
   }
 }

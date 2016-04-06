@@ -18,13 +18,14 @@
 
 package io.gearpump.metrics
 
-import io.gearpump.codahale.metrics.{Counter => CodaHaleCounter, Histogram => CodaHaleHistogram, Meter => CodaHaleMeter}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.mock.MockitoSugar
+import org.scalatest.{FlatSpec, Matchers}
 
-class MetricsSpec  extends FlatSpec with Matchers with MockitoSugar{
+import io.gearpump.codahale.metrics.{Counter => CodaHaleCounter, Histogram => CodaHaleHistogram, Meter => CodaHaleMeter}
+
+class MetricsSpec extends FlatSpec with Matchers with MockitoSugar {
 
   "Counter" should "handle sampleRate == 1" in {
 
@@ -101,7 +102,7 @@ class MetricsSpec  extends FlatSpec with Matchers with MockitoSugar{
 
     val mockBaseMeter = mock[CodaHaleMeter]
 
-    val meter = new Meter("m",mockBaseMeter, 2)
+    val meter = new Meter("m", mockBaseMeter, 2)
 
     meter.mark(1)
     meter.mark(3)

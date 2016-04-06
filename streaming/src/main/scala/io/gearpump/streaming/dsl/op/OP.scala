@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,27 +34,40 @@ sealed trait Op {
 /**
  * When translated to running DAG, SlaveOP can be attach to MasterOP or other SlaveOP
  * "Attach" means running in same Actor.
- *
  */
 trait SlaveOp[T] extends Op
 
-case class FlatMapOp[T, R](fun: (T) => TraversableOnce[R], description: String, conf: UserConfig = UserConfig.empty) extends SlaveOp[T]
+case class FlatMapOp[T, R](
+    fun: (T) => TraversableOnce[R], description: String, conf: UserConfig = UserConfig.empty)
+  extends SlaveOp[T]
 
-case class ReduceOp[T](fun: (T, T) =>T, description: String, conf: UserConfig = UserConfig.empty) extends SlaveOp[T]
+case class ReduceOp[T](fun: (T, T) => T, description: String, conf: UserConfig = UserConfig.empty)
+  extends SlaveOp[T]
 
 trait MasterOp extends Op
 
 trait ParameterizedOp[T] extends MasterOp
 
-case class MergeOp(description: String, override val conf: UserConfig = UserConfig.empty) extends MasterOp
+case class MergeOp(description: String, override val conf: UserConfig = UserConfig.empty)
+  extends MasterOp
 
-case class GroupByOp[T, R](fun: T => R, parallelism: Int, description: String, override val conf: UserConfig = UserConfig.empty) extends ParameterizedOp[T]
+case class GroupByOp[T, R](
+    fun: T => R, parallelism: Int, description: String,
+    override val conf: UserConfig = UserConfig.empty)
+  extends ParameterizedOp[T]
 
-case class ProcessorOp[T <: Task](processor: Class[T], parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
+case class ProcessorOp[T <: Task](
+    processor: Class[T], parallelism: Int, conf: UserConfig, description: String)
+  extends ParameterizedOp[T]
 
-case class DataSourceOp[T](dataSource: DataSource, parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
 
-case class DataSinkOp[T](dataSink: DataSink, parallelism: Int, conf: UserConfig, description: String) extends ParameterizedOp[T]
+case class DataSourceOp[T](
+    dataSource: DataSource, parallelism: Int, conf: UserConfig, description: String)
+  extends ParameterizedOp[T]
+
+case class DataSinkOp[T](
+    dataSink: DataSink, parallelism: Int, conf: UserConfig, description: String)
+  extends ParameterizedOp[T]
 
 /**
  * Contains operators which can be chained to single one.
@@ -71,7 +84,7 @@ case class OpChain(ops: List[Op]) extends Op {
 
   override def conf: UserConfig = {
     // the head's conf has priority
-    ops.reverse.foldLeft(UserConfig.empty){(conf, op) =>
+    ops.reverse.foldLeft(UserConfig.empty) { (conf, op) =>
       conf.withConfig(op.conf)
     }
   }
@@ -84,7 +97,6 @@ trait OpEdge
  *
  * For example, map, flatmap operation doesn't require network shuffle, we can use Direct
  * to represent the relation with upstream operators.
- *
  */
 case object Direct extends OpEdge
 
@@ -93,7 +105,6 @@ case object Direct extends OpEdge
  *
  * For example, map, flatmap operation doesn't require network shuffle, we can use Direct
  * to represent the relation with upstream operators.
- *
  */
 case object Shuffle extends OpEdge
 

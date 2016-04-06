@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,7 @@ package io.gearpump.streaming.metrics
 import java.util
 
 import com.typesafe.config.Config
+
 import io.gearpump.TimeStamp
 import io.gearpump.cluster.ClientToMaster.ReadOption
 import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
@@ -37,19 +38,15 @@ import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
  * 2. time section(represented as a index integer)
  * 3. metricName(like sendThroughput)
  *
- *
- * It assumes for each [[HistoryMetricsItem]], the name follow the format
- *   app[appId].processor[processorId].task[taskId].[metricName]
- *
+ * It assumes for each [[io.gearpump.cluster.MasterToClient.HistoryMetricsItem]], the name
+ * follow the format app[appId].processor[processorId].task[taskId].[metricName]
  *
  * It parses the name to get processorId and metricName. If the parsing fails, then current
- * [[HistoryMetricsItem]] will be skipped.
- *
+ * [[io.gearpump.cluster.MasterToClient.HistoryMetricsItem]] will be skipped.
  *
  * This class is optimized for performance.
- *
  */
-class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends MetricsAggregator{
+class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends MetricsAggregator {
 
   def this(config: Config) = {
     this(HistoryMetricsConfig(config))
@@ -60,7 +57,6 @@ class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends Met
   /**
    * Accept options:
    * key: "readOption", value: one of "readLatest", "readRecent", "readHistory"
-   *
    */
   override def aggregate(options: Map[String, String],
       inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem] = {
@@ -68,14 +64,15 @@ class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends Met
     aggregate(readOption, inputs, System.currentTimeMillis())
   }
 
-  def aggregate(readOption: ReadOption.ReadOption, inputs: Iterator[HistoryMetricsItem], now: TimeStamp):
-      List[HistoryMetricsItem] = {
+  def aggregate(
+      readOption: ReadOption.ReadOption, inputs: Iterator[HistoryMetricsItem], now: TimeStamp)
+    : List[HistoryMetricsItem] = {
     val (start, end, interval) = getTimeRange(readOption, now)
     val timeSlotsCount = ((end - start - 1) / interval + 1).toInt
     val map = new MultiLayerMap[Aggregator](timeSlotsCount)
 
     val taskIdentity = new TaskIdentity(0, null)
-    while(inputs.hasNext) {
+    while (inputs.hasNext) {
       val item = inputs.next()
 
       if (item.value.isInstanceOf[Meter] || item.value.isInstanceOf[Histogram]) {
@@ -97,7 +94,7 @@ class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends Met
     val result = new Array[HistoryMetricsItem](map.size)
     val iterator = map.valueIterator
     var index = 0
-    while(iterator.hasNext()) {
+    while (iterator.hasNext()) {
       val op = iterator.next()
       result(index) = op.result
       index += 1
@@ -107,7 +104,8 @@ class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends Met
   }
 
   // return (start, end, interval)
-  private def getTimeRange(readOption: ReadOption.ReadOption, now: TimeStamp): (TimeStamp, TimeStamp, TimeStamp) = {
+  private def getTimeRange(readOption: ReadOption.ReadOption, now: TimeStamp)
+    : (TimeStamp, TimeStamp, TimeStamp) = {
     readOption match {
       case ReadOption.ReadRecent =>
         val end = now
@@ -170,7 +168,6 @@ object ProcessorAggregator {
    *
    *
    * This class is optimized for performance.
-   *
    */
   class MultiLayerMap[Value](layers: Int) {
 
@@ -197,11 +194,11 @@ object ProcessorAggregator {
     }
 
     def size: Int = _size
-    
+
     def valueIterator: util.Iterator[Value] = {
       val iterators = new Array[util.Iterator[Value]](layers)
       var layer = 0
-      while(layer < layers) {
+      while (layer < layers) {
         iterators(layer) = map(layer).values().iterator()
         layer += 1
       }
@@ -213,7 +210,7 @@ object ProcessorAggregator {
       val map = new Array[java.util.HashMap[String, Value]](layers)
       var index = 0
       val length = map.length
-      while(index < length) {
+      while (index < length) {
         map(index) = new java.util.HashMap[String, Value]()
         index += 1
       }
@@ -291,11 +288,11 @@ object ProcessorAggregator {
 
     override def result: HistoryMetricsItem = {
       HistoryMetricsItem(startTime, Meter(name, count, meanRate,
-          m1, rateUnit))
+        m1, rateUnit))
     }
   }
 
-  class AggregatorFactory{
+  class AggregatorFactory {
     def create(item: HistoryMetricsItem, name: String): Aggregator = {
       item.value match {
         case meter: Meter => new MeterAggregator(name)

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,19 @@
 
 package io.gearpump.streaming.metrics
 
-import io.gearpump.cluster.ClientToMaster.ReadOption
-import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
-import io.gearpump.metrics.Metrics.{Gauge, Meter, Histogram}
-import io.gearpump.streaming.metrics.ProcessorAggregator.{AggregatorFactory, MeterAggregator, HistogramAggregator, MultiLayerMap}
-import io.gearpump.streaming.task.TaskId
-import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
-import org.scalatest.{Matchers, FlatSpec}
 import scala.collection.JavaConverters._
 import scala.util.Random
 
-class ProcessorAggregatorSpec extends FlatSpec with Matchers {
+import org.scalatest.{FlatSpec, Matchers}
 
+import io.gearpump.cluster.ClientToMaster.ReadOption
+import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
+import io.gearpump.metrics.Metrics.{Gauge, Histogram, Meter}
+import io.gearpump.streaming.metrics.ProcessorAggregator.{AggregatorFactory, HistogramAggregator, MeterAggregator, MultiLayerMap}
+import io.gearpump.streaming.task.TaskId
+import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
+
+class ProcessorAggregatorSpec extends FlatSpec with Matchers {
 
   "MultiLayerMap" should "maintain multiple layers HashMap" in {
     val layers = 3
@@ -69,7 +70,7 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
 
     val result = aggregator.result
 
-    //pick old time as aggregated time
+    // pick old time as aggregated time
     assert(result.time == olderTime)
 
     // do average
@@ -77,7 +78,7 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
 
     assert(check.mean - expect.mean < 0.01)
     assert(check.stddev - expect.stddev < 0.01)
-    assert(check.median - expect.median< 0.01)
+    assert(check.median - expect.median < 0.01)
     assert(check.p95 - expect.p95 < 0.01)
     assert(check.p99 - expect.p99 < 0.01)
     assert(check.p999 - expect.p999 < 0.01)
@@ -98,13 +99,13 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
 
     val result = aggregator.result
 
-    //pick old time
+    // pick old time
     assert(result.time == olderTime)
 
     // do summing
     val check = result.value.asInstanceOf[Meter]
 
-    assert(check.count ==  expect.count)
+    assert(check.count == expect.count)
     assert(check.m1 - expect.m1 < 0.01)
     assert(check.meanRate - expect.meanRate < 0.01)
     assert(check.rateUnit == expect.rateUnit)
@@ -128,21 +129,30 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
     val seconds = 2 // maintain 2 seconds recent data
     val taskCount = 5 // for each processor
     val metricCount = 100 // for each task, have metricCount metrics
-    val range = new HistoryMetricsConfig(hours, hours / 2 * 3600 * 1000, seconds, seconds / 2 * 1000)
+    val range = new HistoryMetricsConfig(hours, hours / 2 * 3600 * 1000,
+      seconds, seconds / 2 * 1000)
 
     val aggregator = new ProcessorAggregator(range)
 
     def count(value: Int): Int = value
 
-    def inputs(timeRange: Long) = {
-      (0 until taskCount).map(TaskId(processorId = 0, _)).flatMap(histogram(_, "receiveLatency", timeRange, metricCount)).toList ++
-      (0 until taskCount).map(TaskId(processorId = 0, _)).flatMap(histogram(_, "processTime", timeRange, metricCount)).toList ++
-      (0 until taskCount).map(TaskId(processorId = 1, _)).flatMap(histogram(_, "receiveLatency", timeRange, metricCount)).toList ++
-      (0 until taskCount).map(TaskId(processorId = 1, _)).flatMap(histogram(_, "processTime", timeRange, metricCount)).toList ++
-      (0 until taskCount).map(TaskId(processorId = 0, _)).flatMap(meter(_, "sendThroughput", timeRange, metricCount)).toList ++
-      (0 until taskCount).map(TaskId(processorId = 0, _)).flatMap(meter(_, "receiveThroughput", timeRange, metricCount)).toList ++
-      (0 until taskCount).map(TaskId(processorId = 1, _)).flatMap(meter(_, "sendThroughput", timeRange, metricCount)).toList ++
-      (0 until taskCount).map(TaskId(processorId = 1, _)).flatMap(meter(_, "receiveThroughput", timeRange, metricCount)).toList
+    def inputs(timeRange: Long): List[HistoryMetricsItem] = {
+      (0 until taskCount).map(TaskId(processorId = 0, _))
+        .flatMap(histogram(_, "receiveLatency", timeRange, metricCount)).toList ++
+        (0 until taskCount).map(TaskId(processorId = 0, _))
+          .flatMap(histogram(_, "processTime", timeRange, metricCount)).toList ++
+        (0 until taskCount).map(TaskId(processorId = 1, _))
+          .flatMap(histogram(_, "receiveLatency", timeRange, metricCount)).toList ++
+        (0 until taskCount).map(TaskId(processorId = 1, _))
+          .flatMap(histogram(_, "processTime", timeRange, metricCount)).toList ++
+        (0 until taskCount).map(TaskId(processorId = 0, _))
+          .flatMap(meter(_, "sendThroughput", timeRange, metricCount)).toList ++
+        (0 until taskCount).map(TaskId(processorId = 0, _))
+          .flatMap(meter(_, "receiveThroughput", timeRange, metricCount)).toList ++
+        (0 until taskCount).map(TaskId(processorId = 1, _))
+          .flatMap(meter(_, "sendThroughput", timeRange, metricCount)).toList ++
+        (0 until taskCount).map(TaskId(processorId = 1, _))
+          .flatMap(meter(_, "receiveThroughput", timeRange, metricCount)).toList
     }
 
     def check(list: List[HistoryMetricsItem], countMap: Map[String, Int]): Boolean = {
@@ -152,12 +162,13 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
 
     // aggregate on processor and meterNames,
     val input = inputs(Long.MaxValue)
-    val readLatest = aggregator.aggregate(ReadOption.ReadLatest, input.iterator, now = Long.MaxValue)
-    assert(readLatest.size == 8) //2 processor * 4 metrics type
+    val readLatest = aggregator.aggregate(ReadOption.ReadLatest,
+      input.iterator, now = Long.MaxValue)
+    assert(readLatest.size == 8) // 2 processor * 4 metrics type
     assert(check(readLatest, Map(
       "app0.processor0:receiveLatency" -> count(1),
       "app0.processor0:processTime" -> count(1),
-      "app0.processor0:sendThroughput"-> count(1),
+      "app0.processor0:sendThroughput" -> count(1),
       "app0.processor0:receiveThroughput" -> count(1),
       "app0.processor1:receiveLatency" -> count(1),
       "app0.processor1:processTime" -> count(1),
@@ -166,12 +177,13 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
     )))
 
     // aggregate on processor and meterNames and time range,
-    val readRecent = aggregator.aggregate(ReadOption.ReadRecent, inputs(seconds * 1000).iterator, now = seconds * 1000)
-    assert(readRecent.size == 16) //2 processor * 4 metrics type * 2 time range
+    val readRecent = aggregator.aggregate(ReadOption.ReadRecent,
+      inputs(seconds * 1000).iterator, now = seconds * 1000)
+    assert(readRecent.size == 16) // 2 processor * 4 metrics type * 2 time range
     assert(check(readRecent, Map(
       "app0.processor0:receiveLatency" -> count(2),
       "app0.processor0:processTime" -> count(2),
-      "app0.processor0:sendThroughput"-> count(2),
+      "app0.processor0:sendThroughput" -> count(2),
       "app0.processor0:receiveThroughput" -> count(2),
       "app0.processor1:receiveLatency" -> count(2),
       "app0.processor1:processTime" -> count(2),
@@ -180,12 +192,13 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
     )))
 
     // aggregate on processor and meterNames and time range,
-    val readHistory = aggregator.aggregate(ReadOption.ReadHistory, inputs(hours * 3600 * 1000).iterator, now = hours * 3600 * 1000)
-    assert(readHistory.size == 16) //2 processor * 4 metrics type * 2 time ranges
+    val readHistory = aggregator.aggregate(ReadOption.ReadHistory,
+      inputs(hours * 3600 * 1000).iterator, now = hours * 3600 * 1000)
+    assert(readHistory.size == 16) // 2 processor * 4 metrics type * 2 time ranges
     assert(check(readHistory, Map(
       "app0.processor0:receiveLatency" -> count(2),
       "app0.processor0:processTime" -> count(2),
-      "app0.processor0:sendThroughput"-> count(2),
+      "app0.processor0:sendThroughput" -> count(2),
       "app0.processor0:receiveThroughput" -> count(2),
       "app0.processor1:receiveLatency" -> count(2),
       "app0.processor1:processTime" -> count(2),
@@ -194,9 +207,11 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
     )))
   }
 
-  private def histogram(taskId: TaskId, metricName: String = "latency", timeRange: Long = Long.MaxValue, repeat: Int = 1): List[HistoryMetricsItem] = {
+  private def histogram(
+      taskId: TaskId, metricName: String = "latency", timeRange: Long = Long.MaxValue,
+      repeat: Int = 1): List[HistoryMetricsItem] = {
     val random = new Random()
-    (0 until repeat).map {_ =>
+    (0 until repeat).map { _ =>
       new HistoryMetricsItem(Math.abs(random.nextLong() % timeRange),
         new Histogram(s"app0.processor${taskId.processorId}.task${taskId.index}:$metricName",
           Math.abs(random.nextDouble()),
@@ -209,7 +224,8 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
     }.toList
   }
 
-  private def meter(taskId: TaskId, metricName: String, timeRange: Long, repeat: Int): List[HistoryMetricsItem] = {
+  private def meter(taskId: TaskId, metricName: String, timeRange: Long, repeat: Int)
+    : List[HistoryMetricsItem] = {
     val random = new Random()
     (0 until repeat).map { _ =>
       new HistoryMetricsItem(Math.abs(random.nextLong() % timeRange),
@@ -228,14 +244,15 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
       // unsupported metric type
       HistoryMetricsItem(0, new Gauge("app0.processor0.task0:gauge", 100)),
 
-      //wrong format: should be app0.processor0.task0:throughput
+      // wrong format: should be app0.processor0.task0:throughput
       HistoryMetricsItem(0, new Meter("app0.processor0.task0/throughput", 100, 0, 0, ""))
     )
 
     val valid = histogram(TaskId(0, 0), repeat = 10)
 
     val aggregator = new ProcessorAggregator(new HistoryMetricsConfig(0, 0, 0, 0))
-    val result = aggregator.aggregate(ReadOption.ReadLatest, (valid ++ invalid).toIterator, now = Long.MaxValue)
+    val result = aggregator.aggregate(ReadOption.ReadLatest, (valid ++ invalid).toIterator,
+      now = Long.MaxValue)
 
     // for one taskId, will only use one data point.
     assert(result.size == 1)

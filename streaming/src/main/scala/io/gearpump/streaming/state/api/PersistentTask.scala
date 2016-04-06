@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,14 @@
 package io.gearpump.streaming.state.api
 
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 
 import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.state.impl.{PersistentStateConfig, CheckpointManager}
+import io.gearpump.streaming.state.impl.{CheckpointManager, PersistentStateConfig}
 import io.gearpump.streaming.task.{ReportCheckpointClock, StartTime, Task, TaskContext}
 import io.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import io.gearpump.util.LogUtil
 import io.gearpump.{Message, TimeStamp}
-
-import scala.concurrent.duration.FiniteDuration
 
 object PersistentTask {
   val CHECKPOINT = Message("checkpoint")
@@ -42,10 +41,12 @@ object PersistentTask {
  */
 abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
-  import io.gearpump.streaming.state.api.PersistentTask._
   import taskContext._
 
-  val checkpointStoreFactory = conf.getValue[CheckpointStoreFactory](PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY).get
+  import io.gearpump.streaming.state.api.PersistentTask._
+
+  val checkpointStoreFactory = conf.getValue[CheckpointStoreFactory](
+    PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY).get
   val checkpointStore = checkpointStoreFactory.getCheckpointStore(conf, taskContext)
   val checkpointInterval = conf.getLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS).get
   val checkpointManager = new CheckpointManager(checkpointInterval, checkpointStore)
@@ -58,10 +59,10 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
    *
    * the framework has already offered two states
    *
-   *   - NonWindowState
-   *     state with no time or other boundary
-   *   - WindowState
-   *     each state is bounded by a time window
+   * - NonWindowState
+   * state with no time or other boundary
+   * - WindowState
+   * each state is bounded by a time window
    */
   def persistentState: PersistentState[T]
 

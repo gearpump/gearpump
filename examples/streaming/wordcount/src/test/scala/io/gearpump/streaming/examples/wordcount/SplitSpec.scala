@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,17 +17,20 @@
  */
 package io.gearpump.streaming.examples.wordcount
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
+
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.task.StartTime
-import io.gearpump.Message
-import io.gearpump.cluster.{TestUtil, UserConfig}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
 
-import scala.language.postfixOps
+import io.gearpump.Message
+import io.gearpump.cluster.{TestUtil, UserConfig}
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.task.StartTime
 
 class SplitSpec extends WordSpec with Matchers {
 
@@ -36,11 +39,11 @@ class SplitSpec extends WordSpec with Matchers {
 
       val taskContext = MockUtil.mockTaskContext
 
-      implicit val system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
+      implicit val system: ActorSystem = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
 
       val mockTaskActor = TestProbe()
 
-      //mock self ActorRef
+      // mock self ActorRef
       when(taskContext.self).thenReturn(mockTaskActor.ref)
 
       val conf = UserConfig.empty
@@ -48,13 +51,13 @@ class SplitSpec extends WordSpec with Matchers {
       split.onStart(StartTime(0))
       mockTaskActor.expectMsgType[Message]
 
-      val expectedWordCount = Split.TEXT_TO_SPLIT.split("""[\s\n]+""").filter(_.nonEmpty).length
+      val expectedWordCount = Split.TEXT_TO_SPLIT.split( """[\s\n]+""").filter(_.nonEmpty).length
 
       split.onNext(Message("next"))
       verify(taskContext, times(expectedWordCount)).output(anyObject())
 
-      system.shutdown()
-      system.awaitTermination()
+      system.terminate()
+      Await.result(system.whenTerminated, Duration.Inf)
     }
   }
 }

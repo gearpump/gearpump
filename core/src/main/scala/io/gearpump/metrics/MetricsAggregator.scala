@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,15 @@
 
 package io.gearpump.metrics
 
-import java.util
-
 import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
 
 /**
- * Will aggregate a full set of metrics into a smaller set
+ * Aggregate a larger set of metrics into a smaller set
  *
  * Sub Class must implement a constructor with signature like this:
- *  MetricsAggregator(config: Config)
- *
- *
+ * MetricsAggregator(config: Config)
  */
 trait MetricsAggregator {
-  def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem]
+  def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem])
+  : List[HistoryMetricsItem]
 }

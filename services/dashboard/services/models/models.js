@@ -7,20 +7,20 @@ angular.module('io.gearpump.models', [])
 
 /** TODO: to be absorbed as scalajs */
   .factory('models', ['$timeout', 'conf', 'restapi', 'locator', 'StreamingAppDag', 'Metrics',
-    function($timeout, conf, restapi, locator, StreamingAppDag, Metrics) {
+    function ($timeout, conf, restapi, locator, StreamingAppDag, Metrics) {
       'use strict';
 
       var util = {
-        usage: function(current, total) {
+        usage: function (current, total) {
           return total > 0 ? 100 * current / total : 0;
         },
-        getOrCreate: function(obj, prop, init) {
+        getOrCreate: function (obj, prop, init) {
           if (!obj.hasOwnProperty(prop)) {
             obj[prop] = init;
           }
           return obj[prop];
         },
-        parseIntFromQueryPathTail: function(path) {
+        parseIntFromQueryPathTail: function (path) {
           return Number(_.last(path.split('.')).replace(/[^0-9]/g, ''));
         }
       };
@@ -33,12 +33,12 @@ angular.module('io.gearpump.models', [])
        */
       function get(path, decodeFn, args) {
         args = args || {};
-        return restapi.get(path).then(function(response) {
+        return restapi.get(path).then(function (response) {
           var oldModel;
           var model = decodeFn(response.data, args);
 
-          model.$subscribe = function(scope, onData, onError) {
-            restapi.subscribe(args.pathOverride || path, scope, function(data) {
+          model.$subscribe = function (scope, onData, onError) {
+            restapi.subscribe(args.pathOverride || path, scope, function (data) {
               try {
                 var newModel = decodeFn(data, args);
                 if (!_.isEqual(newModel, oldModel)) {
@@ -53,7 +53,7 @@ angular.module('io.gearpump.models', [])
             }, args.period);
           };
 
-          model.$data = function() {
+          model.$data = function () {
             return _.omit(model, _.isFunction);
           };
 
@@ -62,21 +62,21 @@ angular.module('io.gearpump.models', [])
       }
 
       var decoder = {
-        _asAssociativeArray: function(objs, decodeFn, keyName) {
+        _asAssociativeArray: function (objs, decodeFn, keyName) {
           var result = {};
-          _.map(objs, function(obj) {
+          _.map(objs, function (obj) {
             var model = decodeFn(obj);
             var key = model[keyName];
             result[key] = model;
           });
           return result;
         },
-        _akkaAddr: function(actorPath) {
+        _akkaAddr: function (actorPath) {
           return actorPath
             .split('@')[1]
             .split('/')[0];
         },
-        _jvm: function(s) {
+        _jvm: function (s) {
           var tuple = s.split('@');
           return {
             pid: tuple[0],
@@ -84,11 +84,11 @@ angular.module('io.gearpump.models', [])
           };
         },
         /** Do the necessary deserialization. */
-        master: function(wrapper) {
+        master: function (wrapper) {
           var obj = wrapper.masterDescription;
           angular.merge(obj, {
             // upickle conversion
-            cluster: _.map(obj.cluster, function(node) {
+            cluster: _.map(obj.cluster, function (node) {
               return node.host + ":" + node.port;
             }),
             jvm: decoder._jvm(obj.jvmName),
@@ -99,13 +99,13 @@ angular.module('io.gearpump.models', [])
           });
           return obj;
         },
-        partitioners: function(wrapper) {
+        partitioners: function (wrapper) {
           return wrapper.partitioners;
         },
-        workers: function(objs) {
+        workers: function (objs) {
           return decoder._asAssociativeArray(objs, decoder.worker, 'workerId');
         },
-        worker: function(obj) {
+        worker: function (obj) {
           var slotsUsed = obj.totalSlots - obj.availableSlots;
           return angular.merge(obj, {
             // extra properties
@@ -122,14 +122,14 @@ angular.module('io.gearpump.models', [])
             configLink: restapi.workerConfigLink(obj.workerId)
           });
         },
-        supervisor: function(obj) {
+        supervisor: function (obj) {
           return obj;
         },
-        apps: function(wrapper) {
+        apps: function (wrapper) {
           var objs = wrapper.appMasters;
           return decoder._asAssociativeArray(objs, decoder.appSummary, 'appId');
         },
-        appSummary: function(obj) {
+        appSummary: function (obj) {
           // todo: add `type` field to summary and detailed app response
           angular.merge(obj, {
             type: 'streaming'
@@ -142,15 +142,15 @@ angular.module('io.gearpump.models', [])
             // extra methods
             pageUrl: locator.app(obj.appId, obj.type),
             configLink: restapi.appConfigLink(obj.appId),
-            terminate: function() {
+            terminate: function () {
               return restapi.killApp(obj.appId);
             },
-            restart: function() {
+            restart: function () {
               return restapi.restartAppAsync(obj.appId);
             }
           });
         },
-        app: function(obj) {
+        app: function (obj) {
           // todo: add `type` field to summary and detailed app response
           angular.merge(obj, {
             status: 'active',
@@ -166,7 +166,7 @@ angular.module('io.gearpump.models', [])
 
           // upickle conversion 1: streaming app related decoding
           obj.processors = _.zipObject(obj.processors);
-          _.forEach(obj.processors, function(processor) {
+          _.forEach(obj.processors, function (processor) {
             // add an active property
             var active = true;
             var replaced = false;
@@ -180,14 +180,14 @@ angular.module('io.gearpump.models', [])
             processor.active = active;
             processor.replaced = replaced;
           });
-          _.forEach(_.zipObject(obj.processorLevels), function(hierarchy, processorId) {
+          _.forEach(_.zipObject(obj.processorLevels), function (hierarchy, processorId) {
             obj.processors[processorId].hierarchy = hierarchy;
           });
           delete obj.processorLevels;
 
           if (obj.dag && Array.isArray(obj.dag.edgeList)) {
             var edges = {};
-            _.forEach(obj.dag.edgeList, function(tuple) {
+            _.forEach(obj.dag.edgeList, function (tuple) {
               var from = parseInt(tuple[0]);
               var to = parseInt(tuple[2]);
               var partitionerClass = tuple[1];
@@ -204,7 +204,7 @@ angular.module('io.gearpump.models', [])
           obj.executors = _.object(_.map(obj.executors, 'executorId'), obj.executors);
 
           // upickle conversion 2b: add extra executor properties and methods
-          _.forEach(obj.executors, function(executor) {
+          _.forEach(obj.executors, function (executor) {
             angular.merge(executor, {
               isRunning: executor.status === 'active',
               pageUrl: locator.executor(obj.appId, obj.type, executor.executorId),
@@ -213,10 +213,10 @@ angular.module('io.gearpump.models', [])
           });
 
           // upickle conversion 2c: task count is executor specific property for streaming app
-          _.forEach(obj.processors, function(processor) {
+          _.forEach(obj.processors, function (processor) {
             var taskCountLookup = _.zipObject(processor.taskCount);
             // Backend returns executor ids, but names as `executor`. We change them to real executors.
-            processor.executors = _.map(processor.executors, function(executorId) {
+            processor.executors = _.map(processor.executors, function (executorId) {
               var executor = obj.executors[executorId];
               var processorExecutor = angular.copy(executor); // The task count is for particular processor, so we make a copy
               processorExecutor.taskCount = taskCountLookup[executorId].count;
@@ -232,13 +232,13 @@ angular.module('io.gearpump.models', [])
             // extra methods
             pageUrl: locator.app(obj.appId, obj.type),
             configLink: restapi.appConfigLink(obj.appId),
-            terminate: function() {
+            terminate: function () {
               return restapi.killApp(obj.appId);
             }
           });
           return obj;
         },
-        appExecutor: function(obj) {
+        appExecutor: function (obj) {
           return angular.merge(obj, {
             // extra properties and methods
             jvm: decoder._jvm(obj.jvmName),
@@ -247,15 +247,15 @@ angular.module('io.gearpump.models', [])
           });
         },
         /** Return a map. the key is processor id, the value is an array of its stalling tasks */
-        appStallingTasks: function(wrapper) {
+        appStallingTasks: function (wrapper) {
           var result = _.groupBy(wrapper.tasks, 'processorId');
-          _.forEach(result, function(processor, processorId) {
+          _.forEach(result, function (processor, processorId) {
             result[processorId] = _.map(processor, 'index');
           });
           return result;
         },
         /** Return an array of application alerts */
-        appAlerts: function(obj) {
+        appAlerts: function (obj) {
           if (obj.time > 0) {
             return [{
               severity: 'error',
@@ -265,7 +265,7 @@ angular.module('io.gearpump.models', [])
           }
           return [];
         },
-        metrics: function(wrapper, args) {
+        metrics: function (wrapper, args) {
           var metrics = decoder._metricsGroups(wrapper);
           // Reduce nested array by one level, if we want to filter particular search path.
           if (args.filterPath) {
@@ -273,19 +273,19 @@ angular.module('io.gearpump.models', [])
           }
           return metrics;
         },
-        appMetrics: function(wrapper, args) {
+        appMetrics: function (wrapper, args) {
           var metrics = decoder.metrics(wrapper, args);
-          return _.mapValues(metrics, function(values) {
-            return _.transform(values, function(result, metrics, path) {
+          return _.mapValues(metrics, function (values) {
+            return _.transform(values, function (result, metrics, path) {
               var id = util.parseIntFromQueryPathTail(path);
               result[id] = metrics;
             });
           });
         },
-        appTaskLatestMetricValues: function(wrapper, args) {
+        appTaskLatestMetricValues: function (wrapper, args) {
           var metrics = decoder.metrics(wrapper, args);
-          return _.mapValues(metrics, function(values) {
-            return _.transform(values, function(result, metrics, path) {
+          return _.mapValues(metrics, function (values) {
+            return _.transform(values, function (result, metrics, path) {
               var id = util.parseIntFromQueryPathTail(path);
               result[id] = _.last(metrics).values;
             });
@@ -297,9 +297,9 @@ angular.module('io.gearpump.models', [])
          * The 2nd level key is the object path (e.g. master or app0.processor0)
          * The value is an array of metrics, which are sorted by time.
          */
-        _metricsGroups: function(wrapper) {
+        _metricsGroups: function (wrapper) {
           var result = {};
-          _.forEach(wrapper.metrics, function(obj) {
+          _.forEach(wrapper.metrics, function (obj) {
             var metric = Metrics.$auto(obj);
             if (metric) {
               var metricsGroup = util.getOrCreate(result, metric.meta.name, {});
@@ -311,16 +311,16 @@ angular.module('io.gearpump.models', [])
 
           // Remove duplicates and sort metrics by time defensively
           // https://github.com/gearpump/gearpump/issues/1385
-          _.forEach(result, function(metricsGroup) {
-            _.forEach(metricsGroup, function(metricSeries, path) {
+          _.forEach(result, function (metricsGroup) {
+            _.forEach(metricsGroup, function (metricSeries, path) {
               metricsGroup[path] = _.sortBy(metricSeries, 'time');
             });
           });
           return result;
         },
         /** Remove related metrics paths and change the given 2d array to 1d. */
-        _removeUnrelatedMetricsFrom2dArray: function(metrics, filterPath) {
-          _.forEach(metrics, function(metricsGroup, name) {
+        _removeUnrelatedMetricsFrom2dArray: function (metrics, filterPath) {
+          _.forEach(metrics, function (metricsGroup, name) {
             if (metricsGroup.hasOwnProperty(filterPath)) {
               metrics[name] = metricsGroup[filterPath];
             } else {
@@ -331,103 +331,103 @@ angular.module('io.gearpump.models', [])
       };
 
       var getter = {
-        master: function() {
+        master: function () {
           return get('master',
             decoder.master);
         },
-        masterMetrics: function(updateInterval) {
+        masterMetrics: function (updateInterval) {
           return getter._masterMetrics({period: updateInterval});
         },
-        masterHistMetrics: function() {
+        masterHistMetrics: function () {
           return getter._masterMetrics({all: true});
         },
-        _masterMetrics: function(args) {
+        _masterMetrics: function (args) {
           return getter._metrics('master/metrics/', 'master', args);
         },
-        partitioners: function() {
+        partitioners: function () {
           return get('master/partitioners',
             decoder.partitioners);
         },
-        workers: function() {
+        workers: function () {
           return get('master/workerlist',
             decoder.workers);
         },
-        worker: function(workerId) {
+        worker: function (workerId) {
           return get('worker/' + workerId,
             decoder.worker);
         },
-        workerMetrics: function(workerId, updateInterval) {
+        workerMetrics: function (workerId, updateInterval) {
           return getter._workerMetrics(workerId, {period: updateInterval});
         },
-        workerHistMetrics: function(workerId) {
+        workerHistMetrics: function (workerId) {
           return getter._workerMetrics(workerId, {all: true});
         },
-        _workerMetrics: function(workerId, args) {
+        _workerMetrics: function (workerId, args) {
           return getter._metrics('worker/' + workerId + '/metrics/', 'worker' + workerId, args);
         },
-        supervisor: function() {
+        supervisor: function () {
           return get('supervisor',
             decoder.supervisor);
         },
-        apps: function() {
+        apps: function () {
           return get('master/applist',
             decoder.apps);
         },
-        app: function(appId) {
+        app: function (appId) {
           return get('appmaster/' + appId + '?detail=true',
             decoder.app);
         },
         /** Note that executor related metrics will be excluded. */
-        appMetrics: function(appId, updateInterval) {
+        appMetrics: function (appId, updateInterval) {
           return getter._appMetrics(appId, {period: updateInterval});
         },
-        appHistMetrics: function(appId) {
+        appHistMetrics: function (appId) {
           return getter._appMetrics(appId, {all: true});
         },
-        appLatestMetrics: function(appId) {
+        appLatestMetrics: function (appId) {
           return getter._appMetrics(appId, {all: 'latest'});
         },
-        _appMetrics: function(appId, args) {
+        _appMetrics: function (appId, args) {
           args.aggregator = 'io.gearpump.streaming.metrics.ProcessorAggregator';
           args.decoder = decoder.appMetrics;
           return getter._metrics('appmaster/' + appId + '/metrics/app' + appId, '', args);
         },
-        appTaskLatestMetricValues: function(appId, processorId, metricName, range) {
+        appTaskLatestMetricValues: function (appId, processorId, metricName, range) {
           var taskRangeArgs = range && range.hasOwnProperty('start') ?
-            '&startTask=' + range.start + '&endTask=' + (range.stop + 1) : '';
+          '&startTask=' + range.start + '&endTask=' + (range.stop + 1) : '';
           var args = {
             all: 'latest',
             aggregator: 'io.gearpump.streaming.metrics.TaskFilterAggregator' +
-              '&startProcessor=' + processorId + '&endProcessor=' + (processorId + 1) + taskRangeArgs,
+            '&startProcessor=' + processorId + '&endProcessor=' + (processorId + 1) + taskRangeArgs,
             decoder: decoder.appTaskLatestMetricValues
           };
           metricName = metricName ? ':' + metricName : '';
           return getter._metrics('appmaster/' + appId + '/metrics/app' + appId +
             '.processor' + processorId + '.*' + metricName, '', args);
         },
-        appExecutor: function(appId, executorId) {
+        appExecutor: function (appId, executorId) {
           return get('appmaster/' + appId + '/executor/' + executorId,
             decoder.appExecutor);
         },
-        appExecutorMetrics: function(appId, executorId, updateInterval) {
+        appExecutorMetrics: function (appId, executorId, updateInterval) {
           return getter._appExecutorMetrics(appId, executorId, {period: updateInterval});
         },
-        appExecutorHistMetrics: function(appId, executorId) {
+        appExecutorHistMetrics: function (appId, executorId) {
           return getter._appExecutorMetrics(appId, executorId, {all: true});
         },
-        _appExecutorMetrics: function(appId, executorId, args) {
+        _appExecutorMetrics: function (appId, executorId, args) {
           return getter._metrics(
             'appmaster/' + appId + '/metrics/', 'app' + appId + '.executor' + executorId, args);
         },
-        appStallingTasks: function(appId) {
+        appStallingTasks: function (appId) {
           return get('appmaster/' + appId + '/stallingtasks',
             decoder.appStallingTasks);
         },
-        appAlerts: function(appId) {
+        appAlerts: function (appId) {
           return get('appmaster/' + appId + '/errors',
             decoder.appAlerts);
         },
-        _metrics: function(pathPrefix, path, args) {
+        _metrics: function (pathPrefix, path, args) {
           args = args || {};
           var aggregatorArg = angular.isString(args.aggregator) ?
             ('&aggregator=' + args.aggregator) : '';
@@ -445,10 +445,10 @@ angular.module('io.gearpump.models', [])
       return {
         $get: getter,
         /** Attempts to get model and then subscribe changes as long as the scope is valid. */
-        $subscribe: function(scope, getModelFn, onData, period) {
+        $subscribe: function (scope, getModelFn, onData, period) {
           var shouldCancel = false;
           var promise;
-          scope.$on('$destroy', function() {
+          scope.$on('$destroy', function () {
             shouldCancel = true;
             $timeout.cancel(promise);
           });
@@ -456,9 +456,9 @@ angular.module('io.gearpump.models', [])
             if (shouldCancel) {
               return;
             }
-            getModelFn().then(function(data) {
+            getModelFn().then(function (data) {
               return onData(data);
-            }, /*onerror=*/function() {
+            }, /*onerror=*/function () {
               promise = $timeout(trySubscribe, period || conf.restapiQueryInterval);
             });
           }
@@ -466,26 +466,26 @@ angular.module('io.gearpump.models', [])
           trySubscribe();
         },
         // TODO: scalajs should return a app.details object with dag, if it is a streaming application.
-        createDag: function(clock, processors, edges) {
+        createDag: function (clock, processors, edges) {
           var dag = new StreamingAppDag(clock, processors, edges);
           dag.replaceProcessor = restapi.replaceDagProcessor;
           return dag;
         },
         /** Submit a DAG along with jar files */
-        submitDag: function(files, dag, onComplete) {
+        submitDag: function (files, dag, onComplete) {
           if (Object.keys(files).length !== 1) {
             return onComplete({success: false, message: 'One jar file is expected'});
           }
           files = _.values(files)[0]; // todo: only one file can be uploaded once (issue 1450)
-          return restapi.uploadJars(files, function(response) {
+          return restapi.uploadJars(files, function (response) {
             if (!response.success) {
               return onComplete(response);
             }
             // todo: cannot set jar for individual processor
-            angular.forEach(dag.processors, function(elem) {
+            angular.forEach(dag.processors, function (elem) {
               elem[1].jar = response.files;
             });
-            return restapi.submitDag(dag, function(response) {
+            return restapi.submitDag(dag, function (response) {
               return onComplete(response);
             });
           });

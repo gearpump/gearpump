@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,15 @@
 
 package io.gearpump.experiments.storm.processor
 
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.task.StartTime
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{WordSpec, Matchers}
+import org.scalatest.{Matchers, WordSpec}
+
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpBolt
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.task.StartTime
 
 class StormProcessorSpec extends WordSpec with Matchers with MockitoSugar {
 
@@ -61,6 +62,5 @@ class StormProcessorSpec extends WordSpec with Matchers with MockitoSugar {
       verify(gearpumpBolt).tick(freq)
     }
   }
-
 }
 

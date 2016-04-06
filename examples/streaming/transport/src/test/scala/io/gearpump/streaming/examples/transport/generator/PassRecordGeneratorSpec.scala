@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,19 +17,18 @@
  */
 package io.gearpump.streaming.examples.transport.generator
 
-import io.gearpump.streaming.examples.transport.generator.{MockCity, PassRecordGenerator}
-import io.gearpump.streaming.examples.transport.generator.MockCity
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
 
-class PassRecordGeneratorSpec extends PropSpec with PropertyChecks with Matchers{
+class PassRecordGeneratorSpec extends PropSpec with PropertyChecks with Matchers {
 
-  property("PassRecordGenerator should generate pass record"){
+  property("PassRecordGenerator should generate pass record") {
     val id = "test"
     val city = new MockCity(10)
     val generator = new PassRecordGenerator(id, city, 60)
     val passrecord1 = generator.getNextPassRecord()
     val passrecord2 = generator.getNextPassRecord()
-    assert(city.getDistance(passrecord1.locationId, passrecord2.locationId) == MockCity.LENGTH_PER_BLOCK)
+    assert(city.getDistance(passrecord1.locationId, passrecord2.locationId) ==
+      MockCity.LENGTH_PER_BLOCK)
   }
 }

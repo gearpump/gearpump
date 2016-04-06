@@ -19,18 +19,19 @@
 package io.gearpump.cluster.master
 
 import java.util.concurrent.TimeUnit
-
-import akka.actor._
-import akka.cluster.Cluster
-import akka.cluster.ddata.{DistributedData, LWWMap, Key, LWWMapKey}
-import akka.cluster.ddata.Replicator._
-import io.gearpump.util.{LogUtil}
-import org.slf4j.Logger
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
 
+import akka.actor._
+import akka.cluster.Cluster
+import akka.cluster.ddata.Replicator._
+import akka.cluster.ddata.{DistributedData, LWWMap, LWWMapKey}
+import org.slf4j.Logger
+
+import io.gearpump.util.LogUtil
+
 /**
- * A replicated simple in-memory KV service.
+ * A replicated simple in-memory KV service. The replications are stored on all masters.
  */
 class InMemoryKVService extends Actor with Stash {
   import InMemoryKVService._
@@ -41,7 +42,7 @@ class InMemoryKVService extends Actor with Stash {
   private val replicator = DistributedData(context.system).replicator
   private implicit val cluster = Cluster(context.system)
 
-  //optimize write path, we can tolerate one master down for recovery.
+  // Optimize write path, we can tolerate one master down for recovery.
   private val timeout = Duration(15, TimeUnit.SECONDS)
   private val readMajority = ReadMajority(timeout)
   private val writeMajority = WriteMajority(timeout)
@@ -50,39 +51,39 @@ class InMemoryKVService extends Actor with Stash {
     LWWMapKey[Any](KV_SERVICE + "_" + group)
   }
 
-  def receive : Receive = kvService
+  def receive: Receive = kvService
 
-  def kvService : Receive = {
+  def kvService: Receive = {
 
-    case GetKV(group: String, key : String) =>
+    case GetKV(group: String, key: String) =>
       val request = Request(sender(), key)
       replicator ! Get(groupKey(group), readMajority, Some(request))
-    case success@ GetSuccess(group: LWWMapKey[Any], Some(request: Request)) =>
+    case success@GetSuccess(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
       val appData = success.get(group)
       LOG.info(s"Successfully retrived group: ${group.id}")
       request.client ! GetKVSuccess(request.key, appData.get(request.key).orNull)
-    case NotFound(group: LWWMapKey[Any], Some(request: Request)) =>
+    case NotFound(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
       LOG.info(s"We cannot find group $group")
       request.client ! GetKVSuccess(request.key, null)
-    case GetFailure(group: LWWMapKey[Any], Some(request: Request)) =>
+    case GetFailure(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
       val error = s"Failed to get application data, the request key is ${request.key}"
       LOG.error(error)
       request.client ! GetKVFailed(new Exception(error))
 
     case PutKV(group: String, key: String, value: Any) =>
       val request = Request(sender(), key)
-      val update = Update(groupKey(group), LWWMap(), writeMajority, Some(request)) {map =>
+      val update = Update(groupKey(group), LWWMap(), writeMajority, Some(request)) { map =>
         map + (key -> value)
       }
       replicator ! update
-    case UpdateSuccess(group: LWWMapKey[Any], Some(request: Request)) =>
-        request.client ! PutKVSuccess
-    case ModifyFailure(group: LWWMapKey[Any], error, cause, Some(request: Request)) =>
+    case UpdateSuccess(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
+      request.client ! PutKVSuccess
+    case ModifyFailure(group: LWWMapKey[Any @unchecked], error, cause, Some(request: Request)) =>
       request.client ! PutKVFailed(request.key, new Exception(error, cause))
-    case UpdateTimeout(group: LWWMapKey[Any], Some(request: Request)) =>
+    case UpdateTimeout(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
       request.client ! PutKVFailed(request.key, new TimeoutException())
 
-    case delete@ DeleteKVGroup(group: String) =>
+    case delete@DeleteKVGroup(group: String) =>
       replicator ! Delete(groupKey(group), writeMajority)
     case DeleteSuccess(group) =>
       LOG.info(s"KV Group ${group.id} is deleted")

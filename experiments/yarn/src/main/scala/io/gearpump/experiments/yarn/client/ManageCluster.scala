@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,10 @@ package io.gearpump.experiments.yarn.client
 
 import java.io.{File, IOException}
 import java.net.InetAddress
+import scala.concurrent.{Await, Future}
 
 import akka.actor.{ActorRef, ActorSystem}
+
 import io.gearpump.cluster.ClientToMaster.{AddWorker, CommandResult, RemoveWorker}
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
@@ -31,8 +33,6 @@ import io.gearpump.experiments.yarn.glue.{YarnClient, YarnConfig}
 import io.gearpump.util.ActorUtil.askActor
 import io.gearpump.util.{AkkaApp, LogUtil}
 
-import scala.concurrent.{Await, Future}
-
 class ManageCluster(appId: ApplicationId, appMaster: ActorRef, system: ActorSystem) {
   import ManageCluster._
 
@@ -41,8 +41,14 @@ class ManageCluster(appId: ApplicationId, appMaster: ActorRef, system: ActorSyst
 
   def getConfig: Future[ActiveConfig] = askActor[ActiveConfig](appMaster, GetActiveConfig(host))
   def version: Future[Version] = askActor[Version](appMaster, QueryVersion)
-  def addWorker(count: Int): Future[CommandResult] = askActor[CommandResult](appMaster, AddWorker(count))
-  def removeWorker(worker: String): Future[CommandResult] = askActor[CommandResult](appMaster, RemoveWorker(worker))
+  def addWorker(count: Int): Future[CommandResult] = {
+    askActor[CommandResult](appMaster, AddWorker(count))
+  }
+
+  def removeWorker(worker: String): Future[CommandResult] = {
+    askActor[CommandResult](appMaster, RemoveWorker(worker))
+  }
+
   def shutdown: Future[CommandResult] = askActor[CommandResult](appMaster, Kill)
   def queryClusterInfo: Future[ClusterInfo] = askActor[ClusterInfo](appMaster, QueryClusterInfo)
 
@@ -91,18 +97,23 @@ object ManageCluster extends AkkaApp with ArgumentsParser {
   val APPID = "appid"
   val VERBOSE = "verbose"
 
-  val commands = List(GET_CONFIG,ADD_WORKER, REMOVE_WORKER, KILL,VERSION, QUERY)
+  val commands = List(GET_CONFIG, ADD_WORKER, REMOVE_WORKER, KILL, VERSION, QUERY)
 
   import scala.concurrent.duration._
-  val TIME_OUT_SECONDS = 30 seconds
+  val TIME_OUT_SECONDS = 30.seconds
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     COMMAND -> CLIOption[String](s"<${commands.mkString("|")}>", required = true),
-    APPID ->CLIOption[String]("<Application id, format: application_timestamp_id>", required = true),
-    COUNT -> CLIOption("<how many instance to add or remove>", required = false, defaultValue = Some(1)),
-    VERBOSE -> CLIOption("<print verbose log on console>", required = false, defaultValue = Some(false)),
-    OUTPUT -> CLIOption("<output path for configuration file>", required = false, defaultValue = Some("")),
-    CONTAINER -> CLIOption("<container id for master or worker>", required = false, defaultValue = Some(""))
+    APPID -> CLIOption[String]("<Application id, format: application_timestamp_id>",
+    required = true),
+    COUNT -> CLIOption("<how many instance to add or remove>", required = false,
+      defaultValue = Some(1)),
+    VERBOSE -> CLIOption("<print verbose log on console>", required = false,
+      defaultValue = Some(false)),
+    OUTPUT -> CLIOption("<output path for configuration file>", required = false,
+      defaultValue = Some("")),
+    CONTAINER -> CLIOption("<container id for master or worker>", required = false,
+      defaultValue = Some(""))
   )
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {
@@ -113,7 +124,7 @@ object ManageCluster extends AkkaApp with ArgumentsParser {
     val parsed = parse(args)
 
     if (parsed.getBoolean(VERBOSE)) {
-      LogUtil.verboseLogToConsole
+      LogUtil.verboseLogToConsole()
     }
 
     val appId = parseAppId(parsed.getString(APPID))
@@ -128,9 +139,11 @@ object ManageCluster extends AkkaApp with ArgumentsParser {
     val command = parsed.getString(COMMAND)
     val result = manager.command(command, parsed)
 
+    // scalastyle:off println
     Console.println(Await.result(result, TIME_OUT_SECONDS))
-    system.shutdown()
-    system.awaitTermination()
+    // scalastyle:on println
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   def parseAppId(str: String): ApplicationId = {

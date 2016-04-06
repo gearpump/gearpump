@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,11 +19,12 @@ package io.gearpump.streaming.hadoop.lib
 
 import java.io.File
 
-import io.gearpump.cluster.UserConfig
-import io.gearpump.util.{FileUtils, Constants}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
 import org.apache.hadoop.security.UserGroupInformation
+
+import io.gearpump.cluster.UserConfig
+import io.gearpump.util.{Constants, FileUtils}
 
 private[hadoop] object HadoopUtil {
 
@@ -31,7 +32,7 @@ private[hadoop] object HadoopUtil {
     val dfs = getFileSystemForPath(path, hadoopConfig)
     val stream: FSDataOutputStream = {
       if (dfs.isFile(path)) {
-          dfs.append(path)
+        dfs.append(path)
       } else {
         dfs.create(path)
       }
@@ -56,12 +57,13 @@ private[hadoop] object HadoopUtil {
   }
 
   def login(userConfig: UserConfig, configuration: Configuration): Unit = {
-    if(UserGroupInformation.isSecurityEnabled) {
+    if (UserGroupInformation.isSecurityEnabled) {
       val principal = userConfig.getString(Constants.GEARPUMP_KERBEROS_PRINCIPAL)
       val keytabContent = userConfig.getBytes(Constants.GEARPUMP_KEYTAB_FILE)
-      if(principal.isEmpty || keytabContent.isEmpty) {
+      if (principal.isEmpty || keytabContent.isEmpty) {
         val errorMsg = s"HDFS is security enabled, user should provide kerberos principal in " +
-          s"${Constants.GEARPUMP_KERBEROS_PRINCIPAL} and keytab file in ${Constants.GEARPUMP_KEYTAB_FILE}"
+          s"${Constants.GEARPUMP_KERBEROS_PRINCIPAL} " +
+          s"and keytab file in ${Constants.GEARPUMP_KEYTAB_FILE}"
         throw new Exception(errorMsg)
       }
       val keytabFile = File.createTempFile("login", ".keytab")

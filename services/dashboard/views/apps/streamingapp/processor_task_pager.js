@@ -5,7 +5,7 @@
 
 angular.module('dashboard')
 
-  .directive('processorTaskPager', function() {
+  .directive('processorTaskPager', function () {
     'use strict';
 
     return {
@@ -17,13 +17,13 @@ angular.module('dashboard')
         count: '=',
         queryLimit: '='
       },
-      link: function(scope) {
+      link: function (scope) {
         'use strict';
 
         var pages = Math.ceil(scope.count / scope.queryLimit);
         var pageIndex = 0;
 
-        scope.switchTasks = function(step) {
+        scope.switchTasks = function (step) {
           if (pageIndex + step >= 0 && pageIndex + step < pages) {
             pageIndex += step;
             var start = pageIndex * scope.queryLimit;

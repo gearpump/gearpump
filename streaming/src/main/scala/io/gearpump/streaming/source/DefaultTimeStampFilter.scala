@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@
 package io.gearpump.streaming.source
 
 import io.gearpump.streaming.transaction.api.TimeStampFilter
-import io.gearpump.{TimeStamp, Message}
+import io.gearpump.{Message, TimeStamp}
 
 /**
  * default TimeStampFilter that filters out messages with smaller timestamps

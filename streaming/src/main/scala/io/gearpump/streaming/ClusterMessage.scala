@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,29 +18,34 @@
 
 package io.gearpump.streaming
 
+import scala.language.existentials
+
 import akka.actor.ActorRef
-import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
-import io.gearpump.streaming.task.{TaskId, Subscriber}
+
 import io.gearpump.TimeStamp
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
+import io.gearpump.streaming.task.{Subscriber, TaskId}
 import io.gearpump.transport.HostPort
 
-import scala.language.existentials
-
 object AppMasterToExecutor {
-  case class LaunchTasks(taskId: List[TaskId], dagVersion: Int, processorDescription: ProcessorDescription, subscribers: List[Subscriber])
+  case class LaunchTasks(
+      taskId: List[TaskId], dagVersion: Int, processorDescription: ProcessorDescription,
+      subscribers: List[Subscriber])
 
   case object TasksLaunched
 
   /**
    * dagVersion, life, and subscribers will be changed on target task list.
    */
-  case class ChangeTasks(taskId: List[TaskId], dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
+  case class ChangeTasks(
+      taskId: List[TaskId], dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
 
   case class TasksChanged(taskIds: List[TaskId])
 
-  case class ChangeTask(taskId: TaskId, dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
+  case class ChangeTask(
+      taskId: TaskId, dagVersion: Int, life: LifeTime, subscribers: List[Subscriber])
 
   case class TaskChanged(taskId: TaskId, dagVersion: Int)
 
@@ -52,7 +57,8 @@ object AppMasterToExecutor {
 
   case class TaskLocationsReceived(dagVersion: Int, executorId: ExecutorId)
 
-  case class TaskLocationsRejected(dagVersion: Int, executorId: ExecutorId, reason: String, ex: Throwable)
+  case class TaskLocationsRejected(
+      dagVersion: Int, executorId: ExecutorId, reason: String, ex: Throwable)
 
   case class StartAllTasks(dagVersion: Int)
 
@@ -65,10 +71,11 @@ object AppMasterToExecutor {
 }
 
 object ExecutorToAppMaster {
-  case class RegisterExecutor(executor: ActorRef, executorId: Int, resource: Resource, worker : WorkerInfo)
+  case class RegisterExecutor(
+      executor: ActorRef, executorId: Int, resource: Resource, worker : WorkerInfo)
 
-  case class RegisterTask(taskId: TaskId, executorId : Int, task: HostPort)
-  case class UnRegisterTask(taskId: TaskId, executorId : Int)
+  case class RegisterTask(taskId: TaskId, executorId: Int, task: HostPort)
+  case class UnRegisterTask(taskId: TaskId, executorId: Int)
 
   case class MessageLoss(executorId: Int, taskId: TaskId, cause: String)
 }

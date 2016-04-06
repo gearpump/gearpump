@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,20 +17,24 @@
  */
 package io.gearpump.examples.distributedshell
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestProbe}
-import io.gearpump.WorkerId
-import io.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers, RegisterAppMaster}
-import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
-import io.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerList, AppMasterRegistered}
-import io.gearpump.cluster._
-import io.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, AppMasterRuntimeEnvironment}
-import io.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, ResourceRequest, Resource}
-import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
-import io.gearpump.util.ActorUtil
 import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
 
-class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, RegisterAppMaster, RequestResource}
+import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
+import io.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated, WorkerList}
+import io.gearpump.cluster._
+import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
+import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
+import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
+import io.gearpump.util.ActorUtil
+
+class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter {
   implicit val system = ActorSystem("AppMasterSpec", TestUtil.DEFAULT_CONFIG)
   val mockMaster = TestProbe()(system)
   val mockWorker1 = TestProbe()(system)
@@ -46,27 +50,29 @@ class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
   "DistributedShell AppMaster" should {
     "launch one ShellTask on each worker" in {
       val appMasterInfo = AppMasterRuntimeInfo(appId, appName = appId.toString)
-      val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar, masterProxy, appMasterInfo)
+      val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar,
+        masterProxy, appMasterInfo)
       TestActorRef[DistShellAppMaster](
         AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription, appMasterContext))
       mockMaster.expectMsgType[RegisterAppMaster]
       mockMaster.reply(AppMasterRegistered(appId))
-      //The DistributedShell AppMaster will ask for worker list
+      // The DistributedShell AppMaster will ask for worker list
       mockMaster.expectMsg(GetAllWorkers)
       mockMaster.reply(WorkerList(workerList))
-      //After worker list is ready, DistributedShell AppMaster will request resouce on each worker
+      // After worker list is ready, DistributedShell AppMaster will request resouce on each worker
       workerList.foreach { workerId =>
-        mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), workerId, relaxation = Relaxation.SPECIFICWORKER)))
+        mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), workerId,
+          relaxation = Relaxation.SPECIFICWORKER)))
       }
-      mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(resource, mockWorker1.ref, WorkerId(1, 0L)))))
+      mockMaster.reply(ResourceAllocated(
+        Array(ResourceAllocation(resource, mockWorker1.ref, WorkerId(1, 0L)))))
       mockWorker1.expectMsgClass(classOf[LaunchExecutor])
       mockWorker1.reply(RegisterActorSystem(ActorUtil.getSystemAddress(system).toString))
     }
   }
 
   after {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
-
 }

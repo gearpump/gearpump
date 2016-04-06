@@ -4,5 +4,5 @@
   $HADOOP_HOME/etc/hadoop from one of the YARN Cluster machine to  "conf/yarnconf" 
   of gearpump.
 
-NOTE: The "conf/yarnconf" is only effecive when you run "yarnclient". When you 
-run other commands like "gear", "conf/yarnconf" will not be addded into classpath.
+NOTE: The "conf/yarnconf" is only effective when you run "yarnclient". When you 
+run other commands like "gear", "conf/yarnconf" will not be added into classpath.

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,31 +18,35 @@
 package io.gearpump.experiments.distributeservice
 
 import java.io.File
-import org.apache.commons.io.FileUtils
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.cluster.main.{CLIOption, ArgumentsParser}
-import DistServiceAppMaster.{InstallService, FileContainer, GetFileContainer}
-import io.gearpump.util.{AkkaApp, LogUtil, FileServer, Constants}
-import org.slf4j.{LoggerFactory, Logger}
-
-import akka.pattern.ask
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-object DistributeServiceClient extends AkkaApp with ArgumentsParser{
+import akka.pattern.ask
+import org.apache.commons.io.FileUtils
+
+import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import io.gearpump.experiments.distributeservice.DistServiceAppMaster.{FileContainer, GetFileContainer, InstallService}
+import io.gearpump.util.{AkkaApp, Constants}
+
+/** Client to submit the service jar */
+object DistributeServiceClient extends AkkaApp with ArgumentsParser {
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "appid" -> CLIOption[Int]("<the distributed shell appid>", required = true),
     "file" -> CLIOption[String]("<service zip file path>", required = true),
-    "script" -> CLIOption[String]("<file path of service script that will be installed to /etc/init.d>", required = true),
+    "script" -> CLIOption[String](
+      "<file path of service script that will be installed to /etc/init.d>", required = true),
     "serviceName" -> CLIOption[String]("<service name>", required = true),
     "target" -> CLIOption[String]("<target path on each machine>", required = true)
   )
 
-  override def help : Unit = {
-    super.help
+  override def help(): Unit = {
+    super.help()
+    // scalastyle:off println
     Console.err.println(s"-D<name>=<value> set a property to the service")
+    // scalastyle:on println
   }
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {
@@ -75,7 +79,7 @@ object DistributeServiceClient extends AkkaApp with ArgumentsParser{
   private def parseServiceConfig(args: Array[String]): Map[String, Any] = {
     val result = Map.empty[String, Any]
     args.foldLeft(result) { (result, argument) =>
-      if(argument.startsWith("-D") && argument.contains("=")) {
+      if (argument.startsWith("-D") && argument.contains("=")) {
         val fixedKV = argument.substring(2).split("=")
         result + (fixedKV(0) -> fixedKV(1))
       } else {

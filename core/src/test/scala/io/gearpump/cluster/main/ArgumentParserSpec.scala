@@ -30,7 +30,7 @@ class ArgumentParserSpec extends FlatSpec with Matchers {
         "opt2" -> CLIOption[Any]("", required = true))
     }
 
-    val result = parser.parse(Array("-flag" , "-opt1", "1","-opt2", "2", "arg1", "arg2"))
+    val result = parser.parse(Array("-flag", "-opt1", "1", "-opt2", "2", "arg1", "arg2"))
     assert(result.getBoolean("flag"))
     assert(result.getInt("opt1") == 1)
     assert(result.getString("opt1") == "1")
@@ -47,7 +47,7 @@ class ArgumentParserSpec extends FlatSpec with Matchers {
         "opt1" -> CLIOption[Any]("", required = true))
     }
 
-    val result = parser.parse(Array("-opt1", "1","xx.MainClass", "-opt2", "2"))
+    val result = parser.parse(Array("-opt1", "1", "xx.MainClass", "-opt2", "2"))
     assert(result.getInt("opt1") == 1)
 
     assert(result.remainArgs.length == 3)

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,23 +17,24 @@
  */
 package io.gearpump.streaming.examples.kafka.wordcount
 
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.task.StartTime
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
+import scala.collection.mutable
+
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.collection.mutable
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.task.StartTime
 
 class SumSpec extends FlatSpec with Matchers {
 
   it should "sum should calculate the frequency of the word correctly" in {
 
     val stringGenerator = Gen.alphaStr
-    val expectedWordCountMap : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
+    val expectedWordCountMap: mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
 
     val taskContext = MockUtil.mockTaskContext
 
@@ -42,7 +43,7 @@ class SumSpec extends FlatSpec with Matchers {
     val str = "once two two three three three"
 
     var totalWordCount = 0
-    stringGenerator.map {word =>
+    stringGenerator.map { word =>
       totalWordCount += 1
       expectedWordCountMap.put(word, expectedWordCountMap.getOrElse(word, 0L) + 1)
       sum.onNext(Message(word))

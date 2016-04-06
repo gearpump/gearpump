@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,21 +18,22 @@
 
 package io.gearpump.streaming.dsl.plan
 
+import scala.collection.TraversableOnce
+
 import akka.actor.ActorSystem
-import io.gearpump.streaming.sink.DataSink
-import io.gearpump.streaming.source.DataSource
-import io.gearpump.streaming.{Processor, Constants}
-import io.gearpump.streaming.dsl.op._
-import io.gearpump.streaming.task.{StartTime, TaskContext, Task}
-import io.gearpump._
-import io.gearpump.cluster.UserConfig
-import Constants._
-import Processor.DefaultProcessor
-import OpTranslator._
-import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-import scala.collection.TraversableOnce
+import io.gearpump._
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.Constants._
+import io.gearpump.streaming.Processor.DefaultProcessor
+import io.gearpump.streaming.dsl.op._
+import io.gearpump.streaming.dsl.plan.OpTranslator._
+import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.source.DataSource
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import io.gearpump.streaming.{Constants, Processor}
+import io.gearpump.util.LogUtil
 
 /**
  * Translate a OP to a TaskDescription
@@ -55,7 +56,7 @@ class OpTranslator extends java.io.Serializable {
             Processor[SourceTask[Object, Object]](parallism,
               description = description + "." + func.description,
               userConfig.withValue(GEARPUMP_STREAMING_SOURCE, dataSource))
-          case groupby@ GroupByOp(_, parallism, description, _) =>
+          case groupby@GroupByOp(_, parallism, description, _) =>
             Processor[GroupByTask[Object, Object, Object]](parallism,
               description = description + "." + func.description,
               userConfig.withValue(GEARPUMP_STREAMING_GROUPBY_FUNCTION, groupby))
@@ -79,6 +80,8 @@ class OpTranslator extends java.io.Serializable {
         Processor[TransformTask[Object, Object]](1,
           description = func.description,
           taskConf = userConfig)
+      case chain: OpChain =>
+        throw new RuntimeException("Not supposed to be called!")
     }
   }
 
@@ -87,8 +90,12 @@ class OpTranslator extends java.io.Serializable {
     val totalFunction = ops.foldLeft(func) { (fun, op) =>
 
       val opFunction = op match {
-        case flatmap: FlatMapOp[Object, Object] => new FlatMapFunction(flatmap.fun, flatmap.description)
-        case reduce: ReduceOp[Object] => new ReduceFunction(reduce.fun, reduce.description)
+        case flatmap: FlatMapOp[Object @unchecked, Object @unchecked] =>
+          new FlatMapFunction(flatmap.fun, flatmap.description)
+        case reduce: ReduceOp[Object @unchecked] =>
+          new ReduceFunction(reduce.fun, reduce.description)
+        case _ =>
+          throw new RuntimeException("Not supposed to be called!")
       }
       fun.andThen(opFunction.asInstanceOf[SingleInputFunction[Object, Object]])
     }
@@ -107,18 +114,22 @@ object OpTranslator {
     def description: String
   }
 
-  class DummyInputFunction[T] extends SingleInputFunction[T, T]{
-    override def andThen[OUTER](other: SingleInputFunction[T, OUTER]): SingleInputFunction[T, OUTER] = {
+  class DummyInputFunction[T] extends SingleInputFunction[T, T] {
+    override def andThen[OUTER](other: SingleInputFunction[T, OUTER])
+      : SingleInputFunction[T, OUTER] = {
       other
     }
 
-    //should never be called
-    override def process(value: T) = None
+    // should never be called
+    override def process(value: T): TraversableOnce[T] = None
 
     override def description: String = ""
   }
 
-  class AndThen[IN, MIDDLE, OUT](first: SingleInputFunction[IN, MIDDLE], second: SingleInputFunction[MIDDLE, OUT]) extends SingleInputFunction[IN, OUT] {
+  class AndThen[IN, MIDDLE, OUT](
+      first: SingleInputFunction[IN, MIDDLE], second: SingleInputFunction[MIDDLE, OUT])
+    extends SingleInputFunction[IN, OUT] {
+
     override def process(value: IN): TraversableOnce[OUT] = {
       first.process(value).flatMap(second.process(_))
     }
@@ -130,7 +141,9 @@ object OpTranslator {
     }
   }
 
-  class FlatMapFunction[IN, OUT](fun: IN => TraversableOnce[OUT], descriptionMessage: String) extends SingleInputFunction[IN, OUT] {
+  class FlatMapFunction[IN, OUT](fun: IN => TraversableOnce[OUT], descriptionMessage: String)
+    extends SingleInputFunction[IN, OUT] {
+
     override def process(value: IN): TraversableOnce[OUT] = {
       fun(value)
     }
@@ -140,7 +153,9 @@ object OpTranslator {
     }
   }
 
-  class ReduceFunction[T](fun: (T, T)=>T, descriptionMessage: String) extends SingleInputFunction[T, T] {
+  class ReduceFunction[T](fun: (T, T) => T, descriptionMessage: String)
+    extends SingleInputFunction[T, T] {
+
     private var state: Any = null
 
     override def process(value: T): TraversableOnce[T] = {
@@ -155,10 +170,13 @@ object OpTranslator {
     override def description: String = descriptionMessage
   }
 
-  class GroupByTask[IN, GROUP, OUT](groupBy: IN => GROUP, taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class GroupByTask[IN, GROUP, OUT](
+      groupBy: IN => GROUP, taskContext: TaskContext, userConf: UserConfig)
+    extends Task(taskContext, userConf) {
 
     def this(taskContext: TaskContext, userConf: UserConfig) = {
-      this(userConf.getValue[GroupByOp[IN, GROUP]](GEARPUMP_STREAMING_GROUPBY_FUNCTION )(taskContext.system).get.fun,
+      this(userConf.getValue[GroupByOp[IN, GROUP]](
+        GEARPUMP_STREAMING_GROUPBY_FUNCTION )(taskContext.system).get.fun,
         taskContext, userConf)
     }
 
@@ -172,24 +190,29 @@ object OpTranslator {
 
       val group = groupBy(msg.msg.asInstanceOf[IN])
       if (!groups.contains(group)) {
-        val operator = userConf.getValue[SingleInputFunction[IN, OUT]](GEARPUMP_STREAMING_OPERATOR).get
+        val operator =
+          userConf.getValue[SingleInputFunction[IN, OUT]](GEARPUMP_STREAMING_OPERATOR).get
         groups += group -> operator
       }
 
       val operator = groups(group)
 
-      operator.process(msg.msg.asInstanceOf[IN]).foreach{msg =>
+      operator.process(msg.msg.asInstanceOf[IN]).foreach { msg =>
         taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
       }
     }
   }
 
-  class SourceTask[T, OUT](source: DataSource, operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class SourceTask[T, OUT](
+      source: DataSource, operator: Option[SingleInputFunction[T, OUT]], taskContext: TaskContext,
+      userConf: UserConfig)
+    extends Task(taskContext, userConf) {
 
     def this(taskContext: TaskContext, userConf: UserConfig) = {
       this(
         userConf.getValue[DataSource](GEARPUMP_STREAMING_SOURCE)(taskContext.system).get,
-        userConf.getValue[SingleInputFunction[T, OUT]](GEARPUMP_STREAMING_OPERATOR)(taskContext.system),
+        userConf.getValue[SingleInputFunction[T, OUT]](GEARPUMP_STREAMING_OPERATOR)(
+          taskContext.system),
         taskContext, userConf)
     }
 
@@ -200,7 +223,7 @@ object OpTranslator {
 
     override def onNext(msg: Message): Unit = {
       val time = System.currentTimeMillis()
-      //Todo: determine the batch size
+      // TODO: determine the batch size
       source.read(1).foreach(msg => {
         operator match {
           case Some(operator) =>
@@ -219,15 +242,18 @@ object OpTranslator {
       self ! Message("next", System.currentTimeMillis())
     }
 
-    override def onStop() = {
+    override def onStop(): Unit = {
       source.close()
     }
   }
 
-  class TransformTask[IN, OUT](operator: Option[SingleInputFunction[IN, OUT]], taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class TransformTask[IN, OUT](
+      operator: Option[SingleInputFunction[IN, OUT]], taskContext: TaskContext,
+      userConf: UserConfig) extends Task(taskContext, userConf) {
 
     def this(taskContext: TaskContext, userConf: UserConfig) = {
-      this(userConf.getValue[SingleInputFunction[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(taskContext.system), taskContext, userConf)
+      this(userConf.getValue[SingleInputFunction[IN, OUT]](
+        GEARPUMP_STREAMING_OPERATOR)(taskContext.system), taskContext, userConf)
     }
 
     override def onStart(startTime: StartTime): Unit = {
@@ -238,7 +264,7 @@ object OpTranslator {
 
       operator match {
         case Some(operator) =>
-          operator.process(msg.msg.asInstanceOf[IN]).foreach{ msg =>
+          operator.process(msg.msg.asInstanceOf[IN]).foreach { msg =>
             taskContext.output(new Message(msg.asInstanceOf[AnyRef], time))
           }
         case None =>
@@ -247,9 +273,12 @@ object OpTranslator {
     }
   }
 
-  class SinkTask[T](dataSink: DataSink, taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+  class SinkTask[T](dataSink: DataSink, taskContext: TaskContext, userConf: UserConfig)
+    extends Task(taskContext, userConf) {
+
     def this(taskContext: TaskContext, userConf: UserConfig) = {
-      this(userConf.getValue[DataSink](GEARPUMP_STREAMING_SINK)(taskContext.system).get, taskContext, userConf)
+      this(userConf.getValue[DataSink](GEARPUMP_STREAMING_SINK)(taskContext.system).get,
+        taskContext, userConf)
     }
 
     override def onStart(startTime: StartTime): Unit = {
@@ -260,7 +289,7 @@ object OpTranslator {
       dataSink.write(msg)
     }
 
-    override def onStop() = {
+    override def onStop(): Unit = {
       dataSink.close()
     }
   }

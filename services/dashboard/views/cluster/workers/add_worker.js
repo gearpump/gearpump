@@ -5,13 +5,13 @@
 angular.module('dashboard')
 
   .controller('AddWorkerCtrl', ['$scope', 'restapi', 'i18n',
-    function($scope, restapi, i18n) {
+    function ($scope, restapi, i18n) {
       'use strict';
 
       $scope.description = i18n.terminology.worker;
       $scope.count = 1;
 
-      $scope.add = function() {
+      $scope.add = function () {
         $scope.adding = true;
         $scope.shouldNoticeSubmitFailed = false;
         return restapi.addWorker(

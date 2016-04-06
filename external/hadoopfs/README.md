@@ -30,7 +30,7 @@ This interface is used by SequenceFileSink to determinate the output format, the
 The HDFS cluster should run on where Gearpump is deployed.
 Suppose HDFS is installed at ```/usr/lib/hadoop2.6``` on every node and you already have your application built into a jar file. 
 Then before submitting the application, you need to add Hdfs lib folder and conf folder into ```gearpump.executor.extraClasspath``` in ```conf/gear.conf```, for example ```/usr/lib/hadoop2.6/share/hadoop/common/*:/usr/lib/hadoop2.6/share/hadoop/common/lib/*:/usr/lib/hadoop2.6/share/hadoop/hdfs/*:/usr/lib/hadoop2.6/share/hadoop/hdfs/lib/*:/usr/lib/hadoop2.6/etc/conf```. 
-Please note only client side's configuration change is needed. After that, you are able to submmit the application.
+Please note only client side's configuration change is needed. After that, you are able to submit the application.
 
 ## Working with Secured HDFS
 

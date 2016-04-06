@@ -5,7 +5,7 @@
 
 angular.module('dashboard')
 
-  .directive('breadcrumbs', function() {
+  .directive('breadcrumbs', function () {
     'use strict';
 
     return {
@@ -13,9 +13,9 @@ angular.module('dashboard')
       templateUrl: 'views/landing/breadcrumbs.html',
       replace: true,
       scope: {},
-      controller: ['$scope', function($scope) {
+      controller: ['$scope', function ($scope) {
 
-        $scope.$on('$stateChangeSuccess', function() {
+        $scope.$on('$stateChangeSuccess', function () {
           $scope.breadcrumbs = buildBreadcrumbs();
         });
 

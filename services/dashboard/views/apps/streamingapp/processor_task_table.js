@@ -6,10 +6,10 @@
 angular.module('dashboard')
 
   .controller('StreamingAppProcessorTaskTableCtrl', ['$scope', '$sortableTableBuilder',
-    function($scope, $stb) {
+    function ($scope, $stb) {
       'use strict';
 
-      $scope.$watch('taskMetrics', function(metrics) {
+      $scope.$watch('taskMetrics', function (metrics) {
         var tableObj = $scope.metricType === 'meter' ?
           $scope.meterMetricsTable : $scope.histogramMetricsTable;
         updateMetricsTable(tableObj, metrics);
@@ -45,7 +45,7 @@ angular.module('dashboard')
 
       function updateMetricsTable(table, metrics) {
         table.rows = $stb.$update(table.rows,
-          _.map(metrics, function(metric, taskId) {
+          _.map(metrics, function (metric, taskId) {
             return angular.extend(metric, {
               task: 'T' + taskId,
               id: Number(taskId)

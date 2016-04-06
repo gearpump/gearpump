@@ -5,14 +5,14 @@
 
 angular.module('dashboard')
 
-  .factory('$visNetworkStyle', function() {
+  .factory('$visNetworkStyle', function () {
     'use strict';
 
     var fontFace = 'lato,roboto,"helvetica neue","segoe ui",arial,helvetica,sans-serif';
     var maxNodeRadius = 16;
 
     var self = {
-      newOptions: function(height) {
+      newOptions: function (height) {
         return {
           autoResize: true, // The network will automatically detect size changes and redraw itself accordingly
           interaction: {
@@ -45,7 +45,7 @@ angular.module('dashboard')
           }
         };
       },
-      newHierarchicalLayoutOptions: function(flags) {
+      newHierarchicalLayoutOptions: function (flags) {
         var verticalMargin = 28;
         var levelDistance = 85;
         var chartMinHeight = 240;
@@ -61,16 +61,16 @@ angular.module('dashboard')
           }
         });
       },
-      newData: function() {
+      newData: function () {
         return {
           nodes: new vis.DataSet(),
           edges: new vis.DataSet()
         };
       },
-      nodeRadiusRange: function() {
+      nodeRadiusRange: function () {
         return [3, 16];
       },
-      nodeColor: function(concern) {
+      nodeColor: function (concern) {
         var colorSet = concern ? {
           border: 'rgb(138,1,12)',
           background: 'rgb(248,106,91)'
@@ -85,16 +85,16 @@ angular.module('dashboard')
         }
         return result;
       },
-      edgeWidthRange: function() {
+      edgeWidthRange: function () {
         return [1, 5];
       },
-      edgeArrowSizeRange: function() {
+      edgeArrowSizeRange: function () {
         return [0.5, 0.1];
       },
-      edgeOpacityRange: function() {
+      edgeOpacityRange: function () {
         return [0.4, 1];
       },
-      edgeColorSet: function(alive) {
+      edgeColorSet: function (alive) {
         return alive ? {
           color: '#2B7CE9',
           hover: '#2B7CE9',
@@ -106,7 +106,7 @@ angular.module('dashboard')
         };
       },
       /** Return label of processor name */
-      processorNameAsLabel: function(processor) {
+      processorNameAsLabel: function (processor) {
         return '[' + processor.id + '] ' +
           (processor.description || _.last(processor.taskClass.split('.')));
       }

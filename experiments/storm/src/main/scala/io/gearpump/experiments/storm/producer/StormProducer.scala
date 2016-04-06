@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,15 @@
 package io.gearpump.experiments.storm.producer
 
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.Duration
 
 import akka.actor.Actor.Receive
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpSpout
 import io.gearpump.experiments.storm.util._
 import io.gearpump.streaming.task._
-
-import scala.concurrent.duration.Duration
 
 object StormProducer {
   private[storm] val TIMEOUT = Message("timeout")
@@ -37,7 +37,7 @@ object StormProducer {
  * this is runtime container for Storm spout
  */
 private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
-                                   taskContext: TaskContext, conf: UserConfig)
+    taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
   import io.gearpump.experiments.storm.producer.StormProducer._
 
@@ -75,15 +75,17 @@ private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
       optClock.foreach { clock =>
         gearpumpSpout.checkpoint(clock)
       }
-      getCheckpointClock
+      getCheckpointClock()
   }
 
-  def getCheckpointClock: Unit = {
+  def getCheckpointClock(): Unit = {
     taskContext.scheduleOnce(Duration(StormConstants.CHECKPOINT_INTERVAL_MILLIS,
       TimeUnit.MILLISECONDS))(taskContext.appMaster ! GetCheckpointClock)
   }
 
   private def scheduleTimeout(timeout: Long): Unit = {
-    taskContext.scheduleOnce(Duration(timeout, TimeUnit.MILLISECONDS)){ self ! TIMEOUT }
+    taskContext.scheduleOnce(Duration(timeout, TimeUnit.MILLISECONDS)) {
+      self ! TIMEOUT
+    }
   }
 }

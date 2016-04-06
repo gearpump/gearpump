@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,15 @@
 
 package io.gearpump.cluster
 
-import akka.actor.{ExtendedActorSystem, ActorSystem}
+import akka.actor.{ActorSystem, ExtendedActorSystem}
 import akka.serialization.JavaSerializer
+
 import io.gearpump.google.common.io.BaseEncoding
 
 /**
  * Immutable configuration
  */
-final class UserConfig(private val _config: Map[String, String])  extends Serializable{
+final class UserConfig(private val _config: Map[String, String]) extends Serializable {
 
   def withBoolean(key: String, value: Boolean): UserConfig = {
     new UserConfig(_config + (key -> value.toString))
@@ -39,7 +40,7 @@ final class UserConfig(private val _config: Map[String, String])  extends Serial
     new UserConfig(_config + (key -> value.toString))
   }
 
-  def withInt(key: String, value: Int) : UserConfig = {
+  def withInt(key: String, value: Int): UserConfig = {
     new UserConfig(_config + (key -> value.toString))
   }
 
@@ -77,7 +78,7 @@ final class UserConfig(private val _config: Map[String, String])  extends Serial
     _config.get(key).map(_.toFloat)
   }
 
-  def getInt(key : String) : Option[Int] = {
+  def getInt(key: String): Option[Int] = {
     _config.get(key).map(_.toInt)
   }
 
@@ -85,11 +86,11 @@ final class UserConfig(private val _config: Map[String, String])  extends Serial
     _config.get(key).map(_.toLong)
   }
 
-  def getString(key : String) : Option[String] = {
+  def getString(key: String): Option[String] = {
     _config.get(key)
   }
 
-  def getBytes(key: String) : Option[Array[Byte]] = {
+  def getBytes(key: String): Option[Array[Byte]] = {
     _config.get(key).map(BaseEncoding.base64().decode(_))
   }
 
@@ -101,6 +102,7 @@ final class UserConfig(private val _config: Map[String, String])  extends Serial
     }
   }
 
+  // scalastyle:off line.size.limit
   /**
    * This will de-serialize value to object instance
    *
@@ -110,7 +112,8 @@ final class UserConfig(private val _config: Map[String, String])  extends Serial
    *
    * @see [[http://doc.akka.io/docs/akka/snapshot/scala/serialization.html#A_Word_About_Java_Serialization]]
    */
-  def getValue[T](key: String)(implicit system: ActorSystem): Option[T]  = {
+
+  def getValue[T](key: String)(implicit system: ActorSystem): Option[T] = {
     val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
     _config.get(key).map(BaseEncoding.base64().decode(_))
       .map(serializer.fromBinary(_).asInstanceOf[T])
@@ -125,7 +128,7 @@ final class UserConfig(private val _config: Map[String, String])  extends Serial
    *
    * @see [[http://doc.akka.io/docs/akka/snapshot/scala/serialization.html#A_Word_About_Java_Serialization]]
    */
-  def withValue[T<: AnyRef](key: String, value: T)(implicit system: ActorSystem): UserConfig = {
+  def withValue[T <: AnyRef](key: String, value: T)(implicit system: ActorSystem): UserConfig = {
 
     if (null == value) {
       this
@@ -136,8 +139,9 @@ final class UserConfig(private val _config: Map[String, String])  extends Serial
       this.withString(key, encoded)
     }
   }
+  // scalastyle:on line.size.limit
 
-  def withConfig(other: UserConfig) = {
+  def withConfig(other: UserConfig): UserConfig = {
     if (null == other) {
       this
     } else {
@@ -146,11 +150,11 @@ final class UserConfig(private val _config: Map[String, String])  extends Serial
   }
 }
 
-object UserConfig{
+object UserConfig {
 
-  def empty = new UserConfig(Map.empty[String, String])
+  def empty: UserConfig = new UserConfig(Map.empty[String, String])
 
-  def apply(config : Map[String, String]) = new UserConfig(config)
+  def apply(config: Map[String, String]): UserConfig = new UserConfig(config)
 
   def unapply(config: UserConfig): Option[Map[String, String]] = Option(config._config)
 }

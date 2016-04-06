@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,30 +18,33 @@
 
 package io.gearpump.streaming.kafka.lib
 
+import kafka.common.TopicAndPartition
+import kafka.server.{KafkaConfig => KafkaServerConfig}
+import kafka.utils.{TestUtils, TestZKUtils}
+import org.scalatest.prop.PropertyChecks
+import org.scalatest.{BeforeAndAfterEach, Matchers, PropSpec}
+
 import io.gearpump.streaming.kafka.lib.grouper.KafkaGrouper
 import io.gearpump.streaming.kafka.util.KafkaServerHarness
-import kafka.common.TopicAndPartition
-import kafka.utils.{TestZKUtils, TestUtils}
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{PropSpec, Matchers, BeforeAndAfterEach}
-
-import kafka.server.{KafkaConfig => KafkaServerConfig}
 
 
-class KafkaUtilSpec extends PropSpec with PropertyChecks with BeforeAndAfterEach with Matchers with KafkaServerHarness {
+class KafkaUtilSpec
+  extends PropSpec with PropertyChecks with BeforeAndAfterEach
+  with Matchers with KafkaServerHarness {
+
   val numServers = 1
   override val configs: List[KafkaServerConfig] =
-    for(props <- TestUtils.createBrokerConfigs(numServers, enableControlledShutdown = false))
-    yield new KafkaServerConfig(props) {
-      override val zkConnect = TestZKUtils.zookeeperConnect
-      override val numPartitions = 4
-    }
+    for (props <- TestUtils.createBrokerConfigs(numServers, enableControlledShutdown = false))
+      yield new KafkaServerConfig(props) {
+        override val zkConnect = TestZKUtils.zookeeperConnect
+        override val numPartitions = 4
+      }
 
-  override def beforeEach: Unit = {
+  override def beforeEach(): Unit = {
     super.setUp()
   }
 
-  override def afterEach: Unit = {
+  override def afterEach(): Unit = {
     super.tearDown()
   }
 
@@ -91,13 +94,15 @@ class KafkaUtilSpec extends PropSpec with PropertyChecks with BeforeAndAfterEach
 
   property("KafkaUtil should be able to get TopicAndPartitions info and group with KafkaGrouper") {
     val grouper: KafkaGrouper = new KafkaGrouper {
-      override def group(taskNum: Int, taskIndex: Int, topicAndPartitions: Array[TopicAndPartition]): Array[TopicAndPartition] =
+      override def group(taskNum: Int, taskIndex: Int, topicAndPartitions: Array[TopicAndPartition])
+        : Array[TopicAndPartition] = {
         topicAndPartitions
+      }
     }
     val topicNum = 3
     val topics = List.fill(topicNum)(TestUtils.tempTopic())
     topics.foreach(t => createTopicUntilLeaderIsElected(t, partitions = 1, replicas = 1))
-    KafkaUtil.getTopicAndPartitions(connectZk(), topics).toSet shouldBe topics.map(t => TopicAndPartition(t, 0)).toSet
+    KafkaUtil.getTopicAndPartitions(connectZk(), topics).toSet shouldBe
+      topics.map(t => TopicAndPartition(t, 0)).toSet
   }
-
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,10 @@
 
 package io.gearpump.streaming.kafka
 
+import scala.util.{Failure, Success}
+
 import com.twitter.bijection.Injection
-import io.gearpump.streaming.kafka.lib.{KafkaSourceConfig, KafkaOffsetManager}
-import io.gearpump.streaming.kafka.lib.consumer.{KafkaMessage, FetchThread}
-import io.gearpump.streaming.transaction.api.{OffsetStorageFactory, TimeStampFilter, MessageDecoder, OffsetStorage}
 import kafka.common.TopicAndPartition
-import io.gearpump.Message
-import io.gearpump.streaming.kafka.lib.consumer.FetchThread
-import io.gearpump.streaming.kafka.lib.KafkaOffsetManager
-import OffsetStorage.StorageEmpty
-import io.gearpump.streaming.transaction.api.OffsetStorageFactory
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -35,7 +29,11 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.util.{Failure, Success}
+import io.gearpump.Message
+import io.gearpump.streaming.kafka.lib.{KafkaOffsetManager, KafkaSourceConfig}
+import io.gearpump.streaming.kafka.lib.consumer.{FetchThread, KafkaMessage}
+import io.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
+import io.gearpump.streaming.transaction.api.{MessageDecoder, OffsetStorage, OffsetStorageFactory, TimeStampFilter}
 
 class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
@@ -50,8 +48,8 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
     val timestampFilter = mock[TimeStampFilter]
     val offsetStorageFactory = mock[OffsetStorageFactory]
     val kafkaConfig = mock[KafkaSourceConfig]
-    val kafkaSource = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder, timestampFilter,
-      Some(fetchThread), Map(topicAndPartition -> offsetManager))
+    val kafkaSource = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
+      timestampFilter, Some(fetchThread), Map(topicAndPartition -> offsetManager))
 
     kafkaSource.setStartTime(None)
 
@@ -68,8 +66,8 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
       val timestampFilter = mock[TimeStampFilter]
       val offsetStorageFactory = mock[OffsetStorageFactory]
       val kafkaConfig = mock[KafkaSourceConfig]
-      val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder, timestampFilter,
-        Some(fetchThread), Map(topicAndPartition -> offsetManager))
+      val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
+        timestampFilter, Some(fetchThread), Map(topicAndPartition -> offsetManager))
 
       when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(StorageEmpty))
 
@@ -95,8 +93,8 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
         val timestampFilter = mock[TimeStampFilter]
         val offsetStorageFactory = mock[OffsetStorageFactory]
         val kafkaConfig = mock[KafkaSourceConfig]
-        val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder, timestampFilter,
-          Some(fetchThread), Map(topicAndPartition -> offsetManager))
+        val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
+          timestampFilter, Some(fetchThread), Map(topicAndPartition -> offsetManager))
 
         when(offsetManager.resolveOffset(startTime)).thenReturn(Success(offset))
 
@@ -135,7 +133,8 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
         val kafkaConfig = mock[KafkaSourceConfig]
         val offsetManagers = kafkaMsgList.map(_.topicAndPartition -> offsetManager).toMap
 
-        val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder, timestampFilter, Some(fetchThread), offsetManagers)
+        val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
+          timestampFilter, Some(fetchThread), offsetManagers)
 
         if (number == 0) {
           verify(fetchThread, never()).poll
@@ -171,10 +170,9 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
     val messageDecoder = mock[MessageDecoder]
     val offsetStorageFactory = mock[OffsetStorageFactory]
     val kafkaConfig = mock[KafkaSourceConfig]
-    val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder, timestampFilter, Some(fetchThread),
-      Map(topicAndPartition -> offsetManager))
+    val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
+      timestampFilter, Some(fetchThread), Map(topicAndPartition -> offsetManager))
     source.close()
     verify(offsetManager).close()
   }
-
 }

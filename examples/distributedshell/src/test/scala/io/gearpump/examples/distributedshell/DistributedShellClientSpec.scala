@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,19 +17,20 @@
  */
 package io.gearpump.examples.distributedshell
 
+import scala.concurrent.Future
+import scala.util.{Success, Try}
+
 import akka.testkit.TestProbe
-import io.gearpump.cluster.ClientToMaster.ResolveAppId
-import io.gearpump.cluster.MasterToClient.ResolveAppIdResult
-import io.gearpump.cluster.{TestUtil, MasterHarness}
-import DistShellAppMaster.ShellCommand
-import io.gearpump.util.{LogUtil, Constants, Util}
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
-import scala.concurrent.Future
+import io.gearpump.cluster.ClientToMaster.ResolveAppId
+import io.gearpump.cluster.MasterToClient.ResolveAppIdResult
+import io.gearpump.cluster.{MasterHarness, TestUtil}
+import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
+import io.gearpump.util.LogUtil
 
-import scala.util.{Try, Success}
-
-class DistributedShellClientSpec extends PropSpec with Matchers with BeforeAndAfter with MasterHarness {
+class DistributedShellClientSpec
+  extends PropSpec with Matchers with BeforeAndAfter with MasterHarness {
 
   private val LOG = LogUtil.getLogger(getClass)
 
@@ -41,17 +42,20 @@ class DistributedShellClientSpec extends PropSpec with Matchers with BeforeAndAf
     shutdownActorSystem()
   }
 
-  override def config = TestUtil.DEFAULT_CONFIG
+  protected override def config = TestUtil.DEFAULT_CONFIG
 
   property("DistributedShellClient should succeed to submit application with required arguments") {
     val command = "ls /"
     val requiredArgs = Array("-appid", "0", "-command", command)
     val masterReceiver = createMockMaster()
 
-    assert(Try(DistributedShellClient.main(Array.empty[String])).isFailure, "missing required arguments, print usage")
+    assert(Try(DistributedShellClient.main(Array.empty[String])).isFailure,
+      "missing required arguments, print usage")
 
 
-    Future {DistributedShellClient.main(masterConfig, requiredArgs)}
+    Future {
+      DistributedShellClient.main(masterConfig, requiredArgs)
+    }
 
     masterReceiver.expectMsg(PROCESS_BOOT_TIME, ResolveAppId(0))
     val mockAppMaster = TestProbe()(getActorSystem)

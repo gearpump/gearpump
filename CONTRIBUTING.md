@@ -35,7 +35,7 @@ No work should ever be done in the forked master. Another way to do this is to
 
   ```
   git branch branch_issueId
-  git checkout branch_issusId
+  git checkout branch_issueId
   ```
 
   Work on the branch, make changes, then push to your forked gearpump repo http://github.com/<git-user_id>/gearpump

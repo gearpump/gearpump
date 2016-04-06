@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,8 +24,8 @@
 
 package akka.stream
 
-import _root_.io.gearpump.util
-import _root_.io.gearpump.util.Graph
+import scala.collection.mutable
+
 import akka.stream.Attributes.Attribute
 import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.util.MaterializedValueOps
@@ -33,7 +33,8 @@ import akka.stream.impl.StreamLayout._
 import akka.stream.impl._
 import akka.stream.{Graph => AkkaGraph}
 
-import scala.collection.mutable
+import _root_.io.gearpump.util
+import _root_.io.gearpump.util.Graph
 
 /**
  *
@@ -114,7 +115,7 @@ object ModuleGraph {
   def apply[Mat](runnableGraph: AkkaGraph[ClosedShape, Mat]): ModuleGraph[Mat] = {
     val topLevel = runnableGraph.module
     val factory = new ModuleGraphFactory(topLevel)
-    val (graph, mat) =  factory.create()
+    val (graph, mat) = factory.create()
     new ModuleGraph(graph, mat)
   }
 
@@ -208,7 +209,7 @@ object ModuleGraph {
 
       val mat = resolveMaterialized(module.materializedValueComputation, materializedValues)
 
-      materializedValueSources.foreach{module =>
+      materializedValueSources.foreach { module =>
         val matAttribute = new MaterializedValueSourceAttribute(mat)
         val copied = copyAtomicModule(module, parentAttributes and Attributes(matAttribute))
         assignPort(module.shape.outlet, (copied.shape.outlet, copied))
@@ -227,10 +228,10 @@ object ModuleGraph {
     }
 
     private def resolveMaterialized(matNode: MaterializedValueNode, materializedValues: collection.Map[Module, MaterializedValueNode]): MaterializedValueNode = matNode match {
-      case Atomic(m)          => materializedValues(m)
+      case Atomic(m) => materializedValues(m)
       case Combine(f, d1, d2) => Combine(f, resolveMaterialized(d1, materializedValues), resolveMaterialized(d2, materializedValues))
-      case Transform(f, d)    => Transform(f, resolveMaterialized(d, materializedValues))
-      case Ignore             => Ignore
+      case Transform(f, d) => Transform(f, resolveMaterialized(d, materializedValues))
+      case Ignore => Ignore
     }
 
     final protected def assignPort(in: InPort, subscriber: (InPort, Module)): Unit = {

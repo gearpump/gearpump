@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,14 +19,15 @@
 package io.gearpump.streaming.kafka
 
 import com.twitter.bijection.Injection
-import io.gearpump.Message
-import io.gearpump.streaming.MockUtil
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
+
+import io.gearpump.Message
+import io.gearpump.streaming.MockUtil
 
 class KafkaSinkSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 

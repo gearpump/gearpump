@@ -18,12 +18,12 @@
 
 package io.gearpump.streaming.appmaster
 
-import io.gearpump.streaming.appmaster.TaskRegistry.{Reject, Accept}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.streaming.appmaster.TaskRegistry.{Accept, Reject, TaskLocation, TaskLocations}
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.transport.HostPort
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 class TaskRegistrySpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   it should "maintain registered tasks" in {

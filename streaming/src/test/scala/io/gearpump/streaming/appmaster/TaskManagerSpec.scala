@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,8 +18,15 @@
 
 package io.gearpump.streaming.appmaster
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+
+
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
+import org.mockito.Mockito._
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+
 import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.{AppJar, TestUtil, UserConfig}
@@ -39,11 +46,7 @@ import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, ProcessorId}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import io.gearpump.{WorkerId, Message, TimeStamp}
-import org.mockito.Mockito._
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
-import scala.concurrent.Future
+import io.gearpump.{Message, TimeStamp, WorkerId}
 
 class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
@@ -73,8 +76,8 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   }
 
   override def afterEach(): Unit = {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   it should "recover by requesting new executors when executor stopped unexpectedly" in {
@@ -83,7 +86,10 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     implicit val dispatcher = system.dispatcher
 
     val resourceRequest = Array(ResourceRequest(resource, workerId))
-    when(scheduler.executorFailed(executorId)).thenReturn(Future{Some(ResourceRequestDetail(mockJar, resourceRequest))})
+    when(scheduler.executorFailed(executorId)).thenReturn(Future {
+      Some(ResourceRequestDetail(mockJar,
+        resourceRequest))
+    })
 
     taskManager ! ExecutorStopped(executorId)
 
@@ -155,7 +161,8 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val dagManager = TestProbe()
 
     val taskManager = system.actorOf(
-      Props(new TaskManager(appId, dagManager.ref, scheduler, executorManager.ref, clockService.ref, appMaster.ref, "appName")))
+      Props(new TaskManager(appId, dagManager.ref, scheduler, executorManager.ref, clockService.ref,
+        appMaster.ref, "appName")))
 
     dagManager.expectMsgType[WatchChange]
     executorManager.expectMsgType[SetTaskManager]
@@ -166,7 +173,10 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // step2: Get Additional Resource Request
     when(scheduler.getRequestDetails())
-        .thenReturn(Future{Array(ResourceRequestDetail(mockJar, Array(ResourceRequest(resource, WorkerId.unspecified))))})
+      .thenReturn(Future {
+        Array(ResourceRequestDetail(mockJar, Array(ResourceRequest(resource,
+          WorkerId.unspecified))))
+      })
 
     // step3: DAG changed. Start transit from ApplicationReady -> DynamicDAG
     dagManager.expectMsg(GetLatestDAG)
@@ -200,7 +210,6 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     // step7: Launch Task
     val launchTaskMatch: PartialFunction[Any, RegisterTask] = {
       case UniCast(executorId, launch: LaunchTasks) =>
-        Console.println("Launch Task " + launch.processorDescription.id)
         RegisterTask(launch.taskId.head, executorId, HostPort("127.0.0.1:3000"))
     }
 
@@ -219,11 +228,11 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // step9: start broadcasting TaskLocations.
     import scala.concurrent.duration._
-    assert(executorManager.expectMsgPF(5 seconds) {
+    assert(executorManager.expectMsgPF(5.seconds) {
       case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[TaskLocationsReady]
     })
 
-    //step10: Executor confirm it has received TaskLocationsReceived(version, executorId)
+    // step10: Executor confirm it has received TaskLocationsReceived(version, executorId)
     taskManager.tell(TaskLocationsReceived(dag.version, executorId), executor.ref)
 
 
@@ -232,9 +241,9 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     clockService.reply(ChangeToNewDAGSuccess(Map.empty[ProcessorId, TimeStamp]))
 
 
-    //step12: start all tasks
+    // step12: start all tasks
     import scala.concurrent.duration._
-    assert(executorManager.expectMsgPF(5 seconds) {
+    assert(executorManager.expectMsgPF(5.seconds) {
       case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[StartAllTasks]
     })
 
@@ -248,22 +257,22 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
 object TaskManagerSpec {
   case class Env(
-    executorManager: TestProbe,
-    clockService: TestProbe,
-    appMaster: TestProbe,
-    executor: TestProbe,
-    taskManager: ActorRef,
-    scheduler: JarScheduler)
+      executorManager: TestProbe,
+      clockService: TestProbe,
+      appMaster: TestProbe,
+      executor: TestProbe,
+      taskManager: ActorRef,
+      scheduler: JarScheduler)
 
-  class Task1(taskContext : TaskContext, userConf : UserConfig)
+  class Task1(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onStart(startTime: StartTime): Unit = ???
-    override def onNext(msg: Message): Unit = ???
+    override def onStart(startTime: StartTime): Unit = {}
+    override def onNext(msg: Message): Unit = {}
   }
 
-  class Task2 (taskContext : TaskContext, userConf : UserConfig)
+  class Task2(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onStart(startTime: StartTime): Unit = ???
-    override def onNext(msg: Message): Unit = ???
+    override def onStart(startTime: StartTime): Unit = {}
+    override def onNext(msg: Message): Unit = {}
   }
 }

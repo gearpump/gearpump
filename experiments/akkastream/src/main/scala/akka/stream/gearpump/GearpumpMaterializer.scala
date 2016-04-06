@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,10 +20,10 @@ package akka.stream.gearpump
 
 import akka.actor.ActorSystem
 import akka.stream._
+import akka.stream.gearpump.graph.GraphCutter.Strategy
 import akka.stream.gearpump.graph.LocalGraph.LocalGraphMaterializer
 import akka.stream.gearpump.graph.RemoteGraph.RemoteGraphMaterializer
-import akka.stream.gearpump.graph.{RemoteGraph, SubGraphMaterializer, LocalGraph, GraphCutter}
-import akka.stream.gearpump.graph.GraphCutter.Strategy
+import akka.stream.gearpump.graph.{GraphCutter, LocalGraph, RemoteGraph, SubGraphMaterializer}
 import akka.stream.impl.StreamLayout.Module
 
 /**
@@ -37,14 +37,15 @@ import akka.stream.impl.StreamLayout.Module
  * remotely, and which module should be rendered locally.
  *
  * @see [[GraphCutter]] to find out how we cut the [[ModuleGraph]] to two parts,
- *   and materialize them seperately.
+ *      and materialize them seperately.
  *
  * @param system
  * @param strategy
  * @param useLocalCluster whether to use built-in in-process local cluster
  */
-class GearpumpMaterializer(system: ActorSystem, strategy: Strategy = GraphCutter.AllRemoteStrategy, useLocalCluster: Boolean = true)
-    extends BaseMaterializer {
+class GearpumpMaterializer(system: ActorSystem, strategy: Strategy = GraphCutter.AllRemoteStrategy,
+    useLocalCluster: Boolean = true)
+  extends BaseMaterializer {
 
   private val subMaterializers: Map[Class[_], SubGraphMaterializer] = Map(
     classOf[LocalGraph] -> new LocalGraphMaterializer(system),
@@ -53,18 +54,18 @@ class GearpumpMaterializer(system: ActorSystem, strategy: Strategy = GraphCutter
 
   override def materialize[Mat](graph: ModuleGraph[Mat]): Mat = {
     val subGraphs = new GraphCutter(strategy).cut(graph)
-    val matValues = subGraphs.foldLeft(Map.empty[Module, Any]){(map, subGraph) =>
+    val matValues = subGraphs.foldLeft(Map.empty[Module, Any]) { (map, subGraph) =>
       val materializer = subMaterializers(subGraph.getClass)
       map ++ materializer.materialize(subGraph, map)
     }
     graph.resolve(matValues)
   }
 
-  override def shutdown: Unit = {
-    subMaterializers.values.foreach(_.shutdown)
+  override def shutdown(): Unit = {
+    subMaterializers.values.foreach(_.shutdown())
   }
 }
 
-object GearpumpMaterializer{
-  def apply(system: ActorSystem) = new GearpumpMaterializer(system)
+object GearpumpMaterializer {
+  def apply(system: ActorSystem): GearpumpMaterializer = new GearpumpMaterializer(system)
 }

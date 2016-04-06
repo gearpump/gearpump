@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,47 +19,47 @@
 package io.gearpump.streaming.examples.wordcount
 
 import java.util.concurrent.TimeUnit
-
-import akka.actor.Cancellable
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 
-class Sum (taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  private[wordcount] val map : mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
+import akka.actor.Cancellable
 
-  private[wordcount] var wordCount : Long = 0
-  private var snapShotTime : Long = System.currentTimeMillis()
-  private var snapShotWordCount : Long = 0
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-  private var scheduler : Cancellable = null
+class Sum(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+  private[wordcount] val map: mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
 
-  override def onStart(startTime : StartTime) : Unit = {
+  private[wordcount] var wordCount: Long = 0
+  private var snapShotTime: Long = System.currentTimeMillis()
+  private var snapShotWordCount: Long = 0
+
+  private var scheduler: Cancellable = null
+
+  override def onStart(startTime: StartTime): Unit = {
     scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(30, TimeUnit.SECONDS))(reportWordCount)
   }
 
-  override def onNext(msg : Message) : Unit = {
-    if (null == msg) {
-      return
+  override def onNext(msg: Message): Unit = {
+    if (null != msg) {
+      val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
+      wordCount += 1
+      map.put(msg.msg.asInstanceOf[String], current + 1)
     }
-    val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
-    wordCount += 1
-    map.put(msg.msg.asInstanceOf[String], current + 1)
   }
 
-  override def onStop() : Unit = {
+  override def onStop(): Unit = {
     if (scheduler != null) {
       scheduler.cancel()
     }
   }
 
-  def reportWordCount() : Unit = {
-    val current : Long = System.currentTimeMillis()
-    LOG.info(s"Task ${taskContext.taskId} Throughput: ${(wordCount - snapShotWordCount, (current - snapShotTime) / 1000)} (words, second)")
+  def reportWordCount(): Unit = {
+    val current: Long = System.currentTimeMillis()
+    LOG.info(s"Task ${taskContext.taskId} Throughput:" +
+      s" ${(wordCount - snapShotWordCount, (current - snapShotTime) / 1000)} (words, second)")
     snapShotWordCount = wordCount
     snapShotTime = current
   }

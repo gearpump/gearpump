@@ -18,24 +18,25 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{ActorRef, Actor, Stash}
-import io.gearpump.streaming._
-import io.gearpump.streaming.task.Subscriber
-import io.gearpump.streaming.storage.AppDataStore
-import io.gearpump.cluster.UserConfig
-import io.gearpump.partitioner.PartitionerDescription
-import DagManager._
-import io.gearpump.util.{LogUtil, Graph}
+import scala.concurrent.Future
+
+import akka.actor.{Actor, ActorRef, Stash}
 import org.slf4j.Logger
 
-import scala.concurrent.Future
+import io.gearpump.cluster.UserConfig
+import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.streaming._
+import io.gearpump.streaming.appmaster.DagManager._
+import io.gearpump.streaming.storage.AppDataStore
+import io.gearpump.streaming.task.Subscriber
+import io.gearpump.util.{Graph, LogUtil}
 
 /**
  * Will handle dag modification and other stuff related with DAG
-  */
+ */
 
 class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: Option[DAG])
-    extends Actor with Stash {
+  extends Actor with Stash {
   import context.dispatcher
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   private val NOT_INITIALIZED = -1
@@ -48,14 +49,14 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
 
   override def receive: Receive = null
 
-  override def preStart() : Unit = {
+  override def preStart(): Unit = {
     LOG.info("Initializing Dag Service, get stored Dag ....")
     store.get(StreamApplication.DAG).asInstanceOf[Future[DAG]].map { storedDag =>
       if (storedDag != null) {
         dags :+= storedDag
       } else {
         dags :+= dag.getOrElse(DAG(userConfig.getValue[Graph[ProcessorDescription,
-            PartitionerDescription]](StreamApplication.DAG).get))
+          PartitionerDescription]](StreamApplication.DAG).get))
       }
       maxProcessorId = {
         val keys = dags.head.processors.keys
@@ -99,12 +100,13 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
       }
     case ReplaceProcessor(oldProcessorId, inputNewProcessor) =>
       var newProcessor = inputNewProcessor.copy(id = nextProcessorId)
-      if (inputNewProcessor.jar == null){
+      if (inputNewProcessor.jar == null) {
         val oldJar = dags.last.processors.get(oldProcessorId).get
         newProcessor = newProcessor.copy(jar = oldJar.jar)
       }
       if (dags.length > 1) {
-        sender !  DAGOperationFailed("We are in the process of handling previous dynamic dag change")
+        sender ! DAGOperationFailed(
+          "We are in the process of handling previous dynamic dag change")
       } else {
         val oldDAG = dags.last
         val newVersion = oldDAG.version + 1
@@ -131,8 +133,11 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
       }
   }
 
-  private def replaceDAG(dag: DAG, oldProcessorId: ProcessorId, newProcessor: ProcessorDescription, newVersion: Int): DAG = {
-    val oldProcessorLife = LifeTime(dag.processors(oldProcessorId).life.birth, newProcessor.life.birth)
+  private def replaceDAG(
+      dag: DAG, oldProcessorId: ProcessorId, newProcessor: ProcessorDescription, newVersion: Int)
+    : DAG = {
+    val oldProcessorLife = LifeTime(dag.processors(oldProcessorId).life.birth,
+      newProcessor.life.birth)
 
     val newProcessorMap = dag.processors ++
       Map(oldProcessorId -> dag.processors(oldProcessorId).copy(life = oldProcessorLife),
@@ -153,11 +158,13 @@ object DagManager {
   case class LatestDAG(dag: DAG)
 
   case class GetTaskLaunchData(dagVersion: Int, processorId: Int, context: AnyRef = null)
-  case class TaskLaunchData(processorDescription : ProcessorDescription, subscribers: List[Subscriber], context: AnyRef = null)
+  case class TaskLaunchData(processorDescription : ProcessorDescription,
+      subscribers: List[Subscriber], context: AnyRef = null)
 
   sealed trait DAGOperation
 
-  case class ReplaceProcessor(oldProcessorId: ProcessorId, newProcessorDescription: ProcessorDescription) extends DAGOperation
+  case class ReplaceProcessor(oldProcessorId: ProcessorId,
+      newProcessorDescription: ProcessorDescription) extends DAGOperation
 
   sealed trait DAGOperationResult
   case object DAGOperationSuccess extends DAGOperationResult

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,27 +18,29 @@
 
 package io.gearpump.services
 
-import akka.actor.{ActorSystem}
-import akka.http.scaladsl.model.{Uri, StatusCodes, RemoteAddress}
-import akka.http.scaladsl.model.headers.{HttpCookiePair, HttpCookie, HttpChallenge}
-import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsRejected, CredentialsMissing}
-import akka.http.scaladsl.server._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Try, Failure, Success}
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCookie, HttpCookiePair}
+import akka.http.scaladsl.model.{RemoteAddress, StatusCodes, Uri}
+import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
 import akka.stream.Materializer
-import com.softwaremill.session.ClientSessionManagerMagnet._
-import com.softwaremill.session.SessionDirectives._
-import com.softwaremill.session._
 import com.typesafe.config.Config
+import com.softwaremill.session.{MultiValueSessionSerializer, SessionConfig, SessionManager}
+import com.softwaremill.session.SessionDirectives._
+import com.softwaremill.session.SessionOptions._
+import upickle.default.write
+
+import io.gearpump.security.{Authenticator => BaseAuthenticator}
 import io.gearpump.services.SecurityService.{User, UserSession}
 import io.gearpump.services.security.oauth2.OAuth2Authenticator
 import io.gearpump.util.{Constants, LogUtil}
-import upickle.default.{write}
+// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
-import io.gearpump.security.{Authenticator => BaseAuthenticator}
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
-
 
 /**
  * When user cannot be authenticated, will reject with 401 AuthenticationFailedRejection
@@ -49,23 +51,23 @@ import scala.util.{Failure, Success}
  * When web UI receive 405,it should display errors like
  * "current user is not authorized to access this resource."
  *
- * The Authenticator used is pluggable, the current Authenticator is resolved by looking up config path
- * [[Constants.GEARPUMP_UI_AUTHENTICATOR_CLASS]].
+ * The Authenticator used is pluggable, the current Authenticator is resolved by looking up
+ * config path [[io.gearpump.util.Constants.GEARPUMP_UI_AUTHENTICATOR_CLASS]].
  *
- * see [[BaseAuthenticator]] to find more info on custom Authenticator.
- *
+ * see [[io.gearpump.security.Authenticator]] to find more info on custom Authenticator.
  */
 class SecurityService(inner: RouteService, implicit val system: ActorSystem) extends RouteService {
 
   // Use scheme "GearpumpBasic" to avoid popping up web browser native authentication box.
-  private val challenge = HttpChallenge(scheme = "GearpumpBasic", realm = "gearpump", params = Map.empty)
+  private val challenge = HttpChallenge(scheme = "GearpumpBasic", realm = "gearpump",
+    params = Map.empty)
 
   val LOG = LogUtil.getLogger(getClass, "AUDIT")
 
   private val config = system.settings.config
   private val sessionConfig = SessionConfig.fromConfig(config)
-  private implicit val sessionManager = new SessionManager[UserSession](sessionConfig)
-  private val magnet = ClientSessionManagerMagnet.forSessionManager[UserSession, Unit](Unit)
+  private implicit val sessionManager: SessionManager[UserSession] =
+    new SessionManager[UserSession](sessionConfig)
 
   private val authenticator = {
     val clazz = Class.forName(config.getString(Constants.GEARPUMP_UI_AUTHENTICATOR_CLASS))
@@ -74,7 +76,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     authenticator
   }
 
-  private def configToMap(config : Config, path: String) = {
+  private def configToMap(config: Config, path: String) = {
     import scala.collection.JavaConverters._
     config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) => k -> v.toString }
   }
@@ -91,8 +93,9 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     }
   }
 
-  private def authenticate(user: String, pass: String)(implicit ec: ExecutionContext): Future[Option[UserSession]] = {
-    authenticator.authenticate(user, pass, ec).map{ result =>
+  private def authenticate(user: String, pass: String)(implicit ec: ExecutionContext)
+  : Future[Option[UserSession]] = {
+    authenticator.authenticate(user, pass, ec).map { result =>
       if (result.authenticated) {
         Some(UserSession(user, result.permissionLevel))
       } else {
@@ -110,7 +113,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
   }
 
   private def requireAuthentication(inner: UserSession => Route): Route = {
-    optionalSession(magnet) { sessionOption =>
+    optionalSession(oneOff, usingCookiesOrHeaders) { sessionOption =>
       sessionOption match {
         case Some(session) => {
           inner(session)
@@ -122,10 +125,12 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
   }
 
   private def login(session: UserSession, ip: String, redirectToRoot: Boolean = false): Route = {
-    setSession(session) {
+    setSession(oneOff, usingCookies, session) {
       val user = session.user
-      val maxAgeMs = 1000 * sessionConfig.clientSessionMaxAgeSeconds.getOrElse(24 * 3600L) // default 1 day
-      setCookie(HttpCookie.fromPair(HttpCookiePair("username", user), path = Some("/"), maxAge = Some(maxAgeMs))) {
+      // default 1 day
+      val maxAgeMs = 1000 * sessionConfig.sessionMaxAgeSeconds.getOrElse(24 * 3600L)
+      setCookie(HttpCookie.fromPair(HttpCookiePair("username", user), path = Some("/"),
+        maxAge = Some(maxAgeMs))) {
         LOG.info(s"user $user login from $ip")
         if (redirectToRoot) {
           redirect(Uri("/"), StatusCodes.TemporaryRedirect)
@@ -137,7 +142,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
   }
 
   private def logout(user: UserSession, ip: String): Route = {
-    invalidateSession(magnet) { ctx =>
+    invalidateSession(oneOff, usingCookies) { ctx =>
       LOG.info(s"user ${user.user} logout from $ip")
       ctx.complete(write(new User(user.user)))
     }
@@ -171,8 +176,8 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     extractExecutionContext{implicit ec: ExecutionContext =>
     extractMaterializer{implicit mat: Materializer =>
     (extractClientIP | unknownIp) { ip =>
-     pathPrefix("login") {
-       pathEndOrSingleSlash {
+      pathPrefix("login") {
+        pathEndOrSingleSlash {
           get {
             getFromResource("login/login.html")
           } ~
@@ -181,7 +186,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
             formField(FieldMagnet('username.as[String])) {user: String =>
               formFields(FieldMagnet('password.as[String])) {pass: String =>
                 val result = authenticate(user, pass)
-                onSuccess(result){
+                onSuccess(result) {
                   case Some(session) =>
                     login(session, ip.toString)
                   case None =>
@@ -207,7 +212,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
 
             def loginWithOAuth2Parameters(parameters: Map[String, String]): Route = {
               val result = oauthService.authenticate(parameters)
-              onComplete(result){
+              onComplete(result) {
                 case Success(session) =>
                   login(session, ip.toString, redirectToRoot = true)
                 case Failure(ex) => {
@@ -255,17 +260,28 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
 
 object SecurityService {
 
-  val SESSION_MANAGER_KEY = "akka.http.session.serverSecret"
+  val SESSION_MANAGER_KEY = "akka.http.session.server-secret"
 
   case class UserSession(user: String, permissionLevel: Int)
 
   object UserSession {
-    implicit def serializer: SessionSerializer[UserSession] = new ToMapSessionSerializer[UserSession] {
-      private val User = "user"
-      private val PermissionLevel = "permissionLevel"
 
-      override def serializeToMap(t: UserSession) = Map(User -> t.user, PermissionLevel->t.permissionLevel.toString)
-      override def deserializeFromMap(m: Map[String, String]) = UserSession(m(User), m(PermissionLevel).toInt)
+    private val User = "user"
+    private val PermissionLevel = "permissionLevel"
+
+    implicit def serializer: MultiValueSessionSerializer[UserSession] = {
+      new MultiValueSessionSerializer[UserSession](
+        toMap = {t: UserSession =>
+          Map(User -> t.user, PermissionLevel -> t.permissionLevel.toString)
+        },
+        fromMap = {m: Map[String, String] =>
+          if (m.contains(User)) {
+            Try(UserSession(m(User), m(PermissionLevel).toInt))
+          } else {
+            Failure[UserSession](new Exception("Fail to parse session "))
+          }
+        }
+      )
     }
   }
 

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,9 @@
 package io.gearpump.streaming.sink
 
 import akka.actor.ActorSystem
-import io.gearpump.streaming.Processor
+
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.Processor
 
 /**
  * utility that helps user to create a DAG ending in [[DataSink]]
@@ -36,10 +37,12 @@ import io.gearpump.cluster.UserConfig
  * }}}
  */
 object DataSinkProcessor {
-  def apply(dataSink: DataSink,
-            parallelism: Int,
-            description: String = "",
-            taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem): Processor[DataSinkTask] = {
+  def apply(
+      dataSink: DataSink,
+      parallelism: Int,
+      description: String = "",
+      taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem)
+    : Processor[DataSinkTask] = {
     Processor[DataSinkTask](parallelism, description = description,
       taskConf.withValue[DataSink](DataSinkTask.DATA_SINK, dataSink))
   }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,17 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.gearpump.jarstore
 
 import java.io.File
 import java.net.URI
 import java.util.ServiceLoader
-
-import akka.actor.{ActorSystem, ActorRefFactory}
-import com.typesafe.config.Config
-import io.gearpump.util.{Constants, Util}
-
 import scala.collection.JavaConverters._
+
+import akka.actor.ActorSystem
+import com.typesafe.config.Config
+
+import io.gearpump.util.{Constants, Util}
 
 case class FilePath(path: String)
 
@@ -39,7 +40,7 @@ trait JarStoreService {
    * Like "hdfs" for HDFS file system, and "file" for a local
    * file system.
    */
-  val scheme : String
+  val scheme: String
 
   /**
    * Init the Jar Store.
@@ -47,13 +48,14 @@ trait JarStoreService {
   def init(config: Config, system: ActorSystem)
 
   /**
-    * This function will copy the local file to the remote JarStore, called from client side.
+   * This function will copy the local file to the remote JarStore, called from client side.
    * @param localFile The local file
    */
   def copyFromLocal(localFile: File): FilePath
 
   /**
-    * This function will copy the remote file to local file system, called from client side.
+   * This function will copy the remote file to local file system, called from client side.
+   *
    * @param localFile The destination of file path
    * @param remotePath The remote file path from JarStore
    */
@@ -64,7 +66,8 @@ object JarStoreService {
 
   /**
    * Get a active JarStoreService by specifying a scheme.
-   * Please see config [[Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH]] for more
+   *
+   * Please see config [[io.gearpump.util.Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH]] for more
    * information.
    */
   def get(config: Config): JarStoreService = {

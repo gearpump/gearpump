@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,18 +23,22 @@ import java.nio.channels.ClosedChannelException
 import java.util
 import java.util.Random
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
+import scala.language.implicitConversions
 
 import akka.actor.Actor
-import io.gearpump.transport.HostPort
-import io.gearpump.util.LogUtil
 import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
 import org.slf4j.Logger
 
-import scala.concurrent.duration.FiniteDuration
-import scala.language.implicitConversions
+import io.gearpump.transport.HostPort
+import io.gearpump.util.LogUtil
 
-class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) extends Actor {
+/**
+ * Netty Client implemented as an actor, on the other side, there is a netty server Actor.
+ * All messages sent to this actor will be forwarded to remote machine.
+ */
+class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) extends Actor {
   import io.gearpump.transport.netty.Client._
 
   val name = s"netty-client-$hostPort"
@@ -42,7 +46,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
   private final var bootstrap: ClientBootstrap = null
   private final val random: Random = new Random
   private val serializer = conf.newTransportSerializer
-  private var channel : Channel = null
+  private var channel: Channel = null
 
   var batch = new util.ArrayList[TaskMessage]
 
@@ -52,25 +56,26 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     self ! Connect(0)
   }
 
-  def receive = messageHandler orElse connectionHandler
+  def receive: Receive = messageHandler orElse connectionHandler
 
-  def messageHandler : Receive = {
+  def messageHandler: Receive = {
     case msg: TaskMessage =>
       batch.add(msg)
-    case flush @ Flush(flushChannel)  =>
+    case flush@Flush(flushChannel) =>
       if (channel != flushChannel) {
-        Unit //Drop, as it belong to old channel flush message
+        Unit // Drop, as it belong to old channel flush message
       } else if (batch.size > 0 && flushChannel.isWritable) {
         send(flushChannel, batch.iterator)
         batch.clear()
         self ! flush
       } else {
         import context.dispatcher
-        context.system.scheduler.scheduleOnce(new FiniteDuration(conf.flushCheckInterval, TimeUnit.MILLISECONDS), self, flush)
+        context.system.scheduler.scheduleOnce(
+          new FiniteDuration(conf.flushCheckInterval, TimeUnit.MILLISECONDS), self, flush)
       }
   }
 
-  def connectionHandler : Receive = {
+  def connectionHandler: Receive = {
     case ChannelReady(channel) =>
       this.channel = channel
       self ! Flush(channel)
@@ -90,12 +95,12 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
       context.become(closed)
   }
 
-  def closed : Receive = {
-    case msg : AnyRef =>
+  def closed: Receive = {
+    case msg: AnyRef =>
       LOG.error(s"This client $name is closed, drop any message ${msg.getClass.getSimpleName}...")
   }
 
-  private def connect(tries: Int) : Unit = {
+  private def connect(tries: Int): Unit = {
     LOG.info(s"netty client try to connect to $name, tries: $tries")
     if (tries <= conf.max_retries) {
       val remote_addr = new InetSocketAddress(hostPort.host, hostPort.port)
@@ -107,7 +112,9 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
         LOG.error(s"failed to connect to $name, reason: ${ex.getMessage}, class: ${ex.getClass}")
         current.close()
         import context.dispatcher
-        context.system.scheduler.scheduleOnce(new FiniteDuration(getSleepTimeMs(tries), TimeUnit.MILLISECONDS), self, Connect(tries + 1))
+        context.system.scheduler.scheduleOnce(
+          new FiniteDuration(
+            getSleepTimeMs(tries), TimeUnit.MILLISECONDS), self, Connect(tries + 1))
       }
     } else {
       LOG.error(s"fail to connect to a remote host $name after retied $tries ...")
@@ -144,7 +151,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
     batch = null
   }
 
-  override def postStop() = {
+  override def postStop(): Unit = {
     close()
   }
 
@@ -154,9 +161,10 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
       if (channel.isOpen) {
         channel.close
       }
-      LOG.error(s"failed to send requests to ${channel.getRemoteAddress} ${ex.getClass.getSimpleName}")
+      LOG.error(s"failed to send requests " +
+        s"to ${channel.getRemoteAddress} ${ex.getClass.getSimpleName}")
       if (!ex.isInstanceOf[ClosedChannelException]) {
-          LOG.error(ex.getMessage, ex)
+        LOG.error(ex.getMessage, ex)
       }
       self ! CompareAndReconnectIfEqual(channel)
     }
@@ -179,14 +187,14 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort : HostPort) ex
 object Client {
   val LOG: Logger = LogUtil.getLogger(getClass)
 
-  //Reconnect if current channel equals channel
+  // Reconnect if current channel equals channel
   case class CompareAndReconnectIfEqual(channel: Channel)
 
   case class Connect(tries: Int)
-  case class ChannelReady(chanel : Channel)
+  case class ChannelReady(chanel: Channel)
   case object Close
 
-  case class Flush(channel : Channel)
+  case class Flush(channel: Channel)
 
   class ClientErrorHandler(name: String) extends SimpleChannelUpstreamHandler {
 
@@ -210,7 +218,9 @@ object Client {
     }
   }
 
-  implicit def channelFutureToChannelFutureOps(channel: ChannelFuture): ChannelFutureOps = new ChannelFutureOps(channel)
+  implicit def channelFutureToChannelFutureOps(channel: ChannelFuture): ChannelFutureOps = {
+    new ChannelFutureOps(channel)
+  }
 
   class ChannelFutureOps(channelFuture: ChannelFuture) {
 

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,22 +17,27 @@
  */
 package io.gearpump.streaming.examples.transport
 
-import io.gearpump.streaming.{StreamApplication, Processor}
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.partitioner.HashPartitioner
+import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.util.Graph._
 import io.gearpump.util.{AkkaApp, Graph}
 
 object Transport extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "source"-> CLIOption[Int]("<how many task to generate data>", required = false, defaultValue = Some(10)),
-    "inspector"-> CLIOption[Int]("<how many over speed inspector>", required = false, defaultValue = Some(4)),
-    "vehicle"-> CLIOption[Int]("<how many vehicles's to generate>", required = false, defaultValue = Some(1000)),
-    "citysize"-> CLIOption[Int]("<the blocks number of the mock city>", required = false, defaultValue = Some(10)),
-    "threshold"-> CLIOption[Int]("<overdrive threshold, km/h>", required = false, defaultValue = Some(60)))
-  
+    "source" -> CLIOption[Int]("<how many task to generate data>", required = false,
+      defaultValue = Some(10)),
+    "inspector" -> CLIOption[Int]("<how many over speed inspector>", required = false,
+      defaultValue = Some(4)),
+    "vehicle" -> CLIOption[Int]("<how many vehicles's to generate>", required = false,
+      defaultValue = Some(1000)),
+    "citysize" -> CLIOption[Int]("<the blocks number of the mock city>", required = false,
+      defaultValue = Some(10)),
+    "threshold" -> CLIOption[Int]("<overdrive threshold, km/h>", required = false,
+      defaultValue = Some(60)))
+
   def application(config: ParseResult): StreamApplication = {
     val sourceNum = config.getInt("source")
     val inspectorNum = config.getInt("inspector")
@@ -48,7 +53,8 @@ object Transport extends AkkaApp with ArgumentsParser {
       withInt(DataSource.MOCK_CITY_SIZE, citysize).
       withInt(VelocityInspector.OVER_DRIVE_THRESHOLD, threshold).
       withInt(VelocityInspector.FAKE_PLATE_THRESHOLD, 200)
-    StreamApplication("transport", Graph(source ~ partitioner ~> inspector, Node(queryServer)), userConfig)
+    StreamApplication("transport", Graph(source ~ partitioner ~> inspector,
+      Node(queryServer)), userConfig)
   }
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {

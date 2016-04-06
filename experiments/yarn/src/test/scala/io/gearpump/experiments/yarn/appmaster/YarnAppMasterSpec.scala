@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,17 @@
 
 package io.gearpump.experiments.yarn.appmaster
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.{TestActorRef, TestProbe}
 import com.typesafe.config.ConfigFactory
+import org.mockito.ArgumentCaptor
+import org.mockito.Matchers._
+import org.mockito.Mockito._
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
 import io.gearpump.cluster.ClientToMaster.{AddWorker, CommandResult, RemoveWorker}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.experiments.yarn.Constants
@@ -29,10 +37,6 @@ import io.gearpump.experiments.yarn.appmaster.YarnAppMasterSpec.UI
 import io.gearpump.experiments.yarn.glue.Records.{Container, Resource, _}
 import io.gearpump.experiments.yarn.glue.{NMClient, RMClient}
 import io.gearpump.transport.HostPort
-import org.mockito.ArgumentCaptor
-import org.mockito.Matchers._
-import org.mockito.Mockito._
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 
 class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
@@ -84,23 +88,24 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   val configPath = "/user/my/conf"
 
 
-  override def beforeAll() = {
+  override def beforeAll(): Unit = {
     system = ActorSystem("test", config)
   }
 
-  override def afterAll() = {
-    system.shutdown()
-    system.awaitTermination()
+  override def afterAll(): Unit = {
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
-  private def startAppMaster: (TestActorRef[_ <: Actor], TestProbe, NMClient, RMClient) = {
+  private def startAppMaster(): (TestActorRef[YarnAppMaster], TestProbe, NMClient, RMClient) = {
     val rmClient = mock(classOf[RMClient])
     val nmClient = mock(classOf[NMClient])
     val ui = mock(classOf[UIFactory])
     when(ui.props(any[List[HostPort]], anyString, anyInt)).thenReturn(Props(new UI))
 
 
-    val appMaster = TestActorRef(Props(new YarnAppMaster(rmClient, nmClient, packagePath, configPath, ui)))
+    val appMaster = TestActorRef[YarnAppMaster](Props(
+      new YarnAppMaster(rmClient, nmClient, packagePath, configPath, ui)))
 
     verify(rmClient).start(appMaster)
     verify(nmClient).start(appMaster)
@@ -120,12 +125,13 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
     // launch master
     appMaster ! ContainersAllocated(List.fill(masterCount)(masterContainer))
-    verify(nmClient, times(masterCount)).launchCommand(any[Container], anyString, anyString, anyString)
+    verify(nmClient,
+      times(masterCount)).launchCommand(any[Container], anyString, anyString, anyString)
 
     // master containers started
     (0 until masterCount).foreach(_ => appMaster ! ContainerStarted(mockId))
 
-    //transition to start workers
+    // transition to start workers
     val workerResources = ArgumentCaptor.forClass(classOf[List[Resource]])
     verify(rmClient, times(2)).requestContainers(workerResources.capture())
     assert(workerResources.getValue.size == workerCount)
@@ -136,7 +142,8 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val workerContainerId = ContainerId.fromString("container_1449802454214_0034_01_000006")
     when(workerContainer.getId).thenReturn(workerContainerId)
     appMaster ! ContainersAllocated(List.fill(workerCount)(workerContainer))
-    verify(nmClient, times(workerCount + masterCount)).launchCommand(any[Container], anyString, anyString, anyString)
+    verify(nmClient, times(workerCount + masterCount))
+      .launchCommand(any[Container], anyString, anyString, anyString)
 
     // worker containers started
     (0 until workerCount).foreach(_ => appMaster ! ContainerStarted(mockId))
@@ -144,7 +151,7 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     // start UI server
     verify(ui, times(1)).props(any[List[HostPort]], anyString, anyInt)
 
-    //Application Ready...
+    // Application Ready...
     val client = TestProbe()
 
     // get active config
@@ -187,18 +194,19 @@ class YarnAppMasterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   }
 
   it should "start master, worker and UI on YARN" in {
-    val (appMaster, client, nmClient, rmClient) = startAppMaster
+    val env = startAppMaster()
+    val (appMaster, client, nmClient, rmClient) = env
 
     // kill the app
     appMaster.tell(Kill, client.ref)
     client.expectMsgType[CommandResult]
     verify(nmClient, times(1)).stop()
     verify(rmClient, times(1)).shutdownApplication()
-
   }
 
   it should "handle resource manager errors" in {
-    val (appMaster, client, nmClient, rmClient) = startAppMaster
+    val env = startAppMaster()
+    val (appMaster, client, nmClient, rmClient) = env
 
     // on error
     val ex = new Exception

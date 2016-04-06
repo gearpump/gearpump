@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,16 +20,15 @@ package io.gearpump.streaming.task
 
 import java.util.Random
 
+import org.mockito.Mockito._
+import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.mock.MockitoSugar
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
-import io.gearpump.partitioner.{Partitioner, HashPartitioner}
-import io.gearpump.streaming.{LifeTime, ProcessorDescription}
+import io.gearpump.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.streaming.task.SubscriptionSpec.NextTask
-import org.scalatest.{FlatSpec}
-
-import org.mockito.Mockito._
-import org.scalatest.{Matchers}
-import org.scalatest.mock.MockitoSugar
+import io.gearpump.streaming.{LifeTime, ProcessorDescription}
 
 class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
   val appId = 0
@@ -41,16 +40,18 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
   val partitioner = Partitioner[HashPartitioner]
 
   val parallism = 2
-  val downstreamProcessor = ProcessorDescription(downstreamProcessorId, classOf[NextTask].getName, parallism)
-  val subscriber = Subscriber(downstreamProcessorId, partitioner, downstreamProcessor.parallelism, downstreamProcessor.life)
+  val downstreamProcessor = ProcessorDescription(downstreamProcessorId, classOf[NextTask].getName,
+    parallism)
+  val subscriber = Subscriber(downstreamProcessorId, partitioner, downstreamProcessor.parallelism,
+    downstreamProcessor.life)
 
   private def prepare: (Subscription, ExpressTransport) = {
     val transport = mock[ExpressTransport]
     val subscription = new Subscription(appId, executorId, taskId, subscriber, session, transport)
-    subscription.start
+    subscription.start()
 
     val expectedAckRequest = InitialAckRequest(taskId, session)
-    verify(transport, times(1)).transport(expectedAckRequest, TaskId(1,0), TaskId(1, 1))
+    verify(transport, times(1)).transport(expectedAckRequest, TaskId(1, 0), TaskId(1, 1))
 
     (subscription, transport)
   }
@@ -67,24 +68,24 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
     val msg1 = new Message("1", timestamp = 70)
     subscription.sendMessage(msg1)
 
-    verify(transport, times(1)).transport(msg1, TaskId(1,1))
+    verify(transport, times(1)).transport(msg1, TaskId(1, 1))
     assert(subscription.minClock == 70)
 
     val msg2 = new Message("0", timestamp = 50)
     subscription.sendMessage(msg2)
-    verify(transport, times(1)).transport(msg2, TaskId(1,0))
+    verify(transport, times(1)).transport(msg2, TaskId(1, 0))
 
     // minClock has been set to smaller one
     assert(subscription.minClock == 50)
 
     val initialMinClock = subscription.minClock
 
-    //ack initial AckRequest(0)
+    // ack initial AckRequest(0)
     subscription.receiveAck(Ack(TaskId(1, 1), 0, 0, session))
     subscription.receiveAck(Ack(TaskId(1, 0), 0, 0, session))
 
-    //send 100 messages
-    100 until 200 foreach {clock =>
+    // send 100 messages
+    100 until 200 foreach { clock =>
       subscription.sendMessage(Message("1", clock))
       subscription.sendMessage(Message("2", clock))
     }
@@ -101,7 +102,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 
     // we expect to receive two ackRequest for two downstream tasks
     val ackRequestForTask0 = AckRequest(taskId, 200, session)
-    verify(transport, times(1)).transport(ackRequestForTask0, TaskId(1,0))
+    verify(transport, times(1)).transport(ackRequestForTask0, TaskId(1, 0))
 
     val ackRequestForTask1 = AckRequest(taskId, 200, session)
     verify(transport, times(1)).transport(ackRequestForTask1, TaskId(1, 1))
@@ -109,13 +110,12 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 
   it should "disallow more message sending if there is no ack back" in {
     val (subscription, transport) = prepare
-    //send 100 messages
-    0 until (Subscription.MAX_PENDING_MESSAGE_COUNT * 2 + 1) foreach {clock =>
+    // send 100 messages
+    0 until (Subscription.MAX_PENDING_MESSAGE_COUNT * 2 + 1) foreach { clock =>
       subscription.sendMessage(Message(randomMessage, clock))
     }
 
     assert(subscription.allowSendingMoreMessages() == false)
-
   }
 
   it should "report minClock as Long.MaxValue when there is no pending message" in {
@@ -128,19 +128,17 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
   }
 
   private def randomMessage: String = new Random().nextInt.toString
-
 }
 
 object SubscriptionSpec {
 
 
-  class NextTask(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-    import taskContext.{output, self}
+  class NextTask(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
 
-    override def onStart(startTime : StartTime) : Unit = {
+    override def onStart(startTime: StartTime): Unit = {
     }
 
-    override def onNext(msg : Message) : Unit = {
+    override def onNext(msg: Message): Unit = {
     }
   }
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,20 +19,20 @@
 package io.gearpump.streaming.kafka
 
 import java.util.Properties
-
-import io.gearpump.streaming.kafka.lib.{DefaultMessageDecoder, KafkaSourceConfig, KafkaUtil, KafkaOffsetManager}
-import io.gearpump.streaming.kafka.lib.consumer.{FetchThread, KafkaMessage}
-import io.gearpump.streaming.source.DefaultTimeStampFilter
-import io.gearpump.streaming.task.TaskContext
-import io.gearpump.streaming.transaction.api._
-import kafka.common.TopicAndPartition
-import OffsetStorage.StorageEmpty
-import io.gearpump.util.LogUtil
-import io.gearpump.{Message, TimeStamp}
-import org.slf4j.Logger
-
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success}
+
+import kafka.common.TopicAndPartition
+import org.slf4j.Logger
+
+import io.gearpump.streaming.kafka.lib.consumer.{FetchThread, KafkaMessage}
+import io.gearpump.streaming.kafka.lib.{DefaultMessageDecoder, KafkaOffsetManager, KafkaSourceConfig, KafkaUtil}
+import io.gearpump.streaming.source.DefaultTimeStampFilter
+import io.gearpump.streaming.task.TaskContext
+import io.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
+import io.gearpump.streaming.transaction.api._
+import io.gearpump.util.LogUtil
+import io.gearpump.{Message, TimeStamp}
 
 
 object KafkaSource {
@@ -44,11 +44,15 @@ object KafkaSource {
  * from multiple Kafka TopicAndPartition in a round-robin way.
  *
  * This is a TimeReplayableSource which is able to replay messages given a start time.
- * Each kafka message is tagged with a timestamp by [[io.gearpump.streaming.transaction.api.MessageDecoder]] and the (offset, timestamp) mapping
- * is stored to a [[OffsetStorage]]. On recovery, we could retrieve the previously stored offset
- * from the [[OffsetStorage]] by timestamp and start to read from there.
+ * Each kafka message is tagged with a timestamp by
+ * [[io.gearpump.streaming.transaction.api.MessageDecoder]] and the (offset, timestamp) mapping
+ * is stored to a [[io.gearpump.streaming.transaction.api.OffsetStorage]]. On recovery,
+ * we could retrieve the previously stored offset from the
+ * [[io.gearpump.streaming.transaction.api.OffsetStorage]] by timestamp and start to read from
+ * there.
  *
- * kafka message is wrapped into gearpump [[Message]] and further filtered by a [[TimeStampFilter]]
+ * kafka message is wrapped into gearpump [[io.gearpump.Message]] and further filtered by a
+ * [[io.gearpump.streaming.transaction.api.TimeStampFilter]]
  * such that obsolete messages are dropped.
  *
  * @param config kafka source config
@@ -63,8 +67,9 @@ class KafkaSource(
     messageDecoder: MessageDecoder = new DefaultMessageDecoder,
     timestampFilter: TimeStampFilter = new DefaultTimeStampFilter,
     private var fetchThread: Option[FetchThread] = None,
-    private var offsetManagers: Map[TopicAndPartition, KafkaOffsetManager] = Map.empty[TopicAndPartition, KafkaOffsetManager])
-  extends TimeReplayableSource {
+    private var offsetManagers: Map[TopicAndPartition, KafkaOffsetManager] = {
+      Map.empty[TopicAndPartition, KafkaOffsetManager]
+    }) extends TimeReplayableSource {
   import KafkaSource._
 
   private var startTime: Option[TimeStamp] = None
@@ -74,7 +79,7 @@ class KafkaSource(
    * @param topics comma-separated string of topics
    * @param properties kafka consumer config
    * @param offsetStorageFactory [[io.gearpump.streaming.transaction.api.OffsetStorageFactory]]
-   *                            that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
+   *   that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
    *
    */
   def this(topics: String, properties: Properties, offsetStorageFactory: OffsetStorageFactory) = {
@@ -84,13 +89,12 @@ class KafkaSource(
    * @param topics comma-separated string of topics
    * @param properties kafka consumer config
    * @param offsetStorageFactory [[io.gearpump.streaming.transaction.api.OffsetStorageFactory]]
-   *                            that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
+   *   that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
    * @param messageDecoder decodes [[Message]] from raw bytes
    * @param timestampFilter filters out message based on timestamp
    */
   def this(topics: String, properties: Properties, offsetStorageFactory: OffsetStorageFactory,
-           messageDecoder: MessageDecoder,
-           timestampFilter: TimeStampFilter) = {
+      messageDecoder: MessageDecoder, timestampFilter: TimeStampFilter) = {
     this(KafkaSourceConfig(properties)
       .withConsumerTopics(topics), offsetStorageFactory,
       messageDecoder, timestampFilter)
@@ -100,7 +104,7 @@ class KafkaSource(
    * @param topics comma-separated string of topics
    * @param zkConnect kafka consumer config `zookeeper.connect`
    * @param offsetStorageFactory [[io.gearpump.streaming.transaction.api.OffsetStorageFactory]]
-   *                            that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
+   *   that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
    */
   def this(topics: String, zkConnect: String, offsetStorageFactory: OffsetStorageFactory) =
     this(topics, KafkaUtil.buildConsumerConfig(zkConnect), offsetStorageFactory)
@@ -109,13 +113,13 @@ class KafkaSource(
    * @param topics comma-separated string of topics
    * @param zkConnect kafka consumer config `zookeeper.connect`
    * @param offsetStorageFactory [[io.gearpump.streaming.transaction.api.OffsetStorageFactory]]
-   *                            that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
+   *   that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
    * @param messageDecoder decodes [[Message]] from raw bytes
    * @param timestampFilter filters out message based on timestamp
    */
   def this(topics: String, zkConnect: String, offsetStorageFactory: OffsetStorageFactory,
-           messageDecoder: MessageDecoder,
-           timestampFilter: TimeStampFilter) = {
+      messageDecoder: MessageDecoder,
+      timestampFilter: TimeStampFilter) = {
     this(topics, KafkaUtil.buildConsumerConfig(zkConnect), offsetStorageFactory,
       messageDecoder, timestampFilter)
   }
@@ -191,5 +195,4 @@ class KafkaSource(
   override def close(): Unit = {
     offsetManagers.foreach(_._2.close())
   }
-
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,11 @@ package io.gearpump.streaming
 
 import akka.actor._
 import akka.testkit.TestActorRef
+
 import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.appmaster.AppMasterRuntimeInfo
 import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.cluster.{MiniCluster, AppDescription, AppMasterContext, UserConfig}
+import io.gearpump.cluster.{AppDescription, AppMasterContext, MiniCluster, UserConfig}
 import io.gearpump.streaming.appmaster.AppMaster
 import io.gearpump.util.Graph
 
@@ -33,7 +34,8 @@ object StreamingTestUtil {
   def startAppMaster(miniCluster: MiniCluster, appId: Int): TestActorRef[AppMaster] = {
 
     implicit val actorSystem = miniCluster.system
-    val masterConf = AppMasterContext(appId, testUserName, Resource(1),  null, None,miniCluster.mockMaster,AppMasterRuntimeInfo(appId, appName = appId.toString))
+    val masterConf = AppMasterContext(appId, testUserName, Resource(1), null,
+      None, miniCluster.mockMaster, AppMasterRuntimeInfo(appId, appName = appId.toString))
 
     val app = StreamApplication("test", Graph.empty, UserConfig.empty)
     val appDescription = AppDescription(app.name, app.appMaster.getName, app.userConfig)

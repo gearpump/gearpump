@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,13 +20,14 @@ package io.gearpump.streaming.hadoop
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
+
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.hadoop.lib.HadoopUtil
 import io.gearpump.streaming.hadoop.lib.rotation.{FileSizeRotation, Rotation}
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.streaming.transaction.api.{CheckpointStoreFactory, CheckpointStore}
-import io.gearpump.cluster.UserConfig
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.Path
+import io.gearpump.streaming.transaction.api.{CheckpointStore, CheckpointStoreFactory}
 
 object HadoopCheckpointStoreFactory {
   val VERSION = 1
@@ -52,7 +53,8 @@ class HadoopCheckpointStoreFactory(
 
   override def getCheckpointStore(conf: UserConfig, taskContext: TaskContext): CheckpointStore = {
     import taskContext.{appId, taskId}
-    val dirPath = new Path(dir + Path.SEPARATOR + s"v$VERSION", s"app$appId-task${taskId.processorId}_${taskId.index}")
+    val dirPath = new Path(dir + Path.SEPARATOR + s"v$VERSION",
+      s"app$appId-task${taskId.processorId}_${taskId.index}")
     val fs = HadoopUtil.getFileSystemForPath(dirPath, hadoopConfig)
     new HadoopCheckpointStore(dirPath, fs, hadoopConfig, rotation)
   }

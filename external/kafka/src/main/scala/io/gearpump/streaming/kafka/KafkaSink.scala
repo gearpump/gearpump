@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,12 +20,13 @@ package io.gearpump.streaming.kafka
 
 import java.util.Properties
 
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+import org.apache.kafka.common.serialization.ByteArraySerializer
+
+import io.gearpump.Message
 import io.gearpump.streaming.kafka.lib.KafkaUtil
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.Message
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
-import org.apache.kafka.common.serialization.ByteArraySerializer
 
 /**
  * kafka sink connectors that invokes org.apache.kafka.clients.producer.KafkaProducer to send
@@ -33,7 +34,8 @@ import org.apache.kafka.common.serialization.ByteArraySerializer
  * @param getProducer is a function to construct a KafkaProducer
  * @param topic is the kafka topic to write to
  */
-class KafkaSink private[kafka](getProducer: () => KafkaProducer[Array[Byte], Array[Byte]], topic: String) extends DataSink {
+class KafkaSink private[kafka](
+    getProducer: () => KafkaProducer[Array[Byte], Array[Byte]], topic: String) extends DataSink {
 
   /**
    * @param topic producer topic
@@ -63,7 +65,8 @@ class KafkaSink private[kafka](getProducer: () => KafkaProducer[Array[Byte], Arr
   override def write(message: Message): Unit = {
     val record = message.msg match {
       case (k, v) =>
-        new ProducerRecord[Array[Byte], Array[Byte]](topic, k.asInstanceOf[Array[Byte]], v.asInstanceOf[Array[Byte]])
+        new ProducerRecord[Array[Byte], Array[Byte]](topic, k.asInstanceOf[Array[Byte]],
+          v.asInstanceOf[Array[Byte]])
       case v =>
         new ProducerRecord[Array[Byte], Array[Byte]](topic, v.asInstanceOf[Array[Byte]])
     }

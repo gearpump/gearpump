@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,9 +22,9 @@ import com.github.scribejava.apis.google.GoogleJsonTokenExtractor
 import com.github.scribejava.core.builder.api.DefaultApi20
 import com.github.scribejava.core.extractors.TokenExtractor
 import com.github.scribejava.core.model._
-import io.gearpump.services.security.oauth2.OAuth2Authenticator
-import io.gearpump.services.security.oauth2.impl.GoogleOAuth2Authenticator.AsyncGoogleApi20
 import spray.json._
+
+import io.gearpump.services.security.oauth2.OAuth2Authenticator
 
 /**
  *
@@ -46,18 +46,20 @@ import spray.json._
  * 2) Configure section "gearpump.ui-security.oauth2-authenticators.google". Please make sure
  * class name, client ID, client Secret, and callback URL are set properly.
  *
- * @note callback URL set here should match what is configured on Google in step1.
+ * NOTE:  callback URL set here should match what is configured on Google in step1.
  *
  * Step3: Restart the UI service and try out the Google social login button in UI.
  *
- * @note OAuth requires Internet access, @see [[OAuth2Authenticator]] to find some helpful tutorials.
+ * NOTE:  OAuth requires Internet access, @see
+ *       [[io.gearpump.services.security.oauth2.OAuth2Authenticator]] to find some helpful tutorials
  *
- * @note Google use scope to define what data can be fetched by OAuth2. Currently we use profile
- * [[https://www.googleapis.com/auth/userinfo.email]]. However, Google may change the profile in future.
+ * NOTE:  Google use scope to define what data can be fetched by OAuth2. Currently we use profile
+ *       [[https://www.googleapis.com/auth/userinfo.email]]. However, Google may change the profile
+ *       in future.
  *
  * @todo Currently, this doesn't verify the state from Google OAuth2 response.
  *
- * @see [[OAuth2Authenticator]] for more API information.
+ * @see [[io.gearpump.services.security.oauth2.OAuth2Authenticator]] for more API information.
  */
 class GoogleOAuth2Authenticator extends BaseOAuth2Authenticator {
 
@@ -85,13 +87,15 @@ object GoogleOAuth2Authenticator {
 
   import BaseOAuth2Authenticator._
 
+  // scalastyle:off line.size.limit
   val AuthorizeUrl = "https://accounts.google.com/o/oauth2/auth?response_type=%s&client_id=%s&redirect_uri=%s&scope=%s"
+  // scalastyle:on line.size.limit
   val AccessEndpoint = "https://www.googleapis.com/oauth2/v4/token"
   val ResourceUrl = "https://www.googleapis.com/plus/v1/people/me"
   val Scope = "https://www.googleapis.com/auth/userinfo.email"
 
   private class AsyncGoogleApi20(authorizeUrl: String, accessEndpoint: String)
-      extends BaseApi20(authorizeUrl, accessEndpoint) {
+    extends BaseApi20(authorizeUrl, accessEndpoint) {
 
     override def getAccessTokenExtractor: TokenExtractor[OAuth2AccessToken] = {
       GoogleJsonTokenExtractor.instance

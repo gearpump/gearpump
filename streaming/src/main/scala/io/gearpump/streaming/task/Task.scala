@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,15 @@
 
 package io.gearpump.streaming.task
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.Actor.Receive
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import org.slf4j.Logger
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.util.LogUtil
 import io.gearpump.{Message, TimeStamp}
-import org.slf4j.Logger
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * This provides context information for a task.
@@ -36,7 +37,7 @@ trait TaskContext {
 
   def executorId: Int
 
-  def appId : Int
+  def appId: Int
 
   def appName: String
 
@@ -44,7 +45,7 @@ trait TaskContext {
    * The actorRef of AppMaster
    * @return application master's actor reference
    */
-  def appMaster : ActorRef
+  def appMaster: ActorRef
 
   /**
    * The task parallelism
@@ -66,59 +67,61 @@ trait TaskContext {
    * Please don't use this if possible.
    * @return  self actor ref
    */
-  //TODO: We should remove the self from TaskContext
+  // TODO: We should remove the self from TaskContext
   def self: ActorRef
 
   /**
    * Please don't use this if possible
    * @return the actor system
    */
-  //TODO: we should remove this in future
+  // TODO: we should remove this in future
   def system: ActorSystem
 
   /**
-   * This can be used to output messages to downstream tasks.
-   * The data shuffling rule can be decided by Partitioner.
+   * This can be used to output messages to downstream tasks. The data shuffling rule
+   * can be decided by Partitioner.
+   *
    * @param msg message to output
    */
-  def output(msg : Message) : Unit
+  def output(msg: Message): Unit
 
 
   def actorOf(props: Props): ActorRef
 
   def actorOf(props: Props, name: String): ActorRef
 
-  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable
+  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit): Cancellable
 
   /**
    * akka.actor.ActorRefProvider.scheduleOnce
+   *
    * @param initialDelay  the initial delay
    * @param f  the function to execute after initial delay
    * @return the executable
    */
-  def scheduleOnce(initialDelay: FiniteDuration)(f: ⇒ Unit): Cancellable
+  def scheduleOnce(initialDelay: FiniteDuration)(f: => Unit): Cancellable
 
-   /**
+  /**
    * For managed message(type of Message), the sender only serve as a unique Id,
    * It's address is not something meaningful, you should not use this directly
    *
    * For unmanaged message, the sender represent the sender ActorRef
    * @return sender
    */
-   def sender: ActorRef
+  def sender: ActorRef
 
 
   /**
-   * retrieve upstream min clock from TaskActor
+   * Retrieve upstream min clock from TaskActor
+   *
    * @return the min clock
    */
   def upstreamMinClock: TimeStamp
 
 
   /**
-   * logger is environment dependant, it should be provided by
+   * Logger is environment dependant, it should be provided by
    * containing environment.
-   * @return
    */
   def logger: Logger
 }
@@ -130,28 +133,36 @@ trait TaskInterface {
 
   /**
    * Method called with the task is initialized.
-   * @param startTime startTime that can be used to decide from when a source producer task should replay the data source, or from when a processor task should recover its checkpoint data in to in-memory state.
+   * @param startTime startTime that can be used to decide from when a source producer task should
+   *                  replay the data source, or from when a processor task should recover its
+   *                  checkpoint data in to in-memory state.
    */
-  def onStart(startTime : StartTime) : Unit
-
-  /** Method called for each message received.
-   * @param msg message send by upstream tasks
-   */
-  def onNext(msg : Message) : Unit
-
-  /** Method called when task is under clean up.
-   * This can be used to cleanup resource when the application finished.
-   */
-  def onStop() : Unit
+  def onStart(startTime: StartTime): Unit
 
   /**
-   * handler for unmanaged message
-  * @return the handler
-  */
+   * Method called for each message received.
+   *
+   * @param msg Message send by upstream tasks
+   */
+  def onNext(msg: Message): Unit
+
+
+  /**
+   * Method called when task is under clean up.
+   *
+   * This can be used to cleanup resource when the application finished.
+   */
+  def onStop(): Unit
+
+  /**
+   * Handler for unmanaged messages
+   *
+   * @return the handler
+   */
   def receiveUnManagedMessage: Receive = null
 }
 
-abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends TaskInterface{
+abstract class Task(taskContext: TaskContext, userConf: UserConfig) extends TaskInterface {
 
   import taskContext.{appId, executorId, taskId}
 
@@ -170,11 +181,11 @@ abstract class Task(taskContext : TaskContext, userConf : UserConfig) extends Ta
    */
   protected def sender: ActorRef = taskContext.sender
 
-  def onStart(startTime : StartTime) : Unit = {}
+  def onStart(startTime: StartTime): Unit = {}
 
-  def onNext(msg : Message) : Unit = {}
+  def onNext(msg: Message): Unit = {}
 
-  def onStop() : Unit = {}
+  def onStop(): Unit = {}
 
   override def receiveUnManagedMessage: Receive = {
     case msg =>

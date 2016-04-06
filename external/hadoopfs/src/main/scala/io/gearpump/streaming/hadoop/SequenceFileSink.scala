@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,10 @@ package io.gearpump.streaming.hadoop
 
 import java.text.SimpleDateFormat
 
+import org.apache.hadoop.fs.Path
+import org.apache.hadoop.hdfs.HdfsConfiguration
+import org.apache.hadoop.io.SequenceFile
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.hadoop.lib.HadoopUtil
@@ -26,9 +30,6 @@ import io.gearpump.streaming.hadoop.lib.format.{DefaultSequenceFormatter, Output
 import io.gearpump.streaming.hadoop.lib.rotation.{FileSizeRotation, Rotation}
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.{TaskContext, TaskId}
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.hdfs.HdfsConfiguration
-import org.apache.hadoop.io.SequenceFile
 
 class SequenceFileSink(
     userConfig: UserConfig,
@@ -43,10 +44,12 @@ class SequenceFileSink(
   private var appName: String = null
 
   /**
-    * open connection to data sink
-    * invoked at onStart() method of [[Task]]
-    * @param context is the task context at runtime
-    */
+   * Starts connection to data sink
+   *
+   * Invoked at onStart() method of [[io.gearpump.streaming.task.Task]]
+   *
+   * @param context is the task context at runtime
+   */
   override def open(context: TaskContext): Unit = {
     HadoopUtil.login(userConfig, configuration)
     this.appName = context.appName
@@ -55,10 +58,11 @@ class SequenceFileSink(
   }
 
   /**
-    * write message into data sink
-    * invoked at onNext() method of [[Task]]
-    * @param message wraps data to be written out
-    */
+   * Writes message into data sink
+   *
+   * Invoked at onNext() method of [[io.gearpump.streaming.task.Task]]
+   * @param message wraps data to be written out
+   */
   override def write(message: Message): Unit = {
     val key = sequenceFormat.getKey(message)
     val value = sequenceFormat.getValue(message)
@@ -67,7 +71,7 @@ class SequenceFileSink(
     }
     writer.append(key, value)
     rotation.mark(message.timestamp, writer.getLength)
-    if(rotation.shouldRotate){
+    if (rotation.shouldRotate) {
       closeWriter
       this.writer = getNextWriter
       rotation.rotate
@@ -75,15 +79,16 @@ class SequenceFileSink(
   }
 
   /**
-    * close connection to data sink
-    * invoked at onClose() method of [[Task]]
-    */
+   * Closes connection to data sink
+   *
+   * Invoked at onClose() method of [[io.gearpump.streaming.task.Task]]
+   */
   override def close(): Unit = {
-    closeWriter
+    closeWriter()
   }
 
-  private def closeWriter: Unit = {
-    Option(writer).foreach{ w =>
+  private def closeWriter(): Unit = {
+    Option(writer).foreach { w =>
       w.hflush()
       w.close()
     }

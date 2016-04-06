@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,23 +21,23 @@ package io.gearpump.metrics
 import io.gearpump.codahale.metrics.{Histogram => CodaHaleHistogram}
 
 /**
- * sampleRate: take a data point for every sampleRate...
+ * @see io.gearpump.codahale.metrics.Histogram
  */
-class Histogram(val name : String, hisgram : CodaHaleHistogram, sampleRate : Int = 1) {
+class Histogram(val name: String, histogram: CodaHaleHistogram, sampleRate: Int = 1) {
   private var sampleCount = 0L
 
   def update(value: Long) {
     sampleCount += 1
-    if (null != hisgram && sampleCount % sampleRate == 0) {
-      hisgram.update(value)
+    if (null != histogram && sampleCount % sampleRate == 0) {
+      histogram.update(value)
     }
   }
 
-  def getMean() : Double = {
-    hisgram.getSnapshot.getMean
+  def getMean(): Double = {
+    histogram.getSnapshot.getMean
   }
 
-  def getStdDev() : Double = {
-    hisgram.getSnapshot.getStdDev
+  def getStdDev(): Double = {
+    histogram.getSnapshot.getStdDev
   }
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,20 +17,23 @@
  */
 package io.gearpump.examples.distributedshell
 
+import scala.concurrent.Future
+
 import akka.actor.{Deploy, Props}
 import akka.pattern.{ask, pipe}
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
+import org.slf4j.Logger
+
 import io.gearpump.cluster.ClientToMaster.ShutdownApplication
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout}
 import io.gearpump.cluster.{AppDescription, AppMasterContext, ApplicationMaster, ExecutorContext}
-import DistShellAppMaster._
+import io.gearpump.examples.distributedshell.DistShellAppMaster._
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
-import org.slf4j.Logger
 
-import scala.concurrent.Future
+class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
+  extends ApplicationMaster {
 
-class DistShellAppMaster(appContext : AppMasterContext, app : AppDescription) extends ApplicationMaster {
   import appContext._
   import context.dispatcher
   implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -45,10 +48,11 @@ class DistShellAppMaster(appContext : AppMasterContext, app : AppDescription) ex
   override def receive: Receive = {
     case ExecutorSystemStarted(executorSystem, _) =>
       import executorSystem.{address, resource => executorResource, worker}
-      val executorContext = ExecutorContext(currentExecutorId, worker, appId, app.name, self, executorResource)
-      //start executor
+      val executorContext = ExecutorContext(currentExecutorId, worker, appId, app.name,
+        self, executorResource)
+      // Start executor
       val executor = context.actorOf(Props(classOf[ShellExecutor], executorContext, app.userConfig)
-          .withDeploy(Deploy(scope = RemoteScope(address))), currentExecutorId.toString)
+        .withDeploy(Deploy(scope = RemoteScope(address))), currentExecutorId.toString)
       executorSystem.bindLifeCycleWith(executor)
       currentExecutorId += 1
     case StartExecutorSystemTimeout =>
@@ -56,14 +60,17 @@ class DistShellAppMaster(appContext : AppMasterContext, app : AppDescription) ex
       masterProxy ! ShutdownApplication(appId)
       context.stop(self)
     case msg: ShellCommand =>
-      Future.fold(context.children.map(_ ? msg))(new ShellCommandResultAggregator) { (aggregator, response) =>
-        aggregator.aggregate(response.asInstanceOf[ShellCommandResult])
+      Future.fold(context.children.map(_ ? msg))(new ShellCommandResultAggregator) {
+        (aggregator, response) => {
+          aggregator.aggregate(response.asInstanceOf[ShellCommandResult])
+        }
       }.map(_.toString()) pipeTo sender
   }
 
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
     val config: Config = app.clusterConfig
-    val jvmSetting = Util.resolveJvmSetting(config.withFallback(context.system.settings.config)).executor
+    val jvmSetting = Util.resolveJvmSetting(config.withFallback(context.system.settings.config))
+      .executor
     ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs,
       appJar, username, config)
   }
@@ -83,6 +90,6 @@ object DistShellAppMaster {
       this
     }
 
-    override def toString() = result.toString()
+    override def toString(): String = result.toString()
   }
 }

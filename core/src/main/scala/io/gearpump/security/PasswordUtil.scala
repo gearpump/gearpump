@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,9 @@
 package io.gearpump.security
 
 import java.security.MessageDigest
-import sun.misc.{BASE64Decoder, BASE64Encoder}
 import scala.util.Try
+
+import sun.misc.{BASE64Decoder, BASE64Encoder}
 
 /**
  * Util to verify whether user input password is valid or not.
@@ -45,7 +46,8 @@ object PasswordUtil {
   }
   /**
    * digesting flow (from original password to digest):
-   * random salt byte array of length 8 -> byte array of (salt + sha1(salt, password)) -> base64Encode
+   * random salt byte array of length 8 ->
+   * byte array of (salt + sha1(salt, password)) -> base64Encode
    */
   def hash(password: String): String = {
     // Salt generation 64 bits long
@@ -66,8 +68,8 @@ object PasswordUtil {
   }
 
   private def base64Encode(data: Array[Byte]): String = {
-     val endecoder = new BASE64Encoder()
-     endecoder.encode(data)
+    val endecoder = new BASE64Encoder()
+    endecoder.encode(data)
   }
 
   private def base64Decode(data: String): Array[Byte] = {
@@ -75,13 +77,14 @@ object PasswordUtil {
     decoder.decodeBuffer(data)
   }
 
-  private def help = {
+  // scalastyle:off println
+  private def help() = {
     Console.println("usage: gear io.gearpump.security.PasswordUtil -password <your password>")
   }
 
   def main(args: Array[String]): Unit = {
     if (args.length != 2 || args(0) != "-password") {
-      help
+      help()
     } else {
       val pass = args(1)
       val result = hash(pass)
@@ -90,4 +93,5 @@ object PasswordUtil {
       Console.println(result)
     }
   }
+  // scalastyle:on println
 }

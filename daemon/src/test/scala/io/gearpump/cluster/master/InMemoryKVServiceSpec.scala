@@ -18,28 +18,32 @@
 
 package io.gearpump.cluster.master
 
-import akka.actor.Props
-import akka.testkit.TestProbe
-import io.gearpump.cluster.master.InMemoryKVService._
-import io.gearpump.cluster.{MasterHarness, TestUtil}
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import scala.concurrent.duration._
 
-class InMemoryKVServiceSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+import akka.actor.Props
+import akka.testkit.TestProbe
+import com.typesafe.config.Config
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-  override def beforeEach() = {
+import io.gearpump.cluster.master.InMemoryKVService._
+import io.gearpump.cluster.{MasterHarness, TestUtil}
+
+class InMemoryKVServiceSpec
+  extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+
+  override def beforeEach(): Unit = {
     startActorSystem()
   }
 
-  override def afterEach() = {
+  override def afterEach(): Unit = {
     shutdownActorSystem()
   }
 
-  override def config = TestUtil.MASTER_CONFIG
+  override def config: Config = TestUtil.MASTER_CONFIG
 
   "KVService" should "get, put, delete correctly" in {
-   val system = getActorSystem
-   val kvService = system.actorOf(Props(new InMemoryKVService()))
+    val system = getActorSystem
+    val kvService = system.actorOf(Props(new InMemoryKVService()))
     val group = "group"
 
     val client = TestProbe()(system)
@@ -57,9 +61,9 @@ class InMemoryKVServiceSpec extends FlatSpec with Matchers with BeforeAndAfterEa
 
     // after DeleteGroup, it no longer accept Get and Put
     client.send(kvService, GetKV(group, "key"))
-    client.expectNoMsg(3 seconds)
+    client.expectNoMsg(3.seconds)
 
     client.send(kvService, PutKV(group, "key", 3))
-    client.expectNoMsg(3 seconds)
+    client.expectNoMsg(3.seconds)
   }
 }

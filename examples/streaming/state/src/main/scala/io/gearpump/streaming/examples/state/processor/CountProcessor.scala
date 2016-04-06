@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,13 @@
 
 package io.gearpump.streaming.examples.state.processor
 
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.monoid.AlgebirdMonoid
 import io.gearpump.streaming.serializer.ChillSerializer
-import io.gearpump.streaming.state.api.{PersistentTask, PersistentState}
+import io.gearpump.streaming.state.api.{PersistentState, PersistentTask}
 import io.gearpump.streaming.state.impl.NonWindowState
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.cluster.UserConfig
-import io.gearpump.Message
 
 class CountProcessor(taskContext: TaskContext, conf: UserConfig)
   extends PersistentTask[Int](taskContext, conf) {

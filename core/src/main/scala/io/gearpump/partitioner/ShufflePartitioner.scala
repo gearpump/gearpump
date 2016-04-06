@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,17 +23,17 @@ import java.util.Random
 import io.gearpump.Message
 
 /**
- * Round Robin partition the data.
+ * Round Robin partition the data to downstream processor tasks.
  */
 class ShufflePartitioner extends UnicastPartitioner {
   private var seed = 0
   private var count = 0
 
 
-  override def getPartition(msg : Message, partitionNum : Int, currentPartitionId: Int) : Int = {
+  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
 
     if (seed == 0) {
-      seed = newSeed
+      seed = newSeed()
     }
 
     val result = ((count + seed) & Integer.MAX_VALUE) % partitionNum
@@ -41,5 +41,5 @@ class ShufflePartitioner extends UnicastPartitioner {
     result
   }
 
-  def newSeed = new Random().nextInt()
+  private def newSeed(): Int = new Random().nextInt()
 }
