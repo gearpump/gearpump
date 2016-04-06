@@ -579,8 +579,6 @@ Sample Response:
 {"enabled":true}
 ```
 
-
-
 ### GET api/v1.0/supervisor
 Get the supervisor path
 
@@ -616,7 +614,6 @@ Sample Response:
 ### POST api/v1.0/supervisor/removeworker/&lt;worker-id&gt;
 Remove single worker instance by specifying a worker Id.
 
-
 **NOTE:* Use with caution!
 
 **NOTE:** All executors JVMs under this worker JVM will also be destroyed. It will trigger failover for all
@@ -636,7 +633,6 @@ Sample Response:
 ```
 
 ## Application service
-
 
 ### GET api/v1.0/appmaster/&lt;appId&gt;?detail=&lt;true|false&gt;
 Query information of an specific application of Id appId
@@ -792,7 +788,6 @@ Sample Response:
   ]
 }
 ```
-
 
 ### GET api/v1.0/appmaster/&lt;appId&gt;/config
 Query the configuration of specific application appId

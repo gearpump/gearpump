@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,20 +18,22 @@
 
 package io.gearpump.streaming.state.impl
 
+import org.slf4j.Logger
+
 import io.gearpump.TimeStamp
 import io.gearpump.streaming.state.api.{Monoid, MonoidState, Serializer}
-import io.gearpump.util.LogUtil
 import io.gearpump.streaming.state.impl.NonWindowState._
-import org.slf4j.Logger
+import io.gearpump.util.LogUtil
 
 object NonWindowState {
   val LOG: Logger = LogUtil.getLogger(classOf[NonWindowState[_]])
 }
 
 /**
-  * a MonoidState storing non-window state
+ * a MonoidState storing non-window state
  */
-class NonWindowState[T](monoid: Monoid[T], serializer: Serializer[T]) extends MonoidState[T](monoid) {
+class NonWindowState[T](monoid: Monoid[T], serializer: Serializer[T])
+  extends MonoidState[T](monoid) {
 
   override def recover(timestamp: TimeStamp, bytes: Array[Byte]): Unit = {
     serializer.deserialize(bytes).foreach(left = _)

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,11 @@
  */
 package io.gearpump.streaming.hadoop.lib.format
 
-import io.gearpump.Message
-import org.apache.hadoop.io.{LongWritable, Writable, Text}
+import org.apache.hadoop.io.{LongWritable, Text, Writable}
 
-class DefaultSequenceFormatter extends OutputFormatter{
+import io.gearpump.Message
+
+class DefaultSequenceFormatter extends OutputFormatter {
   override def getKey(message: Message): Writable = new LongWritable(message.timestamp)
 
   override def getValue(message: Message): Writable = new Text(message.msg.asInstanceOf[String])

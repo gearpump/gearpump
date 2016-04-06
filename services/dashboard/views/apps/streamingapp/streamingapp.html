@@ -18,7 +18,8 @@
       <metrics
         ng-if="app.clock"
         caption="Application Clock"
-        help="{{appClockConcern||whatIsAppClock}}" remark-type="{{appClockConcern ? 'warning' : 'info'}}"
+        help="{{appClockConcern||whatIsAppClock}}"
+        remark-type="{{appClockConcern ? 'warning' : 'info'}}"
         click-help="switchToDagTab()"
         value="{{app.clock|date:'HH:mm:ss'}}"
         sub-text="{{app.clock|date:'yyyy/MM/dd'}}"></metrics>
@@ -29,7 +30,8 @@
         value="not started"></metrics>
     </div>
     <div class="col-md-2 col-sm-3 col-xs-4">
-      <metrics value="{{dag.getProcessorCount()}}" unit="processor" unit-plural="processors"></metrics>
+      <metrics value="{{dag.getProcessorCount()}}" unit="processor"
+               unit-plural="processors"></metrics>
       <metrics value="{{size(app.executors)}}" unit="executor" unit-plural="executors"></metrics>
     </div>
   </div>

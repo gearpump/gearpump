@@ -20,8 +20,8 @@
             <span ng-if="error">
               Check out the
               <span class="help-text"
-                 bs-tooltip="error" html="true" placement="bottom"
-                 ng-click="showErrorInNewWin()">reason
+                    bs-tooltip="error" html="true" placement="bottom"
+                    ng-click="showErrorInNewWin()">reason
                 <i ng-if="hasStackTrace"
                    class="fa fa-external-link"></i></span>.
             </span>
@@ -41,10 +41,11 @@
               ng-model="conf" accept-pattern="{{confFileSuffix}}"></form-control>
             <!-- input 3 -->
             <form-control
-              ng-if="!isStormApp"
+              ng-hide="isStormApp"
               type="integer" min="1" label="Executors"
               help="The number of executor (JVM) processes to be spawned in the cluster."
-              ng-model="executorNum"></form-control>
+              ng-model="executorNum" ng-init="executorNum = 1"></form-control>
+
             <!-- input 4 -->
             <form-control
               type="text" label="Arguments"

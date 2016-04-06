@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,11 @@
  */
 package io.gearpump.integrationtest
 
+import org.scalatest._
+
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.MasterToAppMaster.AppMasterData
 import io.gearpump.util.LogUtil
-import org.scalatest._
 
 /**
  * The abstract test spec
@@ -55,7 +56,7 @@ trait TestSpecBase
 
   var restartClusterRequired: Boolean = false
 
-  override def beforeEach(td: TestData) = {
+  override def beforeEach(td: TestData): Unit = {
 
     LOGGER.debug(s">### =============================================================")
     LOGGER.debug(s">###1 Prepare test: ${td.name}\n")
@@ -67,7 +68,7 @@ trait TestSpecBase
     LOGGER.debug(s">###2 Start test: ${td.name}\n")
   }
 
-  override def afterEach(td: TestData) = {
+  override def afterEach(td: TestData): Unit = {
     LOGGER.debug(s"<### =============================================================")
     LOGGER.debug(s"<###3 End test: ${td.name}\n")
 

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,12 +22,12 @@ import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.task.TaskContext
 
-class BalanceTask(context: TaskContext, userConf : UserConfig) extends GraphTask(context, userConf) {
+class BalanceTask(context: TaskContext, userConf: UserConfig) extends GraphTask(context, userConf) {
 
   val sizeOfOutputs = sizeOfOutPorts
   var index = 0
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message): Unit = {
     output(index, msg)
     index += 1
     if (index == sizeOfOutputs) {

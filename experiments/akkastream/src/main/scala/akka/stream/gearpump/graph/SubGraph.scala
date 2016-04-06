@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,9 @@
 
 package akka.stream.gearpump.graph
 
-import akka.actor.ActorSystem
 import akka.stream.ModuleGraph.Edge
 import akka.stream.impl.StreamLayout.Module
+
 import io.gearpump.util.Graph
 
 /**
@@ -40,11 +40,10 @@ trait SubGraph {
   def graph: Graph[Module, Edge]
 }
 
-
 /**
  * Materializer for Sub-Graph type
  */
-trait SubGraphMaterializer{
+trait SubGraphMaterializer {
   /**
    *
    * @param matValues Materialized Values for each module before materialization
@@ -53,5 +52,5 @@ trait SubGraphMaterializer{
 
   def materialize(graph: SubGraph, matValues: Map[Module, Any]): Map[Module, Any]
 
-  def shutdown: Unit
+  def shutdown(): Unit
 }

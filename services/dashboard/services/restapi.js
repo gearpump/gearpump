@@ -7,7 +7,7 @@ angular.module('dashboard')
 
 /** TODO: refactoring work required */
   .factory('restapi', ['$q', '$http', '$timeout', '$modal', 'Upload', 'conf', 'HealthCheckService',
-    function($q, $http, $timeout, $modal, Upload, conf, HealthCheckService) {
+    function ($q, $http, $timeout, $modal, Upload, conf, HealthCheckService) {
       'use strict';
 
       function decodeSuccessResponse(data) {
@@ -32,27 +32,27 @@ angular.module('dashboard')
         /**
          * Retrieve data from rest service endpoint (HTTP GET) periodically in an angular scope.
          */
-        subscribe: function(path, scope, onData, interval) {
+        subscribe: function (path, scope, onData, interval) {
           var timeoutPromise;
           var shouldCancel = false;
-          scope.$on('$destroy', function() {
+          scope.$on('$destroy', function () {
             shouldCancel = true;
             $timeout.cancel(timeoutPromise);
           });
 
           interval = interval || conf.restapiQueryInterval;
-          var fn = function() {
+          var fn = function () {
             var promise = self.get(path);
-            promise.then(function(response) {
-                if (!shouldCancel && angular.isFunction(onData)) {
-                  shouldCancel = onData(response.data);
-                }
-              }, function(response) {
-                if (!shouldCancel && angular.isFunction(onData)) {
-                  shouldCancel = onData(response.data);
-                }
-              })
-              .finally(function() {
+            promise.then(function (response) {
+              if (!shouldCancel && angular.isFunction(onData)) {
+                shouldCancel = onData(response.data);
+              }
+            }, function (response) {
+              if (!shouldCancel && angular.isFunction(onData)) {
+                shouldCancel = onData(response.data);
+              }
+            })
+              .finally(function () {
                 if (!shouldCancel) {
                   timeoutPromise = $timeout(fn, interval);
                 }
@@ -67,7 +67,7 @@ angular.module('dashboard')
          * health check indicates the service is unavailable, no request will be sent to server, just
          * simple return a failure after a default timeout.
          */
-        get: function(path) {
+        get: function (path) {
           if (!HealthCheckService.isServiceAvailable()) {
             var deferred = $q.defer();
             _.delay(deferred.reject, conf.restapiQueryTimeout);
@@ -77,59 +77,59 @@ angular.module('dashboard')
         },
 
         /** Get data from server periodically until an user cancellation or scope exit. */
-        repeatUntil: function(url, scope, onData) {
+        repeatUntil: function (url, scope, onData) {
           // TODO: Once `subscribe` is turned to websocket push model, there is no need to have this method
           this.subscribe(url, scope,
-            function(data) {
+            function (data) {
               return !onData || onData(data);
             });
         },
 
         /** Kill a running application */
-        killApp: function(appId) {
+        killApp: function (appId) {
           var url = restapiV1Root + 'appmaster/' + appId;
           return $http.delete(url);
         },
 
         /** Restart a running application and return a promise */
-        restartAppAsync: function(appId) {
+        restartAppAsync: function (appId) {
           var url = restapiV1Root + 'appmaster/' + appId + '/restart';
           return $http.post(url);
         },
 
         /** Return the config link of an application */
-        appConfigLink: function(appId) {
+        appConfigLink: function (appId) {
           return restapiV1Root + 'appmaster/' + appId + '/config';
         },
 
         /** Return the config link of an application */
-        appExecutorConfigLink: function(appId, executorId) {
+        appExecutorConfigLink: function (appId, executorId) {
           return restapiV1Root + 'appmaster/' + appId + '/executor/' + executorId + '/config';
         },
 
         /** Return the config link of a worker */
-        workerConfigLink: function(workerId) {
+        workerConfigLink: function (workerId) {
           return restapiV1Root + 'worker/' + workerId + '/config';
         },
 
         /** Return the config link of the master */
-        masterConfigLink: function() {
+        masterConfigLink: function () {
           return restapiV1Root + 'master/config';
         },
 
         /** Submit an user defined application with user configuration */
-        submitUserApp: function(files, fileFieldNames, executorNum, args, onComplete) {
+        submitUserApp: function (files, fileFieldNames, executorNum, args, onComplete) {
           return self._submitApp(restapiV1Root + 'master/submitapp',
             files, fileFieldNames, executorNum, args, onComplete);
         },
 
         /** Submit a Storm application */
-        submitStormApp: function(files, formFormNames, executorNum, args, onComplete) {
+        submitStormApp: function (files, formFormNames, executorNum, args, onComplete) {
           return self._submitApp(restapiV1Root + 'master/submitstormapp',
             files, formFormNames, executorNum, args, onComplete);
         },
 
-        _submitApp: function(url, files, fileFieldNames, executorNum, args, onComplete) {
+        _submitApp: function (url, files, fileFieldNames, executorNum, args, onComplete) {
           var upload = Upload.upload({
             url: url,
             method: 'POST',
@@ -141,12 +141,12 @@ angular.module('dashboard')
             }
           });
 
-          upload.then(function(response) {
+          upload.then(function (response) {
             if (onComplete) {
               var data = response.data;
               onComplete({success: data && data.success});
             }
-          }, function(response) {
+          }, function (response) {
             if (onComplete) {
               onComplete(decodeErrorResponse(response.data));
             }
@@ -154,13 +154,13 @@ angular.module('dashboard')
         },
 
         /** Submit an user defined application with user configuration */
-        submitDag: function(args, onComplete) {
+        submitDag: function (args, onComplete) {
           var url = restapiV1Root + 'master/submitdag';
-          return $http.post(url, args).then(function(response) {
+          return $http.post(url, args).then(function (response) {
             if (onComplete) {
               onComplete(decodeSuccessResponse(response.data));
             }
-          }, function(response) {
+          }, function (response) {
             if (onComplete) {
               onComplete(decodeErrorResponse(response.data));
             }
@@ -168,7 +168,7 @@ angular.module('dashboard')
         },
 
         /** Upload a set of JAR files */
-        uploadJars: function(files, onComplete) {
+        uploadJars: function (files, onComplete) {
           var upload = Upload.upload({
             url: restapiV1Root + 'master/uploadjar',
             method: 'POST',
@@ -176,11 +176,11 @@ angular.module('dashboard')
             fileFormDataName: 'jar'
           });
 
-          upload.then(function(response) {
+          upload.then(function (response) {
             if (onComplete) {
               onComplete(decodeSuccessResponse({files: response.data}));
             }
-          }, function(response) {
+          }, function (response) {
             if (onComplete) {
               onComplete(decodeErrorResponse(response.data));
             }
@@ -188,14 +188,14 @@ angular.module('dashboard')
         },
 
         /** Add a new worker */
-        addWorker: function(onComplete) {
+        addWorker: function (onComplete) {
           var count = 1;
           var url = restapiV1Root + 'supervisor/addworker/' + count;
-          return $http.post(url).then(function(response) {
+          return $http.post(url).then(function (response) {
             if (angular.isFunction(onComplete)) {
               onComplete(decodeSuccessResponse(response.data));
             }
-          }, function(response) {
+          }, function (response) {
             if (angular.isFunction(onComplete)) {
               onComplete(decodeErrorResponse(response.data));
             }
@@ -203,13 +203,13 @@ angular.module('dashboard')
         },
 
         /** Remove a new worker */
-        removeWorker: function(workerId, onComplete) {
+        removeWorker: function (workerId, onComplete) {
           var url = restapiV1Root + 'supervisor/removeworker/' + workerId;
-          return $http.post(url).then(function(response) {
+          return $http.post(url).then(function (response) {
             if (angular.isFunction(onComplete)) {
               onComplete(decodeSuccessResponse(response.data));
             }
-          }, function(response) {
+          }, function (response) {
             if (angular.isFunction(onComplete)) {
               onComplete(decodeErrorResponse(response.data));
             }
@@ -217,7 +217,7 @@ angular.module('dashboard')
         },
 
         /** Replace a dag processor at runtime */
-        replaceDagProcessor: function(files, formFormNames, appId, oldProcessorId, newProcessorDescription, onComplete) {
+        replaceDagProcessor: function (files, formFormNames, appId, oldProcessorId, newProcessorDescription, onComplete) {
           var url = restapiV1Root + 'appmaster/' + appId + '/dynamicdag';
           var args = {
             "$type": 'io.gearpump.streaming.appmaster.DagManager.ReplaceProcessor',
@@ -229,7 +229,7 @@ angular.module('dashboard')
           url += '?args=' + encodeURIComponent(angular.toJson(args));
 
           var promise;
-          var filtered = _.filter(files, function(file) {
+          var filtered = _.filter(files, function (file) {
             return file;
           });
           if (filtered.length) {
@@ -243,11 +243,11 @@ angular.module('dashboard')
             promise = $http.post(url);
           }
 
-          promise.then(function() {
+          promise.then(function () {
             if (onComplete) {
               onComplete({success: true});
             }
-          }, function(response) {
+          }, function (response) {
             if (onComplete) {
               onComplete({success: false, reason: response.data});
             }
@@ -255,8 +255,8 @@ angular.module('dashboard')
         },
 
         /** Return the service version in onData callback */
-        serviceVersion: function(onData) {
-          return $http.get(conf.restapiRoot + 'version').then(function(response) {
+        serviceVersion: function (onData) {
+          return $http.get(conf.restapiRoot + 'version').then(function (response) {
             if (angular.isFunction(onData)) {
               onData(response.data);
             }

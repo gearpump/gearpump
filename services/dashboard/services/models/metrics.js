@@ -6,23 +6,23 @@
 angular.module('io.gearpump.models')
 
 /** TODO: to be absorbed as scalajs (#458) */
-  .factory('Metrics', [function() {
+  .factory('Metrics', [function () {
     'use strict';
 
     var decoder = {
-      _common: function(data) {
+      _common: function (data) {
         return {
           meta: decoder._extractPathAndName(data.value.name),
           time: Number(data.time)
         };
       },
-      _extractPathAndName: function(name) {
+      _extractPathAndName: function (name) {
         var tuple = name.split(':');
         return tuple.length === 2 ?
-          {path: tuple[0], name: tuple[1]} :
-          {path: '', name: name};
+        {path: tuple[0], name: tuple[1]} :
+        {path: '', name: name};
       },
-      meter: function(data) {
+      meter: function (data) {
         var result = decoder._common(data);
         var value = data.value;
         result.values = {
@@ -32,7 +32,7 @@ angular.module('io.gearpump.models')
         };
         return result;
       },
-      histogram: function(data) {
+      histogram: function (data) {
         var result = decoder._common(data);
         var value = data.value;
         result.values = {
@@ -45,14 +45,14 @@ angular.module('io.gearpump.models')
         };
         return result;
       },
-      gauge: function(data) {
+      gauge: function (data) {
         var result = decoder._common(data);
         var value = data.value;
         result.value = Number(value.value);
         return result;
       },
       /** automatically guess metric type and decode or return null */
-      $auto: function(data) {
+      $auto: function (data) {
         switch (data.value.$type) {
           case 'io.gearpump.metrics.Metrics.Meter':
             return decoder.meter(data);

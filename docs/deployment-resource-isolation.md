@@ -9,7 +9,7 @@ cgroups (abbreviated from control groups) is a Linux kernel feature to limit, ac
 
 ## Start CGroup Service 
 
-Cgroups feature is only supported by Linux whose kernel version is larger than 2.6.18. Please also make sure the SELinux is disabled before start CGroup.
+CGroup feature is only supported by Linux whose kernel version is larger than 2.6.18. Please also make sure the SELinux is disabled before start CGroup.
 
 The following steps are supposed to be executed by root user.
 
@@ -30,7 +30,7 @@ The following steps are supposed to be executed by root user.
    perf_event /sys/fs/cgroup/perf_event
    ```
    
-3. If you want to assign permission to user **gear** to launch Gearpump Worker and applications with resouce isolation enabled, you need to check gear's uid and gid in /etc/passwd file, let's take **500** for example.
+3. If you want to assign permission to user **gear** to launch Gearpump Worker and applications with resource isolation enabled, you need to check gear's uid and gid in /etc/passwd file, let's take **500** for example.
 
 4. Add following content to /etc/cgconfig.conf
     
@@ -71,7 +71,7 @@ The following steps are supposed to be executed by root user.
    
 5. There should be a folder **gearpump** generated under the mount point of cpu subsystem and its owner is **gear:gear**.  
   
-6. Repeat the above-mentioned steps on each machine where you want to lauch Gearpump.   
+6. Repeat the above-mentioned steps on each machine where you want to launch Gearpump.   
 
 ## Enable Cgroups in Gearpump 
 1. Login into the machine which has CGroup prepared with user **gear**.
@@ -90,11 +90,11 @@ The following steps are supposed to be executed by root user.
 
    Please note the gearpump.cgroup.root **gearpump** must be consistent with the group name in /etc/cgconfig.conf.
 
-3. Repeat the above-mentioned steps on each machine where you want to lauch Gearpump
+3. Repeat the above-mentioned steps on each machine where you want to launch Gearpump
 
 4. Start the Gearpump cluster, please refer to [Deploy Gearpump in Standalone Mode](deployment-standalone.html)
 
-## Launch Application From Commad Line
+## Launch Application From Command Line
 1. Login into the machine which has Gearpump distribution.
 
 2. Enter into Gearpump's home folder, edit gear.conf under folder ```${GEARPUMP_HOME}/conf/```
@@ -117,4 +117,4 @@ The following steps are supposed to be executed by root user.
 If you want to submit the application from dashboard, by default the ```gearpump.cgroup.cpu-core-limit-per-executor``` is inherited from Worker's configuration. You can provide your own conf file to override it.
 
 ## Limitations
-Windows and Mac OS X don't support CGroup, so the resource isolation will not work even if you turn it on. There will not be any limitition for single executor's cpu usage.
+Windows and Mac OS X don't support CGroup, so the resource isolation will not work even if you turn it on. There will not be any limitation for single executor's cpu usage.

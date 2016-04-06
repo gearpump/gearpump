@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,16 +19,13 @@
 package io.gearpump.experiments.storm.processor
 
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.Duration
 
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpBolt
 import io.gearpump.experiments.storm.util._
 import io.gearpump.streaming.task._
-import io.gearpump.util.LogUtil
-import org.slf4j.Logger
-
-import scala.concurrent.duration.Duration
 
 object StormProcessor {
   private[storm] val TICK = Message("tick")
@@ -38,11 +35,11 @@ object StormProcessor {
  * this is runtime container for Storm bolt
  */
 private[storm] class StormProcessor(gearpumpBolt: GearpumpBolt,
-                                    taskContext: TaskContext, conf: UserConfig)
+    taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
   import io.gearpump.experiments.storm.processor.StormProcessor._
 
-  def this(taskContext: TaskContext, conf:UserConfig) = {
+  def this(taskContext: TaskContext, conf: UserConfig) = {
     this(StormUtil.getGearpumpStormComponent(taskContext, conf)(taskContext.system)
       .asInstanceOf[GearpumpBolt], taskContext, conf)
   }
@@ -67,6 +64,8 @@ private[storm] class StormProcessor(gearpumpBolt: GearpumpBolt,
   }
 
   private def scheduleTick(freq: Int): Unit = {
-    taskContext.scheduleOnce(Duration(freq, TimeUnit.SECONDS)){ self ! TICK }
+    taskContext.scheduleOnce(Duration(freq, TimeUnit.SECONDS)) {
+      self ! TICK
+    }
   }
 }

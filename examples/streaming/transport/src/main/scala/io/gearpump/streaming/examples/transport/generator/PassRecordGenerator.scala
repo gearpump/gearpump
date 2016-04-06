@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,10 @@
  */
 package io.gearpump.streaming.examples.transport.generator
 
+import scala.util.Random
+
 import io.gearpump.streaming.examples.transport.PassRecord
 import io.gearpump.util.LogUtil
-
-import scala.util.Random
 
 class PassRecordGenerator(vehicleId: String, city: MockCity, overdriveThreshold: Int) {
   private val LOG = LogUtil.getLogger(getClass)
@@ -38,9 +38,9 @@ class PassRecordGenerator(vehicleId: String, city: MockCity, overdriveThreshold:
     val randomRange = upperBound - randomMin
     (randomMin.toInt, randomRange.toInt)
   }
-  
+
   def getNextPassRecord(): PassRecord = {
-    locationId = if(fakePlate) {
+    locationId = if (fakePlate) {
       city.randomLocationId()
     } else {
       city.nextLocation(locationId)
@@ -54,11 +54,12 @@ object PassRecordGenerator {
   final val FAKE_PLATE_RATE = 0.01F
   final val OVERDRIVE_RATE = 0.05F
   final val TWOMINUTES = 2 * 60 * 1000
-  
-  def create(generatorNum: Int, prefix: String, city: MockCity, overdriveThreshold: Int): Array[PassRecordGenerator] = {
+
+  def create(generatorNum: Int, prefix: String, city: MockCity, overdriveThreshold: Int)
+    : Array[PassRecordGenerator] = {
     var result = Map.empty[String, PassRecordGenerator]
     val digitsNum = (Math.log10(generatorNum) + 1).toInt
-    for(i <- 1 to generatorNum) {
+    for (i <- 1 to generatorNum) {
       val vehicleId = prefix + s"%0${digitsNum}d".format(i)
       val generator = new PassRecordGenerator(vehicleId, city, overdriveThreshold)
       result += vehicleId -> generator

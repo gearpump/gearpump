@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,21 +16,20 @@
  * limitations under the License.
  */
 
-
 package io.gearpump.experiments.distributeservice
 
 import java.io.File
+import scala.util.{Failure, Success, Try}
 
 import akka.actor.{Actor, Stash}
 import akka.io.IO
-import io.gearpump.util.LogUtil
 import org.apache.commons.httpclient.HttpClient
 import org.apache.commons.httpclient.methods.{ByteArrayRequestEntity, GetMethod, PostMethod}
 import spray.can.Http
 import spray.http.HttpMethods._
 import spray.http._
-import io.gearpump.util.FileUtils
-import scala.util.{Failure, Success, Try}
+
+import io.gearpump.util.{FileUtils, LogUtil}
 
 /**
  *
@@ -38,18 +37,18 @@ import scala.util.{Failure, Success, Try}
  *
  * port: set port to 0 if you want to bind to random port
  */
-class FileServer(rootDir: File, host: String, port : Int) extends Actor with Stash {
+class FileServer(rootDir: File, host: String, port: Int) extends Actor with Stash {
   private val LOG = LogUtil.getLogger(getClass)
 
   implicit val system = context.system
 
   override def preStart(): Unit = {
-    // create http server
+    // Creates http server
     IO(Http) ! Http.Bind(self, host, port)
   }
 
-  override def postStop() : Unit = {
-    //stop the server
+  override def postStop(): Unit = {
+    // Stop the server
     IO(Http) ! Http.Unbind
   }
 
@@ -62,14 +61,14 @@ class FileServer(rootDir: File, host: String, port : Int) extends Actor with Sta
       stash()
   }
 
-  def listen(port : Int) : Receive = {
+  def listen(port: Int): Receive = {
     case FileServer.GetPort => {
       sender ! FileServer.Port(port)
     }
     case Http.Connected(remote, _) =>
       sender ! Http.Register(self)
 
-    // fetch file from remote uri
+    // Fetches files from remote uri
     case HttpRequest(GET, uri, _, _, _) =>
       val child = uri.path.toString()
       val payload = Try {
@@ -83,8 +82,8 @@ class FileServer(rootDir: File, host: String, port : Int) extends Actor with Sta
           LOG.error("failed to get file " + ex.getMessage)
           sender ! HttpResponse(status = StatusCodes.InternalServerError, entity = ex.getMessage)
       }
-    //save file to remote uri
-    case post @ HttpRequest(POST, uri, _, _, _) =>
+    // Save file to remote uri
+    case post@HttpRequest(POST, uri, _, _, _) =>
       val child = uri.path.toString()
 
       val status = Try {
@@ -104,14 +103,14 @@ class FileServer(rootDir: File, host: String, port : Int) extends Actor with Sta
 
 object FileServer {
   object GetPort
-  case class Port(port : Int)
+  case class Port(port: Int)
 
-  def newClient = new Client
+  def newClient: Client = new Client
 
   class Client {
     val client = new HttpClient()
 
-    def save(uri : String, data : Array[Byte]) : Try[Int] = {
+    def save(uri: String, data: Array[Byte]): Try[Int] = {
       Try {
         val post = new PostMethod(uri)
         val entity = new ByteArrayRequestEntity(data)
@@ -120,7 +119,7 @@ object FileServer {
       }
     }
 
-    def get(uri : String) : Try[Array[Byte]] = {
+    def get(uri: String): Try[Array[Byte]] = {
       val get = new GetMethod(uri)
       val status = Try {
         client.executeMethod(get)

@@ -3,14 +3,14 @@ on Gearpump. This documentation illustrates how to do so in a local Gearpump clu
 
 ## How to run a Storm application over Gearpump 
 
-  1. launch a local cluster
+  1. Launch a local cluster
 
   ```bash
     ./target/pack/bin/local
 
   ```
 
-  2. submit a topology from storm-starter
+  2. Submit a topology from storm-starter
 
   ```bash
     bin/storm -verbose -config storm.yaml -jar storm-starter-${STORM_VERSION}.jar storm.starter.ExclamationTopology exclamation 
@@ -26,5 +26,4 @@ on Gearpump. This documentation illustrates how to do so in a local Gearpump clu
 ## Limitations 
 
 1. Trident support is ongoing. 
-
 

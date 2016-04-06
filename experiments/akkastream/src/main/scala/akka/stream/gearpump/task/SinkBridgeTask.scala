@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,8 @@ import akka.actor.Actor.Receive
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.stream.gearpump.task.SinkBridgeTask.RequestMessage
 import akka.util.Timeout
+import org.reactivestreams.{Publisher, Subscriber, Subscription}
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
@@ -32,9 +34,6 @@ import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
 import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 import io.gearpump.util.LogUtil
-import org.reactivestreams.{Publisher, Subscriber, Subscription}
-
-import scala.concurrent.ExecutionContext
 
 /**
  * Bridge Task when data flow is from remote Gearpump Task to local Akka-Stream Module
@@ -47,11 +46,8 @@ import scala.concurrent.ExecutionContext
  *                            \|
  *                       Akka Stream [[Subscriber]]
  *
- *
- * @param taskContext
- * @param userConf
  */
-class SinkBridgeTask (taskContext : TaskContext, userConf : UserConfig) extends Task(taskContext, userConf) {
+class SinkBridgeTask(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
   import taskContext.taskId
 
   val queue = new util.LinkedList[Message]()
@@ -59,14 +55,14 @@ class SinkBridgeTask (taskContext : TaskContext, userConf : UserConfig) extends 
 
   var request: Int = 0
 
-  override def onStart(startTime : StartTime) : Unit = {}
+  override def onStart(startTime: StartTime): Unit = {}
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message): Unit = {
     queue.add(msg)
     trySendingData()
   }
 
-  override def onStop() : Unit = {}
+  override def onStop(): Unit = {}
 
   private def trySendingData(): Unit = {
     if (subscriber != null) {
@@ -100,7 +96,7 @@ object SinkBridgeTask {
     private var actor: ActorRef = null
     import system.dispatcher
 
-    private val task = context.askAppMaster[TaskActorRef](appId, LookupTaskActorRef(taskId)).map{container =>
+    private val task = context.askAppMaster[TaskActorRef](appId, LookupTaskActorRef(taskId)).map { container =>
       // println("Successfully resolved taskRef for taskId " + taskId + ", " + container.task)
       container.task
     }
@@ -115,7 +111,7 @@ object SinkBridgeTask {
     private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
     override def request(l: Long): Unit = {
-      task.foreach{ task =>
+      task.foreach { task =>
         task.tell(RequestMessage(l.toInt), actor)
       }
     }

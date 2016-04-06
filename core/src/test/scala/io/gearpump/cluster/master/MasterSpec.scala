@@ -19,5 +19,4 @@
 package io.gearpump.cluster.master
 
 class MasterSpec {
-
 }

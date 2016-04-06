@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@
 
 package io.gearpump.security
 
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 class PasswordUtilSpec extends FlatSpec with Matchers {
 
@@ -28,11 +28,10 @@ class PasswordUtilSpec extends FlatSpec with Matchers {
     val digest1 = PasswordUtil.hash(password)
     val digest2 = PasswordUtil.hash(password)
 
-    // we will use different salt each time, thus
-    // creating different hash.
+    // Uses different salt each time, thus creating different hash.
     assert(digest1 != digest2)
 
-    // both are valid hash.
+    // Both are valid hash.
     assert(PasswordUtil.verify(password, digest1))
     assert(PasswordUtil.verify(password, digest2))
   }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,20 +19,26 @@
 package io.gearpump.cluster.master
 
 import java.lang.management.ManagementFactory
+import scala.collection.JavaConverters._
+import scala.collection.immutable
 
 import akka.actor._
 import akka.remote.DisassociatedEvent
 import com.typesafe.config.Config
+import org.apache.commons.lang.exception.ExceptionUtils
+import org.slf4j.Logger
+
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToAppMaster._
-import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, MasterConfig, ResolveWorkerIdResult}
+import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, MasterConfig, ResolveWorkerIdResult}
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToMaster._
 import io.gearpump.cluster.master.InMemoryKVService._
 import io.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated, _}
 import io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.jarstore.local.LocalJarStore
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
@@ -40,31 +46,22 @@ import io.gearpump.transport.HostPort
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util._
-import io.gearpump.WorkerId
-
-import org.apache.commons.lang.exception.ExceptionUtils
-import org.slf4j.Logger
-
-import scala.collection.JavaConverters._
-import scala.collection.immutable
 
 /**
- * Master manage resources of the whole cluster.
+ * Master Actor who manages resources of the whole cluster.
  * It is like the resource manager of YARN.
- *
  */
 private[cluster] class Master extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
-  private val systemConfig : Config = context.system.settings.config
+  private val systemConfig: Config = context.system.settings.config
   private implicit val timeout = Constants.FUTURE_TIMEOUT
   private val kvService = context.actorOf(Props(new InMemoryKVService()), "kvService")
-  // resources and resourceRequests can be dynamically constructed by
+  // Resources and resourceRequests can be dynamically constructed by
   // heartbeat of worker and appmaster when master singleton is migrated.
-  // we don't need to persist them in cluster
+  // We don't need to persist them in cluster
+  private var appManager: ActorRef = null
 
-  private var appManager : ActorRef = null
-
-  private var scheduler : ActorRef = null
+  private var scheduler: ActorRef = null
 
   private var workers = new immutable.HashMap[ActorRef, WorkerId]
 
@@ -74,16 +71,16 @@ private[cluster] class Master extends Actor with Stash {
 
   def receive: Receive = null
 
-  // register jvm metrics
+  // Register jvm metrics
   Metrics(context.system).register(new JvmMetricsSet(s"master"))
 
   LOG.info("master is started at " + ActorUtil.getFullPath(context.system, self.path) + "...")
 
   val jarStoreRootPath = systemConfig.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH)
 
-  val jarStore = if(Util.isLocalPath(jarStoreRootPath)) {
+  private val jarStore = if (Util.isLocalPath(jarStoreRootPath)) {
     Some(context.actorOf(Props(classOf[LocalJarStore], jarStoreRootPath)))
-  } else{
+  } else {
     None
   }
 
@@ -97,7 +94,8 @@ private[cluster] class Master extends Actor with Stash {
       context.actorOf(Props(new HistoryMetricsService("master", getHistoryMetricsConfig)))
     }
 
-    val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
+    val metricsReportService = context.actorOf(
+      Props(new MetricsReporterService(Metrics(context.system))))
     historyMetricsService.tell(ReportMetrics, metricsReportService)
     Some(historyMetricsService)
   } else {
@@ -109,7 +107,7 @@ private[cluster] class Master extends Actor with Stash {
 
   def waitForNextWorkerId: Receive = {
     case GetKVSuccess(_, result) =>
-      if(result != null) {
+      if (result != null) {
         this.nextWorkerId = result.asInstanceOf[Int]
       } else {
         LOG.warn("Cannot find existing state in the distributed cluster...")
@@ -124,7 +122,7 @@ private[cluster] class Master extends Actor with Stash {
       stash()
   }
 
-  def receiveHandler : Receive = workerMsgHandler orElse
+  def receiveHandler: Receive = workerMsgHandler orElse
     appMasterMsgHandler orElse
     clientMsgHandler orElse
     metricsService orElse
@@ -134,7 +132,7 @@ private[cluster] class Master extends Actor with Stash {
     kvServiceMsgHandler orElse
     ActorUtil.defaultMsgHandler(self)
 
-  def workerMsgHandler : Receive = {
+  def workerMsgHandler: Receive = {
     case RegisterNewWorker =>
       val workerId = WorkerId(nextWorkerId, System.currentTimeMillis())
       nextWorkerId += 1
@@ -150,41 +148,42 @@ private[cluster] class Master extends Actor with Stash {
       workers += (sender() -> id)
       val workerHostname = ActorUtil.getHostname(sender())
       LOG.info(s"Register Worker with id $id from $workerHostname ....")
-    case resourceUpdate : ResourceUpdate =>
+    case resourceUpdate: ResourceUpdate =>
       scheduler forward resourceUpdate
   }
 
-  def jarStoreService : Receive = {
+  def jarStoreService: Receive = {
     case GetJarStoreServer =>
       jarStore.foreach(_ forward GetJarStoreServer)
   }
 
   def kvServiceMsgHandler: Receive = {
     case PutKVSuccess =>
-      //Skip
+    // Skip
     case PutKVFailed(key, exception) =>
-      LOG.error(s"Put KV of key $key to InMemoryKVService failed.\n" + ExceptionUtils.getStackTrace(exception))
+      LOG.error(s"Put KV of key $key to InMemoryKVService failed.\n" +
+        ExceptionUtils.getStackTrace(exception))
   }
 
-  def metricsService : Receive = {
+  def metricsService: Receive = {
     case query: QueryHistoryMetrics =>
       if (historyMetricsService.isEmpty) {
-        // return empty metrics so that we don't hang the UI
+        // Returns empty metrics so that we don't hang the UI
         sender ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
       } else {
         historyMetricsService.get forward query
       }
   }
 
-  def appMasterMsgHandler : Receive = {
-    case  request : RequestResource =>
+  def appMasterMsgHandler: Receive = {
+    case request: RequestResource =>
       scheduler forward request
-    case registerAppMaster : RegisterAppMaster =>
-      //forward to appManager
+    case registerAppMaster: RegisterAppMaster =>
+      // Forward to appManager
       appManager forward registerAppMaster
-    case save : SaveAppData =>
+    case save: SaveAppData =>
       appManager forward save
-    case get : GetAppData =>
+    case get: GetAppData =>
       appManager forward get
     case GetAllWorkers =>
       sender ! WorkerList(workers.values.toList)
@@ -219,7 +218,7 @@ private[cluster] class Master extends Actor with Stash {
 
     if (cluster.isEmpty) {
 
-      //add myself into the list if it is a single node cluster
+      // Add myself into the list if it is a single node cluster
       List(hostPort)
     } else {
       cluster
@@ -228,18 +227,18 @@ private[cluster] class Master extends Actor with Stash {
 
   import scala.util.{Failure, Success}
 
-  def clientMsgHandler : Receive = {
-    case app : SubmitApplication =>
+  def clientMsgHandler: Receive = {
+    case app: SubmitApplication =>
       LOG.debug(s"Receive from client, SubmitApplication $app")
       appManager.forward(app)
-    case app : RestartApplication =>
+    case app: RestartApplication =>
       LOG.debug(s"Receive from client, RestartApplication $app")
       appManager.forward(app)
-    case app : ShutdownApplication =>
+    case app: ShutdownApplication =>
       LOG.debug(s"Receive from client, Shutting down Application ${app.appId}")
       scheduler ! ApplicationFinished(app.appId)
       appManager.forward(app)
-    case app : ResolveAppId =>
+    case app: ResolveAppId =>
       LOG.debug(s"Receive from client, resolving appId ${app.appId} to ActorRef")
       appManager.forward(app)
     case resolve: ResolveWorkerId =>
@@ -247,7 +246,8 @@ private[cluster] class Master extends Actor with Stash {
       val worker = workers.find(_._2 == resolve.workerId)
       worker match {
         case Some(worker) => sender ! ResolveWorkerIdResult(Success(worker._1))
-        case None => sender ! ResolveWorkerIdResult(Failure(new Exception(s"cannot find worker ${resolve.workerId}")))
+        case None => sender ! ResolveWorkerIdResult(Failure(
+          new Exception(s"cannot find worker ${resolve.workerId}")))
       }
     case AppMastersDataRequest =>
       LOG.debug("Master received AppMastersDataRequest")
@@ -262,19 +262,20 @@ private[cluster] class Master extends Actor with Stash {
       sender ! MasterConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
   }
 
-  def disassociated : Receive = {
-    case disassociated : DisassociatedEvent =>
+  def disassociated: Receive = {
+    case disassociated: DisassociatedEvent =>
       LOG.info(s" disassociated ${disassociated.remoteAddress}")
-      //LOG.info(s"remote lifecycle events are "+systemConfig.getString("akka.remote.log-remote-lifecycle-events"))
   }
 
-  def terminationWatch : Receive = {
-    case t : Terminated =>
+  def terminationWatch: Receive = {
+    case t: Terminated =>
       val actor = t.actor
-      LOG.info(s"worker ${actor.path} get terminated, is it due to network reason? ${t.getAddressTerminated()}")
+      LOG.info(s"worker ${actor.path} get terminated, is it due to network reason?" +
+        t.getAddressTerminated())
+
       LOG.info("Let's filter out dead resources...")
-      // filter out dead worker resource
-      if(workers.keySet.contains(actor)){
+      // Filters out dead worker resource
+      if (workers.keySet.contains(actor)) {
         scheduler ! WorkerTerminated(workers.get(actor).get)
         workers -= actor
       }
@@ -283,9 +284,11 @@ private[cluster] class Master extends Actor with Stash {
   override def preStart(): Unit = {
     val path = ActorUtil.getFullPath(context.system, self.path)
     LOG.info(s"master path is $path")
-    val schedulerClass = Class.forName(systemConfig.getString(Constants.GEARPUMP_SCHEDULING_SCHEDULER))
+    val schedulerClass = Class.forName(
+      systemConfig.getString(Constants.GEARPUMP_SCHEDULING_SCHEDULER))
 
-    appManager = context.actorOf(Props(new AppManager(kvService, AppMasterLauncher)), classOf[AppManager].getSimpleName)
+    appManager = context.actorOf(Props(new AppManager(kvService, AppMasterLauncher)),
+      classOf[AppManager].getSimpleName)
     scheduler = context.actorOf(Props(schedulerClass))
     context.system.eventStream.subscribe(self, classOf[DisassociatedEvent])
   }
@@ -298,10 +301,10 @@ object Master {
 
   case class WorkerTerminated(workerId: WorkerId)
 
-  case class MasterInfo(master: ActorRef, startTime : Long = 0L)
+  case class MasterInfo(master: ActorRef, startTime: Long = 0L)
 
   object MasterInfo {
-    def empty = MasterInfo(null)
+    def empty: MasterInfo = MasterInfo(null)
   }
 
   case class SlotStatus(totalSlots: Int, availableSlots: Int)

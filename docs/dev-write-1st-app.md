@@ -55,8 +55,6 @@ object Split {
 }
 ```
 
-
-
 Like Split, every processor extends a `TaskActor`.  The `onStart` method is called once before any message comes in; `onNext` method is called to process every incoming message. Note that Gearpump employs the message-driven model and that's why Split sends itself a message at the end of `onStart` and `onNext` to trigger next message processing.
 
 #### Sum Processor
@@ -157,12 +155,11 @@ object WordCount extends App with ArgumentsParser {
 
 We override `options` value and define an array of command line arguments to parse. We want application users to pass in masters' hosts and ports, the parallelism of split and sum tasks, and how long to run the example. We also specify whether an option is `required` and provide `defaultValue` for some arguments.
 
-Given the `ParseResult` of command line arguments, we create `TaskDescription`s for Split and Sum processors, and connect them with `HashPartitioner` using DAG API. The graph is wrapped in an `AppDescrition` , which is finally submit to master.
+Given the `ParseResult` of command line arguments, we create `TaskDescription`s for Split and Sum processors, and connect them with `HashPartitioner` using DAG API. The graph is wrapped in an `AppDescription` , which is finally submit to master.
 
 ### Submit application
 
 After all these, you need to package everything into a uber jar and submit the jar to Gearpump Cluster. Please check [Application submission tool](commandline.html) to command line tool syntax.
-
 
 ### Advanced topic
 For a real application, you definitely need to define your own customized message passing between processors.

@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -15,7 +15,7 @@ angular.module('dashboard')
           templateUrl: 'views/apps/apps.html',
           controller: 'AppsCtrl',
           resolve: {
-            apps0: ['models', function(models) {
+            apps0: ['models', function (models) {
               return models.$get.apps();
             }]
           }
@@ -23,7 +23,7 @@ angular.module('dashboard')
     }])
 
   .controller('AppsCtrl', ['$scope', '$modal', '$state', '$sortableTableBuilder', '$dialogs', 'apps0',
-    function($scope, $modal, $state, $stb, $dialogs, apps0) {
+    function ($scope, $modal, $state, $stb, $dialogs, apps0) {
       'use strict';
 
       var submitWindow = $modal({
@@ -34,12 +34,12 @@ angular.module('dashboard')
         show: false
       });
 
-      $scope.openSubmitGearAppDialog = function() {
+      $scope.openSubmitGearAppDialog = function () {
         submitWindow.$scope.isStormApp = false;
         submitWindow.$promise.then(submitWindow.show);
       };
 
-      $scope.openSubmitStormAppDialog = function() {
+      $scope.openSubmitStormAppDialog = function () {
         submitWindow.$scope.isStormApp = true;
         submitWindow.$promise.then(submitWindow.show);
       };
@@ -75,7 +75,7 @@ angular.module('dashboard')
 
       function updateTable(apps) {
         $scope.appsTable.rows = $stb.$update($scope.appsTable.rows,
-          _.map(apps, function(app) {
+          _.map(apps, function (app) {
             var pageUrl = app.isRunning ? app.pageUrl : '';
             return {
               id: {href: pageUrl, text: app.appId},
@@ -86,20 +86,25 @@ angular.module('dashboard')
               submissionTime: app.submissionTime,
               startTime: app.startTime,
               stopTime: app.finishTime || '-',
-              view: {href: app.pageUrl, text: 'Details', class: 'btn-xs btn-primary', disabled: !app.isRunning},
+              view: {
+                href: app.pageUrl,
+                text: 'Details',
+                class: 'btn-xs btn-primary',
+                disabled: !app.isRunning
+              },
               config: {href: app.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
               kill: {
                 text: 'Kill', class: 'btn-xs', disabled: !app.isRunning,
-                click: function() {
-                  $dialogs.confirm('Are you sure to kill this application?', function() {
+                click: function () {
+                  $dialogs.confirm('Are you sure to kill this application?', function () {
                     app.terminate();
                   });
                 }
               },
               restart: {
                 text: 'Restart', class: 'btn-xs', disabled: !app.isRunning,
-                click: function() {
-                  $dialogs.confirm('Are you sure to restart this application?', function() {
+                click: function () {
+                  $dialogs.confirm('Are you sure to restart this application?', function () {
                     app.restart();
                   });
                 }
@@ -109,7 +114,7 @@ angular.module('dashboard')
       }
 
       updateTable(apps0.$data());
-      apps0.$subscribe($scope, function(apps) {
+      apps0.$subscribe($scope, function (apps) {
         updateTable(apps);
       });
     }])

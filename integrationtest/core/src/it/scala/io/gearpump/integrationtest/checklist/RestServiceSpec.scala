@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,12 +17,12 @@
  */
 package io.gearpump.integrationtest.checklist
 
+import scala.concurrent.duration._
+
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.master.MasterStatus
 import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.integrationtest.{TestSpecBase, Util}
-
-import scala.concurrent.duration._
 
 /**
  * The test spec checks REST service usage
@@ -62,7 +62,8 @@ class RestServiceSpec extends TestSpecBase {
     "reject a repeated submission request while the application is running" in {
       // setup
       val appId = restClient.getNextAvailableAppId()
-      val formerSubmissionSuccess = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length)
+      val formerSubmissionSuccess = restClient.submitApp(wordCountJar,
+        cluster.getWorkerHosts.length)
       formerSubmissionSuccess shouldBe true
       expectAppIsRunning(appId, wordCountName)
 
@@ -77,14 +78,16 @@ class RestServiceSpec extends TestSpecBase {
       success shouldBe false
     }
 
-    "submit a wordcount application with 4 split and 3 sum processors and expect parallelism of processors match the given number" in {
+    "submit a wordcount application with 4 split and 3 sum processors and expect " +
+      "parallelism of processors match the given number" in {
       // setup
       val splitNum = 4
       val sumNum = 3
       val appId = restClient.getNextAvailableAppId()
 
       // exercise
-      val success = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length, s"-split $splitNum -sum $sumNum")
+      val success = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length,
+        s"-split $splitNum -sum $sumNum")
       success shouldBe true
       expectAppIsRunning(appId, wordCountName)
       val processors = restClient.queryStreamingAppDetail(appId).processors
@@ -104,7 +107,8 @@ class RestServiceSpec extends TestSpecBase {
 
       // exercise
       expectMetricsAvailable(
-        restClient.queryStreamingAppMetrics(appId, current = true).metrics.nonEmpty, "metrics available")
+        restClient.queryStreamingAppMetrics(appId, current = true).metrics.nonEmpty,
+        "metrics available")
       val actual = restClient.queryStreamingAppMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.processor*"
       actual.metrics.foreach(metric => {
@@ -119,7 +123,8 @@ class RestServiceSpec extends TestSpecBase {
       }, "metrics available")
     }
 
-    "can obtain application corresponding executors' metrics and the metrics will keep changing" in {
+    "can obtain application corresponding executors' metrics and " +
+      "the metrics will keep changing" in {
       // setup
       val appId = restClient.getNextAvailableAppId()
       val success = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length)
@@ -128,7 +133,8 @@ class RestServiceSpec extends TestSpecBase {
 
       // exercise
       expectMetricsAvailable(
-        restClient.queryExecutorMetrics(appId, current = true).metrics.nonEmpty, "metrics available")
+        restClient.queryExecutorMetrics(appId, current = true).metrics.nonEmpty,
+        "metrics available")
       val actual = restClient.queryExecutorMetrics(appId, current = true)
       actual.path shouldEqual s"app$appId.executor*"
       actual.metrics.foreach(metric => {
@@ -194,7 +200,7 @@ class RestServiceSpec extends TestSpecBase {
 
       // exercise
       var runningWorkers: Array[WorkerSummary] = Array.empty
-      Util.retryUntil(()=>{
+      Util.retryUntil(() => {
         runningWorkers = restClient.listRunningWorkers()
         runningWorkers.length == expectedWorkersCount
       }, "all workers running")
@@ -207,13 +213,14 @@ class RestServiceSpec extends TestSpecBase {
       // setup
       restartClusterRequired = true
       val formerWorkersCount = cluster.getWorkerHosts.length
-      Util.retryUntil(()=>restClient.listRunningWorkers().length == formerWorkersCount,
+      Util.retryUntil(() => restClient.listRunningWorkers().length == formerWorkersCount,
         "all workers running")
       val workerName = "newWorker"
 
       // exercise
       cluster.addWorkerNode(workerName)
-      Util.retryUntil(()=>restClient.listRunningWorkers().length > formerWorkersCount, "new worker added")
+      Util.retryUntil(() => restClient.listRunningWorkers().length > formerWorkersCount,
+        "new worker added")
       cluster.getWorkerHosts.length shouldEqual formerWorkersCount + 1
       restClient.listRunningWorkers().length shouldEqual formerWorkersCount + 1
     }
@@ -252,7 +259,8 @@ class RestServiceSpec extends TestSpecBase {
       restClient.listRunningWorkers().foreach { worker =>
         val workerId = worker.workerId
         expectMetricsAvailable(
-          restClient.queryWorkerMetrics(workerId, current = true).metrics.nonEmpty, "metrics available")
+          restClient.queryWorkerMetrics(workerId, current = true).metrics.nonEmpty,
+          "metrics available")
         val actual = restClient.queryWorkerMetrics(workerId, current = true)
         actual.path shouldEqual s"worker$workerId"
         actual.metrics.foreach(metric => {
@@ -323,13 +331,14 @@ class RestServiceSpec extends TestSpecBase {
       val originSplitNum = 4
       val originSumNum = 3
       val originAppId = restClient.getNextAvailableAppId()
-      val success = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length, s"-split $originSplitNum -sum $originSumNum")
+      val success = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length,
+        s"-split $originSplitNum -sum $originSumNum")
       success shouldBe true
       expectAppIsRunning(originAppId, wordCountName)
       val originAppDetail = restClient.queryStreamingAppDetail(originAppId)
 
       // exercise
-      Util.retryUntil(()=>restClient.restartApp(originAppId), "app restarted")
+      Util.retryUntil(() => restClient.restartApp(originAppId), "app restarted")
       val killedApp = restClient.queryApp(originAppId)
       killedApp.appId shouldEqual originAppId
       killedApp.status shouldEqual MasterToAppMaster.AppMasterInActive
@@ -355,7 +364,6 @@ class RestServiceSpec extends TestSpecBase {
   private def expectMetricsAvailable(condition: => Boolean, conditionDescription: String): Unit = {
     val config = restClient.queryMasterConfig()
     val reportInterval = Duration(config.getString("gearpump.metrics.report-interval-ms") + "ms")
-    Util.retryUntil(()=>condition, conditionDescription, interval = reportInterval)
+    Util.retryUntil(() => condition, conditionDescription, interval = reportInterval)
   }
-
 }

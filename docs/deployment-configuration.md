@@ -29,14 +29,13 @@ gearpump{
 
 ## Configuration for user submitted application job
 
-For user application job, it will read configuration file `gear.conf` and `application.conf` from classpath, while `application.conf` has higher prioprty. 
+For user application job, it will read configuration file `gear.conf` and `application.conf` from classpath, while `application.conf` has higher priority. 
 The default classpath contains:
 
 1. `conf/`
 2. current working directory. 
 
 For example, you can put a `application.conf` on your working directory, and then it will be effective when you submit a new job application.
-
 
 ## Logging
 

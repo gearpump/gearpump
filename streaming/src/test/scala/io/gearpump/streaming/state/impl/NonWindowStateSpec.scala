@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,16 @@
 
 package io.gearpump.streaming.state.impl
 
-import io.gearpump.TimeStamp
-import io.gearpump.streaming.state.api.{Monoid, Serializer}
+import scala.util.Success
+
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.util.Success
+import io.gearpump.TimeStamp
+import io.gearpump.streaming.state.api.{Monoid, Serializer}
 
 class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
@@ -89,7 +90,6 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
         state.left shouldBe plus
         state.right shouldBe zero
         state.get shouldBe Some(plus)
-
     }
   }
 
@@ -129,5 +129,4 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
         state.get shouldBe Some(plus)
     }
   }
-
 }

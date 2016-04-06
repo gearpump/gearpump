@@ -1,28 +1,49 @@
-package io.gearpump.streaming.metrics
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import com.typesafe.config.Config
-import io.gearpump.cluster.ClientToMaster.ReadOption
-import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
-import io.gearpump.metrics.MetricsAggregator
-import io.gearpump.util.{LogUtil, Constants}
+package io.gearpump.streaming.metrics
 
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
+import com.typesafe.config.Config
+
+import io.gearpump.cluster.ClientToMaster.ReadOption
+import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
+import io.gearpump.metrics.MetricsAggregator
+import io.gearpump.util.{Constants, LogUtil}
+
 /**
- * It filters the latest metrics data by specifying a
+ * Filters the latest metrics data by specifying a
  * processor Id range, and taskId range.
  */
-class TaskFilterAggregator (maxLimit: Int) extends MetricsAggregator {
+class TaskFilterAggregator(maxLimit: Int) extends MetricsAggregator {
 
-  import TaskFilterAggregator._
+  import io.gearpump.streaming.metrics.TaskFilterAggregator._
 
   def this(config: Config) = {
     this(config.getInt(Constants.GEARPUMP_METRICS_MAX_LIMIT))
   }
-  override def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem] = {
+  override def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem])
+    : List[HistoryMetricsItem] = {
+
     if (options.get(ReadOption.Key) != Some(ReadOption.ReadLatest)) {
-      // return empty set
+      // Returns empty set
       List.empty[HistoryMetricsItem]
     } else {
       val parsed = Options.parse(options)
@@ -34,7 +55,8 @@ class TaskFilterAggregator (maxLimit: Int) extends MetricsAggregator {
     }
   }
 
-  def aggregate(options: Options, inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem] = {
+  def aggregate(options: Options, inputs: Iterator[HistoryMetricsItem])
+    : List[HistoryMetricsItem] = {
 
     val result = new ListBuffer[HistoryMetricsItem]
     val effectiveLimit = Math.min(options.limit, maxLimit)
@@ -42,7 +64,7 @@ class TaskFilterAggregator (maxLimit: Int) extends MetricsAggregator {
 
     val taskIdentity = new TaskIdentity(0, 0)
 
-    while(inputs.hasNext && count < effectiveLimit) {
+    while (inputs.hasNext && count < effectiveLimit) {
       val item = inputs.next()
       if (parseName(item.value.name, taskIdentity)) {
         if (taskIdentity.processor >= options.startProcessor &&
@@ -57,15 +79,17 @@ class TaskFilterAggregator (maxLimit: Int) extends MetricsAggregator {
     result.toList
   }
 
-  // Assume the name format is: "app0.processor0.task0:sendThroughput"
-  // return (processorId, taskId)
-  // return true if success
+  // Assume the name format is: "app0.processor0.task0:sendThroughput", returns
+  // (processorId, taskId)
+  //
+  // returns true if success
   private def parseName(name: String, result: TaskIdentity): Boolean = {
     val processorStart = name.indexOf(PROCESSOR_TAG)
     if (processorStart != -1) {
       val taskStart = name.indexOf(TASK_TAG, processorStart + 1)
       if (taskStart != -1) {
-        val processorId = name.substring(processorStart, taskStart).substring(PROCESSOR_TAG.length).toInt
+        val processorId = name.substring(processorStart, taskStart).substring(PROCESSOR_TAG.length)
+          .toInt
         result.processor = processorId
         val taskEnd = name.indexOf(":", taskStart + 1)
         if (taskEnd != -1) {
@@ -84,7 +108,7 @@ class TaskFilterAggregator (maxLimit: Int) extends MetricsAggregator {
   }
 }
 
-object TaskFilterAggregator{
+object TaskFilterAggregator {
   val StartTask = "startTask"
   val EndTask = "endTask"
   val StartProcessor = "startProcessor"
@@ -96,7 +120,8 @@ object TaskFilterAggregator{
 
   private class TaskIdentity(var processor: Int, var task: Int)
 
-  case class Options(limit: Int, startTask: Int, endTask: Int, startProcessor: Int, endProcessor: Int)
+  case class Options(
+      limit: Int, startTask: Int, endTask: Int, startProcessor: Int, endProcessor: Int)
 
   private val LOG = LogUtil.getLogger(getClass)
 
@@ -107,7 +132,7 @@ object TaskFilterAggregator{
     }
 
     def parse(options: Map[String, String]): Options = {
-      //do sanity check
+      // Do sanity check
       val optionTry = Try {
         val startTask = options.get(StartTask).map(_.toInt).getOrElse(0)
         val endTask = options.get(EndTask).map(_.toInt).getOrElse(Integer.MAX_VALUE)
@@ -120,7 +145,8 @@ object TaskFilterAggregator{
       optionTry match {
         case Success(options) => options
         case Failure(ex) =>
-          LOG.error("Failed to parse the options in TaskFilterAggregator. Error msg: " + ex.getMessage)
+          LOG.error("Failed to parse the options in TaskFilterAggregator. Error msg: " +
+            ex.getMessage)
           null
       }
     }

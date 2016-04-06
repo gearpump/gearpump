@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,25 +18,30 @@
 
 package io.gearpump.streaming.examples.sol
 
-import io.gearpump.streaming.{StreamApplication, Processor}
+import org.slf4j.Logger
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.partitioner.ShufflePartitioner
+import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.util.Graph._
 import io.gearpump.util.{AkkaApp, Graph, LogUtil}
-import org.slf4j.Logger
 
 object SOL extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "streamProducer"-> CLIOption[Int]("<stream producer number>", required = false, defaultValue = Some(1)),
-    "streamProcessor"-> CLIOption[Int]("<stream processor number>", required = false, defaultValue = Some(1)),
-    "bytesPerMessage" -> CLIOption[Int]("<size of each message>", required = false, defaultValue = Some(100)),
-    "stages"-> CLIOption[Int]("<how many stages to run>", required = false, defaultValue = Some(2)))
+    "streamProducer" -> CLIOption[Int]("<stream producer number>", required = false,
+    defaultValue = Some(1)),
+    "streamProcessor" -> CLIOption[Int]("<stream processor number>", required = false,
+    defaultValue = Some(1)),
+    "bytesPerMessage" -> CLIOption[Int]("<size of each message>", required = false,
+    defaultValue = Some(100)),
+    "stages" -> CLIOption[Int]("<how many stages to run>", required = false,
+    defaultValue = Some(2)))
 
-  def application(config: ParseResult) : StreamApplication = {
+  def application(config: ParseResult): StreamApplication = {
     val spoutNum = config.getInt("streamProducer")
     val boltNum = config.getInt("streamProcessor")
     val bytesPerMessage = config.getInt("bytesPerMessage")

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,7 @@ package io.gearpump.streaming.state.impl
 import io.gearpump.TimeStamp
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.streaming.transaction.api.{CheckpointStoreFactory, CheckpointStore}
+import io.gearpump.streaming.transaction.api.{CheckpointStore, CheckpointStoreFactory}
 
 /**
  * an in memory store provided for test
@@ -41,7 +41,6 @@ class InMemoryCheckpointStore extends CheckpointStore {
   override def close(): Unit = {
     checkpoints = Map.empty[TimeStamp, Array[Byte]]
   }
-
 }
 
 class InMemoryCheckpointStoreFactory extends CheckpointStoreFactory {

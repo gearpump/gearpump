@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,51 +17,69 @@
  */
 package io.gearpump.streaming.appmaster
 
-import akka.actor._
-import com.typesafe.config.Config
-import io.gearpump.{WorkerId, TimeStamp}
-import io.gearpump.streaming.task.{StartClock, TaskId}
-import io.gearpump.streaming.{ProcessorDescription, DAG}
-import io.gearpump.cluster.AppJar
-import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
-import io.gearpump.partitioner.PartitionerDescription
-import io.gearpump.streaming.appmaster.JarScheduler._
-import io.gearpump.util.{LogUtil, Constants, Graph}
-import akka.pattern.ask
 import scala.concurrent.Future
 
+import akka.actor._
+import akka.pattern.ask
+import com.typesafe.config.Config
+
+import io.gearpump.TimeStamp
+import io.gearpump.cluster.AppJar
+import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.streaming.appmaster.JarScheduler._
+import io.gearpump.streaming.task.TaskId
+import io.gearpump.streaming.{DAG, ProcessorDescription}
+import io.gearpump.util.{Constants, Graph, LogUtil}
+
 /**
+ * Different processors of the stream application can use different jars. JarScheduler is the
+ * scheduler for different jars.
  *
- * With JarScheduler, we allows a DAG to be partitioned into several
- * parts, with each part use its own jar file.
+ * For a DAG of multiple processors, each processor can have its own jar. Tasks of same jar
+ * is scheduled by TaskScheduler, and TaskSchedulers are scheduled by JarScheduler.
  *
+ * In runtime, the implementation is delegated to actor JarSchedulerImpl
  */
-class JarScheduler(appId : Int, appName: String, config: Config, factory: ActorRefFactory) {
+class JarScheduler(appId: Int, appName: String, config: Config, factory: ActorRefFactory) {
   private val actor: ActorRef = factory.actorOf(Props(new JarSchedulerImpl(appId, appName, config)))
   private implicit val dispatcher = factory.dispatcher
   private implicit val timeout = Constants.FUTURE_TIMEOUT
 
+  /** Set the current DAG version active */
   def setDag(dag: DAG, startClock: Future[TimeStamp]): Unit = {
     actor ! TransitToNewDag
-    startClock.map {start =>
+    startClock.map { start =>
       actor ! NewDag(dag, start)
     }
   }
 
-  def getRequestDetails(): Future[Array[ResourceRequestDetail]] = {
-    (actor ? GetRequestDetails).asInstanceOf[Future[Array[ResourceRequestDetail]]]
+  /** AppMaster ask JarScheduler about how many resource it wants */
+  def getResourceRequestDetails(): Future[Array[ResourceRequestDetail]] = {
+    (actor ? GetResourceRequestDetails).asInstanceOf[Future[Array[ResourceRequestDetail]]]
   }
 
-  def scheduleTask(appJar: AppJar, workerId: WorkerId, executorId: Int, resource: Resource): Future[List[TaskId]] = {
-    (actor ? ScheduleTask(appJar, workerId, executorId, resource)).asInstanceOf[Future[List[TaskId]]]
+  /**
+   * AppMaster has resource allocated, and ask the jar scheduler to schedule tasks
+   * for this executor.
+   */
+  def scheduleTask(appJar: AppJar, workerId: WorkerId, executorId: Int, resource: Resource)
+  : Future[List[TaskId]] = {
+    (actor ? ScheduleTask(appJar, workerId, executorId, resource))
+      .asInstanceOf[Future[List[TaskId]]]
   }
 
+  /**
+   * Some executor JVM process is dead. AppMaster asks jar scheduler to re-schedule the impacted
+   * tasks.
+   */
   def executorFailed(executorId: Int): Future[Option[ResourceRequestDetail]] = {
     (actor ? ExecutorFailed(executorId)).asInstanceOf[Future[Option[ResourceRequestDetail]]]
   }
 }
 
-object JarScheduler{
+object JarScheduler {
 
   case class ResourceRequestDetail(jar: AppJar, requests: Array[ResourceRequest])
 
@@ -69,14 +87,24 @@ object JarScheduler{
 
   case object TransitToNewDag
 
-  case object GetRequestDetails
+  case object GetResourceRequestDetails
 
+  /**
+   * Schedule tasks for one appJar.
+   *
+   * @param appJar Application jar.
+   * @param workerId Worker machine Id.
+   * @param executorId Executor Id.
+   * @param resource Slots that are available.
+   */
   case class ScheduleTask(appJar: AppJar, workerId: WorkerId, executorId: Int, resource: Resource)
 
+  /** Some executor JVM is dead, try to recover tasks that are located on failed executor */
   case class ExecutorFailed(executorId: Int)
 
-  class JarSchedulerImpl(appId : Int, appName: String, config: Config) extends Actor with Stash {
+  class JarSchedulerImpl(appId: Int, appName: String, config: Config) extends Actor with Stash {
 
+    // Each TaskScheduler maps to a jar.
     private var taskSchedulers = Map.empty[AppJar, TaskScheduler]
 
     private val LOG = LogUtil.getLogger(getClass)
@@ -84,26 +112,29 @@ object JarScheduler{
     def receive: Receive = waitForNewDag
 
     def waitForNewDag: Receive = {
-      case TransitToNewDag => // continue current state
+      case TransitToNewDag => // Continue current state
       case NewDag(dag, startTime) =>
 
         LOG.info(s"Init JarScheduler, dag version: ${dag.version}, startTime: $startTime")
 
         val processors = dag.processors.values.groupBy(_.jar)
+
         taskSchedulers = processors.map { jarAndProcessors =>
           val (jar, processors) = jarAndProcessors
-          //Construct the sub DAG
-          val graph = Graph.empty[ProcessorDescription, PartitionerDescription]
-          processors.foreach{processor =>
+          // Construct the sub DAG, each sub DAG maps to a separate jar.
+          val subGraph = Graph.empty[ProcessorDescription, PartitionerDescription]
+          processors.foreach { processor =>
             if (startTime < processor.life.death) {
-              graph.addVertex(processor)
+              subGraph.addVertex(processor)
             }
           }
-          val subDag = DAG(graph)
-          val taskScheduler = taskSchedulers.getOrElse(jar, new TaskSchedulerImpl(appId, appName, config))
+          val subDagForSingleJar = DAG(subGraph)
 
-          LOG.info(s"Set DAG for TaskScheduler, count: " + subDag.processors.size)
-          taskScheduler.setDAG(subDag)
+          val taskScheduler = taskSchedulers
+            .getOrElse(jar, new TaskSchedulerImpl(appId, appName, config))
+
+          LOG.info(s"Set DAG for TaskScheduler, count: " + subDagForSingleJar.processors.size)
+          taskScheduler.setDAG(subDagForSingleJar)
           jar -> taskScheduler
         }
         unstashAll()
@@ -113,15 +144,20 @@ object JarScheduler{
     }
 
     def ready: Receive = {
+      // Notifies there is a new DAG coming.
       case TransitToNewDag =>
         context.become(waitForNewDag)
-      case GetRequestDetails =>
+
+      case GetResourceRequestDetails =>
+
+        // Asks each TaskScheduler (Each for one jar) the resource requests.
         val result: Array[ResourceRequestDetail] = taskSchedulers.map { jarAndScheduler =>
           val (jar, scheduler) = jarAndScheduler
           ResourceRequestDetail(jar, scheduler.getResourceRequests())
         }.toArray
         LOG.info(s"GetRequestDetails " + result.mkString(";"))
         sender ! result
+
       case ScheduleTask(appJar, workerId, executorId, resource) =>
         val result: List[TaskId] = taskSchedulers.get(appJar).map { scheduler =>
           scheduler.schedule(workerId, executorId, resource)
@@ -130,9 +166,9 @@ object JarScheduler{
         sender ! result
       case ExecutorFailed(executorId) =>
         val result: Option[ResourceRequestDetail] = taskSchedulers.
-          find(_._2.scheduledTasks(executorId).nonEmpty).map{ jarAndScheduler =>
-            ResourceRequestDetail(jarAndScheduler._1, jarAndScheduler._2.executorFailed(executorId))
-          }
+          find(_._2.scheduledTasks(executorId).nonEmpty).map { jarAndScheduler =>
+          ResourceRequestDetail(jarAndScheduler._1, jarAndScheduler._2.executorFailed(executorId))
+        }
         LOG.info(s"ExecutorFailed " + result.mkString(";"))
         sender ! result
     }

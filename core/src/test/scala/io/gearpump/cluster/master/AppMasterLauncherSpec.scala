@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,24 +18,27 @@
 
 package io.gearpump.cluster.master
 
-import akka.actor._
-import akka.testkit.TestProbe
-import io.gearpump.WorkerId
-import io.gearpump.cluster.AppMasterToMaster.RequestResource
-import io.gearpump.cluster.AppMasterToWorker.{ShutdownExecutor, LaunchExecutor}
-import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
-import io.gearpump.cluster.{TestUtil, MasterHarness}
-import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
-import io.gearpump.cluster.scheduler.{ResourceRequest, Resource, ResourceAllocation}
-import io.gearpump.util.ActorSystemBooter._
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
 import scala.util.Success
 
-class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+import akka.actor._
+import akka.testkit.TestProbe
+import com.typesafe.config.Config
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-  override def config = TestUtil.DEFAULT_CONFIG
+import io.gearpump.cluster.AppMasterToMaster.RequestResource
+import io.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
+import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
+import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
+import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
+import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.cluster.{MasterHarness, TestUtil}
+import io.gearpump.util.ActorSystemBooter._
+
+class AppMasterLauncherSpec extends FlatSpec with Matchers
+  with BeforeAndAfterEach with MasterHarness {
+
+  override def config: Config = TestUtil.DEFAULT_CONFIG
 
   val appId = 1
   val executorId = 2
@@ -45,7 +48,7 @@ class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEa
   var watcher: TestProbe = null
   var appMasterLauncher: ActorRef = null
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     startActorSystem()
     master = createMockMaster()
     client = TestProbe()(getActorSystem)
@@ -55,12 +58,13 @@ class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEa
       TestUtil.dummyApp, None, "username", master.ref, Some(client.ref)))
     watcher watch appMasterLauncher
     master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified)))
-    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, WorkerId(0, 0L))))
+    val resource = ResourceAllocated(
+      Array(ResourceAllocation(Resource(1), worker.ref, WorkerId(0, 0L))))
     master.reply(resource)
     worker.expectMsgType[LaunchExecutor]
   }
 
-  override def afterEach() = {
+  override def afterEach(): Unit = {
     shutdownActorSystem()
   }
 
@@ -79,7 +83,8 @@ class AppMasterLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     worker.reply(ExecutorLaunchRejected(""))
     master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified)))
 
-    val resource = ResourceAllocated(Array(ResourceAllocation(Resource(1), worker.ref, WorkerId(0, 0L))))
+    val resource = ResourceAllocated(
+      Array(ResourceAllocation(Resource(1), worker.ref, WorkerId(0, 0L))))
     master.reply(resource)
     worker.expectMsgType[LaunchExecutor]
 

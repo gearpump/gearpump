@@ -15,18 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.util
 
-import akka.actor.{ChildRestartStats, ActorRef}
+package io.gearpump.util
 
 import scala.concurrent.duration.Duration
 
+import akka.actor.ChildRestartStats
+
 /**
- * @param maxNrOfRetries the number of times is allowed to be restarted, negative value means no limit,
- *   if the limit is exceeded the policy will not allow to restart
- * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
+ * When one executor or task fails, Gearpump will try to start. However, if it fails after
+ * multiple retries, then we abort.
+ *
+ * @param maxNrOfRetries The number of times is allowed to be restarted, negative value means no
+ *                       limit, if the limit is exceeded the policy will not allow to restart
+ * @param withinTimeRange Duration of the time window for maxNrOfRetries.
+ *                        Duration.Inf means no window
  */
-class RestartPolicy (maxNrOfRetries: Int, withinTimeRange: Duration) {
+class RestartPolicy(maxNrOfRetries: Int, withinTimeRange: Duration) {
   private val status = new ChildRestartStats(null, 0, 0L)
   private val retriesWindow = (Some(maxNrOfRetries), Some(withinTimeRange.toMillis.toInt))
 

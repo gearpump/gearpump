@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,24 +18,25 @@
 
 package io.gearpump.experiments.yarn.client
 
-import java.io.{OutputStream, ByteArrayOutputStream, BufferedOutputStream, FileOutputStream, InputStream, ByteArrayInputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
+import java.util.Random
 import java.util.zip.{ZipEntry, ZipOutputStream}
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.util.Try
 
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
-import io.gearpump.cluster.TestUtil
-import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, GetActiveConfig}
-import io.gearpump.experiments.yarn.glue.{FileSystem, YarnClient, YarnConfig}
-import io.gearpump.util.FileUtils
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import java.util.Random
-import scala.concurrent.Await
-import scala.util.Try
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
+import io.gearpump.cluster.TestUtil
+import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, GetActiveConfig}
 import io.gearpump.experiments.yarn.glue.Records._
+import io.gearpump.experiments.yarn.glue.{FileSystem, YarnClient, YarnConfig}
+import io.gearpump.util.FileUtils
 class LaunchClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
 
@@ -88,14 +89,13 @@ class LaunchClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
       |}
     """.stripMargin).withFallback(TestUtil.DEFAULT_CONFIG)
 
-
-  override def beforeAll() = {
+  override def beforeAll(): Unit = {
     system = ActorSystem(getClass.getSimpleName, akka)
   }
 
-  override def afterAll() = {
-    system.shutdown()
-    system.awaitTermination()
+  override def afterAll(): Unit = {
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   it should "reject non-zip files" in {
@@ -108,7 +108,6 @@ class LaunchClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val packagePath = "gearpump.zip2"
     assert(Try(launcher.submit("gearpump", packagePath)).isFailure)
   }
-
 
   it should "reject if we cannot find the package file on HDFS" in {
     val yarnConfig = mock(classOf[YarnConfig])
@@ -145,7 +144,8 @@ class LaunchClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val appMasterResolver = mock(classOf[AppMasterResolver])
 
     val version = "gearpump-0.2"
-    val launcher = new LaunchCluster(akka, yarnConfig, yarnClient, fs, system, appMasterResolver, version)
+    val launcher = new LaunchCluster(akka, yarnConfig, yarnClient, fs, system,
+      appMasterResolver, version)
     val packagePath = "gearpump.zip"
     when(fs.exists(anyString)).thenReturn(true)
 
@@ -161,7 +161,8 @@ class LaunchClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val appMasterResolver = mock(classOf[AppMasterResolver])
 
     val version = "gearpump-0.2"
-    val launcher = new LaunchCluster(akka, yarnConfig, yarnClient, fs, system, appMasterResolver, version)
+    val launcher = new LaunchCluster(akka, yarnConfig, yarnClient,
+      fs, system, appMasterResolver, version)
     val packagePath = "gearpump.zip"
 
     val out = mock(classOf[OutputStream])
@@ -178,12 +179,15 @@ class LaunchClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     when(yarnClient.createApplication).thenReturn(appId)
     assert(appId == launcher.submit("gearpump", packagePath))
 
-    // 3 config files are uploaded to HDFS, one is akka.conf, one is yarn-site.xml, one is log4j.properties.
+    // 3 Config files are uploaded to HDFS, one is akka.conf,
+    // one is yarn-site.xml, one is log4j.properties.
     verify(fs, times(3)).create(anyString)
     verify(out, times(3)).close()
 
-    //val workerResources = ArgumentCaptor.forClass(classOf[List[Resource]])
-    val expectedCommand = "$JAVA_HOME/bin/java -Xmx512m -cp conf:pack/gearpump-0.2/conf:pack/gearpump-0.2/dashboard:pack/gearpump-0.2/lib/*:pack/gearpump-0.2/lib/daemon/*:pack/gearpump-0.2/lib/services/*:pack/gearpump-0.2/lib/yarn/*:$CLASSPATH -Dgearpump.home={{LOCAL_DIRS}}/{{CONTAINER_ID}}/pack/gearpump-0.2 -Dgearpump.binary-version-with-scala-version=gearpump-0.2 -Dgearpump.log.daemon.dir=<LOG_DIR> -Dgearpump.log.application.dir=<LOG_DIR> -Dgearpump.hostname={{NM_HOST}}  io.gearpump.experiments.yarn.appmaster.YarnAppMaster  -conf /root/.gearpump_application_0_0000/conf/ -package gearpump.zip 2>&1 | /usr/bin/tee -a <LOG_DIR>/stderr"
+    // val workerResources = ArgumentCaptor.forClass(classOf[List[Resource]])
+    // scalastyle:off line.size.limit
+    val expectedCommand = "$JAVA_HOME/bin/java -Xmx512m -cp conf:pack/gearpump-0.2/conf:pack/gearpump-0.2/dashboard:pack/gearpump-0.2/lib/*:pack/gearpump-0.2/lib/daemon/*:pack/gearpump-0.2/lib/services/*:pack/gearpump-0.2/lib/yarn/*:$CLASSPATH -Dgearpump.home={{LOCAL_DIRS}}/{{CONTAINER_ID}}/pack/gearpump-0.2 -Dgearpump.binary-version-with-scala-version=gearpump-0.2 -Dgearpump.log.daemon.dir=<LOG_DIR> -Dgearpump.log.application.dir=<LOG_DIR> -Dgearpump.hostname={{NM_HOST}} io.gearpump.experiments.yarn.appmaster.YarnAppMaster  -conf /root/.gearpump_application_0_0000/conf/ -package gearpump.zip 2>&1 | /usr/bin/tee -a <LOG_DIR>/stderr"
+    // scalastyle:on line.size.limit
     verify(yarnClient).submit("gearpump", appId, expectedCommand,
       Resource.newInstance(512, 1), "default",
       "gearpump.zip", "/root/.gearpump_application_0_0000/conf/")
@@ -197,7 +201,8 @@ class LaunchClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val appMaster = TestProbe()
 
     val version = "gearpump-0.2"
-    val launcher = new LaunchCluster(akka, yarnConfig, yarnClient, fs, system, appMasterResolver, version)
+    val launcher = new LaunchCluster(akka, yarnConfig, yarnClient, fs, system,
+      appMasterResolver, version)
     val outputPath = java.io.File.createTempFile("LaunchClusterSpec", ".conf")
 
     when(appMasterResolver.resolve(any[ApplicationId], anyInt)).thenReturn(appMaster.ref)
@@ -206,7 +211,7 @@ class LaunchClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     appMaster.reply(ActiveConfig(ConfigFactory.empty()))
 
     import scala.concurrent.duration._
-    val file = Await.result(fileFuture, 30 seconds).asInstanceOf[java.io.File]
+    val file = Await.result(fileFuture, 30.seconds).asInstanceOf[java.io.File]
 
     assert(!FileUtils.read(file).isEmpty)
     file.delete()
@@ -216,10 +221,10 @@ class LaunchClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val bytes = new ByteArrayOutputStream(1000)
     val zipOut = new ZipOutputStream(bytes)
 
-    // not available on BufferedOutputStream
+    // Not available on BufferedOutputStream
     zipOut.putNextEntry(new ZipEntry(s"$version/README.md"))
     zipOut.write("README".getBytes())
-    // not available on BufferedOutputStream
+    // Not available on BufferedOutputStream
     zipOut.closeEntry()
     zipOut.close()
     new ByteArrayInputStream(bytes.toByteArray)

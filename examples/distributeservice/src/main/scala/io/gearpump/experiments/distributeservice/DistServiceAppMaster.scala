@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,21 +18,22 @@
 package io.gearpump.experiments.distributeservice
 
 import java.io.File
+import scala.concurrent.Future
 
 import akka.actor.{Deploy, Props}
 import akka.pattern.{ask, pipe}
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
+import org.slf4j.Logger
+
 import io.gearpump.cluster.ClientToMaster.ShutdownApplication
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout}
 import io.gearpump.cluster.{AppDescription, AppMasterContext, ApplicationMaster, ExecutorContext}
-import DistServiceAppMaster.{FileContainer, GetFileContainer, InstallService}
+import io.gearpump.experiments.distributeservice.DistServiceAppMaster.{FileContainer, GetFileContainer, InstallService}
 import io.gearpump.util._
-import org.slf4j.Logger
 
-import scala.concurrent.Future
-
-class DistServiceAppMaster(appContext : AppMasterContext, app : AppDescription) extends ApplicationMaster {
+class DistServiceAppMaster(appContext: AppMasterContext, app: AppDescription)
+  extends ApplicationMaster {
   import appContext._
   import context.dispatcher
   implicit val timeout = Constants.FUTURE_TIMEOUT
@@ -42,7 +43,7 @@ class DistServiceAppMaster(appContext : AppMasterContext, app : AppDescription) 
 
   val rootDirectory = new File("/")
   val host = context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)
-  val server = context.actorOf(Props(classOf[FileServer], rootDirectory, host , 0))
+  val server = context.actorOf(Props(classOf[FileServer], rootDirectory, host, 0))
 
   override def preStart(): Unit = {
     LOG.info(s"Distribute Service AppMaster started")
@@ -54,10 +55,12 @@ class DistServiceAppMaster(appContext : AppMasterContext, app : AppDescription) 
   override def receive: Receive = {
     case ExecutorSystemStarted(executorSystem, _) =>
       import executorSystem.{address, resource => executorResource, worker}
-      val executorContext = ExecutorContext(currentExecutorId, worker, appId, app.name, self, executorResource)
-      //start executor
-      val executor = context.actorOf(Props(classOf[DistServiceExecutor], executorContext, app.userConfig)
-        .withDeploy(Deploy(scope = RemoteScope(address))), currentExecutorId.toString)
+      val executorContext = ExecutorContext(currentExecutorId, worker,
+        appId, app.name, self, executorResource)
+      // start executor
+      val executor = context.actorOf(Props(classOf[DistServiceExecutor],
+        executorContext, app.userConfig).withDeploy(
+        Deploy(scope = RemoteScope(address))), currentExecutorId.toString)
       executorSystem.bindLifeCycleWith(executor)
       currentExecutorId += 1
     case StartExecutorSystemTimeout =>
@@ -75,7 +78,8 @@ class DistServiceAppMaster(appContext : AppMasterContext, app : AppDescription) 
 
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
     val config: Config = app.clusterConfig
-    val jvmSetting = Util.resolveJvmSetting(config.withFallback(context.system.settings.config)).executor
+    val jvmSetting = Util.resolveJvmSetting(
+      config.withFallback(context.system.settings.config)).executor
     ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs,
       appJar, username, config)
   }
@@ -87,10 +91,10 @@ object DistServiceAppMaster {
   case class FileContainer(url: String)
 
   case class InstallService(
-    url: String,
-    zipFileName: String,
-    targetPath: String,
-    script : Array[Byte],
-    serviceName: String,
-    serviceSettings: Map[String, Any])
+      url: String,
+      zipFileName: String,
+      targetPath: String,
+      script: Array[Byte],
+      serviceName: String,
+      serviceSettings: Map[String, Any])
 }

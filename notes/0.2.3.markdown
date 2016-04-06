@@ -2,7 +2,7 @@ Change List:
 ---------------
 
 #333, KafkaUtilSpec causes out of memory on travis
-#335, #359， Enable auto-deployment to sonatype
+#335, #359, Enable auto-deployment to sonatype
 #299, Some UT may fail randomly, most because of the expectMsg time out
 #338, fix kafka leader not available exception
 #349, scoverage dependencies get into snapshot build binaries.

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,20 @@
 
 package io.gearpump.streaming.examples.fsio
 
-import io.gearpump.cluster.ClientToMaster.SubmitApplication
-import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import io.gearpump.cluster.{MasterHarness, TestUtil}
-import io.gearpump.util.Util
+import scala.concurrent.Future
+import scala.util.{Success, Try}
+
+import com.typesafe.config.Config
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
 
-import scala.util.{Success, Try}
-import scala.concurrent.Future
+import io.gearpump.cluster.ClientToMaster.SubmitApplication
+import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
+import io.gearpump.cluster.{MasterHarness, TestUtil}
 
-class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
+class SequenceFileIOSpec
+  extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
+
   override def beforeAll {
     startActorSystem()
   }
@@ -37,7 +40,7 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
     shutdownActorSystem()
   }
 
-  override def config = TestUtil.DEFAULT_CONFIG
+  override def config: Config = TestUtil.DEFAULT_CONFIG
 
   property("SequenceFileIO should succeed to submit application with required arguments") {
     val requiredArgs = Array(
@@ -58,7 +61,9 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
     forAll(validArgs) { (requiredArgs: Array[String], optionalArgs: Array[String]) =>
       val args = requiredArgs ++ optionalArgs
 
-      Future {SequenceFileIO.main(masterConfig, args)}
+      Future {
+        SequenceFileIO.main(masterConfig, args)
+      }
       masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
       masterReceiver.reply(SubmitApplicationResult(Success(0)))
     }
@@ -75,5 +80,4 @@ class SequenceFileIOSpec extends PropSpec with PropertyChecks with Matchers with
       assert(Try(SequenceFileIO.main(args)).isFailure, "missing required arguments, print usage")
     }
   }
-
 }

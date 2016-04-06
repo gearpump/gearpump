@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,17 +23,18 @@ import java.util.concurrent.LinkedBlockingQueue
 
 import kafka.common.TopicAndPartition
 import kafka.consumer.ConsumerConfig
-import io.gearpump.util.LogUtil
 import org.slf4j.Logger
+
+import io.gearpump.util.LogUtil
 
 object FetchThread {
   private val LOG: Logger = LogUtil.getLogger(classOf[FetchThread])
 
   def apply(topicAndPartitions: Array[TopicAndPartition],
-            fetchThreshold: Int,
-            fetchSleepMS: Long,
-            startOffsetTime: Long,
-            consumerConfig: ConsumerConfig): FetchThread = {
+      fetchThreshold: Int,
+      fetchSleepMS: Long,
+      startOffsetTime: Long,
+      consumerConfig: ConsumerConfig): FetchThread = {
     val createConsumer = (tp: TopicAndPartition) =>
       KafkaConsumer(tp.topic, tp.partition, startOffsetTime, consumerConfig)
 
@@ -43,20 +44,22 @@ object FetchThread {
 }
 
 /**
- * A thread to fetch messages from multiple kafka [[TopicAndPartition]]s and puts them
+ * A thread to fetch messages from multiple kafka org.apache.kafka.TopicAndPartition and puts them
  * onto a queue, which is asynchronously polled by a consumer
  *
- * @param createConsumer given a [[TopicAndPartition]], create a [[KafkaConsumer]] to connect to it
+ * @param createConsumer given a org.apache.kafka.TopicAndPartition, create a
+ *                       [[io.gearpump.streaming.kafka.lib.consumer.KafkaConsumer]] to
+ *                       connect to it
  * @param incomingQueue a queue to buffer incoming messages
  * @param fetchThreshold above which thread should stop fetching messages
  * @param fetchSleepMS interval to sleep when no more messages or hitting fetchThreshold
  */
 private[kafka] class FetchThread(topicAndPartitions: Array[TopicAndPartition],
-                                 createConsumer: TopicAndPartition => KafkaConsumer,
-                                 incomingQueue: LinkedBlockingQueue[KafkaMessage],
-                                 fetchThreshold: Int,
-                                 fetchSleepMS: Long) extends Thread {
-  import FetchThread._
+    createConsumer: TopicAndPartition => KafkaConsumer,
+    incomingQueue: LinkedBlockingQueue[KafkaMessage],
+    fetchThreshold: Int,
+    fetchSleepMS: Long) extends Thread {
+  import io.gearpump.streaming.kafka.lib.consumer.FetchThread._
 
   private var consumers: Map[TopicAndPartition, KafkaConsumer] = createAllConsumers
 

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Netty message on the wire is wrapped as MessageBatch
+ */
 public class MessageBatch {
   private static final Logger log = LoggerFactory.getLogger(MessageBatch.class);
 
@@ -83,7 +86,6 @@ public class MessageBatch {
   }
 
   /**
-   *
    * @return true, if allowed buffer is Full
    */
   boolean isFull() {
@@ -91,7 +93,6 @@ public class MessageBatch {
   }
 
   /**
-   *
    * @return true, if no messages in this batch
    */
   boolean isEmpty() {
@@ -99,7 +100,6 @@ public class MessageBatch {
   }
 
   /**
-   *
    * @return number of messages available in this batch
    */
   int size() {
@@ -111,7 +111,7 @@ public class MessageBatch {
    */
   ChannelBuffer buffer() throws IOException {
     ChannelBufferOutputStream bout =
-        new ChannelBufferOutputStream(ChannelBuffers.directBuffer(encoded_length));
+      new ChannelBufferOutputStream(ChannelBuffers.directBuffer(encoded_length));
 
     try {
       for (TaskMessage msg : messages) {
@@ -128,7 +128,7 @@ public class MessageBatch {
 
   /**
    * write a TaskMessage into a stream
-   * <p/>
+   * <p>
    * Each TaskMessage is encoded as:
    * sessionId ... int(4)
    * source task ... Long(8)
@@ -137,7 +137,7 @@ public class MessageBatch {
    * payload ... byte[]     *
    */
   private void writeTaskMessage(ChannelBufferOutputStream bout,
-                                TaskMessage message) throws IOException {
+      TaskMessage message) throws IOException {
     long target_id = message.targetTask();
     long source_id = message.sourceTask();
     int sessionId = message.sessionId();

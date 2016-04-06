@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,24 +18,26 @@
 
 package akka.stream.gearpump.example
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.graph.GraphCutter
 import akka.stream.scaladsl.{Sink, Source}
-import io.gearpump.cluster.ClusterConfig
 
 /**
-  * This tests how the [[GearpumpMaterializer]] materializes different partials of Graph
-  * to different runtime.
-  *
-  * In this test, source module and sink module will be materialized locally,
-  * Other transformation module will be materialized remotely in Gearpump
-  * streaming Application.
-  *
-  * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
-  *
-  *
-  */
+ * This tests how the [[GearpumpMaterializer]] materializes different partials of Graph
+ * to different runtime.
+ *
+ * In this test, source module and sink module are materialized locally,
+ * Other transformation module are materialized remotely in Gearpump
+ * streaming Application.
+ *
+ * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
+ *
+ *
+ */
 object Test {
 
   def main(args: Array[String]): Unit = {
@@ -47,18 +49,21 @@ object Test {
 
     val echo = system.actorOf(Props(new Echo()))
     val sink = Sink.actorRef(echo, "COMPLETE")
-    val source = Source(List("red hat", "yellow sweater", "blue jack", "red apple", "green plant", "blue sky"))
-    source.filter(_.startsWith("red")).fold("Items:"){(a, b) =>
+    val source = Source(List("red hat", "yellow sweater", "blue jack", "red apple", "green plant",
+      "blue sky"))
+    source.filter(_.startsWith("red")).fold("Items:") { (a, b) =>
       a + "|" + b
     }.map("I want to order item: " + _).runWith(sink)
 
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   class Echo extends Actor {
     def receive: Receive = {
       case any: AnyRef =>
+        // scalastyle:off println
         println("Confirm received: " + any)
+      // scalastyle:on println
     }
   }
 }

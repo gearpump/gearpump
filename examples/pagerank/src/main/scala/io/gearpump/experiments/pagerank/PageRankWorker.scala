@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,16 @@
 package io.gearpump.experiments.pagerank
 
 import akka.actor.Actor.Receive
-import io.gearpump.streaming.task.{Task, TaskContext, TaskId, TaskWrapper}
+
 import io.gearpump.cluster.UserConfig
-import PageRankApplication.NodeWithTaskId
-import PageRankController.Tick
-import PageRankWorker.{LatestWeight, UpdateWeight}
+import io.gearpump.experiments.pagerank.PageRankApplication.NodeWithTaskId
+import io.gearpump.experiments.pagerank.PageRankController.Tick
+import io.gearpump.experiments.pagerank.PageRankWorker.{LatestWeight, UpdateWeight}
+import io.gearpump.streaming.task.{Task, TaskContext, TaskId, TaskWrapper}
 import io.gearpump.util.Graph
 
-class PageRankWorker(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+class PageRankWorker(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.taskId
-
 
   private var weight: Double = 1.0
   private var upstreamWeights = Map.empty[TaskId, Double]
@@ -41,14 +41,15 @@ class PageRankWorker(taskContext : TaskContext, conf: UserConfig) extends Task(t
     node.taskId == taskContext.taskId.index
   }.get
 
-  private val downstream = graph.outgoingEdgesOf(node).map(_._3).map(id => taskId.copy(index = id.taskId)).toSeq
+  private val downstream = graph.outgoingEdgesOf(node).map(_._3)
+    .map(id => taskId.copy(index = id.taskId)).toSeq
   private val upstreamCount = graph.incomingEdgesOf(node).map(_._1).length
 
-  LOG.info(s"downstream nodes: $downstream" )
+  LOG.info(s"downstream nodes: $downstream")
 
   private var tick = 0
 
-  private def output(msg: AnyRef, tasks: TaskId *): Unit = {
+  private def output(msg: AnyRef, tasks: TaskId*): Unit = {
     taskContext.asInstanceOf[TaskWrapper].outputUnManaged(msg, tasks: _*)
   }
 
@@ -57,7 +58,7 @@ class PageRankWorker(taskContext : TaskContext, conf: UserConfig) extends Task(t
       this.tick = tick
 
       if (downstream.length == 0) {
-        // if there is no downstream, we will evenly distribute our page rank to
+        // If there is no downstream, we will evenly distribute our page rank to
         // every node in the graph
         val update = UpdateWeight(taskId, weight / taskCount)
         output(update, allTasks: _*)
@@ -65,10 +66,10 @@ class PageRankWorker(taskContext : TaskContext, conf: UserConfig) extends Task(t
         val update = UpdateWeight(taskId, weight / downstream.length)
         output(update, downstream: _*)
       }
-    case update@ UpdateWeight(upstreamTaskId, weight) =>
+    case update@UpdateWeight(upstreamTaskId, weight) =>
       upstreamWeights += upstreamTaskId -> weight
       if (upstreamWeights.size == upstreamCount) {
-        val nextWeight = upstreamWeights.foldLeft(0.0) {(sum, item) => sum + item._2}
+        val nextWeight = upstreamWeights.foldLeft(0.0) { (sum, item) => sum + item._2 }
         this.upstreamWeights = Map.empty[TaskId, Double]
         this.weight = nextWeight
         output(LatestWeight(taskId, weight, tick), TaskId(0, 0))
@@ -76,7 +77,7 @@ class PageRankWorker(taskContext : TaskContext, conf: UserConfig) extends Task(t
   }
 }
 
-object PageRankWorker{
+object PageRankWorker {
   case class UpdateWeight(taskId: TaskId, weight: Double)
   case class LatestWeight(taskId: TaskId, weight: Double, tick: Int)
 }

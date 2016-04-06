@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,11 +22,11 @@ package io.gearpump
  * Each message contains a immutable timestamp.
  *
  * For example, if you take a picture, the time you take the picture is the
- * message's timestmap.
-  * @param msg Accept any type except Null, Nothing and Unit
+ * message's timestamp.
+ * @param msg Accept any type except Null, Nothing and Unit
  */
 case class Message(msg: Any, timestamp: TimeStamp = Message.noTimeStamp)
 
 object Message {
-  val noTimeStamp : TimeStamp = 0L
+  val noTimeStamp: TimeStamp = 0L
 }

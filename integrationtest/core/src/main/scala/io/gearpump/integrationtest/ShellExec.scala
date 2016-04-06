@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,15 +17,14 @@
  */
 package io.gearpump.integrationtest
 
-import org.apache.commons.lang.text.{StrMatcher, StrTokenizer}
-import org.apache.log4j.Logger
-import org.apache.storm.shade.org.eclipse.jetty.util.QuotedStringTokenizer
-
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.sys.process._
-import scala.collection.JavaConversions._
+
+import org.apache.log4j.Logger
+import org.apache.storm.shade.org.eclipse.jetty.util.QuotedStringTokenizer
 
 /**
  * The class is used to execute command in a shell
@@ -41,7 +40,7 @@ object ShellExec {
    */
   private def splitQuotedString(str: String): List[String] = {
     val splitter = new QuotedStringTokenizer(str, " \t\n\r")
-    splitter.asInstanceOf[java.util.Enumeration[String]].toList
+    splitter.asInstanceOf[java.util.Enumeration[String]].asScala.toList
   }
 
   def exec(command: String, sender: String, timeout: Duration = PROCESS_TIMEOUT): Boolean = {
@@ -49,7 +48,8 @@ object ShellExec {
 
     val p = splitQuotedString(command).run()
     val f = Future(blocking(p.exitValue())) // wrap in Future
-    val retval = try {
+    val retval = {
+      try {
         Await.result(f, timeout)
       } catch {
         case _: TimeoutException =>
@@ -57,12 +57,13 @@ object ShellExec {
           p.destroy()
           p.exitValue()
       }
-
+    }
     LOG.debug(s"$sender <= exit $retval")
     retval == 0
   }
 
-  def execAndCaptureOutput(command: String, sender: String, timeout: Duration = PROCESS_TIMEOUT): String = {
+  def execAndCaptureOutput(command: String, sender: String, timeout: Duration = PROCESS_TIMEOUT)
+    : String = {
     LOG.debug(s"$sender => `$command`")
 
     val buf = new StringBuilder
@@ -70,17 +71,22 @@ object ShellExec {
       (e: String) => buf.append(e).append("\n"))
     val p = splitQuotedString(command).run(processLogger)
     val f = Future(blocking(p.exitValue())) // wrap in Future
-    val retval = try {
+    val retval = {
+      try {
         Await.result(f, timeout)
       } catch {
         case _: TimeoutException =>
           p.destroy()
           p.exitValue()
       }
+    }
     val output = buf.toString().trim
     val PREVIEW_MAX_LENGTH = 200
-    val preview = if (output.length > PREVIEW_MAX_LENGTH)
-      output.substring(0, PREVIEW_MAX_LENGTH) + "..." else output
+    val preview = if (output.length > PREVIEW_MAX_LENGTH) {
+      output.substring(0, PREVIEW_MAX_LENGTH) + "..."
+    } else {
+      output
+    }
 
     LOG.debug(s"$sender <= `$preview` exit $retval")
     if (retval != 0) {
@@ -89,5 +95,4 @@ object ShellExec {
     }
     output
   }
-
 }

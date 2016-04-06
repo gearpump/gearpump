@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,17 @@
 
 package io.gearpump.serializer
 
-import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
 import com.typesafe.config.Config
-import io.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
+
+import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
+import io.gearpump.util.{Constants, LogUtil}
 
 class GearpumpSerialization(config: Config) {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  def customize(kryo: Kryo): Unit  = {
+  def customize(kryo: Kryo): Unit = {
 
     val serializationMap = configToMap(config, Constants.GEARPUMP_SERIALIZERS)
 
@@ -37,21 +38,22 @@ class GearpumpSerialization(config: Config) {
 
       if (value == null || value.isEmpty) {
 
-        //Use default serializer for this class type
+        // Use default serializer for this class type
         kryo.register(keyClass)
       } else {
         val valueClass = Class.forName(value)
-        val register = kryo.register(keyClass, valueClass.newInstance().asInstanceOf[KryoSerializer[_]])
+        val register = kryo.register(keyClass,
+          valueClass.newInstance().asInstanceOf[KryoSerializer[_]])
         LOG.debug(s"Registering ${keyClass}, id: ${register.getId}")
       }
     }
     kryo.setReferences(false)
 
-    // require the user to register the class first before using
+    // Requires the user to register the class first before using
     kryo.setRegistrationRequired(true)
   }
 
-  private final def configToMap(config : Config, path: String) = {
+  private final def configToMap(config: Config, path: String) = {
     import scala.collection.JavaConverters._
     config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) => k -> v.toString }
   }

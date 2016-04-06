@@ -77,13 +77,21 @@ h4, table > caption {
 }
 
 @-webkit-keyframes spin2 {
-  from { -webkit-transform: rotate(0deg); }
-  to { -webkit-transform: rotate(360deg); }
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(360deg);
+  }
 }
 
 @keyframes spin {
-  from { transform: scale(1) rotate(0deg); }
-  to { transform: scale(1) rotate(360deg); }
+  from {
+    transform: scale(1) rotate(0deg);
+  }
+  to {
+    transform: scale(1) rotate(360deg);
+  }
 }
 
 /* Help text */

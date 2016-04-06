@@ -18,11 +18,11 @@
 
 package io.gearpump.cluster.master
 
-import io.gearpump.cluster.appmaster.ApplicationState
-import io.gearpump.cluster.{AppJar, AppDescription}
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-class ApplicationStateSpec  extends FlatSpec with Matchers with BeforeAndAfterEach  {
+import io.gearpump.cluster.appmaster.ApplicationState
+
+class ApplicationStateSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   "ApplicationState" should "check equal with respect to only appId and attemptId" in {
     val stateA = ApplicationState(0, "application0", 0, null, null, null, "A")

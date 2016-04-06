@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,15 @@
 package io.gearpump.streaming.javaapi;
 
 import io.gearpump.partitioner.Partitioner;
+import io.gearpump.streaming.Processor;
+import io.gearpump.streaming.task.Task;
 
-public class Graph extends io.gearpump.util.Graph<io.gearpump.streaming.Processor<? extends io.gearpump.streaming.task.Task>, Partitioner> {
+/**
+ * Java version of Graph
+ *
+ * See {@link io.gearpump.util.Graph}
+ */
+public class Graph extends io.gearpump.util.Graph<Processor<? extends Task>, Partitioner> {
 
   public Graph() {
     super(null, null);

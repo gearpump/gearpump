@@ -60,7 +60,6 @@ For a not that clean solution, here is the steps:
   ```
 3. Run `sbt it:test`
 
-
 ## Manual test by creating docker cluster manually
 
 To launch a Gearpump cluster manually, you can run the commands as follows.

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,11 +19,13 @@
 package io.gearpump.experiments.yarn.appmaster
 
 import com.typesafe.config.Config
+
 import io.gearpump.cluster.main.{Master, Worker}
 import io.gearpump.experiments.yarn.Constants._
 import io.gearpump.transport.HostPort
 import io.gearpump.util.Constants
 
+/** Command to start a YARN container */
 trait Command {
   def get: String
   override def toString: String = get
@@ -32,22 +34,26 @@ trait Command {
 abstract class AbstractCommand extends Command {
   protected def config: Config
   def version: String
-  def classPath = Array(
-    s"conf",
-    s"pack/$version/conf",
-    s"pack/$version/lib/daemon/*",
-    s"pack/$version/lib/*"
-  )
+  def classPath: Array[String] = {
+    Array(
+      s"conf",
+      s"pack/$version/conf",
+      s"pack/$version/lib/daemon/*",
+      s"pack/$version/lib/*"
+    )
+  }
 
-  protected def buildCommand(java: String, properties: Array[String], mainClazz: String, cliOpts: Array[String]):String = {
+  protected def buildCommand(
+      java: String, properties: Array[String], mainClazz: String, cliOpts: Array[String])
+    : String = {
     val exe = config.getString(java)
 
     s"$exe -cp ${classPath.mkString(":")}:" +
       "$CLASSPATH " + properties.mkString(" ") +
-      s"  $mainClazz ${cliOpts.mkString(" ")} 2>&1 | /usr/bin/tee -a ${LOG_DIR_EXPANSION_VAR}/stderr"
+      s" $mainClazz ${cliOpts.mkString(" ")} 2>&1 | /usr/bin/tee -a ${LOG_DIR_EXPANSION_VAR}/stderr"
   }
 
-  protected def clazz(any: AnyRef) : String = {
+  protected def clazz(any: AnyRef): String = {
     val name = any.getClass.getName
     if (name.endsWith("$")) {
       name.dropRight(1)
@@ -57,10 +63,11 @@ abstract class AbstractCommand extends Command {
   }
 }
 
-case class MasterCommand(config: Config, version: String, masterAddr: HostPort) extends AbstractCommand {
+case class MasterCommand(config: Config, version: String, masterAddr: HostPort)
+  extends AbstractCommand {
 
   def get: String = {
-    val masterArguments = Array(s"-ip ${masterAddr.host}",  s"-port ${masterAddr.port}")
+    val masterArguments = Array(s"-ip ${masterAddr.host}", s"-port ${masterAddr.port}")
 
     val properties = Array(
       s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.0=${masterAddr.host}:${masterAddr.port}",
@@ -74,7 +81,8 @@ case class MasterCommand(config: Config, version: String, masterAddr: HostPort) 
   }
 }
 
-case class WorkerCommand(config: Config, version: String, masterAddr: HostPort, workerHost: String) extends AbstractCommand {
+case class WorkerCommand(config: Config, version: String, masterAddr: HostPort, workerHost: String)
+  extends AbstractCommand {
 
   def get: String = {
     val properties = Array(
@@ -85,11 +93,12 @@ case class WorkerCommand(config: Config, version: String, masterAddr: HostPort, 
       s"-D${Constants.GEARPUMP_LOG_APPLICATION_DIR}=${LOG_DIR_EXPANSION_VAR}",
       s"-D${Constants.GEARPUMP_HOSTNAME}=$workerHost")
 
-    buildCommand(WORKER_COMMAND, properties,  clazz(Worker), Array.empty[String])
+    buildCommand(WORKER_COMMAND, properties, clazz(Worker), Array.empty[String])
   }
 }
 
-case class AppMasterCommand(config: Config, version: String, args: Array[String]) extends AbstractCommand {
+case class AppMasterCommand(config: Config, version: String, args: Array[String])
+  extends AbstractCommand {
 
   override val classPath = Array(
     "conf",

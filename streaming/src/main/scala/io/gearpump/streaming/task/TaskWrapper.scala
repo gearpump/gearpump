@@ -18,22 +18,26 @@
 
 package io.gearpump.streaming.task
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.Actor._
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import io.gearpump.{TimeStamp, Message}
-import io.gearpump.cluster.UserConfig
-import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-import scala.concurrent.duration.FiniteDuration
+import io.gearpump.cluster.UserConfig
+import io.gearpump.util.LogUtil
+import io.gearpump.{Message, TimeStamp}
 
 /**
  * This provides TaskContext for user defined tasks
+ *
  * @param taskClass task class
  * @param context context class
  * @param userConf user config
  */
-class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: TaskContextData, userConf: UserConfig) extends TaskContext with TaskInterface {
+class TaskWrapper(
+    val taskId: TaskId, taskClass: Class[_ <: Task], context: TaskContextData,
+    userConf: UserConfig) extends TaskContext with TaskInterface {
 
   private val LOG = LogUtil.getLogger(taskClass, task = taskId)
 
@@ -56,18 +60,19 @@ class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: Task
   override def output(msg: Message): Unit = actor.output(msg)
 
   /**
-   * @see [[TaskActor.output]]
+   * See [[io.gearpump.streaming.task.TaskActor]] output(arrayIndex: Int, msg: Message): Unit
+   *
    * @param index, not same as ProcessorId
-   * @param msg
    */
   def output(index: Int, msg: Message): Unit = actor.output(index, msg)
 
   /**
    * Use with caution, output unmanaged message to target tasks
+   *
    * @param msg  message to output
    * @param tasks  the tasks to output to
    */
-  def outputUnManaged(msg: AnyRef, tasks: TaskId *): Unit = {
+  def outputUnManaged(msg: AnyRef, tasks: TaskId*): Unit = {
     actor.transport(msg, tasks: _*)
   }
 
@@ -105,12 +110,12 @@ class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: Task
     actor.getUpstreamMinClock
   }
 
-  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: ⇒ Unit): Cancellable = {
+  def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit): Cancellable = {
     val dispatcher = actor.context.system.dispatcher
     actor.context.system.scheduler.schedule(initialDelay, interval)(f)(dispatcher)
   }
 
-  def scheduleOnce(initialDelay: FiniteDuration)(f: ⇒ Unit): Cancellable = {
+  def scheduleOnce(initialDelay: FiniteDuration)(f: => Unit): Cancellable = {
     val dispatcher = actor.context.system.dispatcher
     actor.context.system.scheduler.scheduleOnce(initialDelay)(f)(dispatcher)
   }
@@ -121,9 +126,8 @@ class TaskWrapper(val taskId: TaskId, taskClass: Class[_ <: Task], context: Task
   }
 
   /**
-   * logger is environment dependant, it should be provided by
+   * Logger is environment dependant, it should be provided by
    * containing environment.
-   * @return
    */
   override def logger: Logger = LOG
 }

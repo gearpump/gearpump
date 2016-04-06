@@ -35,7 +35,7 @@ No work should ever be done in the forked master. Another way to do this is to
 
   ```
   git branch branch_issueId
-  git checkout branch_issusId
+  git checkout branch_issueId
   ```
 
   Work on the branch, make changes, then push to your forked gearpump repo http://github.com/<git-user_id>/gearpump
@@ -77,7 +77,6 @@ No work should ever be done in the forked master. Another way to do this is to
 8. Ensure all the unit tests are passed by running command "sbt test".
 6. Open a PR, which is a one-click thing in github.com; it knows you likely are opening a PR against upstream master. [Guide](https://help.github.com/articles/creating-a-pull-request) is here.
 7. [Merge PR](https://help.github.com/articles/merging-a-pull-request), [delete branch](https://help.github.com/articles/deleting-unused-branches).
-
 
 You can skip using branches in your fork if desired, and just work out of your master. Less overhead, but, you can't pursue different unrelated changes then.
 

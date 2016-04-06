@@ -3,10 +3,9 @@ layout: global
 title: Deployment for Reliable Message Delivery
 ---
 
-
 ## How to deploy for At Least Once Message Delivery?
 
-As introduced in the [What is At Least Once Message Delievery](message-delivery.html#what-is-at-least-once-message-delivery), Gearpump has a built in KafkaSource. To get at least once message delivery, users should deploy a Kafka cluster as the offset store along with the Gearpump cluster. 
+As introduced in the [What is At Least Once Message Delivery](message-delivery.html#what-is-at-least-once-message-delivery), Gearpump has a built in KafkaSource. To get at least once message delivery, users should deploy a Kafka cluster as the offset store along with the Gearpump cluster. 
 
 Here's an example to deploy a local Kafka cluster. 
 
@@ -30,7 +29,6 @@ Here's an example to deploy a local Kafka cluster.
    val offsetStorageFactory = new KafkaStorageFactory("localhost:2181", "localhost:9092")
    val source = new KafkaSource("topic1", "localhost:2181", offsetStorageFactory)
    ```
-
 
 ## How to deploy for Exactly Once Message Delivery?
 

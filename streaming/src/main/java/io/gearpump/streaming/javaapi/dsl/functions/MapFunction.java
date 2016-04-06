@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,10 @@ package io.gearpump.streaming.javaapi.dsl.functions;
 import java.io.Serializable;
 
 /**
- * a function that converts a value<T> to value<R>
+ * Function that map a value of type T to value of type R
+ *
+ * @param <T> Input value type
+ * @param <R> Output value type
  */
 public interface MapFunction<T, R> extends Serializable {
   R apply(T t);

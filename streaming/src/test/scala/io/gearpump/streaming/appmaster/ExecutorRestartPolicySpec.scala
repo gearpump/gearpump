@@ -15,12 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.gearpump.streaming.appmaster
+
+import scala.concurrent.duration._
+
+import org.scalatest.{Matchers, WordSpec}
 
 import io.gearpump.streaming.executor.ExecutorRestartPolicy
 import io.gearpump.streaming.task.TaskId
-import org.scalatest.{Matchers, WordSpec}
-import scala.concurrent.duration._
 
 class ExecutorRestartPolicySpec extends WordSpec with Matchers {
 
@@ -29,7 +32,8 @@ class ExecutorRestartPolicySpec extends WordSpec with Matchers {
       val executorId1 = 1
       val executorId2 = 2
       val taskId = TaskId(0, 0)
-      val executorSupervisor = new ExecutorRestartPolicy(maxNrOfRetries = 3, withinTimeRange = 1 seconds)
+      val executorSupervisor = new ExecutorRestartPolicy(
+        maxNrOfRetries = 3, withinTimeRange = 1.seconds)
       executorSupervisor.addTaskToExecutor(executorId1, taskId)
       assert(executorSupervisor.allowRestartExecutor(executorId1))
       assert(executorSupervisor.allowRestartExecutor(executorId1))

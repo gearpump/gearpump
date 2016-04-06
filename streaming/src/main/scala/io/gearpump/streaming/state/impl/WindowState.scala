@@ -2,12 +2,12 @@
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
- * regarding cstateyright ownership.  The ASF licenses this file
+ * regarding copyright ownership.  The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a cstatey of the License at
+ * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,15 @@
 
 package io.gearpump.streaming.state.impl
 
-import io.gearpump.TimeStamp
-import io.gearpump.streaming.state.api.{Group, Serializer, MonoidState}
-import io.gearpump.streaming.task.TaskContext
-import io.gearpump.streaming.state.impl.WindowState._
-import io.gearpump.util.LogUtil
+import scala.collection.immutable.TreeMap
+
 import org.slf4j.Logger
 
-import scala.collection.immutable.TreeMap
+import io.gearpump.TimeStamp
+import io.gearpump.streaming.state.api.{Group, MonoidState, Serializer}
+import io.gearpump.streaming.state.impl.WindowState._
+import io.gearpump.streaming.task.TaskContext
+import io.gearpump.util.LogUtil
 
 /**
  * an interval is a dynamic time range that is divided by window boundary and checkpoint time
@@ -51,10 +52,9 @@ object WindowState {
  * possible to undo the update by messages that have left the window
  */
 class WindowState[T](group: Group[T],
-                     serializer: Serializer[TreeMap[Interval, T]],
-                     taskContext: TaskContext,
-                     window: Window)
-  extends MonoidState[T](group) {
+    serializer: Serializer[TreeMap[Interval, T]],
+    taskContext: TaskContext,
+    window: Window) extends MonoidState[T](group) {
   /**
    * each interval has a state updated by message with timestamp in
    * [interval.startTime, interval.endTime)
@@ -67,11 +67,11 @@ class WindowState[T](group: Group[T],
     window.slideTo(timestamp)
     serializer.deserialize(bytes)
       .foreach { states =>
-      intervalStates = states
-      left = states.foldLeft(left) { case (accum, iter) =>
-        group.plus(accum, iter._2)
+        intervalStates = states
+        left = states.foldLeft(left) { case (accum, iter) =>
+          group.plus(accum, iter._2)
+        }
       }
-    }
   }
 
   override def update(timestamp: TimeStamp, t: T): Unit = {
@@ -115,14 +115,17 @@ class WindowState[T](group: Group[T],
   }
 
   /**
-   * each message will update state in corresponding Interval[StartTime, endTime),
+   * Each message will update state in corresponding Interval[StartTime, endTime),
+   *
    * which is decided by the message's timestamp t where
-   *    startTime = Math.max(lowerBound1, lowerBound2, checkpointTime)
-   *    endTime = Math.min(upperBound1, upperBound2, checkpointTime)
-   *    lowerBound1 = step * Nmax1 <= t
-   *    lowerBound2 = step * Nmax2 + size <= t
-   *    upperBound1 = step * Nmin1 > t
-   *    upperBound2 = step * Nmin2 + size > t
+   * {{{
+   * startTime = Math.max(lowerBound1, lowerBound2, checkpointTime)
+   * endTime = Math.min(upperBound1, upperBound2, checkpointTime)
+   * lowerBound1 = step * Nmax1 <= t
+   * lowerBound2 = step * Nmax2 + size <= t
+   * upperBound1 = step * Nmin1 > t
+   * upperBound2 = step * Nmin2 + size > t
+   * }}}
    */
   private[impl] def getInterval(timestamp: TimeStamp, checkpointTime: TimeStamp): Interval = {
     val windowSize = window.windowSize
@@ -144,7 +147,8 @@ class WindowState[T](group: Group[T],
     }
   }
 
-  private[impl] def updateIntervalStates(timestamp: TimeStamp, t: T, checkpointTime: TimeStamp): Unit = {
+  private[impl] def updateIntervalStates(timestamp: TimeStamp, t: T, checkpointTime: TimeStamp)
+  : Unit = {
     val interval = getInterval(timestamp, checkpointTime)
     intervalStates.get(interval) match {
       case Some(st) =>
@@ -154,8 +158,8 @@ class WindowState[T](group: Group[T],
     }
   }
 
-  private[impl] def getIntervalStates(startTime: TimeStamp, endTime: TimeStamp): TreeMap[Interval, T] = {
+  private[impl] def getIntervalStates(startTime: TimeStamp, endTime: TimeStamp)
+  : TreeMap[Interval, T] = {
     intervalStates.dropWhile(_._1.endTime <= startTime).takeWhile(_._1.endTime <= endTime)
   }
-
 }

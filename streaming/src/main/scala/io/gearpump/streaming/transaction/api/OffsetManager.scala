@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,28 +18,27 @@
 
 package io.gearpump.streaming.transaction.api
 
-import io.gearpump.{Message, TimeStamp}
-
 import scala.util.Try
 
+import io.gearpump.{Message, TimeStamp}
+
 /**
- * filter offsets and store the mapping from timestamp to offset
+ * Filters offsets and store the mapping from timestamp to offset
  */
 trait MessageFilter {
   def filter(messageAndOffset: (Message, Long)): Option[Message]
 }
 
 /**
- * resolve timestamp to offset by look up the underlying storage
+ * Resolves timestamp to offset by look up the underlying storage
  */
 trait OffsetTimeStampResolver {
   def resolveOffset(time: TimeStamp): Try[Long]
 }
 
 /**
- * manages message's offset on TimeReplayableSource and timestamp
+ * Manages message's offset on TimeReplayableSource and timestamp
  */
 trait OffsetManager extends MessageFilter with OffsetTimeStampResolver {
   def close(): Unit
 }
-

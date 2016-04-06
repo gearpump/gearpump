@@ -5,7 +5,7 @@ Change list
  - #775, fix netty config
  - #778, log improvements
  - #781 when launching lots of tasks, the application failed to transfer message across hosts 
- - #782, a) add wildcard match to return metrics(support glob char … and *), b) add diagnosis message if the clock stop advancing
+ - #782, a) add wildcard match to return metrics(support glob char . and *), b) add diagnosis message if the clock stop advancing
  - #786, Read user config from classpath, the appmaster/executor wil use the dynamic user config
  - #773: skew chart will show relative skew
  - #790, 1) return detail task data in appmaster REST. 2) bind executor id with executor system id

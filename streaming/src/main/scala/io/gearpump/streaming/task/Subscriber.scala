@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@
 package io.gearpump.streaming.task
 
 import io.gearpump.partitioner.PartitionerDescription
-import io.gearpump.streaming.{LifeTime, DAG}
+import io.gearpump.streaming.{DAG, LifeTime}
 
 /**
  * Each processor can have multiple downstream subscribers.
@@ -30,8 +30,8 @@ import io.gearpump.streaming.{LifeTime, DAG}
  * @param processorId subscriber processor Id
  * @param partitionerDescription subscriber partitioner
  */
-
-case class Subscriber(processorId: Int, partitionerDescription: PartitionerDescription, parallelism: Int, lifeTime: LifeTime)
+case class Subscriber(processorId: Int, partitionerDescription: PartitionerDescription,
+    parallelism: Int, lifeTime: LifeTime)
 
 object Subscriber {
 
@@ -50,7 +50,8 @@ object Subscriber {
     edges.foldLeft(List.empty[Subscriber]) { (list, nodeEdgeNode) =>
       val (_, partitioner, downstreamProcessorId) = nodeEdgeNode
       val downstreamProcessor = dag.processors(downstreamProcessorId)
-      list :+ Subscriber(downstreamProcessorId, partitioner, downstreamProcessor.parallelism, downstreamProcessor.life)
+      list :+ Subscriber(downstreamProcessorId, partitioner,
+        downstreamProcessor.parallelism, downstreamProcessor.life)
     }
   }
 }

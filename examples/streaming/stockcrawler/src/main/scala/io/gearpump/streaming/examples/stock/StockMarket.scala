@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,19 +19,20 @@
 package io.gearpump.streaming.examples.stock
 
 import java.nio.charset.Charset
+import scala.io.Codec
+
 import org.apache.commons.httpclient.methods.GetMethod
 import org.apache.commons.httpclient.{HttpClient, MultiThreadedHttpConnectionManager}
-import StockMarket.ServiceHour
-import io.gearpump.transport.HostPort
-import io.gearpump.util.LogUtil
 import org.htmlcleaner.{HtmlCleaner, TagNode}
 import org.joda.time.{DateTime, DateTimeZone}
 
-import scala.io.Codec
+import io.gearpump.streaming.examples.stock.StockMarket.ServiceHour
+import io.gearpump.transport.HostPort
+import io.gearpump.util.LogUtil
 
 class StockMarket(service: ServiceHour, proxy: HostPort = null) extends Serializable {
 
-  def LOG = LogUtil.getLogger(getClass)
+  private def LOG = LogUtil.getLogger(getClass)
 
   @transient
   private var connectionManager: MultiThreadedHttpConnectionManager = null
@@ -41,7 +42,7 @@ class StockMarket(service: ServiceHour, proxy: HostPort = null) extends Serializ
   private val stockPriceParser =
     """^var\shq_str_s_([a-z0-9A-Z]+)="([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+)";$""".r
 
-  def shutdown: Unit = {
+  def shutdown(): Unit = {
     Option(connectionManager).map(_.shutdown())
   }
 
@@ -58,8 +59,7 @@ class StockMarket(service: ServiceHour, proxy: HostPort = null) extends Serializ
     _client
   }
 
-  def getPrice(stocks: Array[String]) : Array[StockPrice] = {
-
+  def getPrice(stocks: Array[String]): Array[StockPrice] = {
 
     LOG.info(s"getPrice 1")
 
@@ -72,7 +72,8 @@ class StockMarket(service: ServiceHour, proxy: HostPort = null) extends Serializ
       client.executeMethod(get)
       val current = System.currentTimeMillis()
 
-      val output = scala.io.Source.fromInputStream(get.getResponseBodyAsStream)(new Codec(Charset forName "GBK")).getLines().flatMap { line =>
+      val output = scala.io.Source.fromInputStream(get.getResponseBodyAsStream)(
+        new Codec(Charset forName "GBK")).getLines().flatMap { line =>
         line match {
           case stockPriceParser(stockId, name, price, delta, pecent, volume, money) =>
             Some(StockPrice(stockId, name, price, delta, pecent, volume, money, current))
@@ -100,18 +101,18 @@ class StockMarket(service: ServiceHour, proxy: HostPort = null) extends Serializ
 
     val root = cleaner.clean(get.getResponseBodyAsStream)
 
-    val stockUrls = root.evaluateXPath("//div[@id='quotesearch']//li//a[@href]");
+    val stockUrls = root.evaluateXPath("//div[@id='quotesearch']//li//a[@href]")
 
     val elements = root.getElementsByName("a", true)
 
     val hrefs = (0 until stockUrls.length)
       .map(stockUrls(_).asInstanceOf[TagNode].getAttributeByName("href"))
-      .map {url =>
-      url match {
-        case urlPattern(code) => code
-        case _ => null
-      }
-    }.toArray
+      .map { url =>
+        url match {
+          case urlPattern(code) => code
+          case _ => null
+        }
+      }.toArray
     hrefs
   }
 }
@@ -123,14 +124,14 @@ object StockMarket {
     /**
      * Morning openning: 9:30 am - 11:30 am
      */
-    val morningStart = GMT8(new DateTime(0,1,1,9,30)).getMillis
-    val morningEnd = GMT8(new DateTime(0,1,1,11,30)).getMillis
+    val morningStart = GMT8(new DateTime(0, 1, 1, 9, 30)).getMillis
+    val morningEnd = GMT8(new DateTime(0, 1, 1, 11, 30)).getMillis
 
     /**
      * After noon openning: 13:00 pm - 15:00 pm
      */
-    val afternoonStart = GMT8(new DateTime(0,1,1,13,0)).getMillis
-    val afternoonEnd = GMT8(new DateTime(0,1,1,15,0)).getMillis
+    val afternoonStart = GMT8(new DateTime(0, 1, 1, 13, 0)).getMillis
+    val afternoonEnd = GMT8(new DateTime(0, 1, 1, 15, 0)).getMillis
 
     def inService: Boolean = {
 

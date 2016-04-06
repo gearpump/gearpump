@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,13 +17,13 @@
  */
 package io.gearpump.cluster.main
 
+import org.slf4j.Logger
+
 import io.gearpump.cluster.MasterToAppMaster.AppMastersData
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.util.{AkkaApp, LogUtil}
-import org.slf4j.Logger
 
-import scala.util.Try
-
+/** Tool to query master info */
 object Info extends AkkaApp with ArgumentsParser {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -31,11 +31,12 @@ object Info extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array(
     // For document purpose only, OPTION_CONFIG option is not used here.
     // OPTION_CONFIG is parsed by parent shell command "Gear" transparently.
-    Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false, defaultValue = None))
-
+    Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false,
+      defaultValue = None))
 
   override val description = "Query the Application list"
 
+  // scalastyle:off println
   def main(akkaConf: Config, args: Array[String]): Unit = {
     val client = ClientContext(akkaConf)
 
@@ -48,4 +49,5 @@ object Info extends AkkaApp with ArgumentsParser {
     }
     client.close()
   }
+  // scalastyle:on println
 }

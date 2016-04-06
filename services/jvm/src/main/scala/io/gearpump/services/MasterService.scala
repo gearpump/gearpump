@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,15 @@
  * limitations under the License.
  */
 
-
 package io.gearpump.services
 
 import java.io.{File, IOException}
-import java.nio.file.Files
 import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.StandardOpenOption.{WRITE, APPEND}
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption.{APPEND, WRITE}
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
@@ -30,6 +32,7 @@ import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import akka.stream.Materializer
 import com.typesafe.config.Config
+
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ReadOption}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
@@ -38,18 +41,16 @@ import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.cluster.{ClusterConfig, UserConfig}
 import io.gearpump.jarstore.JarStoreService
-import io.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
 import io.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
+import io.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
+// NOTE: This cannot be removed!!!
+import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplication}
 import io.gearpump.util.ActorUtil._
 import io.gearpump.util.FileDirective._
 import io.gearpump.util.{Constants, Graph, Util}
-import io.gearpump.services.util.UpickleUtil._
 
-import scala.collection.JavaConversions._
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-
+/** Manages service for master node */
 class MasterService(val master: ActorRef,
     val jarStore: JarStoreService, override val system: ActorSystem)
   extends BasicService {
@@ -59,7 +60,7 @@ class MasterService(val master: ActorRef,
   private val systemConfig = system.settings.config
   private val concise = systemConfig.getBoolean(Constants.GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE)
 
-  override def doRoute(implicit mat: Materializer) = pathPrefix("master") {
+  protected override def doRoute(implicit mat: Materializer) = pathPrefix("master") {
     pathEnd {
       get {
         onComplete(askActor[MasterData](master, GetMasterData)) {
@@ -76,16 +77,17 @@ class MasterService(val master: ActorRef,
       }
     } ~
     path("workerlist") {
-      def future = askActor[WorkerList](master, GetAllWorkers).flatMap { workerList =>
-        val workers = workerList.workers
-        val workerDataList = List.empty[WorkerSummary]
+      def future: Future[List[WorkerSummary]] = askActor[WorkerList](master, GetAllWorkers)
+        .flatMap { workerList =>
+          val workers = workerList.workers
+          val workerDataList = List.empty[WorkerSummary]
 
-        Future.fold(workers.map { workerId =>
-          askWorker[WorkerData](master, workerId, GetWorkerData(workerId))
-        })(workerDataList) { (workerDataList, workerData) =>
-          workerDataList :+ workerData.workerDescription
+          Future.fold(workers.map { workerId =>
+            askWorker[WorkerData](master, workerId, GetWorkerData(workerId))
+          })(workerDataList) { (workerDataList, workerData) =>
+            workerDataList :+ workerData.workerDescription
+          }
         }
-      }
       onComplete(future) {
         case Success(result: List[WorkerSummary]) => complete(write(result))
         case Failure(ex) => failWith(ex)
@@ -221,9 +223,11 @@ object MasterService {
   case class Status(success: Boolean, reason: String = null)
 
   /**
-   * Submit Native Application.
+   * Submits Native Application.
    */
-  def submitGearApp(jar: Option[File], executorNum: Int, args: String, systemConfig: Config, userConfigFile: Option[File]): Boolean = {
+  def submitGearApp(
+      jar: Option[File], executorNum: Int, args: String,
+      systemConfig: Config, userConfigFile: Option[File]): Boolean = {
     submitAndDeleteTempFiles(
       "io.gearpump.cluster.main.AppSubmitter",
       argsArray = Array("-executors", executorNum.toString) ++ spaceSeparatedArgumentsToArray(args),
@@ -235,9 +239,10 @@ object MasterService {
   }
 
   /**
-   * Submit Storm application.
+   * Submits Storm application.
    */
-  def submitStormApp(jar: Option[File], stormConf: Option[File], args: String, systemConfig: Config): Boolean = {
+  def submitStormApp(
+      jar: Option[File], stormConf: Option[File], args: String, systemConfig: Config): Boolean = {
     submitAndDeleteTempFiles(
       "io.gearpump.experiments.storm.main.GearpumpStormClient",
       argsArray = spaceSeparatedArgumentsToArray(args),
@@ -248,9 +253,10 @@ object MasterService {
     )
   }
 
-  private def submitAndDeleteTempFiles(mainClass: String, argsArray: Array[String], fileMap: Map[String, File],
-                                       classPath: Array[String], systemConfig: Config,
-                                       userConfigFile: Option[File] = None): Boolean = {
+  private def submitAndDeleteTempFiles(
+      mainClass: String, argsArray: Array[String], fileMap: Map[String, File],
+      classPath: Array[String], systemConfig: Config,
+      userConfigFile: Option[File] = None): Boolean = {
     try {
       val jar = fileMap.get("jar")
       if (jar.isEmpty) {
@@ -279,7 +285,7 @@ object MasterService {
   }
 
   /**
-   * Return Java options for gearpump cluster
+   * Returns Java options for gearpump cluster
    */
   private def clusterOptions(systemConfig: Config, userConfigFile: Option[File]): Array[String] = {
     var options = Array(
@@ -288,7 +294,8 @@ object MasterService {
       s"-D${Constants.PREFER_IPV4}=true"
     )
 
-    val masters = systemConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).flatMap(Util.parseHostList)
+    val masters = systemConfig.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
+      .toList.flatMap(Util.parseHostList)
     options ++= masters.zipWithIndex.map { case (master, index) =>
       s"-D${Constants.GEARPUMP_CLUSTER_MASTERS}.$index=${master.host}:${master.port}"
     }.toArray[String]
@@ -311,7 +318,7 @@ object MasterService {
   }
 
   /**
-   * Return a space separated arguments as an array.
+   * Returns a space separated arguments as an array.
    */
   private def spaceSeparatedArgumentsToArray(str: String): Array[String] = {
     str.split(" +").filter(_.nonEmpty)
@@ -335,9 +342,9 @@ object MasterService {
     )
   }
 
-  case class SubmitApplicationRequest (
-    appName: String,
-    processors: Map[ProcessorId, ProcessorDescription],
-    dag: Graph[Int, String],
-    userconfig: UserConfig)
+  case class SubmitApplicationRequest(
+      appName: String,
+      processors: Map[ProcessorId, ProcessorDescription],
+      dag: Graph[Int, String],
+      userconfig: UserConfig)
 }

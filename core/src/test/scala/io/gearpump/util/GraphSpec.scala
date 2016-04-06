@@ -20,9 +20,9 @@ package io.gearpump.util
 
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{PropSpec, Matchers}
+import org.scalatest.{Matchers, PropSpec}
 
-import io.gearpump.util.Graph.{Path, Node}
+import io.gearpump.util.Graph.{Node, Path}
 
 class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 
@@ -33,7 +33,7 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 
   property("Graph with no edges should be built correctly") {
     val vertexSet = Set("A", "B", "C")
-    val graph = Graph(vertexSet.toSeq.map(Node):_ *)
+    val graph = Graph(vertexSet.toSeq.map(Node): _*)
     graph.vertices.toSet shouldBe vertexSet
   }
 
@@ -107,7 +107,7 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 
     val levelMap = graph.vertexHierarchyLevelMap()
 
-    //check whether the rule holds: : if vertex A -> B, then level(A) < level(B)
+    // Check whether the rule holds: : if vertex A -> B, then level(A) < level(B)
     levelMap("A") < levelMap("B")
     levelMap("A") < levelMap("C")
     levelMap("B") < levelMap("C")
@@ -178,8 +178,8 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     assert(graph.hasCycle())
   }
 
-  property("topologicalOrderIterator " +
-    "and topologicalOrderWithCirclesIterator method should return equal order of graph with no circle") {
+  property("topologicalOrderIterator and topologicalOrderWithCirclesIterator method should " +
+    "return equal order of graph with no circle") {
     val graph = Graph(1 ~> 2 ~> 3, 4 ~> 2, 2 ~> 5)
     val topoNoCircles = graph.topologicalOrderIterator
     val topoWithCircles = graph.topologicalOrderWithCirclesIterator
@@ -188,9 +188,10 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
   }
 
   property("Topological sort of graph with circles should work properly") {
-    val graph = Graph(0 ~> 1 ~> 3 ~> 4 ~> 6 ~> 5 ~> 7, 4 ~> 1, 1 ~> 2 ~> 4, 7 ~> 6, 8 ~> 2, 6 ~> 9, 4 ~> 10)
+    val graph = Graph(0 ~> 1 ~> 3 ~> 4 ~> 6 ~> 5 ~> 7,
+      4 ~> 1, 1 ~> 2 ~> 4, 7 ~> 6, 8 ~> 2, 6 ~> 9, 4 ~> 10)
     val topoWithCircles = graph.topologicalOrderWithCirclesIterator
-    val trueTopoWithCircles = Iterator[Int](0, 8, 1, 3, 4, 2, 6 ,5, 7, 10, 9)
+    val trueTopoWithCircles = Iterator[Int](0, 8, 1, 3, 4, 2, 6, 5, 7, 10, 9)
 
     assert(trueTopoWithCircles.zip(topoWithCircles).forall(x => x._1 == x._2))
   }

@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -15,7 +15,7 @@ angular.module('dashboard')
           templateUrl: 'views/apps/streamingapp/executor.html',
           controller: 'StreamingAppExecutorCtrl',
           resolve: {
-            executor0: ['$stateParams', 'models', function($stateParams, models) {
+            executor0: ['$stateParams', 'models', function ($stateParams, models) {
               return models.$get.appExecutor($stateParams.appId, $stateParams.executorId);
             }]
           }
@@ -24,7 +24,7 @@ angular.module('dashboard')
 
   .controller('StreamingAppExecutorCtrl', ['$scope', '$propertyTableBuilder',
     'helper', 'restapi', 'models', 'executor0',
-    function($scope, $ptb, helper, restapi, models, executor0) {
+    function ($scope, $ptb, helper, restapi, models, executor0) {
       'use strict';
 
       $scope.executorName = executor0.id === -1 ?
@@ -35,7 +35,12 @@ angular.module('dashboard')
         $ptb.link('Worker').done(),
         $ptb.number('Task Count').done(),
         $ptb.button('Quick Links').values([
-            {href: restapi.appExecutorConfigLink($scope.app.appId, executor0.id), target: '_blank', text: 'Config', class: 'btn-xs'},
+            {
+              href: restapi.appExecutorConfigLink($scope.app.appId, executor0.id),
+              target: '_blank',
+              text: 'Config',
+              class: 'btn-xs'
+            },
             helper.withClickToCopy({text: 'Log Dir.', class: 'btn-xs'}, executor0.logFile)
           ]
         ).done()
@@ -54,13 +59,13 @@ angular.module('dashboard')
       $scope.metricsConfig = $scope.app.historyMetricsConfig;
       $scope.executor = executor0.$data();
       updateOverviewTable($scope.executor);
-      executor0.$subscribe($scope, function(executor) {
+      executor0.$subscribe($scope, function (executor) {
         $scope.executor = executor;
         updateOverviewTable(executor);
       });
 
       // Delegate JvmMetrics directive to manage metrics
-      $scope.queryMetricsFnRef = function(all) {
+      $scope.queryMetricsFnRef = function (all) {
         return all ?
           models.$get.appExecutorHistMetrics($scope.app.appId, executor0.id) :
           models.$get.appExecutorMetrics($scope.app.appId, executor0.id,

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,27 +18,28 @@
 package io.gearpump.streaming.examples.transport
 
 import java.util.concurrent.TimeUnit
-
-import akka.actor.Actor._
-import akka.actor.ActorRef
-import akka.pattern.ask
-import io.gearpump.streaming.{StreamApplication, ProcessorDescription, DAG}
-import io.gearpump.streaming.appmaster.AppMaster
-import io.gearpump.streaming.examples.transport.generator.MockCity
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import io.gearpump.partitioner.PartitionerDescription
-import AppMaster.{TaskActorRef, LookupTaskActorRef}
-import io.gearpump.util.Graph
-
 import scala.collection.immutable.Queue
 import scala.collection.mutable
 import scala.concurrent.Future
 
-class VelocityInspector(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.appMaster
+import akka.actor.Actor._
+import akka.actor.ActorRef
+import akka.pattern.ask
+
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
+import io.gearpump.streaming.examples.transport.generator.MockCity
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
+import io.gearpump.streaming.{DAG, ProcessorDescription, StreamApplication}
+import io.gearpump.util.Graph
+
+class VelocityInspector(taskContext: TaskContext, conf: UserConfig)
+  extends Task(taskContext, conf) {
+
   import system.dispatcher
+  import taskContext.appMaster
   implicit val timeOut = akka.util.Timeout(3, TimeUnit.SECONDS)
   private val passRecords = mutable.Map.empty[String, Queue[PassRecord]]
   private val fakePlateThreshold = conf.getInt(VelocityInspector.FAKE_PLATE_THRESHOLD).get
@@ -48,31 +49,35 @@ class VelocityInspector(taskContext: TaskContext, conf: UserConfig) extends Task
   private var queryServerActor: ActorRef = null
 
   override def onStart(startTime: StartTime): Unit = {
-    val dag = DAG(conf.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
+    val dag = DAG(conf.getValue[Graph[ProcessorDescription, PartitionerDescription]](
+      StreamApplication.DAG).get)
     val queryServer = dag.processors.find { kv =>
       val (_, processor) = kv
       processor.taskClass == classOf[QueryServer].getName
     }.get
     val queryServerTaskId = TaskId(queryServer._1, 0)
-    (appMaster ? LookupTaskActorRef(queryServerTaskId)).asInstanceOf[Future[TaskActorRef]].map {task =>
-      queryServerActor = task.task
-    }
+    (appMaster ? LookupTaskActorRef(queryServerTaskId)).asInstanceOf[Future[TaskActorRef]]
+      .map { task =>
+        queryServerActor = task.task
+      }
   }
 
-  import VelocityInspector._
+  import io.gearpump.streaming.examples.transport.VelocityInspector._
   override def onNext(msg: Message): Unit = {
     msg.msg match {
       case passRecord: PassRecord =>
         val records = passRecords.getOrElse(passRecord.vehicleId, Queue.empty[PassRecord])
-        if(records.size > 0) {
+        if (records.size > 0) {
           val velocity = getVelocity(passRecord, records.last)
           val formatted = "%.2f".format(velocity)
-          if(velocity > overdriveThreshold) {
-            if(velocity > fakePlateThreshold) {
-              LOG.info(s"vehicle ${passRecord.vehicleId} maybe a fake plate, the speed is $formatted km/h")
+          if (velocity > overdriveThreshold) {
+            if (velocity > fakePlateThreshold) {
+              LOG.info(s"vehicle ${passRecord.vehicleId} maybe a fake plate, " +
+                s"the speed is $formatted km/h")
             }
-            if(queryServerActor != null) {
-              queryServerActor ! OverSpeedReport(passRecord.vehicleId, formatted, passRecord.timeStamp, passRecord.locationId)
+            if (queryServerActor != null) {
+              queryServerActor ! OverSpeedReport(passRecord.vehicleId, formatted,
+                passRecord.timeStamp, passRecord.locationId)
             }
           }
         }
@@ -85,19 +90,19 @@ class VelocityInspector(taskContext: TaskContext, conf: UserConfig) extends Task
       val records = passRecords.getOrElse(vehicleId, Queue.empty[PassRecord])
       sender ! VehicleTrace(records.toArray.sortBy(_.timeStamp))
   }
-  
+
   private def getVelocity(passRecord: PassRecord, lastPassRecord: PassRecord): Float = {
     val distanceInKm = getDistance(lastPassRecord.locationId, passRecord.locationId)
     val timeInHour = (passRecord.timeStamp - lastPassRecord.timeStamp).toFloat / (1000 * 60 * 60)
     distanceInKm / timeInHour
   }
-  
+
   private def getDistance(location1: String, location2: String): Long = {
     mockCity.getDistance(location1, location2)
   }
 }
 
-object VelocityInspector{
+object VelocityInspector {
   final val OVER_DRIVE_THRESHOLD = "overdrive.threshold"
   final val FAKE_PLATE_THRESHOLD = "fakeplate.threshold"
   final val RECORDS_NUM = 20
@@ -111,6 +116,8 @@ object VelocityInspector{
       result
     }
   }
+
+  import scala.language.implicitConversions
 
   implicit def queue2FiniteQueue[T](q: Queue[T]): FiniteQueue[T] = new FiniteQueue[T](q)
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -49,7 +49,6 @@ import org.reactivestreams.{Publisher, Subscriber}
  */
 trait DummyModule extends Module
 
-
 /**
  *
  *    [[DummySource]]-> [[BridgeModule]] -> Sink
@@ -77,7 +76,6 @@ class DummySource[Out](val attributes: Attributes, shape: SourceShape[Out])
   }
 }
 
-
 /**
  *
  *    Source-> [[BridgeModule]] -> [[DummySink]]
@@ -88,7 +86,7 @@ class DummySource[Out](val attributes: Attributes, shape: SourceShape[Out])
  *
  * @param attributes
  * @param shape
-  */
+ */
 class DummySink[IN](val attributes: Attributes, shape: SinkShape[IN])
   extends SinkModule[IN, Unit](shape) with DummyModule {
   override def create(context: MaterializationContext): (Subscriber[IN], Unit) = {

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,14 @@
 package io.gearpump.experiments.pagerank
 
 import akka.actor.Actor.Receive
-import io.gearpump.streaming.task._
-import io.gearpump.cluster.UserConfig
-import PageRankController.Tick
-import PageRankWorker.LatestWeight
 
-class PageRankController (taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+import io.gearpump.cluster.UserConfig
+import io.gearpump.experiments.pagerank.PageRankController.Tick
+import io.gearpump.experiments.pagerank.PageRankWorker.LatestWeight
+import io.gearpump.streaming.task._
+
+class PageRankController(taskContext: TaskContext, conf: UserConfig)
+  extends Task(taskContext, conf) {
 
   val taskCount = conf.getInt(PageRankApplication.COUNT).get
   val iterationMax = conf.getInt(PageRankApplication.ITERATION).get
@@ -37,11 +39,11 @@ class PageRankController (taskContext : TaskContext, conf: UserConfig) extends T
   var weights = Map.empty[TaskId, Double]
   var deltas = Map.empty[TaskId, Double]
 
-  override def onStart(startTime : StartTime) : Unit = {
+  override def onStart(startTime: StartTime): Unit = {
     output(Tick(tick), tasks: _*)
   }
 
-  private def output(msg: AnyRef, tasks: TaskId *): Unit = {
+  private def output(msg: AnyRef, tasks: TaskId*): Unit = {
     taskContext.asInstanceOf[TaskWrapper].outputUnManaged(msg, tasks: _*)
   }
 
@@ -49,7 +51,7 @@ class PageRankController (taskContext : TaskContext, conf: UserConfig) extends T
     case LatestWeight(taskId, weight, replyTick) =>
       if (this.tick == replyTick) {
 
-        deltas +=  taskId -> Math.abs(weight - weights.getOrElse(taskId, 0.0))
+        deltas += taskId -> Math.abs(weight - weights.getOrElse(taskId, 0.0))
         weights += taskId -> weight
         receivedWeightForCurrentTick += 1
         if (receivedWeightForCurrentTick == taskCount) {
@@ -66,7 +68,7 @@ class PageRankController (taskContext : TaskContext, conf: UserConfig) extends T
   }
 
   private def continueIteration: Boolean = {
-    (tick < iterationMax) && deltas.values.foldLeft(false) {(deltaExceed, value) =>
+    (tick < iterationMax) && deltas.values.foldLeft(false) { (deltaExceed, value) =>
       deltaExceed || value > delta
     }
   }

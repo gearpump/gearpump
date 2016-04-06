@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-
 package io.gearpump.util
 
 import java.io.File
 import java.util
+
 import org.scalatest.FlatSpec
+
 import io.gearpump.google.common.io.Files
 
 class FileUtilsSpec extends FlatSpec {
@@ -43,7 +44,7 @@ class FileUtilsSpec extends FlatSpec {
     val file = File.createTempFile("fileutilspec", ".test")
     val bytes = TXT.toCharArray.map(_.toByte)
     FileUtils.writeByteArrayToFile(file, bytes)
-    util.Arrays.equals(bytes,FileUtils.readFileToByteArray(file))
+    util.Arrays.equals(bytes, FileUtils.readFileToByteArray(file))
     file.delete()
   }
 

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 
 import java.util.HashMap;
 
-public class Sum  extends Task {
+public class Sum extends Task {
 
   private Logger LOG = super.LOG();
   private HashMap<String, Integer> wordCount = new HashMap<String, Integer>();
@@ -43,7 +43,7 @@ public class Sum  extends Task {
 
   @Override
   public void onNext(Message messagePayLoad) {
-    String word = (String)(messagePayLoad.msg());
+    String word = (String) (messagePayLoad.msg());
     Integer current = wordCount.get(word);
     if (current == null) {
       current = 0;

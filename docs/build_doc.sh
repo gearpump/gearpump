@@ -32,7 +32,7 @@ export BUILD_API=$2
 # generate _site documents
 jekyll build
 
-# check html link validality
+# check html link validity
 echo "Checking generated HTMLs..."
 htmlproof _site \
   --disable-external \
@@ -46,7 +46,6 @@ if [ "$BUILD_API" = 1 ]; then
   echo "Running 'sbt clean unidoc'; this may take a few minutes..."
   cd $CURDIR/..
   sbt clean unidoc
-
   echo "Moving back into docs dir."
   cd $CURDIR
 

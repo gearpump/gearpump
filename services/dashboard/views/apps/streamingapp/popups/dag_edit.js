@@ -5,7 +5,7 @@
 angular.module('dashboard')
 
   .controller('StreamingAppDagEditCtrl', ['$scope', 'models',
-    function($scope, models) {
+    function ($scope, models) {
       'use strict';
 
       var options = $scope.modifyOptions || {};
@@ -18,18 +18,18 @@ angular.module('dashboard')
       $scope.parallelism = processor.parallelism;
 
       $scope.invalid = {};
-      $scope.canReplace = function() {
+      $scope.canReplace = function () {
         return !_.includes($scope.invalid, true) && $scope.isDirty();
       };
 
-      $scope.isDirty = function() {
+      $scope.isDirty = function () {
         // do not require same type!
         return $scope.taskClass != processor.taskClass ||
           $scope.description != processor.description ||
           $scope.parallelism != processor.parallelism;
       };
 
-      $scope.submit = function() {
+      $scope.submit = function () {
         var files = [$scope.jar];
         var fileFormNames = ['jar'];
         var newProcessor = {
@@ -52,7 +52,7 @@ angular.module('dashboard')
           };
         }
 
-        $scope.dag.replaceProcessor(files, fileFormNames, $scope.app.appId, $scope.processorId, newProcessor, function(response) {
+        $scope.dag.replaceProcessor(files, fileFormNames, $scope.app.appId, $scope.processorId, newProcessor, function (response) {
           $scope.shouldNoticeSubmitFailed = !response.success;
           if (response.success) {
             $scope.$hide();

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,29 +17,30 @@
  */
 package io.gearpump.experiments.distributeservice
 
-import java.io.{FileWriter, File}
+import java.io.{File, FileWriter}
 import java.net.InetAddress
+import scala.collection.JavaConverters._
+import scala.io.Source
+import scala.sys.process._
+import scala.util.{Failure, Success, Try}
 
 import akka.actor.Actor
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang.text.StrSubstitutor
-import io.gearpump.cluster.{UserConfig, ExecutorContext}
-import DistServiceAppMaster.InstallService
-import io.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
 
-import scala.io.Source
-import scala.sys.process._
-import collection.JavaConversions._
-import scala.util.{Failure, Success, Try}
+import io.gearpump.cluster.{ExecutorContext, UserConfig}
+import io.gearpump.experiments.distributeservice.DistServiceAppMaster.InstallService
+import io.gearpump.util.{ActorUtil, LogUtil}
 
-class DistServiceExecutor(executorContext: ExecutorContext, userConf : UserConfig) extends Actor {
+class DistServiceExecutor(executorContext: ExecutorContext, userConf: UserConfig) extends Actor {
   import executorContext._
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 
   override def receive: Receive = {
     case InstallService(url, zipFileName, targetPath, scriptData, serviceName, serviceSettings) =>
-      LOG.info(s"Executor $executorId receive command to install service $serviceName to $targetPath")
+      LOG.info(s"Executor $executorId receive command to install " +
+        s"service $serviceName to $targetPath")
       unzipFile(url, zipFileName, targetPath)
       installService(scriptData, serviceName, serviceSettings)
   }
@@ -47,31 +48,32 @@ class DistServiceExecutor(executorContext: ExecutorContext, userConf : UserConfi
   private def unzipFile(url: String, zipFileName: String, targetPath: String) = {
     val zipFile = File.createTempFile(System.currentTimeMillis().toString, zipFileName)
     val dir = new File(targetPath)
-    if(dir.exists()) {
+    if (dir.exists()) {
       FileUtils.forceDelete(dir)
     }
     val bytes = FileServer.newClient.get(url).get
     FileUtils.writeByteArrayToFile(zipFile, bytes)
-    val result = Try(s"unzip ${zipFile.getAbsolutePath} -d $targetPath" !!)
+    val result = Try(s"unzip ${zipFile.getAbsolutePath} -d $targetPath".!!)
     result match {
       case Success(msg) => LOG.info(s"Executor $executorId unzip file to $targetPath")
-      case Failure(ex) =>  throw ex
+      case Failure(ex) => throw ex
     }
   }
 
-  private def installService(scriptData: Array[Byte], serviceName: String, serviceSettings: Map[String, Any]) = {
+  private def installService(
+      scriptData: Array[Byte], serviceName: String, serviceSettings: Map[String, Any]) = {
     val tempFile = File.createTempFile("gearpump", serviceName)
     FileUtils.writeByteArrayToFile(tempFile, scriptData)
     val script = new File("/etc/init.d", serviceName)
     writeFileWithEnvVariables(tempFile, script, serviceSettings ++ getEnvSettings)
-    val result = Try(s"chkconfig --add $serviceName" !!)
+    val result = Try(s"chkconfig --add $serviceName".!!)
     result match {
       case Success(msg) => LOG.info(s"Executor install service $serviceName successfully!")
       case Failure(ex) => throw ex
     }
   }
 
-  private def getEnvSettings : Map[String, Any] = {
+  private def getEnvSettings: Map[String, Any] = {
     Map("workerId" -> worker,
       "localhost" -> ActorUtil.getSystemAddress(context.system).host.get,
       "hostname" -> InetAddress.getLocalHost.getHostName)
@@ -79,7 +81,7 @@ class DistServiceExecutor(executorContext: ExecutorContext, userConf : UserConfi
 
   private def writeFileWithEnvVariables(source: File, target: File, envs: Map[String, Any]) = {
     val writer = new FileWriter(target)
-    val sub = new StrSubstitutor(mapAsJavaMap(envs))
+    val sub = new StrSubstitutor(envs.asJava)
     sub.setEnableSubstitutionInVariables(true)
     Source.fromFile(source).getLines().foreach(line => writer.write(sub.replace(line) + "\r\n"))
     writer.close()

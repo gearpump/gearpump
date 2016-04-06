@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,12 @@
 package io.gearpump.cluster.worker
 
 import com.typesafe.config.Config
+import org.apache.commons.lang.SystemUtils
+import org.slf4j.{Logger, LoggerFactory}
+
 import io.gearpump.cluster.cgroup.core.{CgroupCore, CpuCore}
 import io.gearpump.cluster.cgroup.{CgroupCenter, CgroupCommon, Hierarchy, ResourceType}
 import io.gearpump.cluster.worker.CGroupManager._
-import org.apache.commons.lang.SystemUtils
-import org.slf4j.{LoggerFactory, Logger}
 
 class CGroupManager(config: Config) {
   private val center = CgroupCenter.getInstance()
@@ -49,12 +50,13 @@ class CGroupManager(config: Config) {
   }
 
   private def validateCpuUpperLimitValue(value: Int): Int = {
-    if(value > 10)
+    if (value > 10) {
       10
-    else if(value < 1 && value != -1)
+    } else if (value < 1 && value != -1) {
       1
-    else
+    } else {
       value
+    }
   }
 
   private def setCpuUsageUpperLimit(cpuCore: CpuCore, cpuCoreUpperLimit: Int): Unit = {

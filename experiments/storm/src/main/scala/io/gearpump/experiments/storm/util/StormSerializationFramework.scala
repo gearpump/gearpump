@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,11 +19,13 @@ package io.gearpump.experiments.storm.util
 
 import java.lang.{Integer => JInteger}
 import java.util.{Map => JMap}
+
 import akka.actor.ExtendedActorSystem
 import backtype.storm.serialization.SerializationFactory
 import backtype.storm.utils.ListDelegate
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.{Input, Output}
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.topology.GearpumpTuple
 import io.gearpump.experiments.storm.util.StormConstants._
@@ -50,8 +52,9 @@ class StormSerializationFramework extends SerializationFramework {
 }
 
 /**
- * serializes / deserializes [[GearpumpTuple]]
- * @param kryo created by Storm [[SerializationFactory]]
+ * serializes / deserializes [[io.gearpump.experiments.storm.topology.GearpumpTuple]]
+ *
+ * @param kryo created by Storm [[backtype.storm.serialization.SerializationFactory]]
  */
 class StormSerializer(kryo: Kryo) extends Serializer {
   // -1 means the max buffer size is 2147483647

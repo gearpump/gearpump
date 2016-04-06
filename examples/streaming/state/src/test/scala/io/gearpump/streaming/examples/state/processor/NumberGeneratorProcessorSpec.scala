@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,19 @@
 
 package io.gearpump.streaming.examples.state.processor
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.task.StartTime
+import org.mockito.Mockito._
+import org.mockito.{Matchers => MockitoMatchers}
+import org.scalatest.{Matchers, WordSpec}
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
-import org.mockito.{Matchers => MockitoMatchers}
-import org.mockito.Mockito._
-import org.scalatest.{Matchers, WordSpec}
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.task.StartTime
 
 class NumberGeneratorProcessorSpec extends WordSpec with Matchers {
   "NumberGeneratorProcessor" should {
@@ -38,7 +42,7 @@ class NumberGeneratorProcessorSpec extends WordSpec with Matchers {
 
       val mockTaskActor = TestProbe()
 
-      //mock self ActorRef
+      // Mock self ActorRef
       when(taskContext.self).thenReturn(mockTaskActor.ref)
 
       val conf = UserConfig.empty
@@ -46,13 +50,12 @@ class NumberGeneratorProcessorSpec extends WordSpec with Matchers {
       genNum.onStart(StartTime(0))
       mockTaskActor.expectMsgType[Message]
 
-
       genNum.onNext(Message("next"))
       verify(taskContext).output(MockitoMatchers.any[Message])
-      //mockTaskActor.expectMsgType[Message]
+      // mockTaskActor.expectMsgType[Message]
 
-      system.shutdown()
-      system.awaitTermination()
+      system.terminate()
+      Await.result(system.whenTerminated, Duration.Inf)
     }
   }
 }

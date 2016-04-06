@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,23 @@
 
 package io.gearpump.services.security.oauth2
 
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model.Uri.{Query, Path}
+import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
-import io.gearpump.security.Authenticator
-import io.gearpump.services.security.oauth2.impl.{CloudFoundryUAAOAuth2Authenticator, GoogleOAuth2Authenticator}
 import org.scalatest.FlatSpec
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.collection.JavaConverters._
+
+import io.gearpump.security.Authenticator
+// NOTE: This cannot be removed!!!
+import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.services.security.oauth2.impl.CloudFoundryUAAOAuth2Authenticator
 
 class CloudFoundryUAAOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
 
@@ -71,8 +75,9 @@ class CloudFoundryUAAOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRout
     val refreshToken = "eyJhbGciOiJSUzI1NiJ9.eyJqdGkiOiI2Nm"
     val mail = "test@gearpump.io"
 
-    def accessTokenEndpoint(request: HttpRequest) = {
-      assert(request.getHeader("Authorization").get.value() == "Basic Z2VhcnB1bXBfdGVzdDI6Z2VhcnB1bXBfdGVzdDI=")
+    def accessTokenEndpoint(request: HttpRequest): HttpResponse = {
+      assert(request.getHeader("Authorization").get.value() ==
+        "Basic Z2VhcnB1bXBfdGVzdDI6Z2VhcnB1bXBfdGVzdDI=")
       assert(request.entity.contentType.mediaType.value == "application/x-www-form-urlencoded")
 
       val body = request.entity.asInstanceOf[Strict].data.decodeString("UTF-8")
@@ -85,27 +90,27 @@ class CloudFoundryUAAOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRout
 
       val response =
         s"""
-          |{
-          |  "access_token": "$accessToken",
-          |  "token_type": "bearer",
-          |  "refresh_token": "$refreshToken",
-          |  "expires_in": 43199,
-          |  "scope": "openid",
-          |  "jti": "e8739474-b2fa-42eb-a9ad-e065bf79d7e9"
-          |}
+        |{
+        |  "access_token": "$accessToken",
+        |  "token_type": "bearer",
+        |  "refresh_token": "$refreshToken",
+        |  "expires_in": 43199,
+        |  "scope": "openid",
+        |  "jti": "e8739474-b2fa-42eb-a9ad-e065bf79d7e9"
+        |}
         """.stripMargin
       HttpResponse(entity = HttpEntity(ContentType(`application/json`), response))
     }
 
-    def protectedResourceEndpoint(request: HttpRequest) = {
+    def protectedResourceEndpoint(request: HttpRequest): HttpResponse = {
       assert(request.getUri().query().get("access_token").get == accessToken)
       val response =
         s"""
-          |{
-          |    "user_id": "e2922002-0218-4513-a62d-1da2ba64ee4c",
-          |    "user_name": "user",
-          |    "email": "$mail"
-          |}
+        |{
+        |    "user_id": "e2922002-0218-4513-a62d-1da2ba64ee4c",
+        |    "user_name": "user",
+        |    "email": "$mail"
+        |}
         """.stripMargin
       HttpResponse(entity = HttpEntity(ContentType(`application/json`), response))
     }
@@ -121,7 +126,7 @@ class CloudFoundryUAAOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRout
     }
 
     val userFuture = uaa.authenticate(code)
-    val user = Await.result(userFuture, 30 seconds)
+    val user = Await.result(userFuture, 30.seconds)
     assert(user.user == mail)
     assert(user.permissionLevel == Authenticator.User.permissionLevel)
   }

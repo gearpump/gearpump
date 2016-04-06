@@ -5,7 +5,7 @@
 
 angular.module('dashboard')
 
-  .directive('executorTable', function() {
+  .directive('executorTable', function () {
     'use strict';
 
     return {
@@ -16,7 +16,7 @@ angular.module('dashboard')
         executors: '=executorsBind'
       },
       controller: ['$scope', '$sortableTableBuilder', 'i18n',
-        function($scope, $stb, i18n) {
+        function ($scope, $stb, i18n) {
           $scope.whatIsExecutor = i18n.terminology.appExecutor;
           $scope.table = {
             cols: [
@@ -30,22 +30,24 @@ angular.module('dashboard')
 
           function updateTable(executors) {
             $scope.table.rows = $stb.$update($scope.table.rows,
-              _.map(executors, function(executor) {
+              _.map(executors, function (executor) {
                 return {
                   status: {
                     tooltip: executor.status,
                     condition: executor.isRunning ? 'good' : '',
                     shape: 'stripe'
                   },
-                  id: {href: executor.pageUrl, text: executor.executorId === -1 ?
-                    'AppMaster' : 'Executor ' + executor.executorId},
+                  id: {
+                    href: executor.pageUrl, text: executor.executorId === -1 ?
+                      'AppMaster' : 'Executor ' + executor.executorId
+                  },
                   worker: {href: executor.workerPageUrl, text: 'Worker ' + executor.workerId},
                   tasks: executor.taskCount || 0
                 };
               }));
           }
 
-          $scope.$watch('executors', function(executors) {
+          $scope.$watch('executors', function (executors) {
             updateTable(executors);
           });
         }]

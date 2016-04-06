@@ -18,44 +18,48 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{ActorRef, Actor, Stash}
-import io.gearpump.streaming._
-import io.gearpump.streaming.task.Subscriber
-import io.gearpump.streaming.storage.AppDataStore
-import io.gearpump.cluster.UserConfig
-import io.gearpump.partitioner.PartitionerDescription
-import DagManager._
-import io.gearpump.util.{LogUtil, Graph}
-import org.slf4j.Logger
-
 import scala.concurrent.Future
 
-/**
- * Will handle dag modification and other stuff related with DAG
-  */
+import akka.actor.{Actor, ActorRef, Stash}
+import org.slf4j.Logger
 
+import io.gearpump.cluster.UserConfig
+import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.streaming._
+import io.gearpump.streaming.appmaster.DagManager._
+import io.gearpump.streaming.storage.AppDataStore
+import io.gearpump.streaming.task.Subscriber
+import io.gearpump.util.{Graph, LogUtil}
+
+/**
+ * Handles dag modification and other stuff related with DAG
+ *
+ * DagManager maintains multiple version of DAGs. For each version, the DAG is immutable.
+ * For operations like modifying a processor, it will create a new version of DAG.
+ */
 class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: Option[DAG])
-    extends Actor with Stash {
+  extends Actor with Stash {
+
   import context.dispatcher
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   private val NOT_INITIALIZED = -1
 
   private var dags = List.empty[DAG]
   private var maxProcessorId = -1
-  implicit val system = context.system
+  private implicit val system = context.system
 
   private var watchers = List.empty[ActorRef]
 
   override def receive: Receive = null
 
-  override def preStart() : Unit = {
+  override def preStart(): Unit = {
     LOG.info("Initializing Dag Service, get stored Dag ....")
     store.get(StreamApplication.DAG).asInstanceOf[Future[DAG]].map { storedDag =>
       if (storedDag != null) {
         dags :+= storedDag
       } else {
         dags :+= dag.getOrElse(DAG(userConfig.getValue[Graph[ProcessorDescription,
-            PartitionerDescription]](StreamApplication.DAG).get))
+          PartitionerDescription]](StreamApplication.DAG).get))
       }
       maxProcessorId = {
         val keys = dags.head.processors.keys
@@ -91,20 +95,25 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
 
   def dagService: Receive = {
     case GetLatestDAG =>
+      // Get the latest version of DAG.
       sender ! LatestDAG(dags.last)
     case GetTaskLaunchData(version, processorId, context) =>
+      // Task information like Processor class, downstream subscriber processors and etc.
       dags.find(_.version == version).foreach { dag =>
         LOG.info(s"Get task launcher data for processor: $processorId, dagVersion: $version")
         sender ! taskLaunchData(dag, processorId, context)
       }
     case ReplaceProcessor(oldProcessorId, inputNewProcessor) =>
+      // Replace a processor with new implementation. The upstream processors and downstream
+      // processors are NOT changed.
       var newProcessor = inputNewProcessor.copy(id = nextProcessorId)
-      if (inputNewProcessor.jar == null){
+      if (inputNewProcessor.jar == null) {
         val oldJar = dags.last.processors.get(oldProcessorId).get
         newProcessor = newProcessor.copy(jar = oldJar.jar)
       }
       if (dags.length > 1) {
-        sender !  DAGOperationFailed("We are in the process of handling previous dynamic dag change")
+        sender ! DAGOperationFailed(
+          "We are in the process of handling previous dynamic dag change")
       } else {
         val oldDAG = dags.last
         val newVersion = oldDAG.version + 1
@@ -118,21 +127,25 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
       }
 
     case WatchChange(watcher) =>
+      // Checks whether there are modifications for this DAG.
       if (!this.watchers.contains(watcher)) {
         this.watchers :+= watcher
       }
 
     case NewDAGDeployed(dagVersion) =>
-      // means the new DAG version has been successfully deployed.
-      // remove obsolete versions.
+      // Means dynamic Dag transition completed, and the new DAG version has been successfully
+      // deployed. The obsolete dag versions will be removed.
       if (dagVersion != NOT_INITIALIZED) {
         dags = dags.filter(_.version == dagVersion)
         store.put(StreamApplication.DAG, dags.last)
       }
   }
 
-  private def replaceDAG(dag: DAG, oldProcessorId: ProcessorId, newProcessor: ProcessorDescription, newVersion: Int): DAG = {
-    val oldProcessorLife = LifeTime(dag.processors(oldProcessorId).life.birth, newProcessor.life.birth)
+  private def replaceDAG(
+      dag: DAG, oldProcessorId: ProcessorId, newProcessor: ProcessorDescription, newVersion: Int)
+    : DAG = {
+    val oldProcessorLife = LifeTime(dag.processors(oldProcessorId).life.birth,
+      newProcessor.life.birth)
 
     val newProcessorMap = dag.processors ++
       Map(oldProcessorId -> dag.processors(oldProcessorId).copy(life = oldProcessorLife),
@@ -153,11 +166,13 @@ object DagManager {
   case class LatestDAG(dag: DAG)
 
   case class GetTaskLaunchData(dagVersion: Int, processorId: Int, context: AnyRef = null)
-  case class TaskLaunchData(processorDescription : ProcessorDescription, subscribers: List[Subscriber], context: AnyRef = null)
+  case class TaskLaunchData(processorDescription : ProcessorDescription,
+      subscribers: List[Subscriber], context: AnyRef = null)
 
   sealed trait DAGOperation
 
-  case class ReplaceProcessor(oldProcessorId: ProcessorId, newProcessorDescription: ProcessorDescription) extends DAGOperation
+  case class ReplaceProcessor(oldProcessorId: ProcessorId,
+      newProcessorDescription: ProcessorDescription) extends DAGOperation
 
   sealed trait DAGOperationResult
   case object DAGOperationSuccess extends DAGOperationResult
