@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,7 @@ package akka.stream.gearpump.module
 import akka.stream.impl.FlowModule
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.{Attributes, Inlet, Outlet, Shape, SinkShape, SourceShape}
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
@@ -31,7 +32,7 @@ import io.gearpump.streaming.task.Task
  *
  * This is specially designed for Gearpump runtime. It is not supposed to be used
  * for local materializer.
- * 
+ *
  */
 trait GearpumpTaskModule extends Module
 
@@ -44,15 +45,19 @@ trait GearpumpTaskModule extends Module
  * @tparam T
  */
 final case class SourceTaskModule[T](
-   source: DataSource,
-   conf: UserConfig,
-   shape: SourceShape[T] = SourceShape[T](Outlet[T]("SourceTaskModule.out")),
-   attributes: Attributes = Attributes.name("SourceTaskModule"))
+    source: DataSource,
+    conf: UserConfig,
+    shape: SourceShape[T] = SourceShape[T](Outlet[T]("SourceTaskModule.out")),
+    attributes: Attributes = Attributes.name("SourceTaskModule"))
   extends GearpumpTaskModule {
 
   override def subModules: Set[Module] = Set.empty
-  override def withAttributes(attr: Attributes): Module = this.copy(shape = amendShape(attr), attributes = attr)
-  override def carbonCopy: Module = this.copy(shape = SourceShape(Outlet[T]("SourceTaskModule.out")))
+  override def withAttributes(attr: Attributes): Module = {
+    this.copy(shape = amendShape(attr), attributes = attr)
+  }
+  override def carbonCopy: Module = {
+    this.copy(shape = SourceShape(Outlet[T]("SourceTaskModule.out")))
+  }
 
   override def replaceShape(s: Shape): Module =
     if (s == shape) this
@@ -83,7 +88,9 @@ final case class SinkTaskModule[IN](
   extends GearpumpTaskModule {
 
   override def subModules: Set[Module] = Set.empty
-  override def withAttributes(attr: Attributes): Module = this.copy(shape = amendShape(attr), attributes = attr)
+  override def withAttributes(attr: Attributes): Module = {
+    this.copy(shape = amendShape(attr), attributes = attr)
+  }
   override def carbonCopy: Module = this.copy(shape = SinkShape(Inlet[IN]("SinkTaskModule.in")))
 
   override def replaceShape(s: Shape): Module =
@@ -116,9 +123,11 @@ case class ProcessorModule[IN, OUT, Unit](
 
   override def carbonCopy: Module = newInstance
 
-  protected def newInstance: ProcessorModule[IN,OUT, Unit] = new ProcessorModule[IN,OUT, Unit](processor, conf, attributes)
+  protected def newInstance: ProcessorModule[IN, OUT, Unit] = {
+    new ProcessorModule[IN, OUT, Unit](processor, conf, attributes)
+  }
 
-  override def withAttributes(attributes: Attributes): ProcessorModule[IN,OUT, Unit] = {
-    new ProcessorModule[IN,OUT, Unit](processor, conf, attributes)
+  override def withAttributes(attributes: Attributes): ProcessorModule[IN, OUT, Unit] = {
+    new ProcessorModule[IN, OUT, Unit](processor, conf, attributes)
   }
 }

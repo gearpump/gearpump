@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,23 @@
 
 package io.gearpump.services.util
 
-import io.gearpump.WorkerId
-import io.gearpump.util.Graph
 import upickle.Js
+
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.util.Graph
 
 object UpickleUtil {
 
-  //TODO: upickle cannot infer the reader automatically due to
-  // issue https://github.com/lihaoyi/upickle-pprint/issues/102
-  implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
-    case Js.Obj(verties, edges) =>
-      val vertexList = upickle.default.readJs[List[Int]](verties._2)
-      val edgeList = upickle.default.readJs[List[(Int, String, Int)]](edges._2)
-      Graph(vertexList, edgeList)
+  // For implicit type, we need to add EXPLICIT return type, otherwise, upickle may NOT infer the
+  // reader type automatically.
+  // See issue https://github.com/lihaoyi/upickle-pprint/issues/102
+  implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = {
+    upickle.default.Reader[Graph[Int, String]] {
+      case Js.Obj(verties, edges) =>
+        val vertexList = upickle.default.readJs[List[Int]](verties._2)
+        val edgeList = upickle.default.readJs[List[(Int, String, Int)]](edges._2)
+        Graph(vertexList, edgeList)
+    }
   }
 
   implicit val workerIdReader: upickle.default.Reader[WorkerId] = upickle.default.Reader[WorkerId] {

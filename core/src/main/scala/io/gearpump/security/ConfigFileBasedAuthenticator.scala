@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,12 @@
 
 package io.gearpump.security
 
+import scala.concurrent.{ExecutionContext, Future}
+
+import com.typesafe.config.Config
+
 import io.gearpump.security.Authenticator.AuthenticationResult
 import io.gearpump.security.ConfigFileBasedAuthenticator._
-import com.typesafe.config.Config
-import scala.concurrent.{ExecutionContext, Future}
 
 object ConfigFileBasedAuthenticator {
 
@@ -30,7 +32,9 @@ object ConfigFileBasedAuthenticator {
   private val USERS = ROOT + "." + "users"
   private val GUESTS = ROOT + "." + "guests"
 
-  private case class Credentials(admins: Map[String, String], users: Map[String, String], guests: Map[String, String]) {
+  private case class Credentials(
+      admins: Map[String, String], users: Map[String, String], guests: Map[String, String]) {
+
     def verify(user: String, password: String): AuthenticationResult = {
       if (admins.contains(user)) {
         if (verify(user, password, admins)) {
@@ -70,26 +74,32 @@ object ConfigFileBasedAuthenticator {
  * users have limited permission to submit an application and etc..
  * guests can not submit/kill applications, but can view the application status.
  *
- * see conf/gear.conf section gearpump.ui-security.config-file-based-authenticator to find information
- * about how to configure this authenticator.
+ * see conf/gear.conf section gearpump.ui-security.config-file-based-authenticator to find
+ * information about how to configure this authenticator.
  *
  * [Security consideration]
- * It will keep one-way sha1 digest of password instead of password itself. The original password is NOT
- * kept in any way, so generally it is safe.
+ * It will keep one-way sha1 digest of password instead of password itself. The original password is
+ * NOT kept in any way, so generally it is safe.
+ *
  *
  * digesting flow (from original password to digest):
- * random salt byte array of length 8 -> byte array of (salt + sha1(salt, password)) -> base64Encode
+ * {{{
+ * random salt byte array of length 8 -> byte array of (salt + sha1(salt, password)) ->
+ * base64Encode.
+ * }}}
  *
- * verification user input password with stored digest:
- * base64Decode -> extract salt -> do sha1(salt, password) -> generate digest: salt + sha1 ->
- * compare the generated digest with the stored digest.
- *
+ * Verification user input password with stored digest:
+ * {{{
+ * base64Decode -> extract salt -> do sha1(salt, password) -> generate digest:
+ * salt + sha1 -> compare the generated digest with the stored digest.
+ * }}}
  */
 class ConfigFileBasedAuthenticator(config: Config) extends Authenticator {
 
   private val credentials = loadCredentials(config)
 
-  override def authenticate(user: String, password: String, ec: ExecutionContext): Future[AuthenticationResult] = {
+  override def authenticate(user: String, password: String, ec: ExecutionContext)
+    : Future[AuthenticationResult] = {
     implicit val ctx = ec
     Future {
       credentials.verify(user, password)
@@ -97,13 +107,13 @@ class ConfigFileBasedAuthenticator(config: Config) extends Authenticator {
   }
 
   private def loadCredentials(config: Config): Credentials = {
-    val admins  = configToMap(config, ADMINS)
-    val users  = configToMap(config, USERS)
+    val admins = configToMap(config, ADMINS)
+    val users = configToMap(config, USERS)
     val guests = configToMap(config, GUESTS)
     new Credentials(admins, users, guests)
   }
 
-  private def configToMap(config : Config, path: String) = {
+  private def configToMap(config: Config, path: String) = {
     import scala.collection.JavaConverters._
     config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) => k -> v.toString }
   }

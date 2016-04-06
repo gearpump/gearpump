@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,9 @@
 
 package io.gearpump.streaming.transaction.api
 
-import io.gearpump.TimeStamp
-
 import scala.util.Try
+
+import io.gearpump.TimeStamp
 
 object OffsetStorage {
 
@@ -47,15 +47,17 @@ object OffsetStorage {
  */
 trait OffsetStorage {
   /**
-   * try to look up the time in the OffsetStorage
-   * return the corresponding Offset if the time is
-   * in the range of stored TimeStamps or one of the
-   * failure info (StorageEmpty, Overflow, Underflow)
+   * Tries to look up the time in the OffsetStorage return the corresponding Offset if the time is
+   * in the range of stored TimeStamps or one of the failure info (StorageEmpty, Overflow,
+   * Underflow)
+   *
    * @param time the time to look for
    * @return the corresponding offset if the time is in the range, otherwise failure
    */
   def lookUp(time: TimeStamp): Try[Array[Byte]]
+
   def append(time: TimeStamp, offset: Array[Byte]): Unit
+
   def close(): Unit
 }
 

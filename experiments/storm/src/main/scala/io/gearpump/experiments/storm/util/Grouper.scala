@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,18 +19,15 @@
 package io.gearpump.experiments.storm.util
 
 import java.util.{List => JList}
+import scala.util.Random
 
 import backtype.storm.generated.GlobalStreamId
 import backtype.storm.grouping.CustomStreamGrouping
 import backtype.storm.task.TopologyContext
 import backtype.storm.tuple.Fields
 
-import scala.collection.JavaConversions._
-import scala.util.Random
-
 /**
- * Grouper is identical to that in storm but return gearpump
- * partitions for storm tuple values
+ * Grouper is identical to that in storm but return gearpump partitions for storm tuple values
  */
 sealed trait Grouper {
   /**
@@ -50,6 +47,7 @@ class GlobalGrouper extends Grouper {
 
 /**
  * NoneGrouper randomly returns partition
+ *
  * @param numTasks number of target tasks
  */
 class NoneGrouper(numTasks: Int) extends Grouper {
@@ -62,8 +60,8 @@ class NoneGrouper(numTasks: Int) extends Grouper {
 }
 
 /**
- * ShuffleGrouper shuffles partitions and returns them sequentially,
- * and then shuffles again
+ * ShuffleGrouper shuffles partitions and returns them sequentially, and then shuffles again
+ *
  * @param numTasks number of target tasks
  */
 class ShuffleGrouper(numTasks: Int) extends Grouper {
@@ -86,6 +84,7 @@ class ShuffleGrouper(numTasks: Int) extends Grouper {
 
 /**
  * FieldsGrouper returns partition based on value of groupFields
+ *
  * @param outFields declared output fields of source task
  * @param groupFields grouping fields of target tasks
  * @param numTasks number of target tasks
@@ -101,6 +100,7 @@ class FieldsGrouper(outFields: Fields, groupFields: Fields, numTasks: Int) exten
 
 /**
  * AllGrouper returns all partitions
+ *
  * @param numTasks number of target tasks
  */
 class AllGrouper(numTasks: Int) extends Grouper {
@@ -113,16 +113,30 @@ class AllGrouper(numTasks: Int) extends Grouper {
 
 /**
  * CustomGrouper allows users to specify grouping strategy
- * @param grouping see [[CustomStreamGrouping]]
+ *
+ * @param grouping see [[backtype.storm.grouping.CustomStreamGrouping]]
  */
 class CustomGrouper(grouping: CustomStreamGrouping) extends Grouper {
 
-  def prepare(topologyContext: TopologyContext, globalStreamId: GlobalStreamId, targetTasks: JList[Integer]): Unit = {
+  def prepare(
+      topologyContext: TopologyContext, globalStreamId: GlobalStreamId, targetTasks: JList[Integer])
+    : Unit = {
     grouping.prepare(topologyContext, globalStreamId, targetTasks)
   }
 
   override def getPartitions(taskId: Int, values: JList[AnyRef]): Array[Int] = {
-    grouping.chooseTasks(taskId, values).map(StormUtil.stormTaskIdToGearpump(_).index).toArray
+    val tasks = grouping.chooseTasks(taskId, values)
+    val result = new Array[Int](tasks.size())
+
+    val iter = tasks.iterator()
+
+    var index = 0
+    while (iter.hasNext()) {
+      val value = iter.next()
+      result(index) = StormUtil.stormTaskIdToGearpump(value).index
+      index += 1
+    }
+    result
   }
 }
 

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,8 @@
 package io.gearpump.streaming.examples.kafka
 
 import akka.actor.ActorSystem
+import org.slf4j.Logger
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
@@ -29,21 +31,26 @@ import io.gearpump.streaming.sink.DataSinkProcessor
 import io.gearpump.streaming.source.DataSourceProcessor
 import io.gearpump.util.Graph._
 import io.gearpump.util.{AkkaApp, Graph, LogUtil}
-import org.slf4j.Logger
 
 object KafkaReadWrite extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "source" -> CLIOption[Int]("<hom many kafka producer tasks>", required = false, defaultValue = Some(1)),
-    "sink" -> CLIOption[Int]("<hom many kafka processor tasks>", required = false, defaultValue = Some(1)),
-    "zookeeperConnect" -> CLIOption[String]("<zookeeper connect string>", required = false, defaultValue = Some("localhost:2181")),
-    "brokerList" -> CLIOption[String]("<broker server list string>", required = false, defaultValue = Some("localhost:9092")),
-    "sourceTopic" -> CLIOption[String]("<kafka source topic>", required = false, defaultValue = Some("topic1")),
-    "sinkTopic" -> CLIOption[String]("<kafka sink topic>", required = false, defaultValue = Some("topic2"))
+    "source" -> CLIOption[Int]("<hom many kafka producer tasks>", required = false,
+      defaultValue = Some(1)),
+    "sink" -> CLIOption[Int]("<hom many kafka processor tasks>", required = false,
+      defaultValue = Some(1)),
+    "zookeeperConnect" -> CLIOption[String]("<zookeeper connect string>", required = false,
+      defaultValue = Some("localhost:2181")),
+    "brokerList" -> CLIOption[String]("<broker server list string>", required = false,
+      defaultValue = Some("localhost:9092")),
+    "sourceTopic" -> CLIOption[String]("<kafka source topic>", required = false,
+      defaultValue = Some("topic1")),
+    "sinkTopic" -> CLIOption[String]("<kafka sink topic>", required = false,
+      defaultValue = Some("topic2"))
   )
 
-  def application(config: ParseResult, system: ActorSystem) : StreamApplication = {
+  def application(config: ParseResult, system: ActorSystem): StreamApplication = {
     implicit val actorSystem = system
     val sourceNum = config.getInt("source")
     val sinkNum = config.getInt("sink")
@@ -59,7 +66,7 @@ object KafkaReadWrite extends AkkaApp with ArgumentsParser {
     val sink = new KafkaSink(sinkTopic, brokerList)
     val sinkProcessor = DataSinkProcessor(sink, sinkNum)
     val partitioner = new ShufflePartitioner
-    val computation = sourceProcessor  ~ partitioner ~> sinkProcessor
+    val computation = sourceProcessor ~ partitioner ~> sinkProcessor
     val app = StreamApplication("KafkaReadWrite", Graph(computation), appConfig)
     app
   }

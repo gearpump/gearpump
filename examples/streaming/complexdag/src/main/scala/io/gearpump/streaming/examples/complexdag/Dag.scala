@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,57 +18,58 @@
 
 package io.gearpump.streaming.examples.complexdag
 
-import io.gearpump.streaming.{StreamApplication, Processor}
-import io.gearpump.streaming.task.TaskContext
+import org.slf4j.Logger
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.partitioner.HashPartitioner
+import io.gearpump.streaming.task.TaskContext
+import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.util.Graph.{Node => GraphNode}
 import io.gearpump.util.{AkkaApp, Graph, LogUtil}
-import org.slf4j.Logger
 
-/*
- digraph flow {
-     Source_0 -> Sink_0;
-     Source_0 -> Sink_1;
-     Source_0 -> Sink_2;
-     Source_0 -> Node_1;
-     Source_1 -> Node_0;
-     Node_0 -> Sink_3;
-     Node_1 -> Sink_3;
-     Node_1 -> Sink_4;
-     Node_1 -> Node_4;
-     Node_2 -> Node_3;
-     Node_1 -> Node_3;
-     Source_0 -> Node_2;
-     Source_0 -> Node_3;
-     Node_3 -> Sink_3;
-     Node_4 -> Sink_3;
-     Source_1 -> Sink_4;
- }
-*/
-case class Source_0(_context : TaskContext, _conf: UserConfig) extends Source(_context, _conf)
-case class Source_1(_context : TaskContext, _conf: UserConfig) extends Source(_context, _conf)
-case class Node_0(_context : TaskContext, _conf: UserConfig) extends Node(_context, _conf)
-case class Node_1(_context : TaskContext, _conf: UserConfig) extends Node(_context, _conf)
-case class Node_2(_context : TaskContext, _conf: UserConfig) extends Node(_context, _conf)
-case class Node_3(_context : TaskContext, _conf: UserConfig) extends Node(_context, _conf)
-case class Node_4(_context : TaskContext, _conf: UserConfig) extends Node(_context, _conf)
-case class Sink_0(_context : TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
-case class Sink_1(_context : TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
-case class Sink_2(_context : TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
-case class Sink_3(_context : TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
-case class Sink_4(_context : TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
+case class Source_0(_context: TaskContext, _conf: UserConfig) extends Source(_context, _conf)
+case class Source_1(_context: TaskContext, _conf: UserConfig) extends Source(_context, _conf)
+case class Node_0(_context: TaskContext, _conf: UserConfig) extends Node(_context, _conf)
+case class Node_1(_context: TaskContext, _conf: UserConfig) extends Node(_context, _conf)
+case class Node_2(_context: TaskContext, _conf: UserConfig) extends Node(_context, _conf)
+case class Node_3(_context: TaskContext, _conf: UserConfig) extends Node(_context, _conf)
+case class Node_4(_context: TaskContext, _conf: UserConfig) extends Node(_context, _conf)
+case class Sink_0(_context: TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
+case class Sink_1(_context: TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
+case class Sink_2(_context: TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
+case class Sink_3(_context: TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
+case class Sink_4(_context: TaskContext, _conf: UserConfig) extends Sink(_context, _conf)
 
+/**
+ * digraph flow {
+ *   Source_0 -> Sink_0;
+ *   Source_0 -> Sink_1;
+ *   Source_0 -> Sink_2;
+ *   Source_0 -> Node_1;
+ *   Source_1 -> Node_0;
+ *   Node_0 -> Sink_3;
+ *   Node_1 -> Sink_3;
+ *   Node_1 -> Sink_4;
+ *   Node_1 -> Node_4;
+ *   Node_2 -> Node_3;
+ *   Node_1 -> Node_3;
+ *   Source_0 -> Node_2;
+ *   Source_0 -> Node_3;
+ *   Node_3 -> Sink_3;
+ *   Node_4 -> Sink_3;
+ *   Source_1 -> Sink_4;
+ * }
+ */
 object Dag extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   val RUN_FOR_EVER = -1
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  def application(config: ParseResult) : StreamApplication = {
-    
+  def application(config: ParseResult): StreamApplication = {
+
     val source_0 = Processor[Source_0](1)
     val source_1 = Processor[Source_1](1)
     val node_0 = Processor[Node_0](1)

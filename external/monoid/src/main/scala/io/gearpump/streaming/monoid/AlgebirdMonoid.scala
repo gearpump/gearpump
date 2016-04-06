@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,8 @@
 
 package io.gearpump.streaming.monoid
 
-import com.twitter.algebird.{Monoid => ABMonoid, Group => ABGroup}
+import com.twitter.algebird.{Group => ABGroup, Monoid => ABMonoid}
+
 import io.gearpump.streaming.state.api.{Group, Monoid}
 
 class AlgebirdMonoid[T](monoid: ABMonoid[T]) extends Monoid[T] {

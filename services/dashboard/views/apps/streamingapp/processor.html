@@ -32,7 +32,8 @@
   <div class="row">
     <div class="col-md-6">
       <h4 ng-style="{'margin-bottom': shouldPaginateTasks ? '7px' : ''}">Tasks
-        <remark style="font-size: 15.6px" type="info" placement="right" tooltip="{{whatIsTask}}"></remark>
+        <remark style="font-size: 15.6px" type="info" placement="right"
+                tooltip="{{whatIsTask}}"></remark>
         <div ng-if="shouldPaginateTasks"
              style="display: inline-block; font-size: 12px; font-weight: 400;">
           <processor-task-pager
@@ -50,6 +51,7 @@
         </div>
         <div class="col-md-12">
           <h5>Distribution of {{metricDescription}}</h5>
+
           <div style="height: 110px">
             <bar-chart
               ng-if="tasksBarChart != null"
@@ -67,7 +69,8 @@
          style="min-height: 200px">
       <h4>Task Metrics Inspector</h4>
       <ui-select theme="select2" multiple limit="1" ng-model="tasks.selected">
-        <ui-select-match placeholder="Click here to pick tasks for inspection...">{{$item}}</ui-select-match>
+        <ui-select-match placeholder="Click here to pick tasks for inspection...">{{$item}}
+        </ui-select-match>
         <ui-select-choices repeat="task in tasks.available|filter:$select.search">
           <span ng-bind="task"></span>
         </ui-select-choices>
@@ -75,7 +78,9 @@
 
       <div ng-if="tasks.selected.length>0">
         <br/>
-        <div ng-include src="'views/apps/streamingapp/processor_task_charts.html?'+tasks.selected.length"
+
+        <div ng-include
+             src="'views/apps/streamingapp/processor_task_charts.html?'+tasks.selected.length"
              ng-controller="StreamingAppProcessorTaskChartsCtrl"></div>
       </div>
     </div>

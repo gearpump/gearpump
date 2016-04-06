@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,15 @@
 
 package io.gearpump.streaming.appmaster
 
-import io.gearpump.WorkerId
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.streaming.appmaster.TaskLocator.Localities
 import io.gearpump.streaming.task.TaskId
-import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 
 class TaskLocatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   it should "serialize/deserialize correctly" in {
-    val localities = new Localities(Map(WorkerId(0, 0L) -> Array(TaskId(0, 1), TaskId(1,2))))
+    val localities = new Localities(Map(WorkerId(0, 0L) -> Array(TaskId(0, 1), TaskId(1, 2))))
     Localities.toJson(localities)
 
     localities.localities.mapValues(_.toList) shouldBe

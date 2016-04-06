@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,25 +20,28 @@ package io.gearpump.integrationtest.storm
 
 import java.util.{ArrayList => JArrayList, HashMap => JHashMap, Map => JMap}
 
-import backtype.storm.{StormSubmitter, Config}
 import backtype.storm.topology.TopologyBuilder
-import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import storm.kafka.{ZkHosts, SpoutConfig, KafkaSpout}
+import backtype.storm.{Config, StormSubmitter}
 import storm.kafka.bolt.KafkaBolt
+import storm.kafka.{KafkaSpout, SpoutConfig, ZkHosts}
+
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 
 /**
-  * tests Storm 0.10.x compatibility over Gearpump
-  * this example reads data from Kafka and writes back to it
-  */
+ * Tests Storm 0.10.x compatibility over Gearpump
+ * this example reads data from Kafka and writes back to it
+ */
 object Storm010KafkaTopology extends App with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "topologyName" -> CLIOption[Int]("<Storm topology name>", required = true),
     "sourceTopic" -> CLIOption[String]("<Kafka topic to read data>", required = true),
     "sinkTopic" -> CLIOption[String]("<Kafka topic to write data>", required = true),
-    "zookeeperConnect" -> CLIOption[String]("<Zookeeper connect string, e.g. localhost:2181/kafka>", required = true),
+    "zookeeperConnect" -> CLIOption[String]("<Zookeeper connect string, e.g. localhost:2181/kafka>",
+      required = true),
     "brokerList" -> CLIOption[String]("<Kafka broker list, e.g. localhost:9092>", required = true),
-    "spoutNum" -> CLIOption[Int]("<how many spout tasks>", required = false, defaultValue = Some(1)),
+    "spoutNum" -> CLIOption[Int]("<how many spout tasks>", required = false,
+      defaultValue = Some(1)),
     "boltNum" -> CLIOption[Int]("<how many bolt tasks>", required = false, defaultValue = Some(1))
   )
 
@@ -52,7 +55,8 @@ object Storm010KafkaTopology extends App with ArgumentsParser {
   val boltNum = configs.getInt("boltNum")
 
   val topologyBuilder = new TopologyBuilder()
-  val kafkaSpout: KafkaSpout = new KafkaSpout(getSpoutConfig(sourceTopic, zookeeperConnect, topologyName))
+  val kafkaSpout: KafkaSpout = new KafkaSpout(getSpoutConfig(sourceTopic,
+    zookeeperConnect, topologyName))
   val kafkaBolt: KafkaBolt[Array[Byte], Array[Byte]] = new KafkaBolt[Array[Byte], Array[Byte]]()
   val adaptor = new Adaptor
   topologyBuilder.setSpout("kafka_spout", kafkaSpout, spoutNum)

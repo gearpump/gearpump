@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,10 +27,11 @@ import kafka.common.TopicAndPartition
 import kafka.consumer.ConsumerConfig
 import kafka.utils.{ZKStringSerializer, ZkUtils}
 import org.I0Itec.zkclient.ZkClient
-import io.gearpump.util.LogUtil
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig}
 import org.apache.kafka.common.serialization.Serializer
 import org.slf4j.Logger
+
+import io.gearpump.util.LogUtil
 
 object KafkaUtil {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -39,7 +40,8 @@ object KafkaUtil {
     val zkClient = connectZk
     try {
       val leader = ZkUtils.getLeaderForPartition(zkClient, topic, partition)
-        .getOrElse(throw new RuntimeException(s"leader not available for TopicAndPartition($topic, $partition)"))
+        .getOrElse(throw new RuntimeException(
+          s"leader not available for TopicAndPartition($topic, $partition)"))
       ZkUtils.getBrokerInfo(zkClient, leader)
         .getOrElse(throw new RuntimeException(s"broker info not found for leader $leader"))
     } catch {
@@ -51,12 +53,13 @@ object KafkaUtil {
     }
   }
 
-  def getTopicAndPartitions(connectZk: => ZkClient, consumerTopics: List[String]): Array[TopicAndPartition] = {
+  def getTopicAndPartitions(connectZk: => ZkClient, consumerTopics: List[String])
+    : Array[TopicAndPartition] = {
     val zkClient = connectZk
     try {
-        ZkUtils.getPartitionsForTopics(zkClient, consumerTopics).flatMap {
-          case (topic, partitions) => partitions.map(TopicAndPartition(topic, _))
-        }.toArray
+      ZkUtils.getPartitionsForTopics(zkClient, consumerTopics).flatMap {
+        case (topic, partitions) => partitions.map(TopicAndPartition(topic, _))
+      }.toArray
     } catch {
       case e: Exception =>
         LOG.error(e.getMessage)
@@ -80,10 +83,11 @@ object KafkaUtil {
   }
 
   /**
-   *  create a new kafka topic
-   *  return true if topic already exists, and false otherwise
+   * create a new kafka topic
+   * return true if topic already exists, and false otherwise
    */
-  def createTopic(connectZk: => ZkClient, topic: String, partitions: Int, replicas: Int): Boolean = {
+  def createTopic(connectZk: => ZkClient, topic: String, partitions: Int, replicas: Int)
+    : Boolean = {
     val zkClient = connectZk
     try {
       if (AdminUtils.topicExists(zkClient, topic)) {
@@ -132,15 +136,16 @@ object KafkaUtil {
       case e: Exception =>
         LOG.error(s"$filename not found")
     } finally {
-      if(propStream != null)
+      if (propStream != null) {
         propStream.close()
+      }
     }
     props
   }
 
   def createKafkaProducer[K, V](properties: Properties,
-                                keySerializer: Serializer[K],
-                                valueSerializer: Serializer[V]): KafkaProducer[K, V] = {
+      keySerializer: Serializer[K],
+      valueSerializer: Serializer[V]): KafkaProducer[K, V] = {
     if (properties.getProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG) == null) {
       properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
     }
@@ -153,11 +158,10 @@ object KafkaUtil {
     properties
   }
 
- def buildConsumerConfig(zkConnect: String): Properties = {
-   val properties = new Properties()
-   properties.setProperty("zookeeper.connect", zkConnect)
-   properties.setProperty("group.id", "gearpump")
-   properties
+  def buildConsumerConfig(zkConnect: String): Properties = {
+    val properties = new Properties()
+    properties.setProperty("zookeeper.connect", zkConnect)
+    properties.setProperty("group.id", "gearpump")
+    properties
   }
-
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,22 @@
 package io.gearpump.streaming.examples.fsio
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
+import scala.language.implicitConversions
+
+import org.apache.hadoop.conf.Configuration
 
 import io.gearpump.cluster.UserConfig
 import io.gearpump.util.Constants._
-import org.apache.hadoop.conf.Configuration
 
-import scala.language.implicitConversions
+class HadoopConfig(config: UserConfig) {
 
-class HadoopConfig(config: UserConfig)  {
+  def withHadoopConf(conf: Configuration): UserConfig = {
+    config.withBytes(HADOOP_CONF, serializeHadoopConf(conf))
+  }
 
-  def withHadoopConf(conf : Configuration) : UserConfig = config.withBytes(HADOOP_CONF, serializeHadoopConf(conf))
-  def hadoopConf : Configuration = deserializeHadoopConf(config.getBytes(HADOOP_CONF).get)
+  def hadoopConf: Configuration = deserializeHadoopConf(config.getBytes(HADOOP_CONF).get)
 
-  private def serializeHadoopConf(conf: Configuration) : Array[Byte] = {
+  private def serializeHadoopConf(conf: Configuration): Array[Byte] = {
     val out = new ByteArrayOutputStream()
     val dataOut = new DataOutputStream(out)
     conf.write(dataOut)
@@ -38,10 +41,10 @@ class HadoopConfig(config: UserConfig)  {
     out.toByteArray
   }
 
-  private def deserializeHadoopConf(bytes: Array[Byte]) : Configuration = {
+  private def deserializeHadoopConf(bytes: Array[Byte]): Configuration = {
     val in = new ByteArrayInputStream(bytes)
     val dataIn = new DataInputStream(in)
-    val result= new Configuration()
+    val result = new Configuration()
     result.readFields(dataIn)
     dataIn.close()
     result
@@ -49,8 +52,8 @@ class HadoopConfig(config: UserConfig)  {
 }
 
 object HadoopConfig {
-  def empty = new HadoopConfig(UserConfig.empty)
-  def apply(config: UserConfig) = new HadoopConfig(config)
+  def empty: HadoopConfig = new HadoopConfig(UserConfig.empty)
+  def apply(config: UserConfig): HadoopConfig = new HadoopConfig(config)
 
   implicit def userConfigToHadoopConfig(userConf: UserConfig): HadoopConfig = {
     HadoopConfig(userConf)

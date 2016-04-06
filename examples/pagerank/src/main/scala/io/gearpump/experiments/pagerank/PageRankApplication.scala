@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,12 @@
 package io.gearpump.experiments.pagerank
 
 import akka.actor.ActorSystem
-import io.gearpump.streaming.{StreamApplication, Processor}
-import io.gearpump.streaming.appmaster.AppMaster
+
 import io.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
-import PageRankApplication.NodeWithTaskId
+import io.gearpump.experiments.pagerank.PageRankApplication.NodeWithTaskId
 import io.gearpump.partitioner.HashPartitioner
+import io.gearpump.streaming.appmaster.AppMaster
+import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph.Node
 
@@ -30,21 +31,19 @@ import io.gearpump.util.Graph.Node
  *
  * A simple and naive pagerank implementation.
  *
- * We will continue to optimize this to able to run page rank of tens of millions of nodes
- *
  * @param name name of the application
  * @param iteration max iteration count
  * @param delta decide the accuracy when the page rank example stops.
  * @param dag  the page rank graph
- * @tparam T
  */
-class PageRankApplication[T] (override val name : String,  iteration: Int, delta: Double, dag: Graph[T, _])
+class PageRankApplication[T](
+    override val name: String, iteration: Int, delta: Double, dag: Graph[T, _])
   extends Application {
 
   override def appMaster: Class[_ <: ApplicationMaster] = classOf[AppMaster]
   override def userConfig(implicit system: ActorSystem): UserConfig = {
 
-    // map node with taskId
+    // Map node with taskId
     var taskId = 0
     val pageRankDag = dag.mapVertex { node =>
       val updatedNode = NodeWithTaskId(taskId, node)

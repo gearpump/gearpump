@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,9 +22,10 @@ import java.util.{Collection => JCollection, List => JList}
 
 import backtype.storm.task.IOutputCollector
 import backtype.storm.tuple.Tuple
+
 import io.gearpump.experiments.storm.topology.TimedTuple
-import io.gearpump.experiments.storm.util.StormOutputCollector
 import io.gearpump.experiments.storm.util.StormConstants._
+import io.gearpump.experiments.storm.util.StormOutputCollector
 import io.gearpump.streaming.task.ReportCheckpointClock
 
 /**
@@ -35,11 +36,13 @@ private[storm] class StormBoltOutputCollector(collector: StormOutputCollector,
   private var reportTime = 0L
   private var maxAckTime = 0L
 
-  override def emit(streamId: String, anchors: JCollection[Tuple], tuple: JList[AnyRef]): JList[Integer] = {
+  override def emit(
+      streamId: String, anchors: JCollection[Tuple], tuple: JList[AnyRef]): JList[Integer] = {
     collector.emit(streamId, tuple)
   }
 
-  override def emitDirect(taskId: Int, streamId: String, anchors: JCollection[Tuple], tuple: JList[AnyRef]): Unit = {
+  override def emitDirect(
+      taskId: Int, streamId: String, anchors: JCollection[Tuple], tuple: JList[AnyRef]): Unit = {
     collector.emitDirect(taskId, streamId, tuple)
   }
 

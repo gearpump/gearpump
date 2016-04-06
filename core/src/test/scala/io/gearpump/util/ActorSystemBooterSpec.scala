@@ -18,22 +18,24 @@
 
 package io.gearpump.util
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestProbe
-import io.gearpump.cluster.TestUtil
-import io.gearpump.util.ActorSystemBooter.{ActorCreated, RegisterActorSystem}
-import io.gearpump.cluster.TestUtil
-import io.gearpump.util.ActorSystemBooter._
-import io.gearpump.util.ActorSystemBooterSpec._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
+
+import io.gearpump.cluster.TestUtil
+import io.gearpump.util.ActorSystemBooter.{ActorCreated, RegisterActorSystem, _}
+import io.gearpump.util.ActorSystemBooterSpec._
 
 class ActorSystemBooterSpec extends FlatSpec with Matchers with MockitoSugar {
 
   "ActorSystemBooter" should "report its address back" in {
     val boot = bootSystem()
     boot.prob.expectMsgType[RegisterActorSystem]
-    boot.shutdown
+    boot.shutdown()
   }
 
   "ActorSystemBooter" should "terminate itself when parent actor dies" in {
@@ -44,9 +46,9 @@ class ActorSystemBooterSpec extends FlatSpec with Matchers with MockitoSugar {
     boot.prob.reply(ActorSystemRegistered(boot.prob.ref))
     boot.prob.reply(BindLifeCycle(dummy))
     boot.host.stop(dummy)
-    val terminated = retry(5)(boot.bootedSystem.isTerminated)
+    val terminated = retry(5)(boot.bootedSystem.whenTerminated.isCompleted)
     assert(terminated)
-    boot.shutdown
+    boot.shutdown()
   }
 
   "ActorSystemBooter" should "create new actor" in {
@@ -59,10 +61,10 @@ class ActorSystemBooterSpec extends FlatSpec with Matchers with MockitoSugar {
     boot.prob.reply(CreateActor(Props(classOf[AcceptZeroArguments]), "zero"))
     boot.prob.expectMsgType[ActorCreated]
 
-    boot.shutdown
+    boot.shutdown()
   }
 
-  private def bootSystem() : Boot = {
+  private def bootSystem(): Boot = {
     val booter = ActorSystemBooter(TestUtil.DEFAULT_CONFIG)
 
     val system = ActorSystem("reportback", TestUtil.DEFAULT_CONFIG)
@@ -75,16 +77,16 @@ class ActorSystemBooterSpec extends FlatSpec with Matchers with MockitoSugar {
     Boot(system, receiver, bootSystem)
   }
 
-  case class Boot(host : ActorSystem, prob : TestProbe, bootedSystem : ActorSystem) {
-    def shutdown = {
-      host.shutdown()
-      bootedSystem.shutdown()
-      host.awaitTermination()
-      bootedSystem.awaitTermination()
+  case class Boot(host: ActorSystem, prob: TestProbe, bootedSystem: ActorSystem) {
+    def shutdown(): Unit = {
+      host.terminate()
+      bootedSystem.terminate()
+      Await.result(host.whenTerminated, Duration.Inf)
+      Await.result(bootedSystem.whenTerminated, Duration.Inf)
     }
   }
 
-  def retry(seconds: Int)(fn: => Boolean) : Boolean = {
+  def retry(seconds: Int)(fn: => Boolean): Boolean = {
     val result = fn
     if (result) {
       result
@@ -97,19 +99,19 @@ class ActorSystemBooterSpec extends FlatSpec with Matchers with MockitoSugar {
 
 object ActorSystemBooterSpec {
   class Dummy extends Actor {
-    def receive : Receive = {
+    def receive: Receive = {
       case _ =>
     }
   }
 
   class AcceptZeroArguments extends Actor {
-    def receive : Receive = {
+    def receive: Receive = {
       case _ =>
     }
   }
 
-  class AcceptThreeArguments(a : Int, b : Int, c : Int) extends Actor {
-    def receive : Receive = {
+  class AcceptThreeArguments(a: Int, b: Int, c: Int) extends Actor {
+    def receive: Receive = {
       case _ =>
     }
   }

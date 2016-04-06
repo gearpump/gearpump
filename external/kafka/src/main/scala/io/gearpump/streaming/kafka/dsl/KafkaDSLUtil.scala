@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,10 +20,10 @@ package io.gearpump.streaming.kafka.dsl
 import java.util.Properties
 
 import io.gearpump.streaming.dsl
-import io.gearpump.streaming.dsl.{StreamApp}
+import io.gearpump.streaming.dsl.StreamApp
 import io.gearpump.streaming.kafka.KafkaSource
 import io.gearpump.streaming.kafka.lib.{DefaultMessageDecoder, KafkaSourceConfig}
-import io.gearpump.streaming.transaction.api.{OffsetStorageFactory, TimeStampFilter, MessageDecoder}
+import io.gearpump.streaming.transaction.api.{MessageDecoder, OffsetStorageFactory, TimeStampFilter}
 
 object KafkaDSLUtil {
   def createStream[T](
@@ -33,7 +33,8 @@ object KafkaDSLUtil {
       kafkaConfig: KafkaSourceConfig,
       offsetStorageFactory: OffsetStorageFactory,
       messageDecoder: MessageDecoder = new DefaultMessageDecoder): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder), parallelism, description)
+    app.source[T](new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder),
+      parallelism, description)
   }
 
   def createStream[T](
@@ -43,8 +44,8 @@ object KafkaDSLUtil {
       topics: String,
       zkConnect: String,
       offsetStorageFactory: OffsetStorageFactory): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(topics, zkConnect, offsetStorageFactory)
-        , parallelism, description)
+    app.source[T](new KafkaSource(topics, zkConnect, offsetStorageFactory),
+      parallelism, description)
   }
 
   def createStream[T](
@@ -56,8 +57,8 @@ object KafkaDSLUtil {
       offsetStorageFactory: OffsetStorageFactory,
       messageDecoder: MessageDecoder,
       timestampFilter: TimeStampFilter): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(topics, zkConnect, offsetStorageFactory, messageDecoder, timestampFilter)
-        , parallelism, description)
+    app.source[T](new KafkaSource(topics, zkConnect, offsetStorageFactory,
+    messageDecoder, timestampFilter), parallelism, description)
   }
 
   def createStream[T](
@@ -67,7 +68,8 @@ object KafkaDSLUtil {
       topics: String,
       properties: Properties,
       offsetStorageFactory: OffsetStorageFactory): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(topics, properties, offsetStorageFactory), parallelism, description)
+    app.source[T](new KafkaSource(topics, properties, offsetStorageFactory),
+    parallelism, description)
   }
 
   def createStream[T](
@@ -79,9 +81,8 @@ object KafkaDSLUtil {
       offsetStorageFactory: OffsetStorageFactory,
       messageDecoder: MessageDecoder,
       timestampFilter: TimeStampFilter): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(topics, properties, offsetStorageFactory, messageDecoder, timestampFilter), parallelism, description)
+    app.source[T](new KafkaSource(topics, properties, offsetStorageFactory,
+    messageDecoder, timestampFilter), parallelism, description)
   }
 }
-
-
 

@@ -41,7 +41,6 @@ but rather
    import io.gearpump.google.common.io.Files
 ```
 
-
 ##### System Level Serializer
 
 If the serializer is widely used, you can define a global serializer which is available to all applications(or worker or master) in the system.
@@ -127,7 +126,6 @@ gearpump {
 ```
 
 ###### Step3: All set!
-
 
 #### Advanced: Choose another serialization framework
 

@@ -19,36 +19,36 @@
 package io.gearpump.cluster.master
 
 import java.util.concurrent.{TimeUnit, TimeoutException}
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success}
 
 import akka.actor.{Actor, ActorRef, Props, _}
 import com.typesafe.config.Config
-import io.gearpump.cluster.{AppJar, AppDescription}
+import org.slf4j.Logger
+
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
-import io.gearpump.cluster._
-import io.gearpump.cluster.appmaster.{WorkerInfo, AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
+import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo, WorkerInfo}
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.cluster.{AppDescription, AppJar, _}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.ActorSystemBooter._
 import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorSystemBooter, ActorUtil, LogUtil, Util}
-import org.slf4j.Logger
 
-import scala.collection.JavaConverters._
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success}
-import io.gearpump.WorkerId
 /**
  *
  * AppMasterLauncher is a child Actor of AppManager, it is responsible
  * to launch the AppMaster on the cluster.
  */
 class AppMasterLauncher(
-    appId : Int, executorId: Int, app : AppDescription,
-    jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef])
+    appId: Int, executorId: Int, app: AppDescription,
+    jar: Option[AppJar], username: String, master: ActorRef, client: Option[ActorRef])
   extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
 
@@ -61,9 +61,9 @@ class AppMasterLauncher(
   LOG.info(s"Ask Master resource to start AppMaster $appId...")
   master ! RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified))
 
-  def receive : Receive = waitForResourceAllocation
+  def receive: Receive = waitForResourceAllocation
 
-  def waitForResourceAllocation : Receive = {
+  def waitForResourceAllocation: Receive = {
     case ResourceAllocated(allocations) =>
 
       val ResourceAllocation(resource, worker, workerId) = allocations(0)
@@ -74,22 +74,27 @@ class AppMasterLauncher(
       val appMasterInfo = AppMasterRuntimeInfo(appId, app.name, worker, username,
         submissionTime, config = appMasterAkkaConfig)
       val workerInfo = WorkerInfo(workerId, worker)
-      val appMasterContext = AppMasterContext(appId, username, resource, workerInfo, jar, null, appMasterInfo)
+      val appMasterContext =
+        AppMasterContext(appId, username, resource, workerInfo, jar, null, appMasterInfo)
       LOG.info(s"Try to launch a executor for AppMaster on worker ${workerId} for app $appId")
       val name = ActorUtil.actorNameForExecutor(appId, executorId)
       val selfPath = ActorUtil.getFullPath(context.system, self.path)
 
-      val jvmSetting = Util.resolveJvmSetting(appMasterAkkaConfig.withFallback(systemConfig)).appMater
-      val executorJVM = ExecutorJVMConfig(jvmSetting.classPath ,jvmSetting.vmargs,
-        classOf[ActorSystemBooter].getName, Array(name, selfPath), jar, username, appMasterAkkaConfig)
+      val jvmSetting =
+        Util.resolveJvmSetting(appMasterAkkaConfig.withFallback(systemConfig)).appMater
+      val executorJVM = ExecutorJVMConfig(jvmSetting.classPath, jvmSetting.vmargs,
+        classOf[ActorSystemBooter].getName, Array(name, selfPath), jar,
+        username, appMasterAkkaConfig)
 
       worker ! LaunchExecutor(appId, executorId, resource, executorJVM)
       context.become(waitForActorSystemToStart(worker, appMasterContext, app.userConfig, resource))
   }
 
-  def waitForActorSystemToStart(worker : ActorRef, appContext : AppMasterContext, user : UserConfig, resource: Resource) : Receive = {
+  def waitForActorSystemToStart(
+      worker: ActorRef, appContext: AppMasterContext, user: UserConfig, resource: Resource)
+    : Receive = {
     case ExecutorLaunchRejected(reason, ex) =>
-      LOG.error(s"Executor Launch failed reason：$reason", ex)
+      LOG.error(s"Executor Launch failed reason: $reason", ex)
       LOG.info(s"reallocate resource $resource to start appmaster")
       master ! RequestResource(appId, ResourceRequest(resource, WorkerId.unspecified))
       context.become(waitForResourceAllocation)
@@ -99,7 +104,8 @@ class AppMasterLauncher(
 
       val masterAddress = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS)
         .asScala.map(HostPort(_)).map(ActorUtil.getMasterActorPath)
-      sender ! CreateActor(AppMasterRuntimeEnvironment.props(masterAddress, app, appContext), s"appdaemon$appId")
+      sender ! CreateActor(
+        AppMasterRuntimeEnvironment.props(masterAddress, app, appContext), s"appdaemon$appId")
 
       import context.dispatcher
       val appMasterTimeout = scheduler.scheduleOnce(TIMEOUT, self,
@@ -107,7 +113,7 @@ class AppMasterLauncher(
       context.become(waitForAppMasterToStart(worker, appMasterTimeout))
   }
 
-  def waitForAppMasterToStart(worker : ActorRef, cancel: Cancellable) : Receive = {
+  def waitForAppMasterToStart(worker: ActorRef, cancel: Cancellable): Receive = {
     case ActorCreated(appMaster, _) =>
       cancel.cancel()
       sender ! BindLifeCycle(appMaster)
@@ -121,19 +127,21 @@ class AppMasterLauncher(
       context.stop(self)
   }
 
-  def replyToClient(result : SubmitApplicationResult) : Unit = {
+  def replyToClient(result: SubmitApplicationResult): Unit = {
     if (client.isDefined) {
       client.get.tell(result, master)
     }
   }
 }
 
-object AppMasterLauncher extends AppMasterLauncherFactory{
-  def props(appId : Int, executorId: Int, app : AppDescription, jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef]) = {
+object AppMasterLauncher extends AppMasterLauncherFactory {
+  def props(appId: Int, executorId: Int, app: AppDescription, jar: Option[AppJar],
+      username: String, master: ActorRef, client: Option[ActorRef]): Props = {
     Props(new AppMasterLauncher(appId, executorId, app, jar, username, master, client))
   }
 }
 
 trait AppMasterLauncherFactory {
-  def props(appId : Int, executorId: Int, app : AppDescription, jar: Option[AppJar], username : String, master : ActorRef, client: Option[ActorRef]) : Props
+  def props(appId: Int, executorId: Int, app: AppDescription, jar: Option[AppJar],
+      username: String, master: ActorRef, client: Option[ActorRef]): Props
 }

@@ -21,11 +21,11 @@ function login() {
       $(location).attr('href', index);
     }
   )
-  .fail(function (xhr, textStatus, errorThrown) {
-    var elem = $("#error");
-    elem.html(xhr.responseText);
-    elem.text(textStatus + "(" + xhr.status + "): " + elem.text());
-  });
+    .fail(function (xhr, textStatus, errorThrown) {
+      var elem = $("#error");
+      elem.html(xhr.responseText);
+      elem.text(textStatus + "(" + xhr.status + "): " + elem.text());
+    });
 }
 
 /**

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,18 @@
 
 package io.gearpump.streaming.kafka.lib
 
+import scala.util.{Failure, Success}
+
 import com.twitter.bijection.Injection
-import io.gearpump.streaming.transaction.api.OffsetStorage
-import io.gearpump.Message
-import OffsetStorage.{Overflow, StorageEmpty, Underflow}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.util.{Failure, Success}
+import io.gearpump.Message
+import io.gearpump.streaming.transaction.api.OffsetStorage
+import io.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
 
 class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
@@ -40,11 +41,12 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
 
   val messageAndOffsetsGen = Gen.listOf[Message](messageGen).map(_.zipWithIndex)
 
-  property("KafkaOffsetManager should append offset to storage in monotonically increasing time order") {
+  property("KafkaOffsetManager should append offset to storage in monotonically" +
+    " increasing time order") {
     forAll(messageAndOffsetsGen) { (messageAndOffsets: List[(Message, Int)]) =>
       val offsetStorage = mock[OffsetStorage]
       val offsetManager = new KafkaOffsetManager(offsetStorage)
-      messageAndOffsets.foldLeft(0L){ (max, messageAndOffset) =>
+      messageAndOffsets.foldLeft(0L) { (max, messageAndOffset) =>
         val (message, offset) = messageAndOffset
         offsetManager.filter((message, offset.toLong)) shouldBe Option(message)
         if (message.timestamp > max) {
@@ -62,7 +64,8 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
 
   val minTimeStampGen = Gen.choose[Long](0L, 500L)
   val maxTimeStampGen = Gen.choose[Long](500L, 1000L)
-  property("KafkaOffsetManager resolveOffset should report StorageEmpty failure when storage is empty") {
+  property("KafkaOffsetManager resolveOffset should " +
+    "report StorageEmpty failure when storage is empty") {
     forAll(timeStampGen) { (time: Long) =>
       val offsetStorage = mock[OffsetStorage]
       val offsetManager = new KafkaOffsetManager(offsetStorage)
@@ -78,16 +81,19 @@ class KafkaOffsetManagerSpec extends PropSpec with PropertyChecks with Matchers 
   }
 
   val offsetGen = Gen.choose[Long](0L, 1000L)
-  property("KafkaOffsetManager resolveOffset should return a valid offset when storage is not empty") {
+  property("KafkaOffsetManager resolveOffset should return a valid" +
+    " offset when storage is not empty") {
     forAll(timeStampGen, minTimeStampGen, maxTimeStampGen, offsetGen) {
       (time: Long, min: Long, max: Long, offset: Long) =>
         val offsetStorage = mock[OffsetStorage]
         val offsetManager = new KafkaOffsetManager(offsetStorage)
         if (time < min) {
-          when(offsetStorage.lookUp(time)).thenReturn(Failure(Underflow(Injection[Long, Array[Byte]](min))))
+          when(offsetStorage.lookUp(time)).thenReturn(Failure(
+            Underflow(Injection[Long, Array[Byte]](min))))
           offsetManager.resolveOffset(time) shouldBe Success(min)
         } else if (time > max) {
-          when(offsetStorage.lookUp(time)).thenReturn(Failure(Overflow(Injection[Long, Array[Byte]](max))))
+          when(offsetStorage.lookUp(time)).thenReturn(Failure(
+            Overflow(Injection[Long, Array[Byte]](max))))
           offsetManager.resolveOffset(time) shouldBe Success(max)
         } else {
           when(offsetStorage.lookUp(time)).thenReturn(Success(Injection[Long, Array[Byte]](offset)))

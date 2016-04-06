@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,25 +17,28 @@
  */
 package io.gearpump.experiments.storm.topology
 
-import akka.actor.ActorRef
-import backtype.storm.spout.{SpoutOutputCollector, ISpout}
-import backtype.storm.task.{OutputCollector, IBolt, GeneralTopologyContext, TopologyContext}
 import java.util.{Map => JMap}
+
+import akka.actor.ActorRef
+import backtype.storm.spout.{ISpout, SpoutOutputCollector}
+import backtype.storm.task.{GeneralTopologyContext, IBolt, OutputCollector, TopologyContext}
 import backtype.storm.tuple.Tuple
-import io.gearpump.experiments.storm.producer.StormSpoutOutputCollector
-import io.gearpump.{TimeStamp, Message}
-import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
-import io.gearpump.experiments.storm.util.StormOutputCollector
-import io.gearpump.streaming.{MockUtil, DAG}
-import io.gearpump.streaming.task.{TaskContext, StartTime, TaskId}
+import org.mockito.Matchers.{anyObject, eq => mockitoEq}
 import org.mockito.Mockito._
-import org.mockito.Matchers.{anyLong, anyObject, eq => mockitoEq}
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{PropSpec, Matchers}
+import org.scalatest.{Matchers, PropSpec}
 
-class GearpumpStormComponentSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
+import io.gearpump.experiments.storm.producer.StormSpoutOutputCollector
+import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
+import io.gearpump.experiments.storm.util.StormOutputCollector
+import io.gearpump.streaming.task.{StartTime, TaskContext, TaskId}
+import io.gearpump.streaming.{DAG, MockUtil}
+import io.gearpump.{Message, TimeStamp}
+
+class GearpumpStormComponentSpec
+  extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   property("GearpumpSpout lifecycle") {
     val config = mock[JMap[AnyRef, AnyRef]]
@@ -56,13 +59,14 @@ class GearpumpStormComponentSpec extends PropSpec with PropertyChecks with Match
     val gearpumpSpout = GearpumpSpout(config, spout, getDAG, getTopologyContext,
       getOutputCollector, ackEnabled = false, taskContext)
 
-    // start
+    // Start
     val startTime = mock[StartTime]
     gearpumpSpout.start(startTime)
 
-    verify(spout).open(mockitoEq(config), mockitoEq(topologyContext), anyObject[SpoutOutputCollector])
+    verify(spout).open(mockitoEq(config), mockitoEq(topologyContext),
+      anyObject[SpoutOutputCollector])
 
-    // next
+    // Next
     val message = mock[Message]
     gearpumpSpout.next(message)
 
@@ -93,16 +97,17 @@ class GearpumpStormComponentSpec extends PropSpec with PropertyChecks with Match
       val getTickTuple = mock[(GeneralTopologyContext, Int) => Tuple]
       val tickTuple = mock[Tuple]
       when(getTickTuple(mockitoEq(generalTopologyContext), anyObject[Int]())).thenReturn(tickTuple)
-      val gearpumpBolt = GearpumpBolt(config, bolt, getDAG, getTopologyContext, getGeneralTopologyContext,
-        getOutputCollector, getTickTuple, taskContext)
+      val gearpumpBolt = GearpumpBolt(config, bolt, getDAG, getTopologyContext,
+        getGeneralTopologyContext, getOutputCollector, getTickTuple, taskContext)
 
-      // start
+      // Start
       val startTime = mock[StartTime]
       gearpumpBolt.start(startTime)
 
-      verify(bolt).prepare(mockitoEq(config), mockitoEq(topologyContext), anyObject[OutputCollector])
+      verify(bolt).prepare(mockitoEq(config), mockitoEq(topologyContext),
+        anyObject[OutputCollector])
 
-      // next
+      // Next
       val gearpumpTuple = mock[GearpumpTuple]
       val tuple = mock[Tuple]
       when(gearpumpTuple.toTuple(generalTopologyContext, timestamp)).thenReturn(tuple)
@@ -112,11 +117,9 @@ class GearpumpStormComponentSpec extends PropSpec with PropertyChecks with Match
       verify(stormOutputCollector).setTimestamp(timestamp)
       verify(bolt).execute(tuple)
 
-
-      // tick
+      // Tick
       gearpumpBolt.tick(freq)
       verify(bolt).execute(tickTuple)
     }
   }
-
 }

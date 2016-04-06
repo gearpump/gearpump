@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,18 +17,25 @@
  */
 package io.gearpump.external.hbase.dsl
 
+import scala.language.implicitConversions
+
 import org.apache.hadoop.conf.Configuration
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.external.hbase.HBaseSink
 import io.gearpump.streaming.dsl.Stream
-import Stream.Sink
+import io.gearpump.streaming.dsl.Stream.Sink
 
+/** Create a HBase DSL Sink */
 class HBaseDSLSink[T](stream: Stream[T]) {
-  def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String): Stream[T] = {
+
+  def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String)
+    : Stream[T] = {
     stream.sink(HBaseSink[T](userConfig, table), parallism, userConfig, description)
   }
 
-  def writeToHbase(userConfig: UserConfig, configuration: Configuration, table: String, parallism: Int, description: String): Stream[T] = {
+  def writeToHbase(userConfig: UserConfig, configuration: Configuration, table: String,
+      parallism: Int, description: String): Stream[T] = {
     stream.sink(HBaseSink[T](userConfig, table, configuration), parallism, userConfig, description)
   }
 }

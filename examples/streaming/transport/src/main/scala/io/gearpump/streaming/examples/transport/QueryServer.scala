@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,30 +18,29 @@
 package io.gearpump.streaming.examples.transport
 
 import java.util.concurrent.TimeUnit
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 import akka.actor.Actor._
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorRefFactory, Props}
 import akka.io.IO
 import akka.pattern.ask
+import spray.can.Http
+import spray.http.StatusCodes
+import spray.json._
+import spray.routing.{HttpService, Route}
+import upickle.default.write
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.partitioner.PartitionerDescription
-import io.gearpump.streaming.appmaster.AppMaster
 import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
 import io.gearpump.streaming.examples.transport.QueryServer.{GetAllRecords, WebServer}
 import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 import io.gearpump.streaming.{DAG, ProcessorDescription, ProcessorId, StreamApplication}
 import io.gearpump.util.Graph
-import spray.can.Http
-import spray.http.StatusCodes
-import spray.json._
-import spray.routing.HttpService
-import upickle.default.write
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
-
-class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf){
+class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import system.dispatcher
   import taskContext.appMaster
 
@@ -50,7 +49,8 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
   private var overSpeedRecords = List.empty[OverSpeedReport]
 
   override def onStart(startTime: StartTime): Unit = {
-    val dag = DAG(conf.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
+    val dag = DAG(conf.getValue[Graph[ProcessorDescription, PartitionerDescription]](
+      StreamApplication.DAG).get)
     inspector = dag.processors.find { kv =>
       val (_, processor) = kv
       processor.taskClass == classOf[VelocityInspector].getName
@@ -62,7 +62,7 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
   }
 
   override def receiveUnManagedMessage: Receive = {
-    case getTrace @ GetTrace(vehicleId: String) =>
+    case getTrace@GetTrace(vehicleId: String) =>
       val parallism = inspector._2.parallelism
       val processorId = inspector._1
       val analyzerTaskId = TaskId(processorId, (vehicleId.hashCode & Integer.MAX_VALUE) % parallism)
@@ -74,14 +74,14 @@ class QueryServer(taskContext: TaskContext, conf: UserConfig) extends Task(taskC
         LOG.info(s"reporting $trace")
         requester ! trace
       }
-    case record@ OverSpeedReport(vehicleId, speed, timestamp, locationId) =>
+    case record@OverSpeedReport(vehicleId, speed, timestamp, locationId) =>
       LOG.info(s"vehicle $vehicleId is over speed, the speed is $speed km/h")
       overSpeedRecords :+= record
     case GetAllRecords =>
       sender ! QueryServer.OverSpeedRecords(overSpeedRecords.toArray.sortBy(_.timestamp))
       overSpeedRecords = List.empty[OverSpeedReport]
     case _ =>
-      //ignore
+    // Ignore
   }
 }
 
@@ -94,21 +94,22 @@ object QueryServer {
 
     import context.dispatcher
     implicit val timeOut = akka.util.Timeout(3, TimeUnit.SECONDS)
-    def actorRefFactory = context
+    def actorRefFactory: ActorRefFactory = context
     implicit val system = context.system
 
     IO(Http) ! Http.Bind(self, interface = "0.0.0.0", port = 8080)
 
     override def receive: Receive = runRoute(webServer ~ staticRoute)
 
-    def webServer = {
-      path("trace" / PathElement) { vehicleId =>
+    def webServer: Route = {
+      path("trace" / Segment) { vehicleId =>
         get {
           onComplete((context.parent ? GetTrace(vehicleId)).asInstanceOf[Future[VehicleTrace]]) {
             case Success(trace: VehicleTrace) =>
               val json = write(trace)
               complete(pretty(json))
-            case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+            case Failure(ex) => complete(StatusCodes.InternalServerError,
+              s"An error occurred: ${ex.getMessage}")
           }
         }
       } ~
@@ -118,7 +119,8 @@ object QueryServer {
             case Success(records: OverSpeedRecords) =>
               val json = write(records)
               complete(pretty(json))
-            case Failure(ex) => complete(StatusCodes.InternalServerError, s"An error occurred: ${ex.getMessage}")
+            case Failure(ex) => complete(StatusCodes.InternalServerError,
+              s"An error occurred: ${ex.getMessage}")
           }
         }
       }

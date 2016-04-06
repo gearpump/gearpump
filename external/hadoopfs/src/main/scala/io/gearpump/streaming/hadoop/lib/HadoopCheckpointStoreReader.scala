@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,18 +20,19 @@ package io.gearpump.streaming.hadoop.lib
 
 import java.io.EOFException
 
-import io.gearpump.TimeStamp
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
+
+import io.gearpump.TimeStamp
 
 class HadoopCheckpointStoreReader(
     path: Path,
     hadoopConfig: Configuration)
- extends Iterator[(TimeStamp, Array[Byte])] {
+  extends Iterator[(TimeStamp, Array[Byte])] {
 
   private val stream = HadoopUtil.getInputStream(path, hadoopConfig)
   private var nextTimeStamp: Option[TimeStamp] = None
-  private var nextData : Option[Array[Byte]] = None
+  private var nextData: Option[Array[Byte]] = None
 
   override def hasNext: Boolean = {
     if (nextTimeStamp.isDefined) {

@@ -1,4 +1,4 @@
-/*-
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,8 +20,8 @@ package io.gearpump.experiments.yarn.glue
 
 import java.io.File
 import java.nio.ByteBuffer
+import scala.collection.JavaConverters._
 
-import io.gearpump.util.LogUtil
 import org.apache.hadoop.fs.{FileSystem => YarnFileSystem, Path}
 import org.apache.hadoop.io.DataOutputBuffer
 import org.apache.hadoop.mapreduce.security.TokenCache
@@ -32,18 +32,19 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration
 import org.apache.hadoop.yarn.util.ConverterUtils
 import org.slf4j.Logger
 
-import scala.collection.JavaConversions._
+import io.gearpump.util.LogUtil
 
-private [glue]
+private[glue]
 object ContainerLaunchContext {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  def apply(yarnConf: YarnConfiguration, command: String, packagePath: String, configPath: String): ContainerLaunchContext = {
+  def apply(yarnConf: YarnConfiguration, command: String, packagePath: String, configPath: String)
+    : ContainerLaunchContext = {
     val context = Records.newRecord(classOf[ContainerLaunchContext])
-    context.setCommands(Seq(command))
-    context.setEnvironment(getAppEnv(yarnConf))
+    context.setCommands(Seq(command).asJava)
+    context.setEnvironment(getAppEnv(yarnConf).asJava)
     context.setTokens(getToken(yarnConf, packagePath, configPath))
-    context.setLocalResources(getAMLocalResourcesMap(yarnConf, packagePath, configPath))
+    context.setLocalResources(getAMLocalResourcesMap(yarnConf, packagePath, configPath).asJava)
     context
   }
 
@@ -60,7 +61,9 @@ object ContainerLaunchContext {
     Map(Environment.CLASSPATH.name -> allPaths.map(_.trim).mkString(File.pathSeparator))
   }
 
-  private def getAMLocalResourcesMap(yarnConf: YarnConfiguration, packagePath: String, configPath: String): Map[String, LocalResource] = {
+  private def getAMLocalResourcesMap(
+      yarnConf: YarnConfiguration, packagePath: String, configPath: String)
+    : Map[String, LocalResource] = {
     val fs = getFs(yarnConf)
 
     Map(
@@ -70,8 +73,9 @@ object ContainerLaunchContext {
         LocalResourceType.FILE, LocalResourceVisibility.APPLICATION))
   }
 
-  private def newYarnAppResource(fs: YarnFileSystem, path: Path,
-                                 resourceType: LocalResourceType, vis: LocalResourceVisibility): LocalResource = {
+  private def newYarnAppResource(
+      fs: YarnFileSystem, path: Path,
+      resourceType: LocalResourceType, vis: LocalResourceVisibility): LocalResource = {
     val qualified = fs.makeQualified(path)
     val status = fs.getFileStatus(qualified)
     val resource = Records.newRecord(classOf[LocalResource])
@@ -83,7 +87,8 @@ object ContainerLaunchContext {
     resource
   }
 
-  private def getToken(yc: YarnConfiguration, packagePath: String, configPath: String): ByteBuffer = {
+  private def getToken(yc: YarnConfiguration, packagePath: String, configPath: String)
+    : ByteBuffer = {
     val credentials = UserGroupInformation.getCurrentUser.getCredentials
     val dob = new DataOutputBuffer
     val dirs = Array(new Path(packagePath), new Path(configPath))

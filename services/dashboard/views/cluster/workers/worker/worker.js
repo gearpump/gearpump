@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -19,10 +19,10 @@ angular.module('dashboard')
           templateUrl: 'views/cluster/workers/worker/worker.html',
           controller: 'WorkerCtrl',
           resolve: {
-            worker0: ['$stateParams', 'models', function($stateParams, models) {
+            worker0: ['$stateParams', 'models', function ($stateParams, models) {
               return models.$get.worker($stateParams.workerId);
             }],
-            apps0: ['models', function(models) {
+            apps0: ['models', function (models) {
               return models.$get.apps();
             }]
           }
@@ -31,7 +31,7 @@ angular.module('dashboard')
 
   .controller('WorkerCtrl', ['$scope', '$propertyTableBuilder', '$sortableTableBuilder',
     'i18n', 'helper', 'models', 'locator', 'worker0', 'apps0',
-    function($scope, $ptb, $stb, i18n, helper, models, locator, worker0, apps0) {
+    function ($scope, $ptb, $stb, i18n, helper, models, locator, worker0, apps0) {
       'use strict';
 
       $scope.whatIsWorker = i18n.terminology.worker;
@@ -69,7 +69,7 @@ angular.module('dashboard')
 
       function updateExecutorsTable() {
         $scope.executorsTable.rows = $stb.$update($scope.executorsTable.rows,
-          _.map($scope.worker.executors, function(executor) {
+          _.map($scope.worker.executors, function (executor) {
             if ($scope.apps.hasOwnProperty(executor.appId)) {
               var app = $scope.apps[executor.appId];
               var executorPageUrl = locator.executor(app.appId, app.type, executor.executorId);
@@ -96,14 +96,14 @@ angular.module('dashboard')
       updateOverviewTable($scope.worker);
       updateExecutorsTable();
 
-      worker0.$subscribe($scope, function(worker) {
+      worker0.$subscribe($scope, function (worker) {
         updateWorkerDetails(worker);
-      }, /*onerror=*/function() {
+      }, /*onerror=*/function () {
         // manually reset status fields on an error response
         var worker = angular.copy($scope.worker);
         worker.state = 'terminated';
         worker.isRunning = false;
-        _.forEach(worker.executors, function(executor) {
+        _.forEach(worker.executors, function (executor) {
           executor.status = 'terminated';
           executor.isRunning = false;
         });
@@ -116,13 +116,13 @@ angular.module('dashboard')
         updateExecutorsTable();
       }
 
-      apps0.$subscribe($scope, function(apps) {
+      apps0.$subscribe($scope, function (apps) {
         $scope.apps = apps;
         updateExecutorsTable();
       });
 
       // Delegate JvmMetrics directive to manage metrics
-      $scope.queryMetricsFnRef = function(all) {
+      $scope.queryMetricsFnRef = function (all) {
         return all ?
           models.$get.workerHistMetrics(worker0.workerId) :
           models.$get.workerMetrics(worker0.workerId, $scope.metricsConfig.retainRecentDataIntervalMs);

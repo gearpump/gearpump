@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,8 @@ import akka.actor.ActorSystem
 import backtype.storm.Config
 import backtype.storm.generated._
 import backtype.storm.utils.{ThriftTopologyUtils, Utils}
+import org.slf4j.Logger
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.experiments.storm.processor.StormProcessor
 import io.gearpump.experiments.storm.producer.StormProducer
@@ -34,9 +36,11 @@ import io.gearpump.experiments.storm.util.StormUtil._
 import io.gearpump.streaming.Processor
 import io.gearpump.streaming.task.Task
 import io.gearpump.util.LogUtil
-import org.slf4j.Logger
 
+// TODO: Refactor this file, we should disable using of JavaConversions
+// scalastyle:off javaconversions
 import scala.collection.JavaConversions._
+// scalastyle:on javaconversions
 
 object GearpumpStormTopology {
   private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpStormTopology])
@@ -51,16 +55,14 @@ object GearpumpStormTopology {
       Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]],
       parseJsonStringToMap(appConfigInJson)
     )
-
   }
-
 }
 
 /**
  * this is a wrapper over Storm topology which
- *   1. merges Storm and Gearpump configs
- *   2. creates Gearpump processors
- *   3. provides interface for Gearpump applications to use Storm topology
+ * 1. merges Storm and Gearpump configs
+ * 2. creates Gearpump processors
+ * 3. provides interface for Gearpump applications to use Storm topology
  *
  * an implicit ActorSystem is required to create Gearpump processors
  * @param name topology name
@@ -78,14 +80,16 @@ private[storm] class GearpumpStormTopology(
   private val bolts = topology.get_bolts()
   private val stormConfig = mergeConfigs(sysConfig, appConfig, getComponentConfigs(spouts, bolts))
   private val spoutProcessors = spouts.map { case (id, spout) =>
-    id -> spoutToProcessor(id, spout, stormConfig.toMap) }.toMap
+    id -> spoutToProcessor(id, spout, stormConfig.toMap)
+  }.toMap
   private val boltProcessors = bolts.map { case (id, bolt) =>
-    id -> boltToProcessor(id, bolt, stormConfig.toMap) }.toMap
+    id -> boltToProcessor(id, bolt, stormConfig.toMap)
+  }.toMap
   private val allProcessors = spoutProcessors ++ boltProcessors
 
   /**
    * @return merged Storm config with priority
-   *    defaults.yaml < custom file config < application config < component config
+   *         defaults.yaml < custom file config < application config < component config
    */
   def getStormConfig: JMap[AnyRef, AnyRef] = stormConfig
 
@@ -131,7 +135,7 @@ private[storm] class GearpumpStormTopology(
       stormConfig: Map[AnyRef, AnyRef])(implicit system: ActorSystem): Processor[Task] = {
     val componentCommon = spoutSpec.get_common()
     val taskConf = UserConfig.empty
-        .withString(STORM_COMPONENT, spoutId)
+      .withString(STORM_COMPONENT, spoutId)
     val parallelism = getParallelism(stormConfig, componentCommon)
     Processor[StormProducer](parallelism, spoutId, taskConf)
   }
@@ -148,8 +152,8 @@ private[storm] class GearpumpStormTopology(
       stormConfig: Map[AnyRef, AnyRef])(implicit system: ActorSystem): Processor[Task] = {
     val componentCommon = boltSpec.get_common()
     val taskConf = UserConfig.empty
-        .withString(STORM_COMPONENT, boltId)
-        .withBoolean("state.checkpoint.enable", StormUtil.ackEnabled(stormConfig))
+      .withString(STORM_COMPONENT, boltId)
+      .withBoolean("state.checkpoint.enable", StormUtil.ackEnabled(stormConfig))
     val parallelism = getParallelism(stormConfig, componentCommon)
     Processor[StormProcessor](parallelism, boltId, taskConf)
   }
@@ -157,7 +161,8 @@ private[storm] class GearpumpStormTopology(
   /**
    * @return target components and streams
    */
-  private def getTargets(componentId: String, topology: StormTopology): Map[String, Map[String, Grouping]] = {
+  private def getTargets(componentId: String, topology: StormTopology)
+    : Map[String, Map[String, Grouping]] = {
     val componentIds = ThriftTopologyUtils.getComponentIds(topology)
     componentIds.flatMap { otherComponentId =>
       getInputs(otherComponentId, topology).toList.map(otherComponentId -> _)
@@ -178,16 +183,18 @@ private[storm] class GearpumpStormTopology(
   /**
    * @return input stream and grouping for a Storm component
    */
-  private def getInputs(componentId: String, topology: StormTopology): JMap[GlobalStreamId, Grouping] = {
+  private def getInputs(componentId: String, topology: StormTopology)
+    : JMap[GlobalStreamId, Grouping] = {
     ThriftTopologyUtils.getComponentCommon(topology, componentId).get_inputs
   }
 
   /**
    * get Storm component parallelism according to the following rule,
-   *   1. use "topology.tasks" if defined; otherwise use parallelism_hint
-   *   2. parallelism should not be larger than "topology.max.task.parallelism" if defined
-   *   3. component config overrides system config
-   * @param stormConfig system configs without merging "topology.tasks" and "topology.max.task.parallelism" of component
+   * 1. use "topology.tasks" if defined; otherwise use parallelism_hint
+   * 2. parallelism should not be larger than "topology.max.task.parallelism" if defined
+   * 3. component config overrides system config
+   * @param stormConfig System configs without merging "topology.tasks" and
+   *                    "topology.max.task.parallelism" of component
    * @return number of task instances for a component
    */
   private def getParallelism(stormConfig: Map[AnyRef, AnyRef], component: ComponentCommon): Int = {
@@ -207,7 +214,7 @@ private[storm] class GearpumpStormTopology(
   }
 
   private def getComponentConfigs(spouts: JMap[String, SpoutSpec],
-                                  bolts: JMap[String, Bolt]): Iterable[JMap[AnyRef, AnyRef]] = {
+      bolts: JMap[String, Bolt]): Iterable[JMap[AnyRef, AnyRef]] = {
     spouts.map { case (id, spoutSpec) =>
       parseJsonStringToMap(spoutSpec.get_common().get_json_conf())
     } ++ bolts.map { case (id, boltSpec) =>
@@ -222,7 +229,7 @@ private[storm] class GearpumpStormTopology(
    * @return the two configs merged from all the component configs and existing configs
    */
   private def getMergedComponentConfig(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
-                                       allConfig: Map[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
+      allConfig: Map[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
     val mergedConfig: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
     mergedConfig.putAll(getMergedKryoDecorators(componentConfigs, allConfig))
     mergedConfig.putAll(getMergedKryoRegister(componentConfigs, allConfig))
@@ -232,10 +239,11 @@ private[storm] class GearpumpStormTopology(
   /**
    * @param componentConfigs list of component configs
    * @param allConfig existing configs without merging component configs
-   * @return a merged config with a list of distinct kryo decorators from component and existing configs
+   * @return a merged config with a list of distinct kryo decorators from component and
+   *         existing configs
    */
   private def getMergedKryoDecorators(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
-                                allConfig: Map[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
+      allConfig: Map[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
     val mergedConfig: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef](1)
     val key = Config.TOPOLOGY_KRYO_DECORATORS
     val configs = getConfigValues(componentConfigs, allConfig, key)
@@ -250,7 +258,6 @@ private[storm] class GearpumpStormTopology(
         accum
       case illegal =>
         throw new IllegalArgumentException(s"$key must be a List of Strings; actually $illegal")
-
     }
     if (distincts.nonEmpty) {
       val decorators: JList[String] = new JArrayList(distincts.size)
@@ -266,7 +273,7 @@ private[storm] class GearpumpStormTopology(
    * @return a merged config with component config overriding existing configs
    */
   private def getMergedKryoRegister(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
-                              allConfig: Map[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
+      allConfig: Map[AnyRef, AnyRef]): JMap[AnyRef, AnyRef] = {
     val mergedConfig: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef](1)
     val key = Config.TOPOLOGY_KRYO_REGISTER
     val configs = getConfigValues(componentConfigs, allConfig, key)
@@ -275,7 +282,7 @@ private[storm] class GearpumpStormTopology(
         accum ++ config.map {
           case m: JMap[_, _] =>
             m.map {
-              case (k: String, v: String) => k ->v
+              case (k: String, v: String) => k -> v
               case illegal =>
                 throw new IllegalArgumentException(
                   s"each element of $key must be a String or a Map of Strings; actually $illegal")
@@ -283,7 +290,8 @@ private[storm] class GearpumpStormTopology(
           case s: String =>
             Map(s -> null)
           case illegal =>
-            throw new IllegalArgumentException(s"each element of $key must be a String or a Map of Strings; actually $illegal")
+            throw new IllegalArgumentException(s"each element of $key must be a String or " +
+              s"a Map of Strings; actually $illegal")
         }.reduce(_ ++ _)
       case (accum, null) =>
         accum
@@ -294,7 +302,7 @@ private[storm] class GearpumpStormTopology(
     if (merged.nonEmpty) {
       val registers: JMap[String, String] = new JHashMap[String, String](merged.size)
       registers.putAll(merged)
-     mergedConfig.put(key, registers)
+      mergedConfig.put(key, registers)
     }
     mergedConfig
   }
@@ -306,7 +314,7 @@ private[storm] class GearpumpStormTopology(
    * @return a list of values for a config from both component configs and existing configs
    */
   private def getConfigValues(componentConfigs: Iterable[JMap[AnyRef, AnyRef]],
-                              allConfig: Map[AnyRef, AnyRef], key: String): Iterable[AnyRef] = {
+      allConfig: Map[AnyRef, AnyRef], key: String): Iterable[AnyRef] = {
     componentConfigs.map(config => config.get(key)) ++ allConfig.get(key).toList
   }
 }

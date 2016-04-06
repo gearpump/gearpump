@@ -5,7 +5,7 @@
 
 angular.module('dashboard')
 
-  .directive('radioGroup', function() {
+  .directive('radioGroup', function () {
     'use strict';
 
     return {
@@ -16,11 +16,11 @@ angular.module('dashboard')
         ngModel: '=',
         options: '='
       },
-      link: function(scope, elem, attrs) {
+      link: function (scope, elem, attrs) {
         'use strict';
 
         scope.buttonWidth = attrs.buttonWidth || '96px';
-        scope.toggle = function(value) {
+        scope.toggle = function (value) {
           scope.ngModel = value;
         };
       }

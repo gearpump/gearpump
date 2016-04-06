@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,14 +35,14 @@ class FetchThreadSpec extends PropSpec with PropertyChecks with Matchers with Mo
   property("FetchThread should set startOffset to iterators") {
     forAll(nonNegativeGen, nonNegativeGen, startOffsetGen) {
       (fetchThreshold: Int, fetchSleepMS: Int, startOffset: Long) =>
-      val topicAndPartition = mock[TopicAndPartition]
-      val consumer = mock[KafkaConsumer]
-      val createConsumer =  (tp: TopicAndPartition) => consumer
-      val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
-      val fetchThread = new FetchThread(Array(topicAndPartition), createConsumer,
-        incomingQueue, fetchThreshold, fetchSleepMS)
-      fetchThread.setStartOffset(topicAndPartition, startOffset)
-      verify(consumer).setStartOffset(startOffset)
+        val topicAndPartition = mock[TopicAndPartition]
+        val consumer = mock[KafkaConsumer]
+        val createConsumer = (tp: TopicAndPartition) => consumer
+        val incomingQueue = new LinkedBlockingQueue[KafkaMessage]()
+        val fetchThread = new FetchThread(Array(topicAndPartition), createConsumer,
+          incomingQueue, fetchThreshold, fetchSleepMS)
+        fetchThread.setStartOffset(topicAndPartition, startOffset)
+        verify(consumer).setStartOffset(startOffset)
     }
   }
 
@@ -50,10 +50,11 @@ class FetchThreadSpec extends PropSpec with PropertyChecks with Matchers with Mo
     topic <- Gen.alphaStr
     partition <- Gen.choose[Int](0, Int.MaxValue)
   } yield TopicAndPartition(topic, partition)
-  property("FetchThread should only fetchMessage when the number of messages in queue is below the threshold") {
+  property("FetchThread should only fetchMessage when the number " +
+    "of messages in queue is below the threshold") {
     forAll(positiveGen, nonNegativeGen, nonNegativeGen, startOffsetGen, topicAndPartitionGen) {
       (messageNum: Int, fetchThreshold: Int, fetchSleepMS: Int,
-       startOffset: Long, topicAndPartition: TopicAndPartition) =>
+        startOffset: Long, topicAndPartition: TopicAndPartition) =>
         val message = mock[KafkaMessage]
         val consumer = mock[KafkaConsumer]
         val createConsumer = (tp: TopicAndPartition) => consumer
@@ -87,8 +88,12 @@ class FetchThreadSpec extends PropSpec with PropertyChecks with Matchers with Mo
     tp <- topicAndPartitionGen
     hasNext <- Gen.oneOf(true, false)
   } yield (tp, hasNext)
-  val tpHasNextMapGen = Gen.listOf[(TopicAndPartition, Boolean)](tpAndHasNextGen).map(_.toMap) suchThat (_.nonEmpty)
-  property("FetchThread fetchMessage should return false when there are no more messages from any TopicAndPartition") {
+
+  val tpHasNextMapGen = Gen.listOf[(TopicAndPartition, Boolean)](tpAndHasNextGen)
+    .map(_.toMap) suchThat (_.nonEmpty)
+
+  property("FetchThread fetchMessage should return false when there are no more messages " +
+    "from any TopicAndPartition") {
     forAll(tpHasNextMapGen, nonNegativeGen) {
       (tpHasNextMap: Map[TopicAndPartition, Boolean], fetchSleepMS: Int) =>
         val createConsumer = (tp: TopicAndPartition) => {

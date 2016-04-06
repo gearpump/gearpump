@@ -19,31 +19,27 @@
 package io.gearpump.cluster.appmaster
 
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 
 import akka.actor._
-import io.gearpump.cluster.master.MasterProxy.MasterRestarted
+
 import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.MasterToAppMaster.AppMasterRegistered
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.AppMasterRegisterTimeout
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.MasterConnectionStatus.{MasterConnected, MasterStopped}
-import io.gearpump.cluster.master.MasterProxy.WatchMaster
+import io.gearpump.cluster.master.MasterProxy.{MasterRestarted, WatchMaster}
 import io.gearpump.util.LogUtil
 
-import scala.concurrent.duration.FiniteDuration
-
 /**
- * This will watch the liveness of Master.
- * When Master is restarted, it will send RegisterAppMaster to the new Master instance.
- * If Master is stopped, it will send the MasterConnectionStatus to listener
+ * Watches the liveness of Master.
+ *
+ * When Master is restarted, it sends RegisterAppMaster to the new Master instance.
+ * If Master is stopped, it sends the MasterConnectionStatus to listener
  *
  * please use MasterConnectionKeeper.props() to construct this actor
- *
- * @param register
- * @param masterProxy
- * @param masterStatusListener
  */
 private[appmaster]
-class MasterConnectionKeeper (
+class MasterConnectionKeeper(
     register: RegisterAppMaster, masterProxy: ActorRef, masterStatusListener: ActorRef)
   extends Actor {
 
@@ -52,12 +48,13 @@ class MasterConnectionKeeper (
   private val LOG = LogUtil.getLogger(getClass)
   private var master: ActorRef = null
 
-  //Subscribe self to masterProxy,
+  // Subscribe self to masterProxy,
   masterProxy ! WatchMaster(self)
 
   def registerAppMaster: Cancellable = {
     masterProxy ! register
-    context.system.scheduler.scheduleOnce(FiniteDuration(30, TimeUnit.SECONDS), self, AppMasterRegisterTimeout)
+    context.system.scheduler.scheduleOnce(FiniteDuration(30, TimeUnit.SECONDS),
+      self, AppMasterRegisterTimeout)
   }
 
   context.become(waitMasterToConfirm(registerAppMaster))
@@ -87,10 +84,15 @@ class MasterConnectionKeeper (
 }
 
 private[appmaster] object MasterConnectionKeeper {
+
   case object AppMasterRegisterTimeout
 
   object MasterConnectionStatus {
+
     case object MasterConnected
+
     case object MasterStopped
+
   }
+
 }

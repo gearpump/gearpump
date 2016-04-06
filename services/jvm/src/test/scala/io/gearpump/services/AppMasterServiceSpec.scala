@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,19 @@
 
 package io.gearpump.services
 
+import scala.concurrent.duration._
+import scala.util.{Success, Try}
+
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.headers.`Cache-Control`
-import akka.http.scaladsl.server.RouteResult
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
 import com.typesafe.config.{Config, ConfigFactory}
-import akka.http.scaladsl.testkit.RouteTestTimeout
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.slf4j.Logger
+import upickle.default.read
+
 import io.gearpump.cluster.AppMasterToMaster.GeneralAppMasterSummary
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
@@ -33,13 +39,8 @@ import io.gearpump.cluster.TestUtil
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import org.slf4j.Logger
-import upickle.default.read
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
-import scala.concurrent.duration._
-import scala.util.{Success, Try}
 
 class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
   with Matchers with BeforeAndAfterAll {
@@ -47,7 +48,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
   override def testConfig: Config = TestUtil.UI_CONFIG
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
-  def actorRefFactory = system
+  private def actorRefFactory = system
 
   val mockAppMaster = TestProbe()
   val failure = LastFailure(System.currentTimeMillis(), "Some error")
@@ -56,13 +57,13 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
 
   def jarStore: JarStoreService = jarStoreService
 
-  def master = mockMaster.ref
+  private def master = mockMaster.ref
 
-  def appMasterRoute = new AppMasterService(master, jarStore, system).route
+  private def appMasterRoute = new AppMasterService(master, jarStore, system).route
 
   mockAppMaster.setAutoPilot {
     new AutoPilot {
-      def run(sender: ActorRef, msg: Any) = msg match {
+      def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
         case AppMasterDataDetailRequest(appId) =>
           sender ! GeneralAppMasterSummary(appId)
           KeepRunning
@@ -78,7 +79,6 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
         case QueryExecutorConfig(0) =>
           sender ! ExecutorConfig(system.settings.config)
           KeepRunning
-
       }
     }
   }
@@ -86,7 +86,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
   val mockMaster = TestProbe()
   mockMaster.setAutoPilot {
     new AutoPilot {
-      def run(sender: ActorRef, msg: Any) = msg match {
+      def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
         case ResolveAppId(0) =>
           sender ! ResolveAppIdResult(Success(mockAppMaster.ref))
           KeepRunning
@@ -102,20 +102,19 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
 
   "AppMasterService" should "return a JSON structure for GET request when detail = false" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    Get(s"/api/$REST_VERSION/appmaster/0?detail=false") ~> appMasterRoute ~> check{
+    Get(s"/api/$REST_VERSION/appmaster/0?detail=false") ~> appMasterRoute ~> check {
       val responseBody = responseAs[String]
       read[AppMasterData](responseBody)
 
-      // check the header, should contains no-cache header.
+      // Checks the header, should contains no-cache header.
       // Cache-Control:no-cache, max-age=0
       val noCache = header[`Cache-Control`].get.value()
       assert(noCache == "no-cache, max-age=0")
     }
 
-    Get(s"/api/$REST_VERSION/appmaster/0?detail=true") ~> appMasterRoute ~> check{
+    Get(s"/api/$REST_VERSION/appmaster/0?detail=true") ~> appMasterRoute ~> check {
       val responseBody = responseAs[String]
     }
-
   }
 
   "MetricsQueryService" should "return history metrics" in {
@@ -137,7 +136,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
 
   "ConfigQueryService" should "return config for application" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmaster/0/config") ~> appMasterRoute) ~> check{
+    (Get(s"/api/$REST_VERSION/appmaster/0/config") ~> appMasterRoute) ~> check {
       val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
@@ -146,7 +145,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
 
   it should "return config for executor " in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0/config") ~> appMasterRoute) ~> check{
+    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0/config") ~> appMasterRoute) ~> check {
       val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
@@ -155,13 +154,12 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
 
   it should "return return executor summary" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0") ~> appMasterRoute) ~> check{
+    (Get(s"/api/$REST_VERSION/appmaster/0/executor/0") ~> appMasterRoute) ~> check {
       val responseBody = responseAs[String]
       val executorSummary = read[ExecutorSummary](responseBody)
       assert(executorSummary.id == 0)
     }
   }
-
 
   override def afterAll {
     TestKit.shutdownActorSystem(system)

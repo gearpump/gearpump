@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,22 +20,23 @@ package io.gearpump.streaming.examples.sol
 
 import java.util.Random
 
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.examples.sol.SOLStreamProducer._
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-class SOLStreamProducer(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
+  extends Task(taskContext, conf) {
 
   import taskContext.output
 
   private val sizeInBytes = conf.getInt(SOLStreamProducer.BYTES_PER_MESSAGE)
-      .getOrElse(DEFAULT_MESSAGE_SIZE)
-  private var messages : Array[String] = null
-  private var rand : Random = null
-  private var messageCount : Long = 0
+    .getOrElse(DEFAULT_MESSAGE_SIZE)
+  private var messages: Array[String] = null
+  private var rand: Random = null
+  private var messageCount: Long = 0
 
-  override def onStart(startTime : StartTime) : Unit = {
+  override def onStart(startTime: StartTime): Unit = {
     prepareRandomMessage
     self ! Start
   }
@@ -47,16 +48,16 @@ class SOLStreamProducer(taskContext : TaskContext, conf: UserConfig) extends Tas
 
     0.until(differentMessages).map { index =>
       val sb = new StringBuilder(sizeInBytes)
-      //Even though java encodes strings in UCS2, the serialized version sent by the tuples
+      // Even though java encodes strings in UCS2, the serialized version sent by the tuples
       // is UTF8, so it should be a single byte
-      0.until(sizeInBytes).foldLeft(sb){(sb, j) =>
-        sb.append(rand.nextInt(9));
+      0.until(sizeInBytes).foldLeft(sb) { (sb, j) =>
+        sb.append(rand.nextInt(9))
       }
-      messages(index) = sb.toString();
+      messages(index) = sb.toString()
     }
   }
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message): Unit = {
     val message = messages(rand.nextInt(messages.length))
     output(new Message(message, System.currentTimeMillis()))
     messageCount = messageCount + 1L
@@ -64,13 +65,14 @@ class SOLStreamProducer(taskContext : TaskContext, conf: UserConfig) extends Tas
   }
 
   // messageSourceMinClock represent the min clock of the message source
-  private def messageSourceMinClock : Message = {
+  private def messageSourceMinClock: Message = {
     Message("tick", System.currentTimeMillis())
   }
 }
 
 object SOLStreamProducer {
-  val DEFAULT_MESSAGE_SIZE = 100 // bytes
+  val DEFAULT_MESSAGE_SIZE = 100
+  // Bytes
   val BYTES_PER_MESSAGE = "bytesPerMessage"
   val Start = Message("start")
 }

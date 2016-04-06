@@ -19,22 +19,25 @@
 package io.gearpump.cluster.appmaster
 
 import akka.actor.{ActorRef, Address, PoisonPill}
-import io.gearpump.WorkerId
+
 import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorSystemBooter.BindLifeCycle
 
 case class WorkerInfo(workerId: WorkerId, ref: ActorRef)
 
 /**
- * This contains JVM configurations to start an executor system
+ * Configurations to start an executor system on remote machine
+ *
+ * @param address Remote address where we start an Actor System.
  */
 case class ExecutorSystem(executorSystemId: Int, address: Address, daemon:
-ActorRef, resource: Resource, worker: WorkerInfo) {
+    ActorRef, resource: Resource, worker: WorkerInfo) {
   def bindLifeCycleWith(actor: ActorRef): Unit = {
     daemon ! BindLifeCycle(actor)
   }
 
-  def shutdown: Unit = {
+  def shutdown(): Unit = {
     daemon ! PoisonPill
   }
 }

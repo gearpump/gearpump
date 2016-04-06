@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,13 +19,15 @@
 package io.gearpump.experiments.storm.partitioner
 
 import java.util.{List => JList}
-import io.gearpump.Message
-import io.gearpump.experiments.storm.topology.GearpumpTuple
-import io.gearpump.partitioner.Partitioner
+import scala.collection.JavaConverters._
+
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import scala.collection.JavaConverters._
+
+import io.gearpump.Message
+import io.gearpump.experiments.storm.topology.GearpumpTuple
+import io.gearpump.partitioner.Partitioner
 
 class StormPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
 
@@ -38,30 +40,28 @@ class StormPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
       sourceTaskId <- idGen
       sourceStreamId <- Gen.alphaStr
     } yield (targetPartitions: Map[String, Array[Int]]) => {
-        new GearpumpTuple(values, new Integer(sourceTaskId), sourceStreamId, targetPartitions)
-      }
+      new GearpumpTuple(values, new Integer(sourceTaskId), sourceStreamId, targetPartitions)
+    }
 
     forAll(tupleFactoryGen, idGen, componentsGen, partitionsGen) {
-      (tupleFactory: Map[String, Array[Int]] => GearpumpTuple, id: Int, components: List[String], partitions: Array[Int]) =>
+      (tupleFactory: Map[String, Array[Int]] => GearpumpTuple, id: Int,
+        components: List[String], partitions: Array[Int]) => {
         val currentPartitionId = id
         val targetPartitions = components.init.map(c => (c, partitions)).toMap
         val tuple = tupleFactory(targetPartitions)
-        targetPartitions.foreach { case (target, ps) =>
-          val partitioner = new StormPartitioner(target)
-          partitioner.getPartitions(Message(tuple), ps.last + 1,
-            currentPartitionId) shouldBe ps
+        targetPartitions.foreach {
+          case (target, ps) => {
+            val partitioner = new StormPartitioner(target)
+            ps shouldBe partitioner.getPartitions(Message(tuple), ps.last + 1, currentPartitionId)
+          }
         }
         val partitionNum = id
         val nonTarget = components.last
         val partitioner = new StormPartitioner(nonTarget)
-        if (targetPartitions.contains(nonTarget)) {
-          println(targetPartitions)
-        }
+
         partitioner.getPartitions(Message(tuple), partitionNum,
           currentPartitionId) shouldBe List(Partitioner.UNKNOWN_PARTITION_ID)
-
+      }
     }
   }
-
-
 }

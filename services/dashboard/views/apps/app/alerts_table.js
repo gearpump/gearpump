@@ -5,7 +5,7 @@
 
 angular.module('dashboard')
 
-  .directive('alertsTable', function() {
+  .directive('alertsTable', function () {
     'use strict';
 
     return {
@@ -16,7 +16,7 @@ angular.module('dashboard')
         alerts: '=alertsBind'
       },
       controller: ['$scope', '$sortableTableBuilder',
-        function($scope, $stb) {
+        function ($scope, $stb) {
           $scope.table = {
             cols: [
               $stb.indicator().key('severity').canSort().styleClass('td-no-padding').done(),
@@ -33,7 +33,7 @@ angular.module('dashboard')
 
           function updateTable(alerts) {
             $scope.table.rows = $stb.$update($scope.table.rows,
-              _.map(alerts, function(alert) {
+              _.map(alerts, function (alert) {
                 var severity = severityLookup[alert.severity];
                 return {
                   severity: {
@@ -47,7 +47,7 @@ angular.module('dashboard')
               }));
           }
 
-          $scope.$watch('alerts', function(alerts) {
+          $scope.$watch('alerts', function (alerts) {
             updateTable(alerts);
           });
         }]

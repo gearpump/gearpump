@@ -1,6 +1,6 @@
 SOL is a throughput test. It will create multiple layers, and then do random shuffling between these layers.
 
-SOLPRoducer -> SOLProcessor -> SOLProcessor -> ...
+SOLProducer -> SOLProcessor -> SOLProcessor -> ...
 
 The original code comes from: https://github.com/yahoo/storm-perf-test
 

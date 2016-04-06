@@ -18,18 +18,19 @@
 
 package io.gearpump.cluster.appmaster
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import com.typesafe.config.Config
-import io.gearpump.WorkerId
+
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster._
 import io.gearpump.cluster.appmaster.ExecutorSystemLauncher._
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler._
 import io.gearpump.cluster.scheduler.{ResourceAllocation, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.{Constants, LogUtil}
-
-import scala.concurrent.duration._
 
 /**
  * ExecutorSystem is also a type of resource, this class schedules ExecutorSystem for AppMaster.
@@ -37,10 +38,9 @@ import scala.concurrent.duration._
  * in the background with Master and Worker is hidden from AppMaster.
  *
  * Please use ExecutorSystemScheduler.props() to construct this actor
- *
-*/
+ */
 private[appmaster]
-class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
+class ExecutorSystemScheduler(appId: Int, masterProxy: ActorRef,
     executorSystemLauncher: (Int, Session) => Props) extends Actor {
 
   private val LOG = LogUtil.getLogger(getClass, app = appId)
@@ -50,18 +50,22 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
 
   var resourceAgents = Map.empty[Session, ActorRef]
 
-  def receive: Receive = clientCommands orElse resourceAllocationMessageHandler orElse executorSystemMessageHandler
+  def receive: Receive = {
+    clientCommands orElse resourceAllocationMessageHandler orElse executorSystemMessageHandler
+  }
 
   def clientCommands: Receive = {
     case start: StartExecutorSystems =>
-      LOG.info(s"starting executor systems (ExecutorSystemConfig(${start.executorSystemConfig}), Resources(${start.resources.mkString(",")}))")
+      LOG.info(s"starting executor systems (ExecutorSystemConfig(${start.executorSystemConfig}), " +
+        s"Resources(${start.resources.mkString(",")}))")
       val requestor = sender()
       val executorSystemConfig = start.executorSystemConfig
-      val session  = Session(requestor, executorSystemConfig)
-      val agent = resourceAgents.getOrElse(session, context.actorOf(Props(new ResourceAgent(masterProxy, session))))
+      val session = Session(requestor, executorSystemConfig)
+      val agent = resourceAgents.getOrElse(session,
+        context.actorOf(Props(new ResourceAgent(masterProxy, session))))
       resourceAgents = resourceAgents + (session -> agent)
 
-      start.resources.foreach {resource =>
+      start.resources.foreach { resource =>
         agent ! RequestResource(appId, resource)
       }
 
@@ -87,14 +91,15 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
       }
   }
 
-  def executorSystemMessageHandler : Receive = {
+  def executorSystemMessageHandler: Receive = {
     case LaunchExecutorSystemSuccess(system, session) =>
       if (isSessionAlive(session)) {
         LOG.info("LaunchExecutorSystemSuccess, send back to " + session.requestor)
         system.bindLifeCycleWith(self)
         session.requestor ! ExecutorSystemStarted(system, session.executorSystemJvmConfig.jar)
       } else {
-        LOG.error("We get a ExecutorSystem back, but resource requestor is no longer valid. Will shutdown the allocated system")
+        LOG.error("We get a ExecutorSystem back, but resource requestor is no longer valid. " +
+          "Will shutdown the allocated system")
         system.shutdown
       }
     case LaunchExecutorSystemTimeout(session) =>
@@ -105,8 +110,11 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
 
     case LaunchExecutorSystemRejected(resource, reason, session) =>
       if (isSessionAlive(session)) {
-        LOG.error(s"Failed to launch executor system, due to $reason, will ask master to allocate new resources $resource")
-        resourceAgents.get(session).map(_ ! RequestResource(appId, ResourceRequest(resource, WorkerId.unspecified)))
+        LOG.error(s"Failed to launch executor system, due to $reason, " +
+          s"will ask master to allocate new resources $resource")
+        resourceAgents.get(session).map { resourceAgent: ActorRef =>
+          resourceAgent ! RequestResource(appId, ResourceRequest(resource, WorkerId.unspecified))
+        }
       }
   }
 
@@ -117,27 +125,28 @@ class ExecutorSystemScheduler (appId: Int, masterProxy: ActorRef,
 
 object ExecutorSystemScheduler {
 
-  case class StartExecutorSystems(resources: Array[ResourceRequest], executorSystemConfig: ExecutorSystemJvmConfig)
+  case class StartExecutorSystems(
+      resources: Array[ResourceRequest], executorSystemConfig: ExecutorSystemJvmConfig)
+
   case class ExecutorSystemStarted(system: ExecutorSystem, boundedJar: Option[AppJar])
+
   case class StopExecutorSystem(system: ExecutorSystem)
+
   case object StartExecutorSystemTimeout
 
-  case class ExecutorSystemJvmConfig(classPath : Array[String], jvmArguments : Array[String],
-     jar: Option[AppJar], username : String, executorAkkaConfig: Config = null)
-
+  case class ExecutorSystemJvmConfig(classPath: Array[String], jvmArguments: Array[String],
+      jar: Option[AppJar], username: String, executorAkkaConfig: Config = null)
 
   /**
    * For each client which ask for an executor system, the scheduler will create a session for it.
    *
-   * @param requestor
-   * @param executorSystemJvmConfig
    */
-  private [appmaster]
+  private[appmaster]
   case class Session(requestor: ActorRef, executorSystemJvmConfig: ExecutorSystemJvmConfig)
 
   /**
    * This is a agent for session to request resource
-   * @param master
+   *
    * @param session the original requester of the resource requests
    */
   private[appmaster]
@@ -145,17 +154,19 @@ object ExecutorSystemScheduler {
     private var resourceRequestor: ActorRef = null
     var timeOutClock: Cancellable = null
     private var unallocatedResource: Int = 0
+
     import context.dispatcher
 
-    import Constants._
-    val timeout = context.system.settings.config.getInt(GEARPUMP_RESOURCE_ALLOCATION_TIMEOUT)
+    import io.gearpump.util.Constants._
 
+    val timeout = context.system.settings.config.getInt(GEARPUMP_RESOURCE_ALLOCATION_TIMEOUT)
 
     def receive: Receive = {
       case request: RequestResource =>
         unallocatedResource += request.request.resource.slots
         Option(timeOutClock).map(_.cancel)
-        timeOutClock = context.system.scheduler.scheduleOnce(timeout seconds, self, ResourceAllocationTimeOut(session))
+        timeOutClock = context.system.scheduler.scheduleOnce(
+          timeout.seconds, self, ResourceAllocationTimeOut(session))
         resourceRequestor = sender
         master ! request
       case ResourceAllocated(allocations) =>
@@ -164,7 +175,7 @@ object ExecutorSystemScheduler {
       case timeout: ResourceAllocationTimeOut =>
         if (unallocatedResource > 0) {
           resourceRequestor ! ResourceAllocationTimeOut(session)
-          //we will not receive any ResourceAllocation after timeout
+          // We will not receive any ResourceAllocation after timeout
           context.stop(self)
         }
     }
@@ -175,4 +186,5 @@ object ExecutorSystemScheduler {
 
   private[ExecutorSystemScheduler]
   case class ResourceAllocationTimeOut(session: Session)
+
 }

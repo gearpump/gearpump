@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,13 +18,14 @@
 
 package io.gearpump.streaming
 
+import org.scalacheck.Gen
+import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
+
 import io.gearpump.partitioner.PartitionerDescription
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph.Node
-import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{Matchers, PropSpec}
 
 class DAGSpec extends PropSpec with PropertyChecks with Matchers {
 

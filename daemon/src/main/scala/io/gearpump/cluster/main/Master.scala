@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,23 +19,24 @@
 package io.gearpump.cluster.main
 
 import java.util.concurrent.TimeUnit
+import scala.collection.JavaConverters._
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import akka.actor._
 import akka.cluster.ClusterEvent._
 import akka.cluster.ddata.DistributedData
+import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.cluster.{Cluster, Member, MemberStatus}
-import akka.cluster.singleton.{ClusterSingletonManagerSettings, ClusterSingletonProxySettings, ClusterSingletonManager, ClusterSingletonProxy}
 import com.typesafe.config.ConfigValueFactory
+import org.slf4j.Logger
+
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.{Master => MasterActor}
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
 import io.gearpump.util.{AkkaApp, Constants, LogUtil}
-import org.slf4j.Logger
-
-import scala.collection.JavaConverters._
-import scala.collection.immutable
-import scala.concurrent.duration._
 
 object Master extends AkkaApp with ArgumentsParser {
 
@@ -44,14 +45,14 @@ object Master extends AkkaApp with ArgumentsParser {
   override def akkaConfig: Config = ClusterConfig.master()
 
   override val options: Array[(String, CLIOption[Any])] =
-    Array("ip"->CLIOption[String]("<master ip address>",required = true),
-      "port"->CLIOption("<master port>",required = true))
+    Array("ip" -> CLIOption[String]("<master ip address>", required = true),
+      "port" -> CLIOption("<master port>", required = true))
 
   override val description = "Start Master daemon"
 
   def main(akkaConf: Config, args: Array[String]): Unit = {
 
-    this.LOG  =  {
+    this.LOG = {
       LogUtil.loadConfiguration(akkaConf, ProcessType.MASTER)
       LogUtil.getLogger(getClass)
     }
@@ -60,27 +61,29 @@ object Master extends AkkaApp with ArgumentsParser {
     master(config.getString("ip"), config.getInt("port"), akkaConf)
   }
 
-  def verifyMaster(master : String, port: Int, masters : Iterable[String])  = {
-    masters.exists{ hostPort =>
+  private def verifyMaster(master: String, port: Int, masters: Iterable[String]) = {
+    masters.exists { hostPort =>
       hostPort == s"$master:$port"
     }
   }
 
-  def master(ip:String, port : Int, akkaConf: Config): Unit = {
+  private def master(ip: String, port: Int, akkaConf: Config): Unit = {
     val masters = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
 
     if (!verifyMaster(ip, port, masters)) {
-      LOG.error(s"The provided ip $ip and port $port doesn't conform with config at gearpump.cluster.masters: ${masters.mkString(", ")}")
+      LOG.error(s"The provided ip $ip and port $port doesn't conform with config at " +
+        s"gearpump.cluster.masters: ${masters.mkString(", ")}")
       System.exit(-1)
     }
 
     val masterList = masters.map(master => s"akka.tcp://${MASTER}@$master").toList.asJava
-    val quorum = masterList.size() /2  + 1
+    val quorum = masterList.size() / 2 + 1
     val masterConfig = akkaConf.
       withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
       withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(ip)).
       withValue("akka.cluster.seed-nodes", ConfigValueFactory.fromAnyRef(masterList)).
-      withValue(s"akka.cluster.role.${MASTER}.min-nr-of-members", ConfigValueFactory.fromAnyRef(quorum))
+      withValue(s"akka.cluster.role.${MASTER}.min-nr-of-members",
+        ConfigValueFactory.fromAnyRef(quorum))
 
     LOG.info(s"Starting Master Actor system $ip:$port, master list: ${masters.mkString(";")}")
     val system = ActorSystem(MASTER, masterConfig)
@@ -88,19 +91,21 @@ object Master extends AkkaApp with ArgumentsParser {
     val replicator = DistributedData(system).replicator
     LOG.info(s"Replicator path: ${replicator.path}")
 
-    //start singleton manager
+    // Starts singleton manager
     val singletonManager = system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[MasterWatcher], MASTER),
       terminationMessage = PoisonPill,
-      settings = ClusterSingletonManagerSettings(system).withSingletonName(MASTER_WATCHER).withRole(MASTER)),
+      settings = ClusterSingletonManagerSettings(system).withSingletonName(MASTER_WATCHER)
+        .withRole(MASTER)),
       name = SINGLETON_MANAGER)
 
-    //start master proxy
+    // Start master proxy
     val masterProxy = system.actorOf(ClusterSingletonProxy.props(
       singletonManagerPath = s"/user/${SINGLETON_MANAGER}",
       // The effective singleton is s"${MASTER_WATCHER}/$MASTER" instead of s"${MASTER_WATCHER}".
-      // Master will only be created when there is a majority of machines started.
-      settings = ClusterSingletonProxySettings(system).withSingletonName(s"${MASTER_WATCHER}/$MASTER").withRole(MASTER)),
+      // Master is created when there is a majority of machines started.
+      settings = ClusterSingletonProxySettings(system)
+        .withSingletonName(s"${MASTER_WATCHER}/$MASTER").withRole(MASTER)),
       name = MASTER
     )
 
@@ -108,8 +113,8 @@ object Master extends AkkaApp with ArgumentsParser {
 
     val mainThread = Thread.currentThread()
     Runtime.getRuntime().addShutdownHook(new Thread() {
-      override def run() : Unit = {
-        if (!system.isTerminated) {
+      override def run(): Unit = {
+        if (!system.whenTerminated.isCompleted) {
           LOG.info("Triggering shutdown hook....")
 
           system.stop(masterProxy)
@@ -117,21 +122,21 @@ object Master extends AkkaApp with ArgumentsParser {
           cluster.leave(cluster.selfAddress)
           cluster.down(cluster.selfAddress)
           try {
-            system.awaitTermination(Duration(3, TimeUnit.SECONDS))
+            Await.result(system.whenTerminated, Duration(3, TimeUnit.SECONDS))
           } catch {
-            case ex : Exception => //ignore
+            case ex: Exception => // Ignore
           }
-          system.shutdown()
+          system.terminate()
           mainThread.join()
         }
       }
     })
 
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 }
 
-class MasterWatcher(role: String) extends Actor  with ActorLogging {
+class MasterWatcher(role: String) extends Actor with ActorLogging {
   import context.dispatcher
 
   val cluster = Cluster(context.system)
@@ -142,13 +147,13 @@ class MasterWatcher(role: String) extends Actor  with ActorLogging {
 
   val system = context.system
 
-  // sort by age, oldest first
+  // Sorts by age, oldest first
   val ageOrdering = Ordering.fromLessThan[Member] { (a, b) => a.isOlderThan(b) }
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
 
-  def receive : Receive = null
+  def receive: Receive = null
 
-  // subscribe to MemberEvent, re-subscribe when restart
+  // Subscribes to MemberEvent, re-subscribe when restart
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent])
     context.become(waitForInit)
@@ -159,14 +164,15 @@ class MasterWatcher(role: String) extends Actor  with ActorLogging {
 
   def matchingRole(member: Member): Boolean = member.hasRole(role)
 
-  def waitForInit : Receive = {
+  def waitForInit: Receive = {
     case state: CurrentClusterState => {
       membersByAge = immutable.SortedSet.empty(ageOrdering) ++ state.members.filter(m =>
         m.status == MemberStatus.Up && matchingRole(m))
 
       if (membersByAge.size < quorum) {
         membersByAge.iterator.mkString(",")
-        log.info(s"We cannot get a quorum, $quorum, shutting down...${membersByAge.iterator.mkString(",")}")
+        log.info(s"We cannot get a quorum, $quorum, " +
+          s"shutting down...${membersByAge.iterator.mkString(",")}")
         context.become(waitForShutdown)
         self ! MasterWatcher.Shutdown
       } else {
@@ -176,34 +182,36 @@ class MasterWatcher(role: String) extends Actor  with ActorLogging {
     }
   }
 
-  def waitForClusterEvent : Receive = {
-    case MemberUp(m) if matchingRole(m)  => {
+  def waitForClusterEvent: Receive = {
+    case MemberUp(m) if matchingRole(m) => {
       membersByAge += m
     }
-    case mEvent: MemberEvent if (mEvent.isInstanceOf[MemberExited] || mEvent.isInstanceOf[MemberRemoved]) && matchingRole(mEvent.member) => {
+    case mEvent: MemberEvent if (mEvent.isInstanceOf[MemberExited] ||
+      mEvent.isInstanceOf[MemberRemoved]) && matchingRole(mEvent.member) => {
       log.info(s"member removed ${mEvent.member}")
       val m = mEvent.member
       membersByAge -= m
       if (membersByAge.size < quorum) {
-        log.info(s"We cannot get a quorum, $quorum, shutting down...${membersByAge.iterator.mkString(",")}")
+        log.info(s"We cannot get a quorum, $quorum, " +
+          s"shutting down...${membersByAge.iterator.mkString(",")}")
         context.become(waitForShutdown)
         self ! MasterWatcher.Shutdown
       }
     }
   }
 
-  def waitForShutdown : Receive = {
+  def waitForShutdown: Receive = {
     case MasterWatcher.Shutdown => {
       cluster.unsubscribe(self)
       cluster.leave(cluster.selfAddress)
       context.stop(self)
       system.scheduler.scheduleOnce(Duration.Zero) {
         try {
-          system.awaitTermination(Duration(3, TimeUnit.SECONDS))
+          Await.result(system.whenTerminated, Duration(3, TimeUnit.SECONDS))
         } catch {
-          case ex : Exception => //ignore
+          case ex: Exception => // Ignore
         }
-        system.shutdown()
+        system.terminate()
       }
     }
   }

@@ -15,7 +15,7 @@ In order to run the example:
   -script ${Script_Path} -serviceName ${Service_Name} -target ${Target_Path} -Dkey1=value1 -Dkey2=value2
   ```<br>
   This command will distribute the service zip file(variable ```file```) to the target path(variable ```target```), then copy the script to
-  ```/etc/init.d``` on each machine and install this servcie named with ```serviceName```<br>
+  ```/etc/init.d``` on each machine and install this service named with ```serviceName```<br>
   Note that you can pass some variables when the script file is installed, for example, you can submit a script template with syntax like
   ```
   role=${${hostname}.role}

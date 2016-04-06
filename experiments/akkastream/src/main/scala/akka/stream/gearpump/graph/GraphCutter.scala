@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,15 +23,16 @@ import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.GearAttributes
 import akka.stream.gearpump.GearAttributes.{Local, Location, Remote}
 import akka.stream.gearpump.graph.GraphCutter.Strategy
-import akka.stream.gearpump.module.{GroupByModule, BridgeModule, DummyModule, GearpumpTaskModule, SinkBridgeModule, SourceBridgeModule}
-import akka.stream.impl.Stages.{TimerTransform, DirectProcessor}
+import akka.stream.gearpump.module.{BridgeModule, DummyModule, GearpumpTaskModule, GroupByModule, SinkBridgeModule, SourceBridgeModule}
+import akka.stream.impl.Stages.DirectProcessor
 import akka.stream.impl.StreamLayout.{MaterializedValueNode, Module}
-import akka.stream.impl.{MaterializedValueSource, SinkModule, SourceModule}
+import akka.stream.impl.{SinkModule, SourceModule}
+
 import io.gearpump.util.Graph
 
 /**
  *
- * GraphCutter is used to decide which part will be rendered locally
+ * GraphCutter is used to decide which part is rendered locally
  * and which part should be rendered remotely.
  *
  * We will cut the graph based on the [[Strategy]] provided.
@@ -64,11 +65,12 @@ class GraphCutter(strategy: Strategy) {
     doCut(graph, tags, moduleGraph.mat)
   }
 
-  private def doCut(graph: Graph[Module, Edge], tags: Map[Module, Location], mat: MaterializedValueNode): List[SubGraph] = {
+  private def doCut(graph: Graph[Module, Edge], tags: Map[Module, Location],
+      mat: MaterializedValueNode): List[SubGraph] = {
     val local = Graph.empty[Module, Edge]
     val remote = Graph.empty[Module, Edge]
 
-    graph.vertices.foreach{ module =>
+    graph.vertices.foreach { module =>
       if (tags(module) == Local) {
         local.addVertex(module)
       } else {
@@ -76,7 +78,7 @@ class GraphCutter(strategy: Strategy) {
       }
     }
 
-    graph.edges.foreach{ nodeEdgeNode =>
+    graph.edges.foreach { nodeEdgeNode =>
       val (node1, edge, node2) = nodeEdgeNode
       (tags(node1), tags(node2)) match {
         case (Local, Local) =>
@@ -88,7 +90,7 @@ class GraphCutter(strategy: Strategy) {
             case bridge: BridgeModule[_, _, _] =>
               local.addEdge(node1, edge, node2)
             case _ =>
-              // create a bridge module in between
+              // Creates a bridge module in between
               val bridge = new SourceBridgeModule[AnyRef, AnyRef]()
               val remoteEdge = Edge(bridge.outPort, edge.to)
               remote.addEdge(bridge, remoteEdge, node2)
@@ -100,7 +102,7 @@ class GraphCutter(strategy: Strategy) {
             case bridge: BridgeModule[_, _, _] =>
               local.addEdge(node1, edge, node2)
             case _ =>
-              // create a bridge module in between
+              // Creates a bridge module in between
               val bridge = new SinkBridgeModule[AnyRef, AnyRef]()
               val remoteEdge = Edge(edge.from, bridge.inPort)
               remote.addEdge(node1, remoteEdge, bridge)
@@ -114,14 +116,14 @@ class GraphCutter(strategy: Strategy) {
   }
 
   private def tag(graph: Graph[Module, Edge], strategy: Strategy): Map[Module, Location] = {
-    graph.vertices.map{vertex =>
+    graph.vertices.map { vertex =>
       vertex -> strategy.apply(vertex)
     }.toMap
   }
 
   private def removeDummyModule(inputGraph: Graph[Module, Edge]): Graph[Module, Edge] = {
     val graph = inputGraph.copy
-    val dummies = graph.vertices.filter {module =>
+    val dummies = graph.vertices.filter { module =>
       module match {
         case dummy: DummyModule =>
           true
@@ -136,7 +138,6 @@ class GraphCutter(strategy: Strategy) {
 
 object GraphCutter {
 
-
   type Strategy = PartialFunction[Module, Location]
 
   val BaseStrategy: Strategy = {
@@ -145,8 +146,7 @@ object GraphCutter {
     case task: GearpumpTaskModule =>
       Remote
     case groupBy: GroupByModule[_, _] =>
-      //TODO: groupBy is not supported by local materializer
-      // yet
+      // TODO: groupBy is not supported by local materializer yet
       Remote
     case source: SourceModule[_, _] =>
       Local
@@ -157,7 +157,7 @@ object GraphCutter {
     case direct: DirectProcessor =>
       Local
     case time: TimerTransform =>
-      // render to local as it requires a timer.
+      // Renders to local as it requires a timer.
       Local
   }
 

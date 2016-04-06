@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,21 @@
 
 package akka.stream.gearpump.example
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.stream.ActorMaterializer
 import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.scaladsl.{GearSink, GearSource}
-import akka.stream.scaladsl.{Flow, FlowGraph, Sink, Source}
-import io.gearpump.cluster.ClusterConfig
+import akka.stream.scaladsl.{Flow, Sink, Source}
 
 /**
-  *
-  * This tests how different Materializers can be used together in an explicit way.
-  * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
-  *
-  */
+ *
+ * This tests how different Materializers can be used together in an explicit way.
+ * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
+ *
+ */
 object Test2 {
 
   def main(args: Array[String]): Unit = {
@@ -52,13 +54,12 @@ object Test2 {
     val externalSink = Sink.actorRef(echo, "COMPLETE")
 
     val graph = FlowGraph.closed() { implicit b =>
-      import FlowGraph.Implicits._
       externalSource ~> Sink(entry)
       Source(exit) ~> externalSink
     }
     graph.run()(actorMaterializer)
 
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   class Echo extends Actor {

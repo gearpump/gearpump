@@ -15,18 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.streaming.executor
 
-import io.gearpump.streaming.task.TaskId
-import io.gearpump.util.RestartPolicy
+package io.gearpump.streaming.executor
 
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 
+import io.gearpump.streaming.task.TaskId
+import io.gearpump.util.RestartPolicy
+
 /**
- * @param maxNrOfRetries the number of times a executor is allowed to be restarted, negative value means no limit,
- *   if the limit is exceeded the policy will not allow to restart the executor
- * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf means no window
+ *
+ * Controls how many retries to recover failed executors.
+ *
+ * @param maxNrOfRetries the number of times a executor is allowed to be restarted,
+ *                       negative value means no limit, if the limit is exceeded the policy
+ *                       will not allow to restart the executor
+ * @param withinTimeRange duration of the time window for maxNrOfRetries, Duration.Inf
+ *                        means no window
  */
 class ExecutorRestartPolicy(maxNrOfRetries: Int, withinTimeRange: Duration) {
   private var executorToTaskIds = Map.empty[Int, Set[TaskId]]
@@ -45,8 +51,10 @@ class ExecutorRestartPolicy(maxNrOfRetries: Int, withinTimeRange: Duration) {
     executorToTaskIds.get(executorId).map { taskIds =>
       taskIds.foreach { taskId =>
         taskRestartPolocies.get(taskId).map { policy =>
-          if(!policy.allowRestart) {
+          if (!policy.allowRestart) {
+            // scalastyle:off return
             return false
+            // scalastyle:on return
           }
         }
       }

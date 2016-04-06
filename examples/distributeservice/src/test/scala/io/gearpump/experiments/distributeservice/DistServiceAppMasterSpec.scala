@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,23 +17,25 @@
  */
 package io.gearpump.experiments.distributeservice
 
-import akka.actor.ActorSystem
-import akka.testkit.{TestActorRef, TestProbe}
-import io.gearpump.WorkerId
-import io.gearpump.cluster.AppMasterToMaster.{RequestResource, GetAllWorkers, RegisterAppMaster}
-import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
-import io.gearpump.cluster.MasterToAppMaster.{ResourceAllocated, WorkerList, AppMasterRegistered}
-import io.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, AppMasterRuntimeEnvironment}
-import io.gearpump.cluster.{AppMasterContext, UserConfig, AppDescription, TestUtil}
-import io.gearpump.cluster.scheduler.{ResourceAllocation, Relaxation, ResourceRequest, Resource}
-import DistServiceAppMaster.{FileContainer, GetFileContainer}
-import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
-import io.gearpump.util.ActorUtil
-import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
-
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class DistServiceAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter{
+import akka.actor.ActorSystem
+import akka.testkit.{TestActorRef, TestProbe}
+import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+
+import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, RegisterAppMaster, RequestResource}
+import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
+import io.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated, WorkerList}
+import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
+import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.cluster.{AppDescription, AppMasterContext, TestUtil, UserConfig}
+import io.gearpump.experiments.distributeservice.DistServiceAppMaster.{FileContainer, GetFileContainer}
+import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
+import io.gearpump.util.ActorUtil
+
+class DistServiceAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter {
   implicit val system = ActorSystem("AppMasterSpec", TestUtil.DEFAULT_CONFIG)
   val mockMaster = TestProbe()(system)
   val mockWorker1 = TestProbe()(system)
@@ -45,37 +47,41 @@ class DistServiceAppMasterSpec extends WordSpec with Matchers with BeforeAndAfte
   val workerList = List(WorkerId(1, 0L), WorkerId(2, 0L), WorkerId(3, 0L))
   val resource = Resource(1)
   val appJar = None
-  val appDescription = AppDescription("app0", classOf[DistServiceAppMaster].getName, UserConfig.empty)
+  val appDescription = AppDescription("app0", classOf[DistServiceAppMaster].getName,
+    UserConfig.empty)
 
   "DistService AppMaster" should {
     "responsable for service distributing" in {
       val appMasterInfo = AppMasterRuntimeInfo(appId, "appName", mockWorker1.ref)
-      val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar, masterProxy, appMasterInfo)
+      val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar, masterProxy,
+        appMasterInfo)
       TestActorRef[DistServiceAppMaster](
         AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription, appMasterContext))
-      val registerAppMaster = mockMaster.receiveOne(15 seconds)
+      val registerAppMaster = mockMaster.receiveOne(15.seconds)
       assert(registerAppMaster.isInstanceOf[RegisterAppMaster])
 
       val appMaster = registerAppMaster.asInstanceOf[RegisterAppMaster].appMaster
       mockMaster.reply(AppMasterRegistered(appId))
-      //The DistributedShell AppMaster will ask for worker list
+      // The DistributedShell AppMaster will ask for worker list
       mockMaster.expectMsg(GetAllWorkers)
       mockMaster.reply(WorkerList(workerList))
-      //After worker list is ready, DistributedShell AppMaster will request resouce on each worker
+      // After worker list is ready, DistributedShell AppMaster will request resouce on each worker
       workerList.foreach { workerId =>
-        mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), workerId, relaxation = Relaxation.SPECIFICWORKER)))
+        mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), workerId,
+          relaxation = Relaxation.SPECIFICWORKER)))
       }
-      mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(resource, mockWorker1.ref, WorkerId(1, 0L)))))
+      mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(resource, mockWorker1.ref,
+        WorkerId(1, 0L)))))
       mockWorker1.expectMsgClass(classOf[LaunchExecutor])
       mockWorker1.reply(RegisterActorSystem(ActorUtil.getSystemAddress(system).toString))
 
       appMaster.tell(GetFileContainer, client.ref)
-      client.expectMsgClass(15 seconds, classOf[FileContainer])
+      client.expectMsgClass(15.seconds, classOf[FileContainer])
     }
   }
 
   after {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 }

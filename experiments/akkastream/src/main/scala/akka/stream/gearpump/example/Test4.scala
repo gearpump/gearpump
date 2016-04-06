@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,20 @@
 
 package akka.stream.gearpump.example
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.ActorSystem
 import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.scaladsl.GearSink
 import akka.stream.scaladsl.Source
-import io.gearpump.cluster.ClusterConfig
+
 import io.gearpump.streaming.dsl.LoggerSink
 
 /**
-  * read from local and write to remote
-  * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
-  */
+ * read from local and write to remote
+ * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala.11/akkastream-2.11.5-0.6.2-SNAPSHOT-assembly.jar
+ */
 object Test4 {
 
   def main(args: Array[String]): Unit = {
@@ -42,6 +45,6 @@ object Test4 {
     val source = Source(List("red hat", "yellow sweater", "blue jack", "red apple", "green plant", "blue sky"))
     source.filter(_.startsWith("red")).map("I want to order item: " + _).runWith(sink)
 
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 }

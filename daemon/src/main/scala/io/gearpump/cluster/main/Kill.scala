@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,12 @@
 
 package io.gearpump.cluster.main
 
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
-import scala.util.Try
+import io.gearpump.cluster.client.ClientContext
+import io.gearpump.util.{AkkaApp, LogUtil}
 
+/** Tool to kill an App */
 object Kill extends AkkaApp with ArgumentsParser {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -32,20 +32,19 @@ object Kill extends AkkaApp with ArgumentsParser {
     "appid" -> CLIOption("<application id>", required = true),
     // For document purpose only, OPTION_CONFIG option is not used here.
     // OPTION_CONFIG is parsed by parent shell command "Gear" transparently.
-    Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false, defaultValue = None))
+    Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false,
+      defaultValue = None))
 
   override val description = "Kill an application with application Id"
 
   def main(akkaConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
 
-    if (null == config) {
-      return
+    if (null != config) {
+      val client = ClientContext(akkaConf)
+      LOG.info("Client ")
+      client.shutdown(config.getInt("appid"))
+      client.close()
     }
-
-    val client = ClientContext(akkaConf)
-    LOG.info("Client ")
-    client.shutdown(config.getInt("appid"))
-    client.close()
   }
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,7 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.{Util, TestSpecBase}
+import io.gearpump.integrationtest.{TestSpecBase, Util}
 import io.gearpump.metrics.Metrics.Meter
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.ProcessorSummary
@@ -50,7 +50,7 @@ class DynamicDagSpec extends TestSpecBase {
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       replaceProcessor(appId, 1, sumTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
-      Util.retryUntil(()=>{
+      Util.retryUntil(() => {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
         laterProcessors.size == formerProcessors.size + 1
       }, "new processor successfully added")
@@ -65,7 +65,7 @@ class DynamicDagSpec extends TestSpecBase {
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       replaceProcessor(appId, 0, splitTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
-      Util.retryUntil(()=>{
+      Util.retryUntil(() => {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
         laterProcessors.size == formerProcessors.size + 1
       }, "new processor added")
@@ -80,7 +80,7 @@ class DynamicDagSpec extends TestSpecBase {
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       replaceProcessor(appId, 1, sumTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
-      Util.retryUntil(()=>{
+      Util.retryUntil(() => {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
         laterProcessors.size == formerProcessors.size + 1
       }, "new processor added")
@@ -88,12 +88,12 @@ class DynamicDagSpec extends TestSpecBase {
 
       val fakeTaskClass = "io.gearpump.streaming.examples.wordcount.Fake"
       replaceProcessor(appId, laterProcessors.keySet.max, fakeTaskClass)
-      Util.retryUntil(()=>{
+      Util.retryUntil(() => {
         val processorsAfterFailure = restClient.queryStreamingAppDetail(appId).processors
         processorsAfterFailure.size == laterProcessors.size
       }, "new processor added")
       val currentClock = restClient.queryStreamingAppDetail(appId).clock
-      Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > currentClock,
+      Util.retryUntil(() => restClient.queryStreamingAppDetail(appId).clock > currentClock,
         "app clock is advancing")
     }
 
@@ -106,19 +106,18 @@ class DynamicDagSpec extends TestSpecBase {
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
       replaceProcessor(appId, 1, sumTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
-      Util.retryUntil(()=>{
+      Util.retryUntil(() => {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
         laterProcessors.size == formerProcessors.size + 1
       }, "new processor added")
       processorHasThroughput(appId, laterProcessors.keySet.max, "receiveThroughput")
 
       restClient.killAppMaster(appId) shouldBe true
-      Util.retryUntil(()=>restClient.queryApp(appId).appMasterPath != formerAppMaster,
+      Util.retryUntil(() => restClient.queryApp(appId).appMasterPath != formerAppMaster,
         "new AppMaster created")
       val processors = restClient.queryStreamingAppDetail(appId).processors
       processors.size shouldEqual laterProcessors.size
     }
-
   }
 
   private def expectSolJarSubmittedWithAppId(): Int = {
@@ -126,7 +125,7 @@ class DynamicDagSpec extends TestSpecBase {
     val success = restClient.submitApp(solJar, cluster.getWorkerHosts.length)
     success shouldBe true
     expectAppIsRunning(appId, solName)
-    Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
+    Util.retryUntil(() => restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
     appId
   }
 
@@ -147,7 +146,7 @@ class DynamicDagSpec extends TestSpecBase {
   }
 
   private def processorHasThroughput(appId: Int, processorId: Int, metrics: String): Unit = {
-    Util.retryUntil(()=>{
+    Util.retryUntil(() => {
       val actual = restClient.queryStreamingAppMetrics(appId, current = false,
         path = "processor" + processorId)
       val throughput = actual.metrics.filter(_.value.name.endsWith(metrics))
@@ -155,5 +154,4 @@ class DynamicDagSpec extends TestSpecBase {
       throughput.forall(_.value.asInstanceOf[Meter].count > 0L)
     }, "new processor has message received")
   }
-  
 }

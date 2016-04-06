@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,31 +19,34 @@
 package io.gearpump.streaming.examples.kafka.wordcount
 
 import akka.actor.ActorSystem
-import io.gearpump.streaming.kafka.lib.KafkaSourceConfig
-import io.gearpump.streaming.{StreamApplication, Processor}
-import io.gearpump.streaming.kafka.{KafkaSink, KafkaStorageFactory, KafkaSource}
-import io.gearpump.streaming.sink.DataSinkProcessor
-import io.gearpump.streaming.source.DataSourceProcessor
+import kafka.api.OffsetRequest
+import org.slf4j.Logger
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.partitioner.HashPartitioner
+import io.gearpump.streaming.kafka.lib.KafkaSourceConfig
+import io.gearpump.streaming.kafka.{KafkaSink, KafkaSource, KafkaStorageFactory}
+import io.gearpump.streaming.sink.DataSinkProcessor
+import io.gearpump.streaming.source.DataSourceProcessor
+import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.util.Graph._
 import io.gearpump.util.{AkkaApp, Graph, LogUtil}
-import kafka.api.OffsetRequest
-import org.slf4j.Logger
 
 object KafkaWordCount extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "source" -> CLIOption[Int]("<how many kafka source tasks>", required = false, defaultValue = Some(1)),
+    "source" -> CLIOption[Int]("<how many kafka source tasks>", required = false,
+      defaultValue = Some(1)),
     "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(1)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1)),
-    "sink" -> CLIOption[Int]("<how many kafka sink tasks>", required = false, defaultValue = Some(1))
-    )
+    "sink" -> CLIOption[Int]("<how many kafka sink tasks>", required = false,
+      defaultValue = Some(1))
+  )
 
-  def application(config: ParseResult, system: ActorSystem) : StreamApplication = {
+  def application(config: ParseResult, system: ActorSystem): StreamApplication = {
     implicit val actorSystem = system
     val sourceNum = config.getInt("source")
     val splitNum = config.getInt("split")
@@ -61,7 +64,8 @@ object KafkaWordCount extends AkkaApp with ArgumentsParser {
     val sink = new KafkaSink("topic2", "localhost:9092")
     val sinkProcessor = DataSinkProcessor(sink, sinkNum)
     val partitioner = new HashPartitioner
-    val computation = sourceProcessor ~ partitioner ~> split ~ partitioner ~> sum ~ partitioner ~> sinkProcessor
+    val computation = sourceProcessor ~ partitioner ~> split ~ partitioner ~>
+      sum ~ partitioner ~> sinkProcessor
     val app = StreamApplication("KafkaWordCount", Graph(computation), appConfig)
     app
   }

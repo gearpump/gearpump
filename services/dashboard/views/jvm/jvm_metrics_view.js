@@ -5,7 +5,7 @@
 
 angular.module('dashboard')
 
-  .directive('jvmMetricsView', function() {
+  .directive('jvmMetricsView', function () {
     'use strict';
 
     return {
@@ -16,7 +16,7 @@ angular.module('dashboard')
         queryMetricsFnRef: '&'
       },
       controller: ['$scope', '$filter', '$propertyTableBuilder', 'helper',
-        function($scope, $filter, $ptb, helper) {
+        function ($scope, $filter, $ptb, helper) {
           'use strict';
 
           var sc = $scope.samplingConfig;
@@ -25,10 +25,10 @@ angular.module('dashboard')
 
           // property table part
           var converter = {
-            bytes: function(value) {
+            bytes: function (value) {
               return {raw: value, unit: 'B', readable: true};
             },
-            direct: function(value) {
+            direct: function (value) {
               return value;
             }
           };
@@ -40,7 +40,7 @@ angular.module('dashboard')
             'thread.daemon.count': ['Daemon Thread Count', converter.direct]
           };
 
-          $scope.jvmMetricsTable = _.map(metricsClassProps, function(prop) {
+          $scope.jvmMetricsTable = _.map(metricsClassProps, function (prop) {
             var text = prop[0];
             var convertFn = prop[1];
             return $ptb.number(text).value(convertFn(0)).done();
@@ -49,7 +49,7 @@ angular.module('dashboard')
           function updateMetricsTable(metrics) {
             var updates = {};
             var i = 0;
-            angular.forEach(metricsClassProps, function(prop, name) {
+            angular.forEach(metricsClassProps, function (prop, name) {
               if (metrics.hasOwnProperty(name)) {
                 var convertFn = prop[1];
                 updates[i] = convertFn(metrics[name].value);
@@ -64,7 +64,7 @@ angular.module('dashboard')
 
           function rebuildChartsOnPeriodChanged() {
             var all = !$scope.isShowingCurrentMetrics;
-            queryMetricsFn(all).then(function(metrics) {
+            queryMetricsFn(all).then(function (metrics) {
               var dataPoints = makeMemoryUsageChartData(metrics);
               var visibleDataPointsNum = all ?
                 Math.max(dataPoints.length, histChartPoints) : recentChartPoints;
@@ -79,20 +79,20 @@ angular.module('dashboard')
           }
 
           var queryMetricsFn = $scope.queryMetricsFnRef();
-          queryMetricsFn(/*all=*/false).then(function(metrics0) {
+          queryMetricsFn(/*all=*/false).then(function (metrics0) {
             $scope.metrics = metrics0.$data();
-            $scope.$watch('isShowingCurrentMetrics', function(newVal, oldVal) {
+            $scope.$watch('isShowingCurrentMetrics', function (newVal, oldVal) {
               if (angular.equals(newVal, oldVal)) {
                 return; // ignore initial notification
               }
               rebuildChartsOnPeriodChanged();
             });
-            metrics0.$subscribe($scope, function(metrics) {
+            metrics0.$subscribe($scope, function (metrics) {
               $scope.metrics = metrics;
             });
           });
 
-          $scope.$watch('metrics', function(metrics) {
+          $scope.$watch('metrics', function (metrics) {
             if (angular.isObject(metrics)) {
               updateMetricsTable(_.mapValues(metrics, _.last));
               if ($scope.isShowingCurrentMetrics) {
@@ -106,7 +106,7 @@ angular.module('dashboard')
           }
 
           function makeMemoryUsageChartData(metrics) {
-            return _.map(metrics['memory.total.used'], function(metric) {
+            return _.map(metrics['memory.total.used'], function (metric) {
               return {
                 x: helper.timeToChartTimeLabel(metric.time, /*shortForm=*/$scope.isShowingCurrentMetrics),
                 y: [metric.value]
@@ -122,7 +122,7 @@ angular.module('dashboard')
               visibleDataPointsNum: visibleDataPointsNum,
               data: dataPoints,
               yAxisLabelFormatter: helper.yAxisLabelFormatterWithoutValue0('B'), // MB, GB, TB, etc.
-              valueFormatter: function(value) {
+              valueFormatter: function (value) {
                 return $filter('number')(Math.floor(value / (1024 * 1024)), 0) + ' MB';
               }
             };

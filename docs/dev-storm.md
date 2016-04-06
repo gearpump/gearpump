@@ -4,7 +4,7 @@ title: Storm Compatibility
 ---
 
 Gearpump provides **binary compatibility** for Apache Storm applications. That is to say, users could easily grab an existing Storm jar and run it 
-on Gearpump. This documentation illustrates Gearpump's comapatibility with Storm.  
+on Gearpump. This documentation illustrates Gearpump's compatibility with Storm.  
 
 ## What Storm features are supported on Gearpump 
 
@@ -32,7 +32,7 @@ on Gearpump. This documentation illustrates Gearpump's comapatibility with Storm
 | storm-jdbc | yes |
 | storm-redis | yes |
 | flux | yes |
-| storm-eventhubs | not verfied |
+| storm-eventhubs | not verified |
 | Trident | no |
 
 ### At Least Once support
@@ -95,7 +95,6 @@ This section shows how to run an existing Storm jar in a local Gearpump cluster.
    
    a. submit Storm applications through command line
 
-
      ```
      bin/storm app -verbose -config app.yaml -jar storm-starter-${STORM_VERSION}.jar storm.starter.ExclamationTopology exclamation 
      ```
@@ -138,21 +137,20 @@ Here's an example of `WordCountTopology` with acker bolts (ackers) being transla
 
 Gearpump creates a `StormProducer` for each Storm spout and a `StormProcessor` for each Storm bolt (except for ackers) with the same parallelism, and wires them together using the same grouping strategy (partitioning in Gearpump) as in Storm. 
 
-At runtime, spouts and bolts are running inside `StormProducer` tasks and `StormProcessor` tasks respectively. Messages emitted by spout are passed to `StormProducer`, transferred to `StormProcessor` and passed down to bolt.  Messages are serialized / deserialized with Storm serializers.
+At runtime, spouts and bolts are running inside `StormProducer` tasks and `StormProcessor` tasks respectively. Messages emitted by spout are passed to `StormProducer`, transferred to `StormProcessor` and passed down to bolt.  Messages are serialized / de-serialized with Storm serializers.
 
 Storm ackers are dropped since Gearpump has a different mechanism of message tracking and flow control. 
 
 ### Task execution
 
 Each Storm task is executed by a dedicated thread while all Gearpump tasks of an executor share a thread pool. Generally, we can achieve better performance with a shared thread pool. It's possible, however, some tasks block and take up all the threads. In that case, we can 
-fall back to the Storm way by setting `gearpump.task-dispatcher` to `"gaerpump.single-thread-dispatcher"` in `gear.conf`.
+fall back to the Storm way by setting `gearpump.task-dispatcher` to `"gearpump.single-thread-dispatcher"` in `gear.conf`.
 
 ### Message tracking 
 
 Storm tracks the lineage of each message with ackers to guarantee at-least-once message delivery. Failed messages are re-sent from spout.
 
 Gearpump [tracks messages between a sender and receiver in an efficient way](gearpump-internals.html#how-do-we-detect-message-loss). Message loss causes the whole application to replay from the [minimum timestamp of all pending messages in the system](gearpump-internals.html#application-clock-and-global-clock-service). 
-
 
 ### Flow control
 
@@ -184,7 +182,6 @@ Since StreamCQL already supports Storm, it's straightforward to run StreamCQL ov
 2. Launch Gearpump Nimbus Server as before 
 
 3. Go to the installed stream-cql-binary, and change following settings in `conf/streaming-site.xml` with the output Nimbus configs in Step 2.
-
 
    ```xml
     <property>

@@ -5,7 +5,7 @@
 
 angular.module('io.gearpump.models')
 
-  .service('StreamingAppMetricsProvider', ['MetricsProvider', function(MetricsProvider) {
+  .service('StreamingAppMetricsProvider', ['MetricsProvider', function (MetricsProvider) {
     'use strict';
 
     /** This repository stores streaming app related metrics. */
@@ -16,7 +16,7 @@ angular.module('io.gearpump.models')
     StreamingAppMetricsProvider.prototype = {
 
       /** Add metrics or update to the latest value and return the number of updated metrics. */
-      updateLatestMetrics: function(metrics) {
+      updateLatestMetrics: function (metrics) {
         return this.impl.update(metrics, {latestOnly: true});
       },
 
@@ -24,26 +24,26 @@ angular.module('io.gearpump.models')
        * Add all metrics to a multiple dimension associative array and return the number of updated metrics.
        * Note that every metric will be stored only once and the metric time is the closest retain interval.
        */
-      updateAllMetricsByRetainInterval: function(metrics, timeResolution) {
+      updateAllMetricsByRetainInterval: function (metrics, timeResolution) {
         return this.impl.update(metrics, {latestOnly: false, timeResolution: timeResolution});
       },
 
       /** Return all metric time as an array in ascending order. */
-      getMetricTimeArray: function() {
+      getMetricTimeArray: function () {
         return this.impl.getMetricTimeArray();
       },
 
       /** Return total and moving average received messages of one or more processors */
-      getReceiveMessageTotalAndRate: function(ids, time) {
+      getReceiveMessageTotalAndRate: function (ids, time) {
         return this._getMeterMetricsTotalAndRate(ids, 'receiveThroughput', time);
       },
 
       /** Return total and moving average sent messages of one or more processors */
-      getSendMessageTotalAndRate: function(ids, time) {
+      getSendMessageTotalAndRate: function (ids, time) {
         return this._getMeterMetricsTotalAndRate(ids, 'sendThroughput', time);
       },
 
-      _getMeterMetricsTotalAndRate: function(ids, name, time) {
+      _getMeterMetricsTotalAndRate: function (ids, name, time) {
         var result = this.impl.getMeterMetricSumByFields(ids, name, ['count', 'movingAverage1m'], time);
         return {
           total: result.count,
@@ -52,25 +52,25 @@ angular.module('io.gearpump.models')
       },
 
       /** Return moving average received messages of one or more processors */
-      getReceiveMessageMovingAverage: function(ids, time) {
+      getReceiveMessageMovingAverage: function (ids, time) {
         var field = 'movingAverage1m';
         return this.impl.getMeterMetricSumByFields(ids, 'receiveThroughput', [field], time)[field];
       },
 
       /** Return moving average sent messages of one or more processors */
-      getSendMessageMovingAverage: function(ids, time) {
+      getSendMessageMovingAverage: function (ids, time) {
         var field = 'movingAverage1m';
         return this.impl.getMeterMetricSumByFields(ids, 'sendThroughput', [field], time)[field];
       },
 
       /** Return the average message processing time of one or more processors */
-      getAverageMessageProcessingTime: function(ids, time) {
+      getAverageMessageProcessingTime: function (ids, time) {
         var fallback = 0;
         return this.impl.getHistogramMetricAverageOrElse(ids, 'processTime', 'mean', fallback, time);
       },
 
       /** Return the average message receive latency of one or more processors */
-      getAverageMessageReceiveLatency: function(ids, time) {
+      getAverageMessageReceiveLatency: function (ids, time) {
         var fallback = 0;
         return this.impl.getHistogramMetricAverageOrElse(ids, 'receiveLatency', 'mean', fallback, time);
       },
@@ -79,7 +79,7 @@ angular.module('io.gearpump.models')
        * Return an array of message receive throughput of one or more processors, which is
        * aggregated by retain interval.
        */
-      getReceiveMessageThroughputByRetainInterval: function(ids) {
+      getReceiveMessageThroughputByRetainInterval: function (ids) {
         return this.impl.getAggregatedMetricsByRetainInterval(ids,
           'receiveThroughput', 'movingAverage1m', {aggregateFn: _.sum});
       },
@@ -88,7 +88,7 @@ angular.module('io.gearpump.models')
        * Return an array of message send throughput of one or more processors, which is aggregated
        * by retain interval.
        */
-      getSendMessageThroughputByRetainInterval: function(ids) {
+      getSendMessageThroughputByRetainInterval: function (ids) {
         return this.impl.getAggregatedMetricsByRetainInterval(ids,
           'sendThroughput', 'movingAverage1m', {aggregateFn: _.sum});
       },
@@ -97,7 +97,7 @@ angular.module('io.gearpump.models')
        * Return an array of the average message processing time of one or more processors, which is aggregated
        * by retain interval.
        */
-      getAverageMessageProcessingTimeByRetainInterval: function(ids) {
+      getAverageMessageProcessingTimeByRetainInterval: function (ids) {
         return this.impl.getAggregatedMetricsByRetainInterval(ids,
           'processTime', 'mean', {aggregateFn: d3.mean});
       },
@@ -106,14 +106,14 @@ angular.module('io.gearpump.models')
        * Return an array of the average message receive latency of one or more processors, which is aggregated
        * by retain interval.
        */
-      getAverageMessageReceiveLatencyByRetainInterval: function(ids) {
+      getAverageMessageReceiveLatencyByRetainInterval: function (ids) {
         return this.impl.getAggregatedMetricsByRetainInterval(ids,
           'receiveLatency', 'mean', {aggregateFn: d3.mean});
       },
 
       /** Return an array of processor metrics of particular metric name. */
-      getMetricsByMetricName: function(name) {
-        return _.mapValues(this.impl.data, function(metricsGroups) {
+      getMetricsByMetricName: function (name) {
+        return _.mapValues(this.impl.data, function (metricsGroups) {
           return metricsGroups[name].latest;
         });
       }

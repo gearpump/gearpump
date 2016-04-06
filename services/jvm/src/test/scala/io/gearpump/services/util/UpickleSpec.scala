@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,15 @@
 
 package io.gearpump.services.util
 
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import upickle.default.{read, write}
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.metrics.Metrics.{Counter, MetricType}
 import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.appmaster.{ProcessorSummary, StreamAppMasterSummary}
 import io.gearpump.util.Graph
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-import upickle.default.{read, write}
 
 class UpickleSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 

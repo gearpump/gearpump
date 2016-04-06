@@ -6,25 +6,25 @@
 angular.module('dashboard')
 
   .controller('ComposeAppChooseEdgeCtrl', ['$scope',
-    function($scope) {
+    function ($scope) {
       'use strict';
 
       $scope.invalid = {};
       $scope.edge = angular.merge({}, $scope.edge);
-      $scope.partitioners = $scope.partitioners.map(function(partitioner) {
+      $scope.partitioners = $scope.partitioners.map(function (partitioner) {
         return {
           text: partitioner,
           icon: 'glyphicon glyphicon-random'
         };
       });
 
-      $scope.canSave = function() {
+      $scope.canSave = function () {
         return _.sum($scope.invalid) === 0 &&
             // todo: check ring graph condition
           ($scope.edge.from.value !== $scope.edge.to.value);
       };
 
-      $scope.save = function() {
+      $scope.save = function () {
         $scope.$hide();
         if ($scope.onChange) {
           $scope.edge.from = $scope.edge.from.value;

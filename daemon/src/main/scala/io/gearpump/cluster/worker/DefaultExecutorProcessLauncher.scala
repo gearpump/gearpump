@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,15 +20,18 @@ package io.gearpump.cluster.worker
 import java.io.File
 
 import com.typesafe.config.Config
-import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.util.{LogUtil, RichProcess, Util}
 import org.slf4j.Logger
 
+import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.util.{LogUtil, RichProcess, Util}
+
+/** Launcher to start an executor process */
 class DefaultExecutorProcessLauncher(val config: Config) extends ExecutorProcessLauncher {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  override def createProcess(appId: Int, executorId: Int, resource: Resource, config: Config, options: Array[String],
-    classPath: Array[String], mainClass: String, arguments: Array[String]): RichProcess = {
+  override def createProcess(
+      appId: Int, executorId: Int, resource: Resource, config: Config, options: Array[String],
+      classPath: Array[String], mainClass: String, arguments: Array[String]): RichProcess = {
 
     LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
     Util.startProcess(options, classPath, mainClass, arguments)

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,8 +19,11 @@
 package io.gearpump.experiments.storm.topology
 
 import java.io.{File, FileOutputStream, IOException}
+import java.util
 import java.util.jar.JarFile
 import java.util.{HashMap => JHashMap, List => JList, Map => JMap}
+import scala.collection.JavaConverters._
+import scala.concurrent.{Await, Future}
 
 import akka.actor.ActorRef
 import akka.pattern.ask
@@ -32,6 +35,9 @@ import backtype.storm.task.{GeneralTopologyContext, IBolt, OutputCollector, Topo
 import backtype.storm.tuple.{Fields, Tuple, TupleImpl}
 import backtype.storm.utils.Utils
 import clojure.lang.Atom
+import org.apache.commons.io.{FileUtils, IOUtils}
+import org.slf4j.Logger
+
 import io.gearpump.experiments.storm.processor.StormBoltOutputCollector
 import io.gearpump.experiments.storm.producer.StormSpoutOutputCollector
 import io.gearpump.experiments.storm.util.StormConstants._
@@ -41,12 +47,6 @@ import io.gearpump.streaming.DAG
 import io.gearpump.streaming.task._
 import io.gearpump.util.{Constants, LogUtil}
 import io.gearpump.{Message, TimeStamp}
-import org.apache.commons.io.{FileUtils, IOUtils}
-import org.slf4j.Logger
-
-import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
-import scala.concurrent.{Await, Future}
 
 /**
  * subclass wraps Storm Spout and Bolt, and their lifecycles
@@ -68,7 +68,7 @@ trait GearpumpStormComponent {
   /**
    * invoked at Task.onStop
    */
-  def stop: Unit = {}
+  def stop(): Unit = {}
 }
 
 object GearpumpStormComponent {
@@ -76,9 +76,10 @@ object GearpumpStormComponent {
 
   object GearpumpSpout {
     def apply(topology: StormTopology, config: JMap[AnyRef, AnyRef],
-             spoutSpec: SpoutSpec, taskContext: TaskContext): GearpumpSpout = {
+        spoutSpec: SpoutSpec, taskContext: TaskContext): GearpumpSpout = {
       val componentCommon = spoutSpec.get_common()
-      val normalizedConfig = normalizeConfig(config.toMap, componentCommon)
+      val scalaMap = config.asScala.toMap // Convert to scala immutable map
+      val normalizedConfig = normalizeConfig(scalaMap, componentCommon)
       val getTopologyContext = (dag: DAG, taskId: TaskId) => {
         val stormTaskId = gearpumpTaskIdToStorm(taskId)
         buildTopologyContext(dag, topology, normalizedConfig, stormTaskId)
@@ -122,7 +123,6 @@ object GearpumpStormComponent {
 
     private var collector: StormSpoutOutputCollector = null
 
-
     override def start(startTime: StartTime): Unit = {
       import taskContext.{appMaster, taskId}
 
@@ -161,8 +161,9 @@ object GearpumpStormComponent {
 
   object GearpumpBolt {
     def apply(topology: StormTopology, config: JMap[AnyRef, AnyRef],
-              boltSpec: Bolt, taskContext: TaskContext): GearpumpBolt = {
-      val normalizedConfig = normalizeConfig(config.toMap, boltSpec.get_common())
+        boltSpec: Bolt, taskContext: TaskContext): GearpumpBolt = {
+      val configAsScalaMap = config.asScala.toMap // Convert to scala immutable map
+      val normalizedConfig = normalizeConfig(configAsScalaMap, boltSpec.get_common())
       val getTopologyContext = (dag: DAG, taskId: TaskId) => {
         val stormTaskId = gearpumpTaskIdToStorm(taskId)
         buildTopologyContext(dag, topology, normalizedConfig, stormTaskId)
@@ -174,8 +175,10 @@ object GearpumpStormComponent {
         StormOutputCollector(taskContext, topologyContext)
       }
       val getTickTuple = (topologyContext: GeneralTopologyContext, freq: Int) => {
-        new TupleImpl(topologyContext, List(freq.asInstanceOf[java.lang.Integer]),
-          SYSTEM_TASK_ID, SYSTEM_TICK_STREAM_ID, null)
+
+        val values = new util.ArrayList[Object] // To be compatible with Java interface
+        values.add(freq.asInstanceOf[java.lang.Integer])
+        new TupleImpl(topologyContext, values, SYSTEM_TASK_ID, SYSTEM_TICK_STREAM_ID, null)
       }
       GearpumpBolt(
         normalizedConfig,
@@ -218,7 +221,8 @@ object GearpumpStormComponent {
     override def next(message: Message): Unit = {
       val timestamp = message.timestamp
       collector.setTimestamp(timestamp)
-      bolt.execute(message.msg.asInstanceOf[GearpumpTuple].toTuple(generalTopologyContext, timestamp))
+      bolt.execute(message.msg.asInstanceOf[GearpumpTuple].toTuple(generalTopologyContext,
+        timestamp))
     }
 
     def getTickFrequency: Option[Int] = {
@@ -244,9 +248,9 @@ object GearpumpStormComponent {
    * @param componentCommon common component parts
    */
   private def normalizeConfig(stormConfig: Map[AnyRef, AnyRef],
-                              componentCommon: ComponentCommon): JMap[AnyRef, AnyRef] = {
+      componentCommon: ComponentCommon): JMap[AnyRef, AnyRef] = {
     val config: JMap[AnyRef, AnyRef] = new JHashMap[AnyRef, AnyRef]
-    config.putAll(stormConfig)
+    config.putAll(stormConfig.asJava)
     val componentConfig = parseJsonStringToMap(componentCommon.get_json_conf())
     Option(componentConfig.get(Config.TOPOLOGY_TRANSACTIONAL_ID))
       .foreach(config.put(Config.TOPOLOGY_TRANSACTIONAL_ID, _))
@@ -261,42 +265,63 @@ object GearpumpStormComponent {
     Await.result(dagFuture, timeout.duration)
   }
 
-  private def buildGeneralTopologyContext(dag: DAG, topology: StormTopology, stormConf: JMap[_, _]): GeneralTopologyContext = {
+  private def buildGeneralTopologyContext(dag: DAG, topology: StormTopology, stormConf: JMap[_, _])
+    : GeneralTopologyContext = {
     val taskToComponent = getTaskToComponent(dag)
-    val componentToSortedTasks: JMap[String, JList[Integer]] = getComponentToSortedTasks(taskToComponent)
-    val componentToStreamFields: JMap[String, JMap[String, Fields]] = getComponentToStreamFields(topology)
-    new GeneralTopologyContext(topology, stormConf, taskToComponent, componentToSortedTasks, componentToStreamFields, null)
+    val componentToSortedTasks: JMap[String, JList[Integer]] =
+      getComponentToSortedTasks(taskToComponent)
+    val componentToStreamFields: JMap[String, JMap[String, Fields]] =
+      getComponentToStreamFields(topology)
+    new GeneralTopologyContext(
+      topology, stormConf, taskToComponent.asJava, componentToSortedTasks,
+      componentToStreamFields, null)
   }
 
-  private def buildTopologyContext(dag: DAG, topology: StormTopology, stormConf: JMap[_, _], stormTaskId: Integer): TopologyContext = {
+  private def buildTopologyContext(
+      dag: DAG, topology: StormTopology, stormConf: JMap[_, _], stormTaskId: Integer)
+    : TopologyContext = {
     val taskToComponent = getTaskToComponent(dag)
-    val componentToSortedTasks: JMap[String, JList[Integer]] = getComponentToSortedTasks(taskToComponent)
-    val componentToStreamFields: JMap[String, JMap[String, Fields]] = getComponentToStreamFields(topology)
+    val componentToSortedTasks: JMap[String, JList[Integer]] =
+      getComponentToSortedTasks(taskToComponent)
+    val componentToStreamFields: JMap[String, JMap[String, Fields]] =
+      getComponentToStreamFields(topology)
     val codeDir = mkCodeDir
     val pidDir = mkPidDir
 
-    new TopologyContext(topology, stormConf, taskToComponent, componentToSortedTasks,
-      componentToStreamFields, null, codeDir, pidDir, stormTaskId, null, null, null, null, new JHashMap[String, AnyRef],
-      new JHashMap[Integer, JMap[Integer, JMap[String, IMetric]]], new Atom(false))
+    new TopologyContext(topology, stormConf, taskToComponent.asJava, componentToSortedTasks,
+      componentToStreamFields, null, codeDir, pidDir, stormTaskId, null, null, null, null,
+      new JHashMap[String, AnyRef], new JHashMap[Integer, JMap[Integer, JMap[String, IMetric]]],
+      new Atom(false))
   }
 
-  private def getComponentToStreamFields(topology: StormTopology): JMap[String, JMap[String, Fields]] = {
-    val spouts = topology.get_spouts()
-    val bolts = topology.get_bolts()
+  private def getComponentToStreamFields(topology: StormTopology)
+    : JMap[String, JMap[String, Fields]] = {
+    val spouts = topology.get_spouts().asScala
+    val bolts = topology.get_bolts().asScala
 
-    (spouts.map { case (id, component) => id -> getComponentToFields(component.get_common()) } ++
-        bolts.map { case (id, component) => id -> getComponentToFields(component.get_common())} ++
-        Map(SYSTEM_COMPONENT_ID -> Map(SYSTEM_TICK_STREAM_ID -> new Fields(SYSTEM_COMPONENT_OUTPUT_FIELDS)).asJava)
-        ).toMap.asJava
+    val spoutFields = spouts.map {
+      case (id, component) => id -> getComponentToFields(component.get_common())
+    }
+
+    val boltFields = bolts.map {
+      case (id, component) => id -> getComponentToFields(component.get_common())
+    }
+
+    val systemFields = Map(SYSTEM_COMPONENT_ID ->
+      Map(SYSTEM_TICK_STREAM_ID -> new Fields(SYSTEM_COMPONENT_OUTPUT_FIELDS)).asJava)
+
+    (spoutFields ++ boltFields ++ systemFields).asJava
   }
 
   private def getComponentToFields(common: ComponentCommon): JMap[String, Fields] = {
-    common.get_streams.map { case (sid, stream) =>
+    val streams = common.get_streams.asScala
+    streams.map { case (sid, stream) =>
       sid -> new Fields(stream.get_output_fields())
-    }.toMap.asJava
+    }.asJava
   }
 
-  private def getComponentToSortedTasks(taskToComponent: Map[Integer, String]): JMap[String, JList[Integer]] = {
+  private def getComponentToSortedTasks(
+      taskToComponent: Map[Integer, String]): JMap[String, JList[Integer]] = {
     taskToComponent.groupBy(_._2).map { case (component, map) =>
       val sortedTasks = map.keys.toList.sorted.asJava
       component -> sortedTasks
@@ -307,12 +332,13 @@ object GearpumpStormComponent {
     val taskToComponent = dag.processors.flatMap { case (processorId, processorDescription) =>
       val parallelism = processorDescription.parallelism
       val component = processorDescription.taskConf.getString(STORM_COMPONENT).get
-      (0 until parallelism).map(index => gearpumpTaskIdToStorm(TaskId(processorId, index)) -> component)
+      (0 until parallelism).map(index =>
+        gearpumpTaskIdToStorm(TaskId(processorId, index)) -> component)
     }
     taskToComponent
   }
 
-  // a workaround to support storm ShellBolt
+  // Workarounds to support storm ShellBolt
   private def mkPidDir: String = {
     val pidDir = FileUtils.getTempDirectoryPath + File.separator + "pid"
     try {
@@ -333,7 +359,7 @@ object GearpumpStormComponent {
       FileUtils.forceMkdir(new File(destDir))
 
       val jar = new JarFile(jarPath)
-      val enumEntries = jar.entries()
+      val enumEntries = jar.entries().asScala
       enumEntries.foreach { entry =>
         val file = new File(destDir + File.separator + entry.getName)
         if (!entry.isDirectory) {

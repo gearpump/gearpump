@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,27 +18,30 @@
 
 package io.gearpump.streaming.hadoop
 
-import io.gearpump.streaming.hadoop.lib.{HadoopCheckpointStoreWriter, HadoopCheckpointStoreReader}
-import io.gearpump.streaming.hadoop.lib.rotation.Rotation
-import io.gearpump.streaming.transaction.api.CheckpointStore
-import io.gearpump.TimeStamp
-import io.gearpump.util.LogUtil
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.slf4j.Logger
+
+import io.gearpump.TimeStamp
+import io.gearpump.streaming.hadoop.lib.rotation.Rotation
+import io.gearpump.streaming.hadoop.lib.{HadoopCheckpointStoreReader, HadoopCheckpointStoreWriter}
+import io.gearpump.streaming.transaction.api.CheckpointStore
+import io.gearpump.util.LogUtil
 
 object HadoopCheckpointStore {
   val LOG: Logger = LogUtil.getLogger(classOf[HadoopCheckpointStore])
 }
 
-
 /**
- * stores timestamp-checkpoint mapping to Hadoop-compatible filesystem
- * store file layout
- *    timestamp1, index1,
- *    timestamp2, index2,
- *    ...
- *    timestampN, indexN
+ * Stores timestamp-checkpoint mapping to Hadoop-compatible filesystem.
+ *
+ * Store file layout:
+ * {{{
+ * timestamp1, index1,
+ * timestamp2, index2,
+ * ...
+ * timestampN, indexN
+ * }}}
  */
 class HadoopCheckpointStore(
     dir: Path,
@@ -52,12 +55,15 @@ class HadoopCheckpointStore(
   private[hadoop] var curFile: Option[String] = None
   private[hadoop] var curWriter: Option[HadoopCheckpointStoreWriter] = None
   // regex (checkpoints-$startTime-$endTime.store) for complete checkpoint file,
-  private val compRegex = """checkpoints-(\d+)-(\d+).store""".r
+  private val compRegex =
+    """checkpoints-(\d+)-(\d+).store""".r
   // regex (checkpoints-$startTime.store) for temporary checkpoint file
-  private val tempRegex = """checkpoints-(\d+).store""".r
+  private val tempRegex =
+    """checkpoints-(\d+).store""".r
 
   /**
-   * persists a pair of timestamp and checkpoint, which
+   * Persists a pair of timestamp and checkpoint, which:
+   *
    *   1. creates a temporary checkpoint file, checkpoints-\$startTime.store, if not exist
    *   2. writes out (timestamp, checkpoint) and marks rotation
    *   3. rotates checkpoint file if needed
@@ -70,7 +76,8 @@ class HadoopCheckpointStore(
     if (curWriter.isEmpty) {
       curStartTime = curTime
       curFile = Some(s"checkpoints-$curStartTime.store")
-      curWriter = curFile.map(file => new HadoopCheckpointStoreWriter(new Path(dir, file), hadoopConfig))
+      curWriter = curFile.map(file =>
+        new HadoopCheckpointStoreWriter(new Path(dir, file), hadoopConfig))
     }
 
     curWriter.foreach { w =>
@@ -89,7 +96,8 @@ class HadoopCheckpointStore(
   }
 
   /**
-   * recovers checkpoint given timestamp, which
+   * Recovers checkpoint given timestamp, which
+   *  {{{
    *   1. returns None if no store exists
    *   2. searches checkpoint stores for
    *     a. complete store checkpoints-\$startTime-\$endTime.store
@@ -99,6 +107,7 @@ class HadoopCheckpointStore(
    *   3. renames store to checkpoints-\$startTime-\$endTime.store
    *   4. deletes all stores whose name has a startTime larger than timestamp
    *   5. looks for the checkpoint in the found store
+   *   }}}
    */
   override def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
     var checkpoint: Option[Array[Byte]] = None

@@ -3,10 +3,10 @@
  * See accompanying LICENSE file.
  */
 
-(function() {
+(function () {
 
   // rootPath of this site, it has a tailing slash /
-  var rootPath = function() {
+  var rootPath = function () {
     var root = location.origin + location.pathname;
     return root.substring(0, root.lastIndexOf("/") + 1);
   }();
@@ -25,102 +25,102 @@
     'io.gearpump.models'
   ])
 
-  // configure routes
-  .config(['$stateProvider', '$urlRouterProvider',
-    function($stateProvider, $urlRouterProvider) {
+    // configure routes
+    .config(['$stateProvider', '$urlRouterProvider',
+      function ($stateProvider, $urlRouterProvider) {
+        'use strict';
+
+        $urlRouterProvider
+          .when('', '/')
+          .when('/', '/cluster')
+          .when('/cluster', '/cluster/master');
+
+        $stateProvider
+          .state('cluster', {
+            abstract: true, // todo: we have a sidebar for cluster only
+            url: '/cluster',
+            templateUrl: 'views/cluster/overview.html'
+          });
+        // Please check every controller for corresponding state definition
+      }])
+
+    // configure loading bar effect
+    .config(['cfpLoadingBarProvider', function (cfpLoadingBarProvider) {
       'use strict';
 
-      $urlRouterProvider
-        .when('', '/')
-        .when('/', '/cluster')
-        .when('/cluster', '/cluster/master');
-
-      $stateProvider
-        .state('cluster', {
-          abstract: true, // todo: we have a sidebar for cluster only
-          url: '/cluster',
-          templateUrl: 'views/cluster/overview.html'
-        });
-      // Please check every controller for corresponding state definition
+      cfpLoadingBarProvider.includeSpinner = false;
+      cfpLoadingBarProvider.latencyThreshold = 1000;
     }])
 
-  // configure loading bar effect
-  .config(['cfpLoadingBarProvider', function(cfpLoadingBarProvider) {
-    'use strict';
+    // configure angular-strap
+    .config(['$tooltipProvider', function ($tooltipProvider) {
+      'use strict';
 
-    cfpLoadingBarProvider.includeSpinner = false;
-    cfpLoadingBarProvider.latencyThreshold = 1000;
-  }])
+      angular.extend($tooltipProvider.defaults, {
+        html: true
+      });
+    }])
 
-  // configure angular-strap
-  .config(['$tooltipProvider', function($tooltipProvider) {
-    'use strict';
+    // configure dashing
+    .config(['dashing.i18n', function (i18n) {
+      'use strict';
 
-    angular.extend($tooltipProvider.defaults, {
-      html: true
-    });
-  }])
+      i18n.confirmationYesButtonText = 'OK';
+      i18n.confirmationNoButtonText = 'Cancel';
+    }])
 
-  // configure dashing
-  .config(['dashing.i18n', function(i18n) {
-    'use strict';
+    // disable logging for production
+    .config(['$compileProvider', function ($compileProvider) {
+      'use strict';
 
-    i18n.confirmationYesButtonText = 'OK';
-    i18n.confirmationNoButtonText = 'Cancel';
-  }])
+      $compileProvider.debugInfoEnabled(false);
+    }])
 
-  // disable logging for production
-  .config(['$compileProvider', function($compileProvider) {
-    'use strict';
+    // constants
+    .constant('conf', {
+      restapiProtocol: 'v1.0',
+      restapiRoot: rootPath,
+      restapiQueryInterval: 3 * 1000, // in milliseconds
+      restapiQueryTimeout: 30 * 1000, // in milliseconds
+      restapiTaskLevelMetricsQueryLimit: 100,
+      loginUrl: rootPath + 'login'
+    })
 
-    $compileProvider.debugInfoEnabled(false);
-  }])
+    /* add a retry delay for angular-ui-router, when resolving a data is failed */
+    .run(['$rootScope', '$state', 'conf', function ($rootScope, $state, conf) {
+      'use strict';
 
-  // constants
-  .constant('conf', {
-    restapiProtocol: 'v1.0',
-    restapiRoot: rootPath,
-    restapiQueryInterval: 3 * 1000, // in milliseconds
-    restapiQueryTimeout: 30 * 1000, // in milliseconds
-    restapiTaskLevelMetricsQueryLimit: 100,
-    loginUrl: rootPath + 'login'
-  })
+      $rootScope.$on('$stateChangeError', function (event, toState) {
+        event.preventDefault();
+        _.delay($state.go, conf.restapiQueryTimeout, toState);
+      });
+    }])
 
-  /* add a retry delay for angular-ui-router, when resolving a data is failed */
-  .run(['$rootScope', '$state', 'conf', function($rootScope, $state, conf) {
-    'use strict';
+    /* enable a health check service */
+    .run(['$modal', 'HealthCheckService', 'conf', function ($modal, HealthCheckService, conf) {
+      'use strict';
 
-    $rootScope.$on('$stateChangeError', function(event, toState) {
-      event.preventDefault();
-      _.delay($state.go, conf.restapiQueryTimeout, toState);
-    });
-  }])
+      var dialog = $modal({
+        templateUrl: 'views/service_unreachable_notice.html',
+        backdrop: 'static',
+        show: false
+      });
 
-  /* enable a health check service */
-  .run(['$modal', 'HealthCheckService', 'conf', function($modal, HealthCheckService, conf) {
-    'use strict';
+      var showDialogFn = function () {
+        dialog.$promise.then(dialog.show);
+      };
 
-    var dialog = $modal({
-      templateUrl: 'views/service_unreachable_notice.html',
-      backdrop: 'static',
-      show: false
-    });
+      var hideDialogFn = function () {
+        // simply refresh the page, to make sure page status is fresh
+        location.reload();
+      };
 
-    var showDialogFn = function() {
-      dialog.$promise.then(dialog.show);
-    };
-
-    var hideDialogFn = function() {
-      // simply refresh the page, to make sure page status is fresh
-      location.reload();
-    };
-
-    HealthCheckService.config(
-      conf.restapiRoot + 'version',
-      conf.restapiQueryInterval,
-      showDialogFn,
-      hideDialogFn
-    );
-    HealthCheckService.checkForever();
-  }]);
+      HealthCheckService.config(
+        conf.restapiRoot + 'version',
+        conf.restapiQueryInterval,
+        showDialogFn,
+        hideDialogFn
+      );
+      HealthCheckService.checkForever();
+    }]);
 })();

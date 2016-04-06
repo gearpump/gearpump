@@ -17,7 +17,7 @@
  - #1149: Shell tools printed too much detail on console
  - #1146: actor hungry when worker use block-io to wait response from FileServer.
  - #1088: move hbase code to external/
- - #1140：pass app name to task
+ - #1140: pass app name to task
  - #1017: Split daemon dependencies with core dependencies
  - #1144: fix out of memory when trying to scale gearpump to 2000 task on a 2 core machine
  - #995: Command line parser should be able to fall back  to MAIN-CLASS definition in MANIFEST.IN when mainClass is not specified in command line options.

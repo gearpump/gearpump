@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,16 @@
 
 package io.gearpump.services
 
-import akka.actor.{ActorSystem, ActorRef}
+import scala.util.{Failure, Success, Try}
+
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.{FormData, Multipart}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
-import akka.stream.{Materializer, ActorMaterializer}
+import akka.stream.Materializer
+import upickle.default.{read, write}
+
 import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.ClusterConfig
@@ -31,6 +35,8 @@ import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.jarstore.JarStoreService
 import io.gearpump.services.AppMasterService.Status
+// NOTE: This cannot be removed!!!
+import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.AppMasterToMaster.StallingTasks
 import io.gearpump.streaming.appmaster.DagManager._
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
@@ -38,9 +44,6 @@ import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary,
 import io.gearpump.util.ActorUtil.{askActor, askAppMaster}
 import io.gearpump.util.FileDirective._
 import io.gearpump.util.{Constants, Util}
-import upickle.default.{read, write}
-import io.gearpump.services.util.UpickleUtil._
-import scala.util.{Failure, Success, Try}
 
 /**
  * Management service for AppMaster
@@ -52,40 +55,42 @@ class AppMasterService(val master: ActorRef,
   private val systemConfig = system.settings.config
   private val concise = systemConfig.getBoolean(Constants.GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE)
 
-  override def doRoute(implicit mat: Materializer) = pathPrefix("appmaster" / IntNumber) { appId =>
-    path("dynamicdag") {
-      parameters(ParamMagnet("args")) { args: String =>
-        def replaceProcessor(dagOperation: DAGOperation): Route = {
-          onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
-            case Success(value) =>
-              complete(write(value))
-            case Failure(ex) =>
-              failWith(ex)
-          }
-        }
-
-        val msg = java.net.URLDecoder.decode(args)
-        val dagOperation = read[DAGOperation](msg)
-        (post & entity(as[Multipart.FormData])) { _ =>
-        uploadFile { form =>
-          val jar = form.getFile("jar").map(_.file)
-
-          if (jar.nonEmpty) {
-            dagOperation match {
-              case replace: ReplaceProcessor =>
-                val description = replace.newProcessorDescription.copy(jar = Util.uploadJar(jar.get, jarStore))
-                val dagOperationWithJar = replace.copy(newProcessorDescription = description)
-                replaceProcessor(dagOperationWithJar)
+  protected override def doRoute(implicit mat: Materializer) = pathPrefix("appmaster" / IntNumber) {
+    appId => {
+      path("dynamicdag") {
+        parameters(ParamMagnet("args")) { args: String =>
+          def replaceProcessor(dagOperation: DAGOperation): Route = {
+            onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
+              case Success(value) =>
+                complete(write(value))
+              case Failure(ex) =>
+                failWith(ex)
             }
-          } else {
-            replaceProcessor(dagOperation)
           }
+
+          val msg = java.net.URLDecoder.decode(args, "UTF-8")
+          val dagOperation = read[DAGOperation](msg)
+          (post & entity(as[Multipart.FormData])) { _ =>
+          uploadFile { form =>
+            val jar = form.getFile("jar").map(_.file)
+
+            if (jar.nonEmpty) {
+              dagOperation match {
+                case replace: ReplaceProcessor =>
+                  val description = replace.newProcessorDescription.copy(jar =
+                    Util.uploadJar(jar.get, jarStore))
+                  val dagOperationWithJar = replace.copy(newProcessorDescription = description)
+                  replaceProcessor(dagOperationWithJar)
+              }
+            } else {
+              replaceProcessor(dagOperation)
+            }
+          }
+        } ~ (post & entity(as[FormData])) { _ =>
+          replaceProcessor(dagOperation)
         }
-      } ~ (post & entity(as[FormData])) { _ =>
-        replaceProcessor(dagOperation)
-      }
-      }
-    } ~
+        }
+      } ~
       path("stallingtasks") {
         onComplete(askAppMaster[StallingTasks](master, appId, GetStallingTasks(appId))) {
           case Success(value) =>
@@ -124,23 +129,25 @@ class AppMasterService(val master: ActorRef,
           val executorId = Integer.parseInt(executorIdString)
           onComplete(askAppMaster[ExecutorConfig](master, appId, QueryExecutorConfig(executorId))) {
             case Success(value) =>
-              val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
+              val config = Option(value.config).map(ClusterConfig.render(_, concise))
+                .getOrElse("{}")
               complete(config)
             case Failure(ex) =>
               failWith(ex)
           }
         } ~
-        pathEnd {
-          get {
-            val executorId = Integer.parseInt(executorIdString)
-            onComplete(askAppMaster[ExecutorSummary](master, appId, GetExecutorSummary(executorId))) {
+          pathEnd {
+            get {
+              val executorId = Integer.parseInt(executorIdString)
+              onComplete(askAppMaster[ExecutorSummary](master, appId,
+            GetExecutorSummary(executorId))) {
               case Success(value) =>
                 complete(write(value))
               case Failure(ex) =>
                 failWith(ex)
+              }
             }
           }
-        }
       } ~
       path("metrics" / RestPath) { path =>
         parameterMap { optionMap =>
@@ -210,6 +217,7 @@ class AppMasterService(val master: ActorRef,
           }
         }
       }
+    }
   }
 }
 

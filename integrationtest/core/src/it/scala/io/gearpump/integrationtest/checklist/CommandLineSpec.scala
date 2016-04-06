@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -123,7 +123,6 @@ class CommandLineSpec extends TestSpecBase {
     appId should not equal -1
     appId
   }
-
 
   private def expectAppIsRunningByParsingOutput(appId: Int, expectedName: String): Unit = {
     val actual = commandLineClient.queryApp(appId)

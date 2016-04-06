@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,17 @@
 
 package io.gearpump.streaming.appmaster
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
+import org.mockito.Mockito._
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+
 import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.{AppJar, TestUtil, UserConfig}
 import io.gearpump.jarstore.FilePath
 import io.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
@@ -39,11 +46,7 @@ import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, ProcessorId}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import io.gearpump.{WorkerId, Message, TimeStamp}
-import org.mockito.Mockito._
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
-import scala.concurrent.Future
+import io.gearpump.{Message, TimeStamp}
 
 class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
@@ -73,8 +76,8 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   }
 
   override def afterEach(): Unit = {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   it should "recover by requesting new executors when executor stopped unexpectedly" in {
@@ -83,15 +86,18 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     implicit val dispatcher = system.dispatcher
 
     val resourceRequest = Array(ResourceRequest(resource, workerId))
-    when(scheduler.executorFailed(executorId)).thenReturn(Future{Some(ResourceRequestDetail(mockJar, resourceRequest))})
+    when(scheduler.executorFailed(executorId)).thenReturn(Future {
+      Some(ResourceRequestDetail(mockJar,
+        resourceRequest))
+    })
 
     taskManager ! ExecutorStopped(executorId)
 
-    // when one executor stop, it will also trigger the recovery by restart
+    // When one executor stop, it will also trigger the recovery by restart
     // existing executors
     executorManager.expectMsg(BroadCast(RestartTasks(dagVersion)))
 
-    // ask for new executors
+    // Asks for new executors
     val returned = executorManager.receiveN(1).head.asInstanceOf[StartExecutors]
     assert(returned.resources.deep == resourceRequest.deep)
     executorManager.reply(StartExecutorsTimeOut)
@@ -110,7 +116,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     executorManager.expectMsg(BroadCast(RestartTasks(dagVersion)))
   }
 
-  import TaskManager.TaskChangeRegistry
+  import io.gearpump.streaming.appmaster.TaskManager.TaskChangeRegistry
   "TaskChangeRegistry" should "track all modified task registration" in {
     val tasks = List(TaskId(0, 0), TaskId(0, 1))
     val registry = new TaskChangeRegistry(tasks)
@@ -155,24 +161,28 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val dagManager = TestProbe()
 
     val taskManager = system.actorOf(
-      Props(new TaskManager(appId, dagManager.ref, scheduler, executorManager.ref, clockService.ref, appMaster.ref, "appName")))
+      Props(new TaskManager(appId, dagManager.ref, scheduler, executorManager.ref, clockService.ref,
+        appMaster.ref, "appName")))
 
     dagManager.expectMsgType[WatchChange]
     executorManager.expectMsgType[SetTaskManager]
 
-    // step1: first transition from Unitialized to ApplicationReady
+    // Step1: first transition from Unitialized to ApplicationReady
     executorManager.expectMsgType[ExecutorResourceUsageSummary]
     dagManager.expectMsgType[NewDAGDeployed]
 
-    // step2: Get Additional Resource Request
-    when(scheduler.getRequestDetails())
-        .thenReturn(Future{Array(ResourceRequestDetail(mockJar, Array(ResourceRequest(resource, WorkerId.unspecified))))})
+    // Step2: Get Additional Resource Request
+    when(scheduler.getResourceRequestDetails())
+      .thenReturn(Future {
+        Array(ResourceRequestDetail(mockJar, Array(ResourceRequest(resource,
+          WorkerId.unspecified))))
+      })
 
-    // step3: DAG changed. Start transit from ApplicationReady -> DynamicDAG
+    // Step3: DAG changed. Start transit from ApplicationReady -> DynamicDAG
     dagManager.expectMsg(GetLatestDAG)
     dagManager.reply(LatestDAG(dag))
 
-    // step4: Start remote Executors.
+    // Step4: Start remote Executors.
     // received Broadcast
     executorManager.expectMsg(BroadCast(StartDynamicDag(dag.version)))
     executorManager.expectMsgType[StartExecutors]
@@ -180,10 +190,10 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     when(scheduler.scheduleTask(mockJar, workerId, executorId, resource))
       .thenReturn(Future(List(TaskId(0, 0), TaskId(1, 0))))
 
-    // step5: Executor is started.
+    // Step5: Executor is started.
     executorManager.reply(ExecutorStarted(executorId, resource, workerId, Some(mockJar)))
 
-    // step6: Prepare to start Task. First GetTaskLaunchData.
+    // Step6: Prepare to start Task. First GetTaskLaunchData.
     val taskLaunchData: PartialFunction[Any, TaskLaunchData] = {
       case GetTaskLaunchData(_, 0, executorStarted) =>
         task1LaunchData.copy(context = executorStarted)
@@ -197,18 +207,17 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val launchData2 = dagManager.expectMsgPF()(taskLaunchData)
     dagManager.reply(launchData2)
 
-    // step7: Launch Task
+    // Step7: Launch Task
     val launchTaskMatch: PartialFunction[Any, RegisterTask] = {
       case UniCast(executorId, launch: LaunchTasks) =>
-        Console.println("Launch Task " + launch.processorDescription.id)
         RegisterTask(launch.taskId.head, executorId, HostPort("127.0.0.1:3000"))
     }
 
-    // taskmanager should return the latest start clock to task(0,0)
+    // Taskmanager should return the latest start clock to task(0,0)
     clockService.expectMsg(GetStartClock)
     clockService.reply(StartClock(0))
 
-    // step8: Task is started. registerTask.
+    // Step8: Task is started. registerTask.
     val registerTask1 = executorManager.expectMsgPF()(launchTaskMatch)
     taskManager.tell(registerTask1, executor.ref)
     executor.expectMsgType[TaskRegistered]
@@ -217,53 +226,51 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     taskManager.tell(registerTask2, executor.ref)
     executor.expectMsgType[TaskRegistered]
 
-    // step9: start broadcasting TaskLocations.
+    // Step9: start broadcasting TaskLocations.
     import scala.concurrent.duration._
-    assert(executorManager.expectMsgPF(5 seconds) {
+    assert(executorManager.expectMsgPF(5.seconds) {
       case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[TaskLocationsReady]
     })
 
-    //step10: Executor confirm it has received TaskLocationsReceived(version, executorId)
+    // Step10: Executor confirm it has received TaskLocationsReceived(version, executorId)
     taskManager.tell(TaskLocationsReceived(dag.version, executorId), executor.ref)
 
-
-    // step11: Tell ClockService to update DAG.
+    // Step11: Tell ClockService to update DAG.
     clockService.expectMsgType[ChangeToNewDAG]
     clockService.reply(ChangeToNewDAGSuccess(Map.empty[ProcessorId, TimeStamp]))
 
-
-    //step12: start all tasks
+    // Step12: start all tasks
     import scala.concurrent.duration._
-    assert(executorManager.expectMsgPF(5 seconds) {
+    assert(executorManager.expectMsgPF(5.seconds) {
       case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[StartAllTasks]
     })
 
-    // step13, Tell executor Manager the updated usage status of executors.
+    // Step13, Tell executor Manager the updated usage status of executors.
     executorManager.expectMsgType[ExecutorResourceUsageSummary]
 
-    // step14: transition from DynamicDAG to ApplicationReady
+    // Step14: transition from DynamicDAG to ApplicationReady
     Env(executorManager, clockService, appMaster, executor, taskManager, scheduler)
   }
 }
 
 object TaskManagerSpec {
   case class Env(
-    executorManager: TestProbe,
-    clockService: TestProbe,
-    appMaster: TestProbe,
-    executor: TestProbe,
-    taskManager: ActorRef,
-    scheduler: JarScheduler)
+      executorManager: TestProbe,
+      clockService: TestProbe,
+      appMaster: TestProbe,
+      executor: TestProbe,
+      taskManager: ActorRef,
+      scheduler: JarScheduler)
 
-  class Task1(taskContext : TaskContext, userConf : UserConfig)
+  class Task1(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onStart(startTime: StartTime): Unit = ???
-    override def onNext(msg: Message): Unit = ???
+    override def onStart(startTime: StartTime): Unit = {}
+    override def onNext(msg: Message): Unit = {}
   }
 
-  class Task2 (taskContext : TaskContext, userConf : UserConfig)
+  class Task2(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onStart(startTime: StartTime): Unit = ???
-    override def onNext(msg: Message): Unit = ???
+    override def onStart(startTime: StartTime): Unit = {}
+    override def onNext(msg: Message): Unit = {}
   }
 }

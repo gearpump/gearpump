@@ -5,14 +5,14 @@
 
 angular.module('dashboard')
 
-  .directive('metricsCharts', function() {
+  .directive('metricsCharts', function () {
     'use strict';
 
     return {
       restrict: 'E',
       templateUrl: 'views/apps/streamingapp/metrics_charts.html',
       scope: true, // inherit parent scope
-      controller: ['$scope', '$interval', 'helper', 'models', function($scope, $interval, helper, models) {
+      controller: ['$scope', '$interval', 'helper', 'models', function ($scope, $interval, helper, models) {
         'use strict';
 
         var metricsProvider = $scope.dag;
@@ -34,7 +34,7 @@ angular.module('dashboard')
         recentChartPoints--; // ProcessorFilter will actually reduce one point
         histChartPoints--;
         var updateRecentMetricsPromise;
-        $scope.$on('$destroy', function() {
+        $scope.$on('$destroy', function () {
           $interval.cancel(updateRecentMetricsPromise);
         });
 
@@ -48,7 +48,7 @@ angular.module('dashboard')
               yAxisLabelFormatter: helper.yAxisLabelFormatterWithoutValue0(),
               visibleDataPointsNum: visibleDataPointsNum,
               data: dataPoints,
-              valueFormatter: function(value) {
+              valueFormatter: function (value) {
                 return helper.readableMetricValue(value) + ' ' + unit;
               }
             },
@@ -94,7 +94,7 @@ angular.module('dashboard')
             models.$get.appMetrics($scope.app.appId, $scope.metricsConfig.retainRecentDataIntervalMs) :
             models.$get.appHistMetrics($scope.app.appId);
 
-          queryMetricsPromise.then(function(metrics) {
+          queryMetricsPromise.then(function (metrics) {
             var data = metrics.$data();
             var timeResolution = $scope.isShowingCurrentMetrics ?
               $scope.metricsConfig.retainRecentDataIntervalMs :
@@ -143,7 +143,7 @@ angular.module('dashboard')
         }
 
         function metricsToChartData(metrics) {
-          return _.map(metrics, function(value, timeString) {
+          return _.map(metrics, function (value, timeString) {
             return {
               x: helper.timeToChartTimeLabel(Number(timeString), /*shortForm=*/$scope.isShowingCurrentMetrics),
               y: helper.metricRounded(value)
@@ -152,7 +152,7 @@ angular.module('dashboard')
         }
 
         $scope.isShowingCurrentMetrics = true;
-        $scope.$watch('isShowingCurrentMetrics', function(newVal, oldVal) {
+        $scope.$watch('isShowingCurrentMetrics', function (newVal, oldVal) {
           if (angular.equals(newVal, oldVal)) {
             return; // ignore initial notification
           }
@@ -161,7 +161,7 @@ angular.module('dashboard')
 
         // common watching
         var initial = true;
-        $scope.$watch('dag.metricsUpdateTime', function() {
+        $scope.$watch('dag.metricsUpdateTime', function () {
           if (initial) {
             // note that, the latest metrics do not contain enough points for drawing charts, so
             // we request recent metrics from server.

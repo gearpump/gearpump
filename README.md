@@ -78,6 +78,14 @@ export HTTPS_PROXY= http://host:port
 ## How to run Gearpump integration test
 Gearpump has an integration test system which is based on Docker. Please check [the instructions](integrationtest/README.md).
 
+## How to do style check before submitting a pull request?
+
+Before submitting a PR, you should always run style check first:
+```
+  ## Run style check for compile, test, and integration test.
+  sbt scalastyle test:scalastyle it:scalastyle
+```
+
 ## Contributors (time order)
 
 * [Sean Zhong](https://github.com/clockfly)

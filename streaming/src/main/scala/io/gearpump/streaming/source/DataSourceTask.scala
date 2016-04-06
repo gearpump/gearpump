@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,26 +18,27 @@
 
 package io.gearpump.streaming.source
 
-import io.gearpump.streaming.task.{Task, StartTime, TaskContext}
 import io.gearpump._
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 object DataSourceTask {
   val DATA_SOURCE = "data_source"
 }
 
 /**
- * general task that runs any [[DataSource]]
- * see [[DataSourceProcessor]] for its usage
+ * Task container for [[io.gearpump.streaming.source.DataSource]].
+ * See [[io.gearpump.streaming.source.DataSourceProcessor]] for its usage
  *
- * DataSourceTask calls
- *   - `DataSource.open` in `onStart` and pass in [[io.gearpump.streaming.task.TaskContext]] and application start time
- *   - `DataSource.read` in each `onNext`, which reads a batch of messages whose size are defined by
- *     `gearpump.source.read.batch.size`.
- *   - `DataSource.close` in `onStop`
+ * DataSourceTask calls:
+ *  - `DataSource.open()` in `onStart` and pass in [[io.gearpump.streaming.task.TaskContext]]
+ * and application start time
+ *  - `DataSource.read()` in each `onNext`, which reads a batch of messages whose size are
+ * defined by `gearpump.source.read.batch.size`.
+ *  - `DataSource.close()` in `onStop`
  */
 class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(context, conf) {
-  import DataSourceTask._
+  import io.gearpump.streaming.source.DataSourceTask._
 
   private val source = conf.getValue[DataSource](DATA_SOURCE).get
   private val batchSize = conf.getInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE).getOrElse(1000)

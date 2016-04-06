@@ -15,15 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.gearpump.transport
 
 import java.io.{DataInput, DataOutput}
 
 import io.gearpump.transport.MockTransportSerializer.NettyMessage
 import io.gearpump.transport.netty.ITransportMessageSerializer
-import org.jboss.netty.buffer.ChannelBuffer
 
-class MockTransportSerializer extends ITransportMessageSerializer{
+class MockTransportSerializer extends ITransportMessageSerializer {
   override def getLength(obj: scala.Any): Int = 4
 
   override def serialize(dataOutput: DataOutput, transportMessage: scala.Any): Unit = {
@@ -38,6 +38,6 @@ class MockTransportSerializer extends ITransportMessageSerializer{
   }
 }
 
-object MockTransportSerializer{
-  case class NettyMessage(num : Int)
+object MockTransportSerializer {
+  case class NettyMessage(num: Int)
 }

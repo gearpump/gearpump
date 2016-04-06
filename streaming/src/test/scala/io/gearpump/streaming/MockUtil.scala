@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,14 +17,12 @@
  */
 package io.gearpump.streaming
 
-import akka.actor.{ActorSystem, Actor}
-import akka.testkit.{TestProbe, TestActorRef}
-import io.gearpump.streaming.task.TaskContext
-import io.gearpump.streaming.task.TaskId
+import akka.actor.{Actor, ActorSystem}
+import akka.testkit.TestActorRef
+import org.mockito.{ArgumentMatcher, Matchers, Mockito}
+
 import io.gearpump.cluster.TestUtil
-import org.mockito.{Mockito, ArgumentMatcher}
-import org.mockito.Mockito
-import org.mockito.Matchers
+import io.gearpump.streaming.task.{TaskContext, TaskId}
 
 object MockUtil {
 
@@ -39,7 +37,7 @@ object MockUtil {
     context
   }
 
-  def argMatch[T](func: T => Boolean) : T = {
+  def argMatch[T](func: T => Boolean): T = {
     Matchers.argThat(new ArgumentMatcher[T] {
       override def matches(param: Any): Boolean = {
         val mesage = param.asInstanceOf[T]

@@ -40,7 +40,6 @@ After the transition period, the proposed process is like this:
 
 Before completing importing source code to Apache Git, we will still use
 
-
 ## Why we make a tag release now, but not wait until Apache importing complete?
 
 There are quite a lot of open task at https://issues.apache.org/jira/browse/GEARPUMP-1, which

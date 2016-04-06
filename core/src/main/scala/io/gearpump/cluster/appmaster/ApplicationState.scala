@@ -18,28 +18,30 @@
 
 package io.gearpump.cluster.appmaster
 
-import io.gearpump.cluster.{AppJar, AppDescription}
+import io.gearpump.cluster.{AppDescription, AppJar}
 
 /**
-  * This state will be persisted across the masters.
-  */
-case class ApplicationState(appId : Int, appName: String, attemptId : Int, app : AppDescription, jar: Option[AppJar], username : String, state : Any) extends Serializable {
+ * This state for single application, it is be distributed across the masters.
+ */
+case class ApplicationState(
+    appId: Int, appName: String, attemptId: Int, app: AppDescription, jar: Option[AppJar],
+    username: String, state: Any) extends Serializable {
 
-   override def equals(other: Any): Boolean = {
-     other match {
-       case that: ApplicationState =>
-         if (appId == that.appId && attemptId == that.attemptId) {
-           true
-         } else {
-           false
-         }
-       case _ =>
-         false
-     }
-   }
+  override def equals(other: Any): Boolean = {
+    other match {
+      case that: ApplicationState =>
+        if (appId == that.appId && attemptId == that.attemptId) {
+          true
+        } else {
+          false
+        }
+      case _ =>
+        false
+    }
+  }
 
-   override def hashCode: Int = {
-     import akka.routing.MurmurHash._
-     extendHash(appId, attemptId, startMagicA, startMagicB)
-   }
- }
+  override def hashCode: Int = {
+    import akka.routing.MurmurHash._
+    extendHash(appId, attemptId, startMagicA, startMagicB)
+  }
+}

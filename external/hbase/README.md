@@ -10,7 +10,7 @@ The message type that HBaseSink is able to handle including:
  2. Tuple4[Array[Byte], Array[Byte], Array[Byte], Array[Byte]] which means (rowKey, columnGroup, columnName, value)
  3. Sequence of type 1 and 2
   
-Suppose there is a DataSource Task will output above-mentitioned messages, you can write a simple application then:
+Suppose there is a DataSource Task will output above-mentioned messages, you can write a simple application then:
 
 ```scala
 val sink = new HBaseSink(UserConfig.empty, "$tableName")
@@ -25,7 +25,7 @@ val application = StreamApplication("HBase", Graph(computation), UserConfig.empt
 The HBase cluster should run on where Gearpump is deployed.
 Suppose HBase is installed at ```/usr/lib/hbase``` on every node and you already have your application built into a jar file. 
 Then before submitting the application, you need to add HBase lib folder and conf folder into ```gearpump.executor.extraClasspath``` in ```conf/gear.conf```, for example ```/usr/lib/hbase/lib/*:/usr/lib/hbase/conf```. 
-Please note only client side's configuration change is needed. After that, you are able to submmit the application.
+Please note only client side's configuration change is needed. After that, you are able to submit the application.
  
 ## Working with Secured HBASE
 
@@ -48,5 +48,4 @@ val application = StreamApplication("HBase", Graph(computation), UserConfig.empt
 ```
 
 Note here the keytab file set into config should be a byte array.
-
 

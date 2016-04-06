@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,20 @@
 
 package io.gearpump.cluster.main
 
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
+import org.slf4j.Logger
+
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.{Master => MasterActor}
 import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
-import io.gearpump.util.{AkkaApp, ActorUtil, Constants, LogUtil, Util}
-import org.slf4j.Logger
-
-import scala.collection.JavaConversions._
+import io.gearpump.util.{ActorUtil, AkkaApp, Constants, LogUtil, Util}
 
 object Local extends AkkaApp with ArgumentsParser {
   override def akkaConfig: Config = ClusterConfig.master()
@@ -37,7 +40,8 @@ object Local extends AkkaApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] =
     Array("sameprocess" -> CLIOption[Boolean]("", required = false, defaultValue = Some(false)),
-          "workernum"-> CLIOption[Int]("<how many workers to start>", required = false, defaultValue = Some(2)))
+      "workernum" -> CLIOption[Int]("<how many workers to start>", required = false,
+        defaultValue = Some(2)))
 
   override val description = "Start a local cluster"
 
@@ -49,23 +53,23 @@ object Local extends AkkaApp with ArgumentsParser {
     }
 
     val config = parse(args)
-    if (null == config) {
-      return
+    if (null != config) {
+      local(config.getInt("workernum"), config.getBoolean("sameprocess"), akkaConf)
     }
-    local(config.getInt("workernum"), config.getBoolean("sameprocess"), akkaConf)
   }
 
-  def local(workerCount : Int, sameProcess : Boolean, akkaConf: Config) : Unit = {
+  def local(workerCount: Int, sameProcess: Boolean, akkaConf: Config): Unit = {
     if (sameProcess) {
       LOG.info("Starting local in same process")
       System.setProperty("LOCAL", "true")
     }
-    val masters = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+    val masters = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS)
+      .asScala.flatMap(Util.parseHostList)
     val local = akkaConf.getString(Constants.GEARPUMP_HOSTNAME)
 
-    if(masters.size != 1 && masters.head.host != local) {
-      LOG.error(s"The ${Constants.GEARPUMP_CLUSTER_MASTERS} is not match with ${Constants.GEARPUMP_HOSTNAME}")
-
+    if (masters.size != 1 && masters.head.host != local) {
+      LOG.error(s"The ${Constants.GEARPUMP_CLUSTER_MASTERS} is not match " +
+        s"with ${Constants.GEARPUMP_HOSTNAME}")
     } else {
 
       val hostPort = masters.head
@@ -80,7 +84,7 @@ object Local extends AkkaApp with ArgumentsParser {
         system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)
       }
 
-      system.awaitTermination()
+      Await.result(system.whenTerminated, Duration.Inf)
     }
   }
 }

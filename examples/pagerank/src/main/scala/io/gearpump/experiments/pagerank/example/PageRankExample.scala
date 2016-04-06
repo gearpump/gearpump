@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,12 @@
  */
 package io.gearpump.experiments.pagerank.example
 
-import io.gearpump.experiments.pagerank.PageRankApplication
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.util.{AkkaApp, Graph}
+import io.gearpump.experiments.pagerank.PageRankApplication
 import io.gearpump.util.Graph.Node
+import io.gearpump.util.{AkkaApp, Graph}
 
+/** A very simple PageRank example, Cyclic graph is not supported */
 object PageRankExample extends AkkaApp {
 
   val a = "a"
@@ -29,7 +30,7 @@ object PageRankExample extends AkkaApp {
   val c = "c"
   val d = "d"
 
-  def help: Unit = Unit
+  def help(): Unit = Unit
 
   def main(akkaConf: Config, args: Array[String]): Unit = {
     val pageRankGraph = Graph(a ~> b, a ~> c, a ~> d, b ~> a, b ~> d, d ~> b, d ~> c, c ~> b)

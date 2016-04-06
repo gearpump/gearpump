@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,31 +18,34 @@
 
 package io.gearpump.experiments.storm
 
+import org.slf4j.Logger
+
 import io.gearpump.experiments.storm.main.{GearpumpNimbus, GearpumpStormClient}
 import io.gearpump.util.LogUtil
-import org.slf4j.Logger
 
 object StormRunner {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   private val commands = Map("nimbus" -> GearpumpNimbus, "app" -> GearpumpStormClient)
 
-  private def usage: Unit = {
+  private def usage(): Unit = {
     val keys = commands.keys.toList.sorted
+    // scalastyle:off println
     Console.err.println("Usage: " + "<" + keys.mkString("|") + ">")
+    // scalastyle:on println
   }
 
-  private def executeCommand(command : String, commandArgs : Array[String]): Unit = {
+  private def executeCommand(command: String, commandArgs: Array[String]): Unit = {
     if (!commands.contains(command)) {
-      usage
+      usage()
     } else {
       commands(command).main(commandArgs)
     }
   }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     if (args.length == 0) {
-      usage
+      usage()
     } else {
       val command = args(0)
       val commandArgs = args.drop(1)

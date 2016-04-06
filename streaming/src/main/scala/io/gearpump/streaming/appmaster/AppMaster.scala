@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,17 +19,21 @@
 package io.gearpump.streaming.appmaster
 
 import java.lang.management.ManagementFactory
+import scala.concurrent.Future
 
 import akka.actor._
+import org.slf4j.Logger
+
 import io.gearpump._
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
-import io.gearpump.cluster.MasterToClient.{HistoryMetricsItem, HistoryMetrics, LastFailure}
+import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, LastFailure}
 import io.gearpump.cluster._
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.partitioner.PartitionerDescription
-import io.gearpump.streaming.ExecutorToAppMaster.{UnRegisterTask, MessageLoss, RegisterExecutor, RegisterTask}
+import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask, UnRegisterTask}
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.AppMaster._
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
@@ -42,30 +46,27 @@ import io.gearpump.streaming.util.ActorPathUtil
 import io.gearpump.util.Constants.{APPMASTER_DEFAULT_EXECUTOR_ID, _}
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import io.gearpump.util._
-import org.slf4j.Logger
-
-import scala.concurrent.Future
 
 /**
  * AppMaster is the head of a streaming application.
  *
  * It contains:
- * 1. ExecutorManager to manage all executors.
- * 2. TaskManager to manage all tasks,
- * 3. ClockService to track the global clock for this streaming application.
- * 4. Scheduler to decide which a task should be scheduled to.
- *
+ *  1. ExecutorManager to manage all executors.
+ *  2. TaskManager to manage all tasks,
+ *  3. ClockService to track the global clock for this streaming application.
+ *  4. Scheduler to decide which a task should be scheduled to.
  */
-class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends ApplicationMaster {
+class AppMaster(appContext: AppMasterContext, app: AppDescription) extends ApplicationMaster {
   import app.userConfig
   import appContext.{appId, masterProxy, username}
 
-  implicit val actorSystem = context.system
-  implicit val timeOut = FUTURE_TIMEOUT
-  import akka.pattern.ask
-  implicit val dispatcher = context.dispatcher
+  private implicit val actorSystem = context.system
+  private implicit val timeOut = FUTURE_TIMEOUT
 
-  val startTime: TimeStamp = System.currentTimeMillis()
+  import akka.pattern.ask
+  private implicit val dispatcher = context.dispatcher
+
+  private val startTime: TimeStamp = System.currentTimeMillis()
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username, app: $app xxxxxxxxxxxxxxxxx")
@@ -83,11 +84,12 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   private var lastFailure = LastFailure(0L, null)
 
   private val appMasterBrief = ExecutorBrief(APPMASTER_DEFAULT_EXECUTOR_ID,
-    self.path.toString, Option(appContext.workerInfo).map(_.workerId).getOrElse(WorkerId.unspecified), "active")
+    self.path.toString,
+    Option(appContext.workerInfo).map(_.workerId).getOrElse(WorkerId.unspecified), "active")
 
   private val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
 
-  val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
+  private val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
 
   private val userDir = System.getProperty("user.dir")
   private val logFile = LogUtil.applicationLogDir(actorSystem.settings.config)
@@ -104,12 +106,15 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   )
 
   private val historyMetricsService = if (metricsEnabled) {
-    // register jvm metrics
-    Metrics(context.system).register(new JvmMetricsSet(s"app${appId}.executor${APPMASTER_DEFAULT_EXECUTOR_ID}"))
+    // Registers jvm metrics
+    Metrics(context.system).register(new JvmMetricsSet(
+      s"app${appId}.executor${APPMASTER_DEFAULT_EXECUTOR_ID}"))
 
-    val historyMetricsService = context.actorOf(Props(new HistoryMetricsService(s"app$appId", getHistoryMetricsConfig)))
+    val historyMetricsService = context.actorOf(Props(new HistoryMetricsService(
+      s"app$appId", getHistoryMetricsConfig)))
 
-    val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
+    val metricsReportService = context.actorOf(Props(
+      new MetricsReporterService(Metrics(context.system))))
     historyMetricsService.tell(ReportMetrics, metricsReportService)
 
     Some(historyMetricsService)
@@ -129,13 +134,15 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       jarScheduler, executorManager, clockService.get, self, app.name))))
   }
 
-  override def receive : Receive =
-      taskMessageHandler orElse
+  override def receive: Receive = {
+    taskMessageHandler orElse
       executorMessageHandler orElse
       recover orElse
       appMasterService orElse
       ActorUtil.defaultMsgHandler(self)
+  }
 
+  /** Handles messages from Tasks */
   def taskMessageHandler: Receive = {
     case clock: ClockEvent =>
       taskManager.foreach(_ forward clock)
@@ -143,7 +150,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       taskManager.foreach(_ forward register)
     case unRegister: UnRegisterTask =>
       taskManager.foreach(_ forward unRegister)
-      // check whether this processor dead, if it is, then we should remove it from clockService.
+      // Checks whether this processor dead, if it is, then we should remove it from clockService.
       clockService.foreach(_ forward CheckProcessorDeath(unRegister.taskId.processorId))
     case replay: ReplayFromTimestampWindowTrailingEdge =>
       taskManager.foreach(_ forward replay)
@@ -163,6 +170,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       clockService.foreach(_ forward GetCheckpointClock)
   }
 
+  /** Handles messages from Executors */
   def executorMessageHandler: Receive = {
     case register: RegisterExecutor =>
       executorManager forward register
@@ -170,6 +178,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       historyMetricsService.foreach(_ forward ReportMetrics)
   }
 
+  /** Handles messages from AppMaster */
   def appMasterService: Receive = {
     case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
       LOG.debug(s"AppMaster got AppMasterDataDetailRequest for $appId ")
@@ -179,14 +188,17 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       val taskFuture = getTaskList
       val dagFuture = getDAG
 
-      val appMasterDataDetail = for {executors <- executorsFuture
+      val appMasterDataDetail = for {
+        executors <- executorsFuture
         clock <- clockFuture
         tasks <- taskFuture
         dag <- dagFuture
       } yield {
         val graph = dag.graph
 
-        val executorToTasks = tasks.tasks.groupBy(_._2).mapValues {_.keys.toList}
+        val executorToTasks = tasks.tasks.groupBy(_._2).mapValues {
+          _.keys.toList
+        }
 
         val processors = dag.processors.map { kv =>
           val processor = kv._2
@@ -195,7 +207,8 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
             (kv._1, TaskCount(kv._2.count(_.processorId == id)))
           }.filter(_._2.count != 0)
           (id,
-          ProcessorSummary(id, taskClass, parallelism, description, taskConf, life, tasks.keys.toList, tasks))
+            ProcessorSummary(id, taskClass, parallelism, description, taskConf, life,
+              tasks.keys.toList, tasks))
         }
 
         StreamAppMasterSummary(
@@ -211,7 +224,7 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
           logFile = logFile.getAbsolutePath,
           processors = processors,
           processorLevels = graph.vertexHierarchyLevelMap(),
-          dag = graph.mapEdge {(node1, edge, node2) =>
+          dag = graph.mapEdge { (node1, edge, node2) =>
             edge.partitionerFactory.name
           },
           executors = executors,
@@ -221,16 +234,16 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 
       val client = sender()
 
-      appMasterDataDetail.map{appData =>
+      appMasterDataDetail.map { appData =>
         client ! appData
       }
-// TODO: WebSocket is buggy and disabled.
-//    case appMasterMetricsRequest: AppMasterMetricsRequest =>
-//      val client = sender()
-//      actorSystem.eventStream.subscribe(client, classOf[MetricType])
+    // TODO: WebSocket is buggy and disabled.
+    //    case appMasterMetricsRequest: AppMasterMetricsRequest =>
+    //      val client = sender()
+    //      actorSystem.eventStream.subscribe(client, classOf[MetricType])
     case query: QueryHistoryMetrics =>
       if (historyMetricsService.isEmpty) {
-        // return empty metrics so that we don't hang the UI
+        // Returns empty metrics so that we don't hang the UI
         sender ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
       } else {
         historyMetricsService.get forward query
@@ -241,34 +254,37 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
       dagManager forward replaceDAG
     case GetLastFailure(_) =>
       sender ! lastFailure
-    case  get@ GetExecutorSummary(executorId) =>
+    case get@GetExecutorSummary(executorId) =>
       val client = sender
       if (executorId == APPMASTER_DEFAULT_EXECUTOR_ID) {
         client ! appMasterExecutorSummary
       } else {
-        ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
-          map.get(executorId).foreach { executor =>
-            executor.executor.tell(get, client)
+        ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo)
+          .map { map =>
+            map.get(executorId).foreach { executor =>
+              executor.executor.tell(get, client)
+            }
           }
-        }
       }
-    case query@ QueryExecutorConfig(executorId) =>
+    case query@QueryExecutorConfig(executorId) =>
       val client = sender
       if (executorId == -1) {
         val systemConfig = context.system.settings.config
         sender ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
       } else {
-        ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { map =>
-          map.get(executorId).foreach { executor =>
-            executor.executor.tell(query, client)
+        ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo)
+          .map { map =>
+            map.get(executorId).foreach { executor =>
+              executor.executor.tell(query, client)
+            }
           }
-        }
       }
-   }
+  }
 
+  /** Error handling */
   def recover: Receive = {
     case FailedToRecover(errorMsg) =>
-      if(context.children.toList.contains(sender())){
+      if (context.children.toList.contains(sender())) {
         LOG.error(errorMsg)
         masterProxy ! ShutdownApplication(appId)
       }
@@ -288,14 +304,15 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   }
 
   private def executorBrief: Future[List[ExecutorBrief]] = {
-    ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo).map { infos =>
-      infos.values.map { info =>
-        ExecutorBrief(info.executorId,
-          info.executor.path.toSerializationFormat,
-          info.worker.workerId,
-          "active")
-      }.toList :+ appMasterBrief
-    }
+    ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo)
+      .map { infos =>
+        infos.values.map { info =>
+          ExecutorBrief(info.executorId,
+            info.executor.path.toSerializationFormat,
+            info.worker.workerId,
+            "active")
+        }.toList :+ appMasterBrief
+      }
   }
 
   private def getTaskList: Future[TaskList] = {
@@ -312,10 +329,11 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
   }
 
   private def getUpdatedDAG(): DAG = {
-    val dag = DAG(userConfig.getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get)
-    val updated = dag.processors.map{ idAndProcessor =>
+    val dag = DAG(userConfig.getValue[Graph[ProcessorDescription,
+      PartitionerDescription]](StreamApplication.DAG).get)
+    val updated = dag.processors.map { idAndProcessor =>
       val (id, oldProcessor) = idAndProcessor
-      val newProcessor = if(oldProcessor.jar == null) {
+      val newProcessor = if (oldProcessor.jar == null) {
         oldProcessor.copy(jar = appContext.appJar.getOrElse(null))
       } else {
         oldProcessor
@@ -327,14 +345,18 @@ class AppMaster(appContext : AppMasterContext, app : AppDescription)  extends Ap
 }
 
 object AppMaster {
+
+  /** Master node doesn't return resource in time */
   case object AllocateResourceTimeOut
 
+  /** Query task ActorRef by providing the taskId */
   case class LookupTaskActorRef(taskId: TaskId)
 
   case class TaskActorRef(task: ActorRef)
 
   class ServiceNotAvailableException(reason: String) extends Exception(reason)
 
-  case class ExecutorBrief(executorId: ExecutorId, executor: String, workerId: WorkerId, status: String)
+  case class ExecutorBrief(
+      executorId: ExecutorId, executor: String, workerId: WorkerId, status: String)
 
 }

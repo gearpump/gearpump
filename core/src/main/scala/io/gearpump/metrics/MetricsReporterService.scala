@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,16 +20,22 @@ package io.gearpump.metrics
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
-
-import akka.actor.{ActorRef, ExtendedActorSystem, Actor}
-import io.gearpump.codahale.metrics.{Slf4jReporter, MetricFilter, ScheduledReporter}
-import io.gearpump.codahale.metrics.graphite.{GraphiteReporter, Graphite}
-import io.gearpump.metrics.Metrics.{ReportMetrics, DemandMoreMetrics}
-import io.gearpump.metrics.MetricsReporterService.{ReportTo}
-import io.gearpump.util.Constants._
-import io.gearpump.util.LogUtil
 import scala.concurrent.duration._
 
+import akka.actor.{Actor, ActorRef}
+
+import io.gearpump.codahale.metrics.graphite.{Graphite, GraphiteReporter}
+import io.gearpump.codahale.metrics.{MetricFilter, Slf4jReporter}
+import io.gearpump.metrics.Metrics.{DemandMoreMetrics, ReportMetrics}
+import io.gearpump.metrics.MetricsReporterService.ReportTo
+import io.gearpump.util.Constants._
+import io.gearpump.util.LogUtil
+
+/**
+ * Reports the metrics data to some where, like Ganglia, remote Akka actor, log files...
+ *
+ * @param metrics Holds a list of metrics object.
+ */
 class MetricsReporterService(metrics: Metrics) extends Actor {
 
   private val LOG = LogUtil.getLogger(getClass)
@@ -40,14 +46,15 @@ class MetricsReporterService(metrics: Metrics) extends Actor {
   implicit val dispatcher = context.dispatcher
 
   def receive: Receive = {
+    // The subscriber is demanding more messages.
     case DemandMoreMetrics(subscriber) => {
       reporter.report(subscriber)
-      context.system.scheduler.scheduleOnce(reportInterval milliseconds,
+      context.system.scheduler.scheduleOnce(reportInterval.milliseconds,
         subscriber, ReportMetrics)
     }
   }
 
-  def startGraphiteReporter = {
+  def startGraphiteReporter(): ReportTo = {
     val graphiteHost = system.settings.config.getString(GEARPUMP_METRIC_GRAPHITE_HOST)
     val graphitePort = system.settings.config.getInt(GEARPUMP_METRIC_GRAPHITE_PORT)
 
@@ -64,7 +71,7 @@ class MetricsReporterService(metrics: Metrics) extends Actor {
     }
   }
 
-  def startSlf4jReporter = {
+  def startSlf4jReporter(): ReportTo = {
     new ReportTo {
       val reporter = Slf4jReporter.forRegistry(metrics.registry)
         .convertRatesTo(TimeUnit.SECONDS)
@@ -77,7 +84,7 @@ class MetricsReporterService(metrics: Metrics) extends Actor {
     }
   }
 
-  def startAkkaReporter = {
+  def startAkkaReporter(): ReportTo = {
     new AkkaReporter(system, metrics.registry)
   }
 
@@ -85,16 +92,18 @@ class MetricsReporterService(metrics: Metrics) extends Actor {
     val reporterType = system.settings.config.getString(GEARPUMP_METRIC_REPORTER)
     LOG.info(s"Metrics reporter is enabled, using $reporterType reporter")
     val reporter = reporterType match {
-      case "graphite" => startGraphiteReporter
-      case "logfile" => startSlf4jReporter
-      case "akka" => startAkkaReporter
+      case "graphite" => startGraphiteReporter()
+      case "logfile" => startSlf4jReporter()
+      case "akka" => startAkkaReporter()
     }
     reporter
   }
 }
 
 object MetricsReporterService {
-  trait ReportTo{
+
+  /** Target where user want to report the metrics data to */
+  trait ReportTo {
     def report(to: ActorRef): Unit
   }
 }

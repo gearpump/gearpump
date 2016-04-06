@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,6 @@
 
 package io.gearpump.streaming.hadoop
 
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.hadoop.lib.HadoopUtil
-import io.gearpump.streaming.hadoop.lib.rotation.FileSizeRotation
-import io.gearpump.streaming.task.TaskId
-import io.gearpump.cluster.UserConfig
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.mockito.Mockito._
@@ -31,7 +26,14 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-class HadoopCheckpointStoreIntegrationSpec extends PropSpec with PropertyChecks with MockitoSugar with Matchers {
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.hadoop.lib.HadoopUtil
+import io.gearpump.streaming.hadoop.lib.rotation.FileSizeRotation
+import io.gearpump.streaming.task.TaskId
+
+class HadoopCheckpointStoreIntegrationSpec
+  extends PropSpec with PropertyChecks with MockitoSugar with Matchers {
 
   property("HadoopCheckpointStore should persist and recover checkpoints") {
     val fileSizeGen = Gen.chooseNum[Int](100, 1000)
@@ -44,7 +46,8 @@ class HadoopCheckpointStoreIntegrationSpec extends PropSpec with PropertyChecks 
       when(taskContext.taskId).thenReturn(TaskId(0, 0))
 
       val rootDirName = "test"
-      val rootDir = new Path(rootDirName + Path.SEPARATOR + s"v${HadoopCheckpointStoreFactory.VERSION}")
+      val rootDir = new Path(rootDirName + Path.SEPARATOR +
+        s"v${HadoopCheckpointStoreFactory.VERSION}")
       val subDir = new Path(rootDir, "app0-task0_0")
 
       val fs = HadoopUtil.getFileSystemForPath(rootDir, hadoopConfig)
@@ -60,7 +63,7 @@ class HadoopCheckpointStoreIntegrationSpec extends PropSpec with PropertyChecks 
       val tempFile = new Path(subDir, "checkpoints-0.store")
       fs.exists(tempFile) shouldBe true
 
-      checkpointStore.persist(1L , Array.fill(fileSize)(0.toByte))
+      checkpointStore.persist(1L, Array.fill(fileSize)(0.toByte))
       fs.exists(tempFile) shouldBe false
       fs.exists(new Path(subDir, "checkpoints-0-1.store")) shouldBe true
 
@@ -80,6 +83,4 @@ class HadoopCheckpointStoreIntegrationSpec extends PropSpec with PropertyChecks 
       fs.close()
     }
   }
-
-
 }

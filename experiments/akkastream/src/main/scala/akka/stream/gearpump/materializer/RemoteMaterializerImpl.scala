@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,19 +21,18 @@ package akka.stream.gearpump.materializer
 import akka.actor.ActorSystem
 import akka.stream.ModuleGraph.Edge
 import akka.stream.gearpump.GearAttributes
-import akka.stream.gearpump.module.{ProcessorModule, ReduceModule, GroupByModule, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
-import akka.stream.gearpump.task.{BalanceTask, BroadcastTask, GraphTask, UnZip2Task, SinkBridgeTask, SourceBridgeTask}
-import akka.stream.impl.GenJunctions.{UnzipWith2Module, ZipWithModule}
-import akka.stream.impl.Junctions._
-import akka.stream.impl.{FlexiRouteImpl, Stages}
-import akka.stream.impl.Stages.{MaterializingStageFactory, StageModule}
+import akka.stream.gearpump.module.{GroupByModule, ProcessorModule, ReduceModule, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
+import akka.stream.gearpump.task.{BalanceTask, BroadcastTask, GraphTask, SinkBridgeTask, SourceBridgeTask, UnZip2Task}
+import akka.stream.impl.Stages
+import akka.stream.impl.Stages.StageModule
 import akka.stream.impl.StreamLayout.Module
+import org.slf4j.LoggerFactory
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl.StreamApp
-import io.gearpump.streaming.dsl.op.{GroupByOp, DataSinkOp, DataSourceOp, Direct, FlatMapOp, MasterOp, MergeOp, Op, OpEdge, ProcessorOp, Shuffle, SlaveOp}
+import io.gearpump.streaming.dsl.op.{DataSinkOp, DataSourceOp, Direct, FlatMapOp, GroupByOp, MasterOp, MergeOp, Op, OpEdge, ProcessorOp, Shuffle, SlaveOp}
 import io.gearpump.streaming.{ProcessorId, StreamApplication}
 import io.gearpump.util.Graph
-import org.slf4j.LoggerFactory
 
 /**
  * [[RemoteMaterializerImpl]] will materialize the [[Graph[Module, Edge]] to a Gearpump
@@ -118,7 +117,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
   }
 
   private def cleanClues(app: StreamApplication): StreamApplication = {
-    val graph = app.dag.mapVertex{ processor =>
+    val graph = app.dag.mapVertex { processor =>
       val conf = cleanClue(processor.taskConf)
       processor.copy(taskConf = conf)
     }
@@ -126,7 +125,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
   }
 
   private def cleanClue(conf: UserConfig): UserConfig = {
-    conf.filter{kv =>
+    conf.filter { kv =>
       kv._2 != RemoteMaterializerImpl.STAINS
     }
   }
@@ -180,7 +179,6 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
     }
     (opGraph, matValues)
   }
-
 
   private def translateStage(module: StageModule, conf: UserConfig): Op = {
     module match {
@@ -252,10 +250,10 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
   }
 
   private def translateFanIn(
-      fanIn: FanInModule,
-      edges: List[(Module, Edge, Module)],
-      parallelism: Int,
-      conf: UserConfig): Op = {
+    fanIn: FanInModule,
+    edges: List[(Module, Edge, Module)],
+    parallelism: Int,
+    conf: UserConfig): Op = {
     fanIn match {
       case merge: MergeModule[_] =>
         MergeOp("merge", conf)
@@ -275,10 +273,10 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
   }
 
   private def translateFanOut(
-      fanOut: FanOutModule,
-      edges: List[(Module, Edge, Module)],
-      parallelism: Int,
-      conf: UserConfig): Op = {
+    fanOut: FanOutModule,
+    edges: List[(Module, Edge, Module)],
+    parallelism: Int,
+    conf: UserConfig): Op = {
     fanOut match {
       case unzip2: UnzipWith2Module[Any, Any, Any] =>
         val updatedConf = conf.withValue(UnZip2Task.UNZIP2_FUNCTION, new UnZip2Task.UnZipFunction(unzip2.f))
@@ -332,7 +330,7 @@ object RemoteMaterializerImpl {
   }
 
   def mapOp(map: Any => Any, conf: UserConfig): Op = {
-    flatMapOp ({ data: Any =>
+    flatMapOp({ data: Any =>
       List(map(data))
     }, "map", conf)
   }
@@ -346,8 +344,8 @@ object RemoteMaterializerImpl {
   }
 
   def conflatOp(seed: Any => Any, aggregate: (Any, Any) => Any, conf: UserConfig): Op = {
-    var agg : Any = null
-    val flatMap = {elem: Any =>
+    var agg: Any = null
+    val flatMap = { elem: Any =>
       agg = if (agg == null) {
         seed(elem)
       } else {
@@ -356,7 +354,7 @@ object RemoteMaterializerImpl {
       List(agg)
     }
 
-    flatMapOp (flatMap, "map", conf)
+    flatMapOp(flatMap, "map", conf)
   }
 
   def foldOp(zero: Any, fold: (Any, Any) => Any, conf: UserConfig): Op = {
@@ -376,7 +374,7 @@ object RemoteMaterializerImpl {
       b
     }
 
-    val flatMap: Any=>Iterable[Any] = {input: Any =>
+    val flatMap: Any => Iterable[Any] = { input: Any =>
       buf += input
       left -= 1
       if (left == 0) {
@@ -393,7 +391,7 @@ object RemoteMaterializerImpl {
 
   def dropOp(number: Long, conf: UserConfig): Op = {
     var left = number
-    val flatMap: Any=>Iterable[Any] = {input: Any =>
+    val flatMap: Any => Iterable[Any] = { input: Any =>
       if (left > 0) {
         left -= 1
         None
@@ -404,14 +402,14 @@ object RemoteMaterializerImpl {
     flatMapOp(flatMap, "drop", conf)
   }
 
-  def dropWhileOp(drop: Any=>Boolean, conf: UserConfig): Op = {
+  def dropWhileOp(drop: Any => Boolean, conf: UserConfig): Op = {
     flatMapOp({ data =>
-      if (drop(data))  None else Option(data)
+      if (drop(data)) None else Option(data)
     }, "dropWhile", conf)
   }
 
-  def logOp(name: String, extract: Any=>Any, conf: UserConfig): Op = {
-    val flatMap = {elem: Any =>
+  def logOp(name: String, extract: Any => Any, conf: UserConfig): Op = {
+    val flatMap = { elem: Any =>
       LoggerFactory.getLogger(name).info(s"Element: {${extract(elem)}}")
       List(elem)
     }
@@ -422,7 +420,7 @@ object RemoteMaterializerImpl {
     var aggregator = zero
     var pushedZero = false
 
-    val flatMap = {elem: Any =>
+    val flatMap = { elem: Any =>
       aggregator = f(aggregator, elem)
 
       if (pushedZero) {
@@ -438,7 +436,7 @@ object RemoteMaterializerImpl {
   def takeOp(count: Long, conf: UserConfig): Op = {
     var left: Long = count
 
-    val filter: Any=>Iterable[Any] = {elem: Any =>
+    val filter: Any => Iterable[Any] = { elem: Any =>
       left -= 1
       if (left > 0) Some(elem)
       else if (left == 0) Some(elem)

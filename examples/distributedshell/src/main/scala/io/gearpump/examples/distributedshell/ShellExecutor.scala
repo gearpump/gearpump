@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,18 @@
 
 package io.gearpump.examples.distributedshell
 
+import scala.sys.process._
+import scala.util.{Failure, Success, Try}
+
 import akka.actor.Actor
-import io.gearpump.cluster.{UserConfig, ExecutorContext}
-import DistShellAppMaster.{ShellCommandResult, ShellCommand}
-import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-import scala.util.{Failure, Success, Try}
-import sys.process._
+import io.gearpump.cluster.{ExecutorContext, UserConfig}
+import io.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
+import io.gearpump.util.LogUtil
 
-class ShellExecutor(executorContext: ExecutorContext, userConf : UserConfig) extends Actor{
+/** Executor actor on remote machine */
+class ShellExecutor(executorContext: ExecutorContext, userConf: UserConfig) extends Actor {
   import executorContext._
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 
@@ -35,7 +37,7 @@ class ShellExecutor(executorContext: ExecutorContext, userConf : UserConfig) ext
 
   override def receive: Receive = {
     case ShellCommand(command) =>
-      val process = Try(s"$command" !!)
+      val process = Try(s"$command".!!)
       val result = process match {
         case Success(msg) => msg
         case Failure(ex) => ex.getMessage
