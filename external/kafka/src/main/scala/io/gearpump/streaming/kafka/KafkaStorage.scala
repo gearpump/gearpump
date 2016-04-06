@@ -94,7 +94,13 @@ class KafkaStorage private[kafka](
     }
   }
 
-
+  /**
+   * offsets with timestamp < `time` have already been processed by the system
+   * so we look up the storage for the first offset with timestamp >= `time` on replay
+   *
+   * @param time the timestamp to look up for the earliest unprocessed offset
+   * @return the earliest unprocessed offset if `time` is in the range, otherwise failure
+   */
   override def lookUp(time: TimeStamp): Try[Array[Byte]] = {
     if (dataByTime.isEmpty) {
       Failure(StorageEmpty)
@@ -106,7 +112,7 @@ class KafkaStorage private[kafka](
       } else if (time > max._1) {
         Failure(Overflow(max._2))
       } else {
-        Success(dataByTime.reverse.find(_._1 <= time).get._2)
+        Success(dataByTime.find(_._1 >= time).get._2)
       }
     }
   }
