@@ -20,6 +20,10 @@ script:
   fi  
 jdk:
 - oraclejdk8
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
 scala:
 - 2.11.8
 cache:
