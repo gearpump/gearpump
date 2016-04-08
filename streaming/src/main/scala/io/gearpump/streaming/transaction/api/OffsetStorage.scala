@@ -47,15 +47,17 @@ object OffsetStorage {
  */
 trait OffsetStorage {
   /**
-   * try to look up the time in the OffsetStorage
-   * return the corresponding Offset if the time is
-   * in the range of stored TimeStamps or one of the
-   * failure info (StorageEmpty, Overflow, Underflow)
+   * try to look up the time in the OffsetStorage return the corresponding Offset if the time is
+   * in the range of stored TimeStamps or one of the failure info (StorageEmpty, Overflow,
+   * Underflow)
+   *
    * @param time the time to look for
    * @return the corresponding offset if the time is in the range, otherwise failure
    */
   def lookUp(time: TimeStamp): Try[Array[Byte]]
+
   def append(time: TimeStamp, offset: Array[Byte]): Unit
+
   def close(): Unit
 }
 

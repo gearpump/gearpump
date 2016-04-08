@@ -43,7 +43,6 @@ class TaskRegistry(val expectedTasks: List[TaskId],
   /**
    * When a task is booted, it need to call registerTask to register itself.
    * If this task is valid, then accept it, otherwise reject it.
-   *
    */
   def registerTask(taskId: TaskId, location: TaskLocation): RegisterTaskStatus = {
     val processorId = taskId.processorId

@@ -164,7 +164,7 @@ object ProcessorAggregator {
    * MultiLayerMap has multiple layers. For each layer, there
    * is a hashMap.
    *
-   * To access a value with [[get]], user need to specify first layer Id, then key.
+   * To access a value with get, user need to specify first layer Id, then key.
    *
    *
    * This class is optimized for performance.
