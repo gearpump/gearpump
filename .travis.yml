@@ -12,9 +12,9 @@ script:
 - echo "repo" $TRAVIS_REPO_SLUG
 - set -o pipefail; skipLogs="Resolving |Compiling |Done updating|Updating |scoverage|coverage-report";
   if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]];
-    then sbt -jvm-opts project/travis/jvmopts clean coverage scalastyle test:scalastyle it:scalastyle unidoc +test | grep -v -E "$skipLogs";
+    then sbt -jvm-opts project/travis/jvmopts clean  scalastyle test:scalastyle it:scalastyle unidoc coverage +test | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_BRANCH == "master" ]];
-    then sbt -jvm-opts project/travis/jvmopts clean +publish | grep -v -E "$skipLogs"; sbt -jvm-opts project/travis/jvmopts scalastyle test:scalastyle it:scalastyle coverage unidoc +test  | grep -v -E "$skipLogs";
+    then sbt -jvm-opts project/travis/jvmopts clean +publish | grep -v -E "$skipLogs"; sbt -jvm-opts project/travis/jvmopts scalastyle test:scalastyle it:scalastyle unidoc coverage  +test  | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_TAG != "" ]];
     then sbt -jvm-opts project/travis/jvmopts clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
   fi  
