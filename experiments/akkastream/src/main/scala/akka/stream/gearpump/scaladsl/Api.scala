@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,18 @@
 
 package akka.stream.gearpump.scaladsl
 
-import akka.stream.{FlowShape, Graph, Attributes}
-import akka.stream.gearpump.module.{ProcessorModule, ReduceModule, GroupByModule, DummySink, DummySource, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
-import akka.stream.impl.Stages.Map
-import akka.stream.scaladsl.{FlowOps, Flow, Keep, Sink, Source}
+import akka.stream.Attributes
+import akka.stream.gearpump.module.{DummySink, DummySource, GroupByModule, ProcessorModule, ReduceModule, SinkBridgeModule, SinkTaskModule, SourceBridgeModule, SourceTaskModule}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import org.reactivestreams.{Publisher, Subscriber}
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.task.Task
-import org.reactivestreams.{Publisher, Subscriber}
 
 
-object GearSource{
+object GearSource {
 
   /**
    * Construct a Source which accepts out of band input messages.
@@ -53,7 +53,7 @@ object GearSource{
   /**
    * Construct a Source from Gearpump [[DataSource]].
    *
-   *    [[SourceTaskModule]] -> downstream Sink
+   * [[SourceTaskModule]] -> downstream Sink
    *
    */
   def from[OUT](source: DataSource): Source[OUT, Unit] = {
@@ -64,7 +64,7 @@ object GearSource{
   /**
    * Construct a Source from Gearpump [[io.gearpump.streaming.Processor]].
    *
-   *    [[ProcessorModule]] -> downstream Sink
+   * [[ProcessorModule]] -> downstream Sink
    *
    */
   def from[OUT](processor: Class[_ <: Task], conf: UserConfig): Source[OUT, Unit] = {
@@ -98,7 +98,7 @@ object GearSink {
   /**
    * Construct a Sink from Gearpump [[DataSink]].
    *
-   *    Upstream Source -> [[SinkTaskModule]]
+   * Upstream Source -> [[SinkTaskModule]]
    *
    */
   def to[IN](sink: DataSink): Sink[IN, Unit] = {
@@ -109,7 +109,7 @@ object GearSink {
   /**
    * Construct a Sink from Gearpump [[io.gearpump.streaming.Processor]].
    *
-   *    Upstream Source -> [[ProcessorModule]]
+   * Upstream Source -> [[ProcessorModule]]
    *
    */
   def to[IN](processor: Class[_ <: Task], conf: UserConfig): Sink[IN, Unit] = {
@@ -147,8 +147,8 @@ object GearSink {
  * sink will only operate on the main stream.
  *
  */
-object GroupBy{
-  def apply[T, Group](groupBy: T=>Group): Flow[T, T, Unit] = {
+object GroupBy {
+  def apply[T, Group](groupBy: T => Group): Flow[T, T, Unit] = {
     new Flow[T, T, Unit](new GroupByModule(groupBy))
   }
 }
@@ -160,7 +160,7 @@ object GroupBy{
  *
  *
  */
-object Reduce{
+object Reduce {
   def apply[T](reduce: (T, T) => T): Flow[T, T, Unit] = {
     new Flow[T, T, Unit](new ReduceModule(reduce))
   }
@@ -172,7 +172,7 @@ object Reduce{
  *
  *
  */
-object Processor{
+object Processor {
   def apply[In, Out](processor: Class[_ <: Task], conf: UserConfig): Flow[In, Out, Unit] = {
     new Flow[In, Out, Unit](new ProcessorModule[In, Out, Unit](processor, conf))
   }
@@ -240,13 +240,10 @@ object Implicits {
     }
 
     /**
-     * do sum on values
+     * Does sum on values
      *
      * Before doing this, you need to do groupByKey to group same key together
      * , otherwise, it will do the sum no matter what current key is.
-     *
-     * @param numeric
-     * @return
      */
     def sumOnValue(implicit numeric: Numeric[V]): Source[(K, V), Mat] = {
       val stage = Reduce.apply(sumByValue[K, V](numeric))
@@ -255,13 +252,13 @@ object Implicits {
   }
 
   /**
-   * Help util to support groupByKey and sum
+   * Helper util to support groupByKey and sum
    */
   implicit class KVFlowOps[K, V, Mat](flow: Flow[(K, V), (K, V), Mat]) {
 
     /**
-     * if it is a KV Pair, we can group the KV pair by the key.
-     * @return
+     * If it is a KV Pair, we can group the KV pair by the key.
+     *
      */
     def groupByKey: Flow[(K, V), (K, V), Mat] = {
       val stage = GroupBy.apply(getTupleKey[K, V])
@@ -274,8 +271,6 @@ object Implicits {
      * Before doing this, you need to do groupByKey to group same key together
      * , otherwise, it will do the sum no matter what current key is.
      *
-     * @param numeric
-     * @return
      */
     def sumOnValue(implicit numeric: Numeric[V]): Flow[(K, V), (K, V), Mat] = {
       val stage = Reduce.apply(sumByValue[K, V](numeric))
@@ -285,6 +280,6 @@ object Implicits {
 
   private def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
 
-  private def sumByValue[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V]
-    = (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
+  private def sumByValue[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V] =
+    (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
 }

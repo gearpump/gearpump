@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,18 @@
 
 package akka.stream.gearpump.task
 
+import scala.concurrent.ExecutionContext
+
 import akka.actor.Actor.Receive
-import akka.actor.ActorSystem
 import akka.stream.gearpump.task.SourceBridgeTask.{AkkaStreamMessage, Complete, Error}
+import org.reactivestreams.{Subscriber, Subscription}
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
 import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
-import org.reactivestreams.{Subscriber, Subscription}
-
-import scala.concurrent.ExecutionContext
 
 /**
  * Bridge Task when data flow is from local Akka-Stream Module to remote Gearpump Task
@@ -42,20 +42,17 @@ import scala.concurrent.ExecutionContext
  *               /                    Local JVM
  *    Akka Stream [[org.reactivestreams.Publisher]]
  *
- *
- * @param taskContext
- * @param userConf
  */
-class SourceBridgeTask(taskContext : TaskContext, userConf : UserConfig) extends Task(taskContext, userConf) {
+class SourceBridgeTask(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
   import taskContext.taskId
 
-  override def onStart(startTime : StartTime) : Unit = {}
+  override def onStart(startTime: StartTime): Unit = {}
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message): Unit = {
     LOG.info("AkkaStreamSource receiving message " + msg)
   }
 
-  override def onStop() : Unit = {}
+  override def onStop(): Unit = {}
 
   override def receiveUnManagedMessage: Receive = {
     case Error(ex) =>
@@ -83,7 +80,7 @@ object SourceBridgeTask {
     var subscription: Subscription = null
     implicit val dispatcher = ec
 
-    val task = context.askAppMaster[TaskActorRef](appId, LookupTaskActorRef(taskId)).map{container =>
+    val task = context.askAppMaster[TaskActorRef](appId, LookupTaskActorRef(taskId)).map { container =>
       // println("Successfully resolved taskRef for taskId " + taskId + ", " + container.task)
       container.task
     }
@@ -103,7 +100,7 @@ object SourceBridgeTask {
     }
 
     override def onNext(t: T): Unit = {
-      task.map{task =>
+      task.map { task =>
         task ! AkkaStreamMessage(t)
       }
       subscription.request(1)

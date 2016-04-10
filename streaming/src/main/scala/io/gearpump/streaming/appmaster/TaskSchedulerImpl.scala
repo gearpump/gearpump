@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,14 @@
 package io.gearpump.streaming.appmaster
 
 import com.typesafe.config.Config
-import io.gearpump.{WorkerId, TimeStamp}
+
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import io.gearpump.streaming.DAG
 import io.gearpump.streaming.appmaster.TaskLocator.{Locality, WorkerLocality}
 import io.gearpump.streaming.appmaster.TaskScheduler.{Location, TaskStatus}
 import io.gearpump.streaming.task.TaskId
-import io.gearpump.util.{Constants, LogUtil}
-import org.slf4j.Logger
+import io.gearpump.util.Constants
 
 /**
  * This schedules tasks to run for new allocated resources.
@@ -53,7 +53,7 @@ trait TaskScheduler {
    * @param executorId which executorId this resource belongs to.
    * @return a list of tasks
    */
-  def schedule(workerId : WorkerId, executorId: Int, resource: Resource) : List[TaskId]
+  def schedule(workerId: WorkerId, executorId: Int, resource: Resource): List[TaskId]
 
   /**
    * This notify the scheduler that {executorId} is failed, and expect a set of
@@ -62,15 +62,15 @@ trait TaskScheduler {
    * @param executorId executor that failed
    * @return resource requests of the failed executor
    */
-  def executorFailed(executorId: Int) : Array[ResourceRequest]
+  def executorFailed(executorId: Int): Array[ResourceRequest]
 
   /**
-    * Query the task list that already scheduled on the executor
-    *
-    * @param executorId executor to query
-    * @return a list of tasks
-    */
-  def scheduledTasks(executorId: Int) : List[TaskId]
+   * Query the task list that already scheduled on the executor
+   *
+   * @param executorId executor to query
+   * @return a list of tasks
+   */
+  def scheduledTasks(executorId: Int): List[TaskId]
 }
 
 object TaskScheduler {
@@ -79,7 +79,7 @@ object TaskScheduler {
   class TaskStatus(val taskId: TaskId, val preferLocality: Locality, var allocation: Location)
 }
 
-class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends TaskScheduler {
+class TaskSchedulerImpl(appId: Int, appName: String, config: Config) extends TaskScheduler {
   private val executorNum = config.getInt(Constants.APPLICATION_EXECUTOR_NUMBER)
 
   private var tasks = List.empty[TaskStatus]
@@ -96,15 +96,15 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
     }
   }
 
-  def getResourceRequests(): Array[ResourceRequest] ={
+  def getResourceRequests(): Array[ResourceRequest] = {
     fetchResourceRequests(fromOneWorker = false)
   }
 
   import Relaxation._
-  private def fetchResourceRequests(fromOneWorker: Boolean = false): Array[ResourceRequest] ={
+  private def fetchResourceRequests(fromOneWorker: Boolean = false): Array[ResourceRequest] = {
     var workersResourceRequest = Map.empty[WorkerId, Resource]
 
-    tasks.filter(_.allocation == null).foreach{task =>
+    tasks.filter(_.allocation == null).foreach { task =>
       task.preferLocality match {
         case WorkerLocality(workerId) =>
           val current = workersResourceRequest.getOrElse(workerId, Resource.empty)
@@ -116,7 +116,7 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
       }
     }
 
-    workersResourceRequest.map {workerIdAndResource =>
+    workersResourceRequest.map { workerIdAndResource =>
       val (workerId, resource) = workerIdAndResource
       if (workerId == WorkerId.unspecified) {
         ResourceRequest(resource, workerId = WorkerId.unspecified, executorNum = executorNum)
@@ -126,7 +126,7 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
     }.toArray
   }
 
-  override def schedule(workerId : WorkerId, executorId: Int, resource: Resource) : List[TaskId] = {
+  override def schedule(workerId: WorkerId, executorId: Int, resource: Resource): List[TaskId] = {
     var scheduledTasks = List.empty[TaskId]
     val location = Location(workerId, executorId)
     // schedule tasks for specific worker
@@ -134,15 +134,18 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
       (locality) => locality == WorkerLocality(workerId))
 
     // schedule tasks without specific location preference
-    scheduledTasks ++= scheduleTasksForLocality(resource - Resource(scheduledTasks.length), location, (locality) => true)
+    scheduledTasks ++= scheduleTasksForLocality(resource - Resource(scheduledTasks.length),
+      location, (locality) => true)
     scheduledTasks
   }
 
-  private def scheduleTasksForLocality(resource: Resource, resourceLocation: Location, matcher: (Locality) => Boolean): List[TaskId] = {
+  private def scheduleTasksForLocality(
+      resource: Resource, resourceLocation: Location, matcher: (Locality) => Boolean)
+    : List[TaskId] = {
     var scheduledTasks = List.empty[TaskId]
     var index = 0
     var remain = resource.slots
-    while(index < tasks.length && remain > 0) {
+    while (index < tasks.length && remain > 0) {
       val taskStatus = tasks(index)
       if (taskStatus.allocation == null && matcher(taskStatus.preferLocality)) {
         taskStatus.allocation = resourceLocation
@@ -154,18 +157,19 @@ class TaskSchedulerImpl(appId : Int, appName: String, config: Config)  extends T
     scheduledTasks
   }
 
-  override def executorFailed(executorId: Int) : Array[ResourceRequest] = {
+  override def executorFailed(executorId: Int): Array[ResourceRequest] = {
     val failedTasks = tasks.filter { status =>
       status.allocation != null && status.allocation.executorId == executorId
     }
     // clean the location of failed tasks
     failedTasks.foreach(_.allocation = null)
 
-    Array(ResourceRequest(Resource(failedTasks.length), workerId = WorkerId.unspecified, relaxation = ONEWORKER))
+    Array(ResourceRequest(Resource(failedTasks.length),
+      workerId = WorkerId.unspecified, relaxation = ONEWORKER))
   }
 
   override def scheduledTasks(executorId: Int): List[TaskId] = {
-    tasks.filter{ status =>
+    tasks.filter { status =>
       status.allocation != null && status.allocation.executorId == executorId
     }.map(_.taskId)
   }

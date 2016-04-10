@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,21 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{Props, ActorSystem}
-import akka.testkit.TestProbe
-import io.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
-import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
-import io.gearpump.cluster.TestUtil
-import io.gearpump.metrics.Metrics.{Histogram, Meter, Counter}
-import io.gearpump.util.HistoryMetricsService
-import HistoryMetricsService._
-import org.scalatest.{BeforeAndAfterEach, Matchers, FlatSpec}
+import scala.concurrent.Await
 
-class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAfterEach {
+
+import akka.actor.{ActorSystem, Props}
+import akka.testkit.TestProbe
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+
+import io.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
+import io.gearpump.cluster.MasterToClient.HistoryMetrics
+import io.gearpump.cluster.TestUtil
+import io.gearpump.metrics.Metrics.{Counter, Histogram, Meter}
+import io.gearpump.util.HistoryMetricsService
+import io.gearpump.util.HistoryMetricsService._
+
+class HistoryMetricsServiceSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   val count = 2
   val intervalMs = 10
@@ -44,30 +48,30 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     val store = new SingleValueMetricsStore(count, intervalMs)
 
     var now = 0L
-    //only 1 data point will be kept in @intervalMs
+    // only 1 data point will be kept in @intervalMs
     store.add(Counter("count", 1), now)
     store.add(Counter("count", 2), now)
 
     now = now + intervalMs + 1
 
-    //only 1 data point will be kept in @intervalMs
+    // only 1 data point will be kept in @intervalMs
     store.add(Counter("count", 3), now)
     store.add(Counter("count", 4), now)
 
     now = now + intervalMs + 1
 
-    //only 1 data point will be kept in @intervalMs
-    //expire oldest data point, because we only keep @count records
+    // only 1 data point will be kept in @intervalMs
+    // expire oldest data point, because we only keep @count records
     store.add(Counter("count", 5), now)
     store.add(Counter("count", 6), now)
 
     val result = store.read
     assert(result.size == count)
 
-    //the oldest value is expired
+    // the oldest value is expired
     assert(result.head.value.asInstanceOf[Counter].value == 3L)
 
-    //the newest value is inserted
+    // the newest value is inserted
     assert(result.last.value.asInstanceOf[Counter].value == 5L)
   }
 
@@ -119,7 +123,8 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     assert(store.readHistory.map(_.value) == List(a))
   }
 
-  "HistoryMetricsService" should "retain lastest metrics data and allow user to query metrics by path" in {
+  "HistoryMetricsService" should
+    "retain lastest metrics data and allow user to query metrics by path" in {
     implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
     val appId = 0
     val service = system.actorOf(Props(new HistoryMetricsService("app0", config)))
@@ -132,7 +137,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     // filter metrics with path "metric.counter"
     client.send(service, QueryHistoryMetrics("metric.counter"))
     import scala.concurrent.duration._
-    client.expectMsgPF(3 seconds) {
+    client.expectMsgPF(3.seconds) {
       case history: HistoryMetrics =>
         assert(history.path == "metric.counter")
         val metricList = history.metrics
@@ -143,7 +148,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
 
     // filter metrics with path "metric.meter"
     client.send(service, QueryHistoryMetrics("metric.meter"))
-    client.expectMsgPF(3 seconds) {
+    client.expectMsgPF(3.seconds) {
       case history: HistoryMetrics =>
         assert(history.path == "metric.meter")
         val metricList = history.metrics
@@ -154,7 +159,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
 
     // filter metrics with path "metric.histogram"
     client.send(service, QueryHistoryMetrics("metric.histogram"))
-    client.expectMsgPF(3 seconds) {
+    client.expectMsgPF(3.seconds) {
       case history: HistoryMetrics =>
         assert(history.path == "metric.histogram")
         val metricList = history.metrics
@@ -166,7 +171,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
     // filter metrics with path prefix "metric", all metrics which can
     // match the path prefix will be retained.
     client.send(service, QueryHistoryMetrics("metric"))
-    client.expectMsgPF(3 seconds) {
+    client.expectMsgPF(3.seconds) {
       case history: HistoryMetrics =>
         val metricList = history.metrics
 
@@ -179,7 +184,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
             case v: Counter => counterFound = true
             case v: Meter => meterFound = true
             case v: Histogram => histogramFound = true
-            case _ => //skip
+            case _ => // skip
           }
         )
 
@@ -187,8 +192,7 @@ class HistoryMetricsServiceSpec  extends FlatSpec with Matchers with BeforeAndAf
         assert(counterFound && meterFound && histogramFound)
     }
 
-    system.shutdown()
-    system.awaitTermination()
-
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 }

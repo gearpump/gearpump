@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,15 @@
 
 package io.gearpump.experiments.yarn.appmaster
 
+import scala.concurrent.Future
+
 import akka.actor._
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.services.main.Services
 import io.gearpump.transport.HostPort
 import io.gearpump.util.{ActorUtil, Constants, LogUtil}
-
-import scala.concurrent.Future
 
 trait UIFactory {
   def props(masters: List[HostPort], host: String, port: Int): Props
@@ -39,7 +40,7 @@ class UIService(masters: List[HostPort], host: String, port: Int) extends Actor 
 
   implicit val dispatcher = context.dispatcher
 
-  override def postStop: Unit = {
+  override def postStop(): Unit = {
     if (configFile != null) {
       configFile.delete()
       configFile = null
@@ -51,10 +52,10 @@ class UIService(masters: List[HostPort], host: String, port: Int) extends Actor 
   }
 
   override def preStart(): Unit = {
-    Future(start)
+    Future(start())
   }
 
-  def start: Unit = {
+  def start(): Unit = {
     val mastersArg = masters.mkString(",")
     LOG.info(s"Launching services -master $mastersArg")
 
@@ -77,7 +78,7 @@ class UIService(masters: List[HostPort], host: String, port: Int) extends Actor 
 
   def launch(supervisor: String, masterHost: String, masterPort: Int, configFile: String): Unit = {
     Services.main(Array("-supervisor", supervisor, "-master", s"$masterHost:$masterPort"
-     , "-conf", configFile))
+      , "-conf", configFile))
   }
 
   override def receive: Receive = {
@@ -86,7 +87,7 @@ class UIService(masters: List[HostPort], host: String, port: Int) extends Actor 
   }
 }
 
-object UIService extends UIFactory{
+object UIService extends UIFactory {
   override def props(masters: List[HostPort], host: String, port: Int): Props = {
     Props(new UIService(masters, host, port))
   }

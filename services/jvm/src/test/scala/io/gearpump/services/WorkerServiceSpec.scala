@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,42 +18,45 @@
 
 package io.gearpump.services
 
+import scala.concurrent.duration._
+import scala.util.{Success, Try}
+
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.headers.`Cache-Control`
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.WorkerId
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig, ResolveWorkerId}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, ResolveWorkerIdResult, WorkerConfig}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.jarstore.JarStoreService
+// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
-import scala.concurrent.duration._
-import scala.util.{Success, Try}
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-
-class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers with BeforeAndAfterAll {
+class WorkerServiceSpec
+  extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
 
   override def testConfig: Config = TestUtil.DEFAULT_CONFIG
 
-  def actorRefFactory = system
+  protected def actorRefFactory = system
 
   val mockWorker = TestProbe()
 
-  def master = mockMaster.ref
+  protected def master = mockMaster.ref
 
   lazy val jarStoreService = JarStoreService.get(system.settings.config)
 
-  def workerRoute = new WorkerService(master, system).route
+  protected def workerRoute = new WorkerService(master, system).route
 
   mockWorker.setAutoPilot {
     new AutoPilot {
-      def run(sender: ActorRef, msg: Any) = msg match {
+      def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
         case GetWorkerData(workerId) =>
           sender ! WorkerData(WorkerSummary.empty)
           KeepRunning
@@ -70,7 +73,7 @@ class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers 
   val mockMaster = TestProbe()
   mockMaster.setAutoPilot {
     new AutoPilot {
-      def run(sender: ActorRef, msg: Any) = msg match {
+      def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
         case ResolveWorkerId(workerId) =>
           sender ! ResolveWorkerIdResult(Success(mockWorker.ref))
           KeepRunning
@@ -81,7 +84,8 @@ class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers 
 
   "ConfigQueryService" should "return config for worker" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/worker/${WorkerId.render(WorkerId(0, 0L))}/config") ~> workerRoute) ~> check{
+    (Get(s"/api/$REST_VERSION/worker/${WorkerId.render(WorkerId(0, 0L))}/config")
+      ~> workerRoute) ~> check {
       val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
@@ -90,7 +94,8 @@ class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers 
 
   it should "return WorkerData" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/worker/${WorkerId.render(WorkerId(1, 0L))}") ~> workerRoute) ~> check{
+    (Get(s"/api/$REST_VERSION/worker/${WorkerId.render(WorkerId(1, 0L))}")
+      ~> workerRoute) ~> check {
       val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
@@ -104,7 +109,8 @@ class WorkerServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers 
 
   "MetricsQueryService" should "return history metrics" in {
     implicit val customTimeout = RouteTestTimeout(15.seconds)
-    (Get(s"/api/$REST_VERSION/worker/${WorkerId.render(WorkerId(0, 0L))}/metrics/worker") ~> workerRoute) ~> check {
+    (Get(s"/api/$REST_VERSION/worker/${WorkerId.render(WorkerId(0, 0L))}/metrics/worker")
+      ~> workerRoute) ~> check {
       val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)

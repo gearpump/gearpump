@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,9 @@
 
 package io.gearpump.streaming.sink
 
-import io.gearpump.streaming.task.{Task, TaskContext, StartTime}
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 object DataSinkTask {
   val DATA_SINK = "data_sink"
@@ -29,7 +29,7 @@ object DataSinkTask {
 /**
  * general task that runs any [[DataSink]]
  */
-class DataSinkTask (context: TaskContext, conf: UserConfig) extends Task(context, conf) {
+class DataSinkTask(context: TaskContext, conf: UserConfig) extends Task(context, conf) {
   import DataSinkTask._
 
   private val sink = conf.getValue[DataSink](DATA_SINK).get
@@ -47,5 +47,4 @@ class DataSinkTask (context: TaskContext, conf: UserConfig) extends Task(context
     LOG.info("closing data sink...")
     sink.close()
   }
-
 }

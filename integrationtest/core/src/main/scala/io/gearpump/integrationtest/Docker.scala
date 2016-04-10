@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
  */
 package io.gearpump.integrationtest
 
-import io.gearpump.integrationtest.ShellExec._
 import org.apache.log4j.Logger
 
 /**
@@ -119,12 +118,14 @@ object Docker {
   /**
    * @throws RuntimeException in case particular container is created already
    */
-  private def createAndStartContainer(name: String, options: String, command: String, image: String): String = {
-    ShellExec.execAndCaptureOutput(s"docker run $options --name $name $image $command", s"MAKE $name")
+  private def createAndStartContainer(
+      name: String, options: String, command: String, image: String): String = {
+    ShellExec.execAndCaptureOutput(s"docker run $options " +
+      s"--name $name $image $command", s"MAKE $name")
   }
 
   final def killAndRemoveContainer(name: String): Boolean = {
-    trace(name, s"kill and remove container"){
+    trace(name, s"kill and remove container") {
       ShellExec.exec(s"docker rm -f $name", s"STOP $name")
     }
   }
@@ -141,7 +142,8 @@ object Docker {
     ShellExec.execAndCaptureOutput(s"docker inspect $option $container", s"EXEC $container")
   }
 
-  final def curl(container: String, url: String, options: Array[String] = Array.empty[String]): String = {
+  final def curl(container: String, url: String, options: Array[String] = Array.empty[String])
+    : String = {
     trace(container, s"curl $url") {
       doExecute(container, s"curl -s ${options.mkString(" ")} $url")
     }
@@ -172,7 +174,9 @@ object Docker {
   }
 
   private def trace[T](container: String, msg: String)(fun: => T): T = {
-    Console.println()
+    // scalastyle:off println
+    Console.println() // A empty line to let the output looks better.
+    // scalastyle:on println
     LOG.debug(s"Container $container====>> $msg")
     LOG.debug("INPUT==>>")
     val response = fun
@@ -198,8 +202,12 @@ object Docker {
         x.toString
     }
 
-    val preview = if (output.length > PREVIEW_MAX_LENGTH)
-      output.substring(0, PREVIEW_MAX_LENGTH) + "..." else output
+    val preview = if (output.length > PREVIEW_MAX_LENGTH) {
+      output.substring(0, PREVIEW_MAX_LENGTH) + "..."
+    }
+    else {
+      output
+    }
     preview
   }
 }

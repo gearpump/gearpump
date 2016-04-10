@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,16 @@
 package io.gearpump.jarstore.dfs
 
 import java.io.File
-import akka.actor.{ActorSystem, ActorRefFactory}
+
+import akka.actor.ActorSystem
 import com.typesafe.config.Config
-import org.apache.hadoop.fs.Path
-import io.gearpump.jarstore.{FilePath, JarStoreService}
-import io.gearpump.util.LogUtil
 import org.apache.hadoop.conf.Configuration
-import io.gearpump.util.Constants
+import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
 import org.slf4j.Logger
+
+import io.gearpump.jarstore.{FilePath, JarStoreService}
+import io.gearpump.util.{Constants, LogUtil}
 
 /**
  * DFSJarStoreService store the uploaded jar on HDFS
@@ -46,7 +47,8 @@ class DFSJarStoreService extends JarStoreService {
   }
 
   /**
-    * This function will copy the remote file to local file system, called from client side.
+   * This function will copy the remote file to local file system, called from client side.
+   *
    * @param localFile The destination of file path
    * @param remotePath The remote file path from JarStore
    */
@@ -60,6 +62,7 @@ class DFSJarStoreService extends JarStoreService {
 
   /**
    * This function will copy the local file to the remote JarStore, called from client side.
+   *
    * @param localFile The local file
    */
   override def copyFromLocal(localFile: File): FilePath = {

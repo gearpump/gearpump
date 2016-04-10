@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,12 @@
 
 package io.gearpump.streaming.state.impl
 
-import io.gearpump.TimeStamp
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
+
+import io.gearpump.TimeStamp
 
 class WindowSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
@@ -43,10 +44,10 @@ class WindowSpec extends PropSpec with PropertyChecks with Matchers with Mockito
     forAll(timestampGen, windowSizeGen, windowStepGen) {
       (timestamp: TimeStamp, windowSize: Long, windowStep: Long) =>
         val window = new Window(windowSize, windowStep)
-        window.range shouldBe (0L, windowSize)
+        window.range shouldBe(0L, windowSize)
 
         window.slideOneStep()
-        window.range shouldBe (windowStep, windowSize + windowStep)
+        window.range shouldBe(windowStep, windowSize + windowStep)
 
         window.slideTo(timestamp)
         val (startTime, endTime) = window.range

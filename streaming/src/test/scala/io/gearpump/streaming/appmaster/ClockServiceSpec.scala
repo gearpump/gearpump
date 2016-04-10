@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,24 +17,24 @@
  */
 package io.gearpump.streaming.appmaster
 
+import scala.concurrent.{Future, Promise}
+
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import io.gearpump.streaming.task.{GetStartClock, UpstreamMinClock, GetLatestMinClock}
-import io.gearpump.cluster.{UserConfig, TestUtil}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+
+import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess, HealthChecker, ProcessorClock}
 import io.gearpump.streaming.appmaster.ClockServiceSpec.Store
 import io.gearpump.streaming.storage.AppDataStore
-import io.gearpump.streaming.task._
-import io.gearpump.streaming.{LifeTime, DAG, ProcessorDescription}
+import io.gearpump.streaming.task.{GetLatestMinClock, GetStartClock, UpstreamMinClock, _}
+import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
-import scala.concurrent.{Future, Promise}
 
 class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-  with WordSpecLike with Matchers with BeforeAndAfterAll{
+  with WordSpecLike with Matchers with BeforeAndAfterAll {
 
   def this() = this(ActorSystem("ClockServiceSpec", TestUtil.DEFAULT_CONFIG))
 
@@ -50,13 +50,13 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
   "The ClockService" should {
     "maintain a global view of message timestamp in the application" in {
       val store = new Store()
-      val startClock  = 100L
+      val startClock = 100L
       store.put(ClockService.START_CLOCK, startClock)
       val clockService = system.actorOf(Props(new ClockService(dag, store)))
       clockService ! GetLatestMinClock
       expectMsg(LatestMinClock(startClock))
 
-      //task(0,0): clock(101); task(1,0): clock(100)
+      // task(0,0): clock(101); task(1,0): clock(100)
       clockService ! UpdateClock(TaskId(0, 0), 101)
 
       // there is no upstream, so pick Long.MaxValue
@@ -67,10 +67,10 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       expectMsg(LatestMinClock(100))
 
 
-      //task(0,0): clock(101); task(1,0): clock(101)
+      // task(0,0): clock(101); task(1,0): clock(101)
       clockService ! UpdateClock(TaskId(1, 0), 101)
 
-      //upstream is Task(0, 0), 101
+      // upstream is Task(0, 0), 101
       expectMsg(UpstreamMinClock(101))
 
       // min clock is updated
@@ -80,16 +80,19 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
     "act on ChangeToNewDAG and make sure downstream clock smaller than upstreams" in {
       val store = new Store()
-      val startClock  = 100L
+      val startClock = 100L
       store.put(ClockService.START_CLOCK, startClock)
       val clockService = system.actorOf(Props(new ClockService(dag, store)))
       val task = TestProbe()
       clockService.tell(UpdateClock(TaskId(0, 0), 200), task.ref)
       task.expectMsgType[UpstreamMinClock]
 
-      val task3 = ProcessorDescription(id = 3, taskClass = classOf[TaskActor].getName, parallelism = 1)
-      val task4 = ProcessorDescription(id = 4, taskClass = classOf[TaskActor].getName, parallelism = 1)
-      val task5 = ProcessorDescription(id = 5, taskClass = classOf[TaskActor].getName, parallelism = 1)
+      val task3 = ProcessorDescription(id = 3, taskClass = classOf[TaskActor].getName,
+        parallelism = 1)
+      val task4 = ProcessorDescription(id = 4, taskClass = classOf[TaskActor].getName,
+        parallelism = 1)
+      val task5 = ProcessorDescription(id = 5, taskClass = classOf[TaskActor].getName,
+        parallelism = 1)
       val dagAddMiddleNode = DAG(Graph(
         task1 ~ hash ~> task2,
         task1 ~ hash ~> task3,
@@ -100,7 +103,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val user = TestProbe()
       clockService.tell(ChangeToNewDAG(dagAddMiddleNode), user.ref)
 
-      val clocks = user.expectMsgPF(){
+      val clocks = user.expectMsgPF() {
         case ChangeToNewDAGSuccess(clocks) =>
           clocks
       }
@@ -117,7 +120,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
     "maintain global checkpoint time" in {
       val store = new Store()
-      val startClock  = 100L
+      val startClock = 100L
       store.put(ClockService.START_CLOCK, startClock)
       val clockService = system.actorOf(Props(new ClockService(dag, store)))
       clockService ! UpdateClock(TaskId(0, 0), 200L)
@@ -129,8 +132,10 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       expectMsg(StartClock(200L))
 
       val conf = UserConfig.empty.withBoolean("state.checkpoint.enable", true)
-      val task3 = ProcessorDescription(id = 3, taskClass = classOf[TaskActor].getName, parallelism = 1, taskConf = conf)
-      val task4 = ProcessorDescription(id = 4, taskClass = classOf[TaskActor].getName, parallelism = 1, taskConf = conf)
+      val task3 = ProcessorDescription(id = 3, taskClass = classOf[TaskActor].getName,
+        parallelism = 1, taskConf = conf)
+      val task4 = ProcessorDescription(id = 4, taskClass = classOf[TaskActor].getName,
+        parallelism = 1, taskConf = conf)
       val dagWithStateTasks = DAG(Graph(
         task1 ~ hash ~> task2,
         task1 ~ hash ~> task3,
@@ -184,14 +189,14 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val sourceClock = new ProcessorClock(0, LifeTime.Immortal, 1)
       sourceClock.init(0L)
       val sink = ProcessorDescription(id = 1, taskClass = null, parallelism = 1)
-      val sinkClock = new ProcessorClock(1,LifeTime.Immortal, 1)
+      val sinkClock = new ProcessorClock(1, LifeTime.Immortal, 1)
       sinkClock.init(0L)
       val graph = Graph.empty[ProcessorDescription, PartitionerDescription]
       graph.addVertex(source)
       graph.addVertex(sink)
       graph.addEdge(source, PartitionerDescription(null), sink)
       val dag = DAG(graph)
-      val clocks = Map (
+      val clocks = Map(
         0 -> sourceClock,
         1 -> sinkClock
       )
@@ -217,12 +222,11 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       healthChecker.getReport.stallingTasks shouldBe List(TaskId(1, 0))
     }
   }
-
 }
 
 object ClockServiceSpec {
 
-  class Store extends AppDataStore{
+  class Store extends AppDataStore {
 
     private var map = Map.empty[String, Any]
 
@@ -231,7 +235,7 @@ object ClockServiceSpec {
       Promise.successful(value).future
     }
 
-    def get(key: String) : Future[Any] = {
+    def get(key: String): Future[Any] = {
       Promise.successful(map.get(key).getOrElse(null)).future
     }
   }

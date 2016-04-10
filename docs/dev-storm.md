@@ -4,7 +4,7 @@ title: Storm Compatibility
 ---
 
 Gearpump provides **binary compatibility** for Apache Storm applications. That is to say, users could easily grab an existing Storm jar and run it 
-on Gearpump. This documentation illustrates Gearpump's comapatibility with Storm.  
+on Gearpump. This documentation illustrates Gearpump's compatibility with Storm.  
 
 ## What Storm features are supported on Gearpump 
 
@@ -32,7 +32,7 @@ on Gearpump. This documentation illustrates Gearpump's comapatibility with Storm
 | storm-jdbc | yes |
 | storm-redis | yes |
 | flux | yes |
-| storm-eventhubs | not verfied |
+| storm-eventhubs | not verified |
 | Trident | no |
 
 ### At Least Once support
@@ -138,14 +138,14 @@ Here's an example of `WordCountTopology` with acker bolts (ackers) being transla
 
 Gearpump creates a `StormProducer` for each Storm spout and a `StormProcessor` for each Storm bolt (except for ackers) with the same parallelism, and wires them together using the same grouping strategy (partitioning in Gearpump) as in Storm. 
 
-At runtime, spouts and bolts are running inside `StormProducer` tasks and `StormProcessor` tasks respectively. Messages emitted by spout are passed to `StormProducer`, transferred to `StormProcessor` and passed down to bolt.  Messages are serialized / deserialized with Storm serializers.
+At runtime, spouts and bolts are running inside `StormProducer` tasks and `StormProcessor` tasks respectively. Messages emitted by spout are passed to `StormProducer`, transferred to `StormProcessor` and passed down to bolt.  Messages are serialized / de-serialized with Storm serializers.
 
 Storm ackers are dropped since Gearpump has a different mechanism of message tracking and flow control. 
 
 ### Task execution
 
 Each Storm task is executed by a dedicated thread while all Gearpump tasks of an executor share a thread pool. Generally, we can achieve better performance with a shared thread pool. It's possible, however, some tasks block and take up all the threads. In that case, we can 
-fall back to the Storm way by setting `gearpump.task-dispatcher` to `"gaerpump.single-thread-dispatcher"` in `gear.conf`.
+fall back to the Storm way by setting `gearpump.task-dispatcher` to `"gearpump.single-thread-dispatcher"` in `gear.conf`.
 
 ### Message tracking 
 

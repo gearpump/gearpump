@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,10 +20,17 @@ package io.gearpump.experiments.yarn.appmaster
 
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 import akka.actor._
 import akka.util.Timeout
 import com.typesafe.config.ConfigValueFactory
+import org.apache.commons.httpclient.HttpClient
+import org.apache.commons.httpclient.methods.GetMethod
+import org.slf4j.Logger
+
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
@@ -32,13 +39,10 @@ import io.gearpump.experiments.yarn.glue.Records._
 import io.gearpump.experiments.yarn.glue.{NMClient, RMClient, YarnConfig}
 import io.gearpump.transport.HostPort
 import io.gearpump.util._
-import org.apache.commons.httpclient.HttpClient
-import org.apache.commons.httpclient.methods.GetMethod
-import org.slf4j.Logger
 
 class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
-                    packagePath: String, hdfsConfDir: String,
-                    uiFactory: UIFactory)
+    packagePath: String, hdfsConfDir: String,
+    uiFactory: UIFactory)
   extends Actor {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -47,11 +51,11 @@ class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
   private var uiStarted = false
   private val host = akkaConf.getString(Constants.GEARPUMP_HOSTNAME)
 
-  val port = Util.findFreePort.get
+  val port = Util.findFreePort().get
 
   private val trackingURL = "http://" + host + ":" + port
 
-  //TODO: for now, only one master is supported.
+  // TODO: for now, only one master is supported.
   private val masterCount = 1
   private val masterMemory = akkaConf.getString(MASTER_MEMORY).toInt
   private val masterVCores = akkaConf.getString(MASTER_VCORES).toInt
@@ -67,7 +71,7 @@ class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
 
   def receive: Receive = null
 
-  private def registerAppMaster: Unit = {
+  private def registerAppMaster(): Unit = {
     val target = host + ":" + port
     rmClient.registerAppMaster(host, port, trackingURL)
   }
@@ -86,15 +90,16 @@ class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
 
   private def startingMasters(remain: Int, masters: List[MasterInfo]): Receive = box {
     case ContainersAllocated(containers) =>
-      LOG.info(s"ContainersAllocated: containers allocated for master(remain=$remain), count: " + containers.size)
+      LOG.info(s"ContainersAllocated: containers allocated for master(remain=$remain), count: "
+        + containers.size)
       val count = Math.min(containers.length, remain)
-      val newMasters = (0 until count).toList.map{index =>
+      val newMasters = (0 until count).toList.map { index =>
         val container = containers(index)
         MasterInfo(container.getId, container.getNodeId, launchMaster(container))
       }
 
       // stop un-used containers
-      containers.drop(count).map{container =>
+      containers.drop(count).map { container =>
         nmClient.stopContainer(container.getId, container.getNodeId)
       }
 
@@ -113,20 +118,22 @@ class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
     onError orElse receive orElse unHandled
   }
 
-  private def startingWorkers(remain: Int, masters: List[MasterInfo], workers: List[WorkerInfo]): Receive =
+  private def startingWorkers(remain: Int, masters: List[MasterInfo], workers: List[WorkerInfo])
+  : Receive = {
     box {
       case ContainersAllocated(containers) =>
-        LOG.info(s"ContainersAllocated: containers allocated for workers(remain=$remain), count: " + containers.size)
+        LOG.info(s"ContainersAllocated: containers allocated for workers(remain=$remain), " +
+          s"count: " + containers.size)
 
         val count = Math.min(containers.length, remain)
-        val newWorkers = (0 until count).toList.map{index =>
+        val newWorkers = (0 until count).toList.map { index =>
           val container = containers(index)
           launchWorker(container, masters)
           WorkerInfo(container.getId, container.getNodeId)
         }
 
         // stop un-used containers
-        containers.drop(count).map{container =>
+        containers.drop(count).map { container =>
           nmClient.stopContainer(container.getId, container.getNodeId)
         }
         context.become(startingWorkers(remain, masters, workers ++ newWorkers))
@@ -143,21 +150,22 @@ class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
           context.become(service(effectiveConfig(masters.map(_.host)), masters, workers))
         }
     }
-
-  import scala.collection.JavaConversions._
+  }
 
   private def effectiveConfig(masters: List[HostPort]): Config = {
     val masterList = masters.map(pair => s"${pair.host}:${pair.port}")
     val config = context.system.settings.config
-    config.withValue(Constants.GEARPUMP_CLUSTER_MASTERS, ConfigValueFactory.fromIterable(masterList))
+    config.withValue(Constants.GEARPUMP_CLUSTER_MASTERS,
+      ConfigValueFactory.fromIterable(masterList.asJava))
   }
 
   private def onError: Receive = {
     case ContainersCompleted(containers) =>
-      //TODO: we should recover the failed container from this...
+      // TODO: we should recover the failed container from this...
       containers.foreach { status =>
         if (status.getExitStatus != 0) {
-          LOG.error(s"ContainersCompleted: container ${status.getContainerId} failed with exit code ${status.getExitStatus}, msg: ${status.getDiagnostics}")
+          LOG.error(s"ContainersCompleted: container ${status.getContainerId}" +
+            s" failed with exit code ${status.getExitStatus}, msg: ${status.getDiagnostics}")
         } else {
           LOG.info(s"ContainersCompleted: container ${status.getContainerId} completed")
         }
@@ -178,22 +186,24 @@ class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
       self ! ShutdownApplication
   }
 
-  private def service(config: Config, masters: List[MasterInfo], workers: List[WorkerInfo]): Receive  = box {
+  private def service(config: Config, masters: List[MasterInfo], workers: List[WorkerInfo])
+  : Receive = box {
     case GetActiveConfig(clientHost) =>
       LOG.info("GetActiveConfig: Get active configuration for client: " + clientHost)
-      val filtered = ClusterConfig.filterOutDefaultConfig(config.withValue(Constants.GEARPUMP_HOSTNAME,
-        ConfigValueFactory.fromAnyRef(clientHost)))
+      val filtered = ClusterConfig.filterOutDefaultConfig(
+        config.withValue(Constants.GEARPUMP_HOSTNAME,
+          ConfigValueFactory.fromAnyRef(clientHost)))
       sender ! ActiveConfig(filtered)
     case QueryVersion =>
       LOG.info("QueryVersion")
       sender ! Version(Util.version)
     case QueryClusterInfo =>
       LOG.info("QueryClusterInfo")
-      val masterContainers = masters.map{master =>
+      val masterContainers = masters.map { master =>
         master.id.toString + s"(${master.nodeId.toString})"
       }
 
-      val workerContainers = workers.map{worker=>
+      val workerContainers = workers.map { worker =>
         worker.id.toString + s"(${worker.nodeId.toString})"
       }
       sender ! ClusterInfo(masterContainers, workerContainers)
@@ -242,7 +252,7 @@ class YarnAppMaster(rmClient: RMClient, nmClient: NMClient,
     LOG.info(s"Launch Master on container " + container.getNodeHttpAddress)
     val host = container.getNodeId.getHost
 
-    val port = Util.findFreePort.get
+    val port = Util.findFreePort().get
 
     LOG.info("=============PORT" + port)
     val masterCommand = MasterCommand(akkaConf, rootPath, HostPort(host, port))
@@ -297,7 +307,7 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
       nmClient, packagePath, confDir, UIService)))
 
     val daemon = system.actorOf(Props(new Daemon(appMaster)))
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
     LOG.info("YarnAppMaster is shutdown")
   }
 
@@ -307,8 +317,9 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
     override def receive: Actor.Receive = {
       case Terminated(actor) =>
         if (actor.compareTo(appMaster) == 0) {
-          LOG.info(s"YarnAppMaster ${appMaster.path.toString} is terminated, shutting down current ActorSystem")
-          context.system.shutdown()
+          LOG.info(s"YarnAppMaster ${appMaster.path.toString} is terminated, " +
+            s"shutting down current ActorSystem")
+          context.system.terminate()
           context.stop(self)
         }
     }

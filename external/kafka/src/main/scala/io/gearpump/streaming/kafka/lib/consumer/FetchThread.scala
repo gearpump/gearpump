@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,17 +23,18 @@ import java.util.concurrent.LinkedBlockingQueue
 
 import kafka.common.TopicAndPartition
 import kafka.consumer.ConsumerConfig
-import io.gearpump.util.LogUtil
 import org.slf4j.Logger
+
+import io.gearpump.util.LogUtil
 
 object FetchThread {
   private val LOG: Logger = LogUtil.getLogger(classOf[FetchThread])
 
   def apply(topicAndPartitions: Array[TopicAndPartition],
-            fetchThreshold: Int,
-            fetchSleepMS: Long,
-            startOffsetTime: Long,
-            consumerConfig: ConsumerConfig): FetchThread = {
+      fetchThreshold: Int,
+      fetchSleepMS: Long,
+      startOffsetTime: Long,
+      consumerConfig: ConsumerConfig): FetchThread = {
     val createConsumer = (tp: TopicAndPartition) =>
       KafkaConsumer(tp.topic, tp.partition, startOffsetTime, consumerConfig)
 
@@ -52,10 +53,10 @@ object FetchThread {
  * @param fetchSleepMS interval to sleep when no more messages or hitting fetchThreshold
  */
 private[kafka] class FetchThread(topicAndPartitions: Array[TopicAndPartition],
-                                 createConsumer: TopicAndPartition => KafkaConsumer,
-                                 incomingQueue: LinkedBlockingQueue[KafkaMessage],
-                                 fetchThreshold: Int,
-                                 fetchSleepMS: Long) extends Thread {
+    createConsumer: TopicAndPartition => KafkaConsumer,
+    incomingQueue: LinkedBlockingQueue[KafkaMessage],
+    fetchThreshold: Int,
+    fetchSleepMS: Long) extends Thread {
   import FetchThread._
 
   private var consumers: Map[TopicAndPartition, KafkaConsumer] = createAllConsumers

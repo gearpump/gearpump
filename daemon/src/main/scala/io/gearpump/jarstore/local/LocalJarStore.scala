@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,19 +20,17 @@ package io.gearpump.jarstore.local
 
 import java.io.File
 
-import akka.actor.{Actor, Props, Stash}
-import akka.pattern.{ask, pipe}
-import io.gearpump.cluster.ClientToMaster.GetJarStoreServer
-import io.gearpump.util._
-import io.gearpump.cluster.ClientToMaster.{JarStoreServerAddress, GetJarStoreServer}
+import akka.actor.{Actor, Stash}
+import akka.pattern.pipe
 import org.slf4j.Logger
 
-import scala.concurrent.Future
+import io.gearpump.cluster.ClientToMaster.{GetJarStoreServer, JarStoreServerAddress}
+import io.gearpump.util._
 
 /**
  * LocalJarStore store the uploaded jar on local disk.
  */
-class LocalJarStore(rootDirPath : String) extends Actor with Stash {
+class LocalJarStore(rootDirPath: String) extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   val host = context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)
@@ -47,7 +45,7 @@ class LocalJarStore(rootDirPath : String) extends Actor with Stash {
 
   server.start pipeTo self
 
-  def receive : Receive = {
+  def receive: Receive = {
     case FileServer.Port(port) =>
       context.become(listen(port))
       unstashAll()
@@ -55,7 +53,7 @@ class LocalJarStore(rootDirPath : String) extends Actor with Stash {
       stash()
   }
 
-  def listen(port : Int) : Receive = {
+  def listen(port: Int): Receive = {
     case GetJarStoreServer =>
       sender ! JarStoreServerAddress(s"http://$host:$port/")
   }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,17 +19,22 @@
 package io.gearpump.streaming.executor
 
 import java.lang.management.ManagementFactory
+import scala.concurrent.duration._
+
 
 import akka.actor.SupervisorStrategy.Resume
 import akka.actor._
 import com.typesafe.config.Config
-import io.gearpump.WorkerId
+import org.apache.commons.lang.exception.ExceptionUtils
+import org.slf4j.Logger
+
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.{ClusterConfig, ExecutorContext, UserConfig}
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.AppMasterToExecutor.{MsgLostException, TasksChanged, TasksLaunched, _}
-import io.gearpump.streaming.ExecutorToAppMaster.{UnRegisterTask, MessageLoss, RegisterExecutor, RegisterTask}
+import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask, UnRegisterTask}
 import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.executor.Executor._
 import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
@@ -37,11 +42,6 @@ import io.gearpump.streaming.task.{Subscriber, TaskId}
 import io.gearpump.transport.{Express, HostPort}
 import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, TimeOutScheduler}
-import org.apache.commons.lang.exception.ExceptionUtils
-import org.slf4j.Logger
-
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 /**
  * Executor is child of AppMaster.
@@ -71,8 +71,10 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   private val taskDispatcher = systemConfig.getString(Constants.GEARPUMP_TASK_DISPATCHER)
 
   private var state = State.ACTIVE
-  private var transitionStart = 0L // state transition start, in unix time
-  private var transitionEnd = 0L // state transition end, in unix time
+  private var transitionStart = 0L
+  // state transition start, in unix time
+  private var transitionEnd = 0L
+  // state transition end, in unix time
   private val transitWarningThreshold = 5000 // ms,
 
   // start health check Ticks
@@ -95,28 +97,31 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     // register jvm metrics
     Metrics(context.system).register(new JvmMetricsSet(s"app$appId.executor$executorId"))
 
-    val metricsReportService = context.actorOf(Props(new MetricsReporterService(Metrics(context.system))))
+    val metricsReportService = context.actorOf(Props(new MetricsReporterService(
+      Metrics(context.system))))
     appMaster.tell(ReportMetrics, metricsReportService)
   }
 
   private val NOT_INITIALIZED = -1
-  def receive : Receive = applicationReady(dagVersion = NOT_INITIALIZED)
+  def receive: Receive = applicationReady(dagVersion = NOT_INITIALIZED)
 
   private def getTaskId(actorRef: ActorRef): Option[TaskId] = {
     tasks.find(_._2 == actorRef).map(_._1)
   }
 
   override val supervisorStrategy =
-    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case _: MsgLostException =>
         val taskId = getTaskId(sender)
-        val cause =  s"We got MessageLossException from task ${getTaskId(sender)}, replaying application..."
+        val cause = s"We got MessageLossException from task ${getTaskId(sender)}, " +
+          s"replaying application..."
         LOG.error(cause)
-        taskId.foreach(appMaster ! MessageLoss(executorId, _,  cause))
+        taskId.foreach(appMaster ! MessageLoss(executorId, _, cause))
         Resume
       case ex: Throwable =>
         val taskId = getTaskId(sender)
-        val errorMsg = s"We got ${ex.getClass.getName} from $taskId, we will treat it as MessageLoss, so that the system will replay all lost message"
+        val errorMsg = s"We got ${ex.getClass.getName} from $taskId, we will treat it as" +
+          s" MessageLoss, so that the system will replay all lost message"
         LOG.error(errorMsg, ex)
         val detailErrorMsg = errorMsg + "\n" + ExceptionUtils.getStackTrace(ex)
         taskId.foreach(appMaster ! MessageLoss(executorId, _, detailErrorMsg))
@@ -129,22 +134,27 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
   private def assertVersion(expectVersion: Int, version: Int, clue: Any): Unit = {
     if (expectVersion != version) {
-      val errorMessage = s"Version mismatch: we expect dag version $expectVersion, but get $version; clue: $clue"
+      val errorMessage = s"Version mismatch: we expect dag version $expectVersion, " +
+        s"but get $version; clue: $clue"
       LOG.error(errorMessage)
       throw new DagVersionMismatchException(errorMessage)
     }
   }
 
-  def dynamicDagPhase1(dagVersion: Int, launched: List[TaskId], changed: List[ChangeTask], registered: List[TaskId]): Receive = {
+  def dynamicDagPhase1(
+      dagVersion: Int, launched: List[TaskId], changed: List[ChangeTask], registered: List[TaskId])
+    : Receive = {
     state = State.DYNAMIC_DAG_PHASE1
     box({
-      case launch@LaunchTasks(taskIds, version, processorDescription, subscribers: List[Subscriber]) => {
+      case launch@LaunchTasks(taskIds, version, processorDescription,
+      subscribers: List[Subscriber]) => {
         assertVersion(dagVersion, version, clue = launch)
 
         LOG.info(s"Launching Task $taskIds for app: $appId")
         val taskArgument = TaskArgument(version, processorDescription, subscribers)
         taskIds.foreach(taskArgumentStore.add(_, taskArgument))
-        val newAdded = launcher.launch(taskIds, taskArgument, context, serializerPool, taskDispatcher)
+        val newAdded = launcher.launch(taskIds, taskArgument, context, serializerPool,
+          taskDispatcher)
         newAdded.foreach { newAddedTask =>
           context.watch(newAddedTask._2)
         }
@@ -160,12 +170,14 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         val newChangedTasks = taskIds.map { taskId =>
           for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
             val processorDescription = taskArgument.processorDescription.copy(life = life)
-            taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription, subscribers))
+            taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription,
+              subscribers))
           }
           ChangeTask(taskId, dagVersion, life, subscribers)
         }
         sender ! TasksChanged(taskIds)
-        context.become(dynamicDagPhase1(dagVersion, launched, changed ++ newChangedTasks, registered))
+        context.become(dynamicDagPhase1(dagVersion, launched, changed ++ newChangedTasks,
+          registered))
 
       case locations@TaskLocationsReady(taskLocations, version) =>
         LOG.info(s"TaskLocations Ready...")
@@ -174,7 +186,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         // Check whether all tasks has been registered.
         if ((launched.toSet -- registered.toSet).isEmpty) {
           // Confirm all tasks has been registered.
-          val result = taskLocations.locations.filter(location => !location._1.equals(express.localHost)).flatMap { kv =>
+          val result = taskLocations.locations.filter {
+            location => !location._1.equals(express.localHost)
+          }.flatMap { kv =>
             val (host, taskIdList) = kv
             taskIdList.map(taskId => (TaskId.toLong(taskId), host))
           }
@@ -189,11 +203,14 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           }
           context.become(dynamicDagPhase2(dagVersion, launched, changed))
         } else {
-          LOG.error("Inconsistency between AppMaser and Executor! AppMaster thinks DynamicDag transition is ready, " +
-            "while Executor have not get all tasks registered, that task will not be functional...")
-          //reject TaskLocations...
+          LOG.error("Inconsistency between AppMaser and Executor! AppMaster thinks DynamicDag " +
+            "transition is ready, while Executor have not get all tasks registered, " +
+            "that task will not be functional...")
+
+          // Reject TaskLocations...
           val missedTasks = (launched.toSet -- registered.toSet).toList
-          val errorMsg = "We have not received TaskRegistered for following tasks: " + missedTasks.mkString(", ")
+          val errorMsg = "We have not received TaskRegistered for following tasks: " +
+            missedTasks.mkString(", ")
           LOG.error(errorMsg)
           sender ! TaskLocationsRejected(dagVersion, executorId, errorMsg, null)
           // stay with current status...
@@ -205,7 +222,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
             tasks += confirm.taskId -> actorRef
             actorRef forward confirm
         }
-        context.become(dynamicDagPhase1(dagVersion, launched, changed, registered :+ confirm.taskId))
+        context.become(dynamicDagPhase1(dagVersion, launched, changed,
+          registered :+ confirm.taskId))
 
       case rejected: TaskRejected =>
         // means this task shoud not exists...
@@ -218,7 +236,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     })
   }
 
-  def dynamicDagPhase2(dagVersion: Int, launched: List[TaskId], changed: List[ChangeTask]): Receive = {
+  def dynamicDagPhase2(dagVersion: Int, launched: List[TaskId], changed: List[ChangeTask])
+    : Receive = {
     LOG.info("Transit to dynamic Dag Phase2")
     state = State.DYNAMIC_DAG_PHASE2
     box {
@@ -240,29 +259,36 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     transitionEnd = System.currentTimeMillis()
 
     if (dagVersion != NOT_INITIALIZED) {
-      LOG.info("Transit to state Application Ready. This transition takes " + (transitionEnd - transitionStart) + " milliseconds")
+      LOG.info("Transit to state Application Ready. This transition takes " +
+        (transitionEnd - transitionStart) + " milliseconds")
     }
     box {
       case start: StartDynamicDag =>
         LOG.info("received StartDynamicDag")
         if (start.dagVersion > dagVersion) {
           transitionStart = System.currentTimeMillis()
-          LOG.info(s"received $start, Executor transit to dag version: ${start.dagVersion} from current version $dagVersion")
-          context.become(dynamicDagPhase1(start.dagVersion, List.empty[TaskId], List.empty[ChangeTask], List.empty[TaskId]))
+          LOG.info(s"received $start, Executor transit to dag version: ${start.dagVersion} from " +
+            s"current version $dagVersion")
+          context.become(dynamicDagPhase1(start.dagVersion, List.empty[TaskId],
+            List.empty[ChangeTask], List.empty[TaskId]))
         }
       case launch: LaunchTasks =>
         if (launch.dagVersion > dagVersion) {
           transitionStart = System.currentTimeMillis()
-          LOG.info(s"received $launch, Executor transit to dag version: ${launch.dagVersion} from current version $dagVersion")
-          context.become(dynamicDagPhase1(launch.dagVersion, List.empty[TaskId], List.empty[ChangeTask], List.empty[TaskId]))
+          LOG.info(s"received $launch, Executor transit to dag " +
+            s"version: ${launch.dagVersion} from current version $dagVersion")
+          context.become(dynamicDagPhase1(launch.dagVersion, List.empty[TaskId],
+            List.empty[ChangeTask], List.empty[TaskId]))
           self forward launch
         }
 
       case change: ChangeTasks =>
         if (change.dagVersion > dagVersion) {
           transitionStart = System.currentTimeMillis()
-          LOG.info(s"received $change, Executor transit to dag version: ${change.dagVersion} from current version $dagVersion")
-          context.become(dynamicDagPhase1(change.dagVersion, List.empty[TaskId], List.empty[ChangeTask], List.empty[TaskId]))
+          LOG.info(s"received $change, Executor transit to dag version: ${change.dagVersion} from" +
+            s" current version $dagVersion")
+          context.become(dynamicDagPhase1(change.dagVersion, List.empty[TaskId],
+            List.empty[ChangeTask], List.empty[TaskId]))
           self forward change
         }
 
@@ -274,7 +300,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         }
         tasks -= taskId
 
-      case unRegister @ UnRegisterTask(taskId, _) =>
+      case unRegister@UnRegisterTask(taskId, _) =>
         // send UnRegisterTask to AppMaster
         appMaster ! unRegister
     }
@@ -289,14 +315,15 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
             val newNeedRestart = needRestart :+ taskId
             val newRemain = remain - 1
             if (newRemain == 0) {
-              val newRestarted = newNeedRestart.map{ taskId_ =>
+              val newRestarted = newNeedRestart.map { taskId_ =>
                 val taskActor = launchTask(taskId_, taskArgumentStore.get(dagVersion, taskId_).get)
                 context.watch(taskActor)
                 taskId_ -> taskActor
               }.toMap
 
               tasks = newRestarted
-              context.become(dynamicDagPhase1(dagVersion, newNeedRestart, List.empty[ChangeTask], List.empty[TaskId]))
+              context.become(dynamicDagPhase1(dagVersion, newNeedRestart, List.empty[ChangeTask],
+                List.empty[TaskId]))
             } else {
               context.become(restartingTasks(dagVersion, newRemain, newNeedRestart))
             }
@@ -308,7 +335,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   val terminationWatch: Receive = {
     case Terminated(actor) =>
       if (actor.compareTo(appMaster) == 0) {
-        LOG.info(s"AppMaster ${appMaster.path.toString} is terminated, shutting down current executor $appId, $executorId")
+        LOG.info(s"AppMaster ${appMaster.path.toString} is terminated, shutting down current " +
+          s"executor $appId, $executorId")
         context.stop(self)
       } else {
         self ! TaskStopped(actor)
@@ -320,7 +348,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       LOG.info(s"Executor received restart tasks")
       val tasksToRestart = tasks.keys.count(taskArgumentStore.get(dagVersion, _).nonEmpty)
       express.remoteAddressMap.send(Map.empty[Long, HostPort])
-      context.become(restartingTasks(dagVersion, remain = tasksToRestart, needRestart = List.empty[TaskId]))
+      context.become(restartingTasks(dagVersion, remain = tasksToRestart,
+        needRestart = List.empty[TaskId]))
 
       tasks.values.foreach {
         case task: ActorRef => task ! PoisonPill
@@ -329,7 +358,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
   def executorService: Receive = terminationWatch orElse onRestartTasks orElse {
     case taskChanged: TaskChanged =>
-      //skip
+    // Skip
     case get: GetExecutorSummary =>
       val logFile = LogUtil.applicationLogDir(systemConfig)
       val processorTasks = tasks.keySet.groupBy(_.processorId).mapValues(_.toList).view.force
@@ -346,7 +375,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     case query: QueryExecutorConfig =>
       sender ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
     case HealthCheck =>
-      context.system.scheduler.scheduleOnce(3 second)(HealthCheck)
+      context.system.scheduler.scheduleOnce(3.second)(HealthCheck)
       if (state != State.ACTIVE && (transitionEnd - transitionStart) > transitWarningThreshold) {
         LOG.error(s"Executor status: " + state +
           s", it takes too long(${transitionEnd - transitionStart}) to do transition")
@@ -392,17 +421,18 @@ object Executor {
     }
 
     /**
-     * when the new DAG is successfully deployed, then we should remove obsolete TaskArgument of old DAG.
+     * When the new DAG is successfully deployed, then we should remove obsolete
+     * TaskArgument of old DAG.
      */
-    def removeObsoleteVersion: Unit = {
-      store = store.map{ kv =>
+    def removeObsoleteVersion(): Unit = {
+      store = store.map { kv =>
         val (k, list) = kv
         (k, list.take(1))
       }
     }
 
     def removeNewerVersion(currentVersion: Int): Unit = {
-      store = store.map{ kv =>
+      store = store.map { kv =>
         val (k, list) = kv
         (k, list.filter(_.dagVersion <= currentVersion))
       }
@@ -412,18 +442,20 @@ object Executor {
   case class TaskStopped(task: ActorRef)
 
   case class ExecutorSummary(
-    id: Int,
-    workerId: WorkerId,
-    actorPath: String,
-    logFile: String,
-    status: String,
-    taskCount: Int,
-    tasks: Map[ProcessorId, List[TaskId]],
-    jvmName: String
+      id: Int,
+      workerId: WorkerId,
+      actorPath: String,
+      logFile: String,
+      status: String,
+      taskCount: Int,
+      tasks: Map[ProcessorId, List[TaskId]],
+      jvmName: String
   )
 
   object ExecutorSummary {
-    def empty: ExecutorSummary = ExecutorSummary(0, WorkerId.unspecified, "", "", "", 1, null, jvmName = "")
+    def empty: ExecutorSummary = {
+      ExecutorSummary(0, WorkerId.unspecified, "", "", "", 1, null, jvmName = "")
+    }
   }
 
   case class GetExecutorSummary(executorId: Int)

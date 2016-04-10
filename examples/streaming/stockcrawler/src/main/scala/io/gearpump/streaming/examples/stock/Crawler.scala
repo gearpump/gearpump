@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,11 +19,11 @@
 
 package io.gearpump.streaming.examples.stock
 
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import scala.concurrent.duration._
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
-
-import scala.concurrent.duration._
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
 class Crawler(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
 
@@ -48,12 +48,12 @@ class Crawler(taskContext: TaskContext, conf: UserConfig) extends Task(taskConte
 
   val stockMarket = conf.getValue[StockMarket](classOf[StockMarket].getName).get
 
-  override def onStart(startTime : StartTime) : Unit = {
-    //nothing
+  override def onStart(startTime: StartTime): Unit = {
+    // nothing
   }
 
-  override def onNext(msg : Message) : Unit = {
-    stockMarket.getPrice(stocks).foreach {price =>
+  override def onNext(msg: Message): Unit = {
+    stockMarket.getPrice(stocks).foreach { price =>
       output(new Message(price, price.timestamp))
     }
     scheduleOnce(5.seconds)(self ! FetchStockPrice)

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,10 @@
  */
 package io.gearpump.streaming.examples.transport.generator
 
-import io.gearpump.streaming.examples.transport.generator.MockCity
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
 
-class MockCitySpec extends PropSpec with PropertyChecks with Matchers{
+class MockCitySpec extends PropSpec with PropertyChecks with Matchers {
 
   property("MockCity should maintain the location properly") {
     val city = new MockCity(10)

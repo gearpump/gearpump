@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,14 @@
 
 package io.gearpump.metrics
 
-import akka.actor.{ActorRef, ActorSystem}
-import io.gearpump.metrics.Metrics.{Histogram => HistogramData, Meter => MeterData, Counter => CounterData, Gauge => GaugeData}
-import io.gearpump.codahale.metrics.MetricRegistry
+import scala.collection.JavaConverters._
 
-import akka.actor.ActorSystem
-import io.gearpump.codahale.metrics.{Gauge => CodaGauge}
+import akka.actor.{ActorRef, ActorSystem}
+
+import io.gearpump.codahale.metrics.{Gauge => CodaGauge, MetricRegistry}
+import io.gearpump.metrics.Metrics.{Counter => CounterData, Gauge => GaugeData, Histogram => HistogramData, Meter => MeterData}
 import io.gearpump.metrics.MetricsReporterService.ReportTo
 import io.gearpump.util.LogUtil
-import scala.collection.JavaConverters._
 
 /**
  * A reporter class for logging metrics values to a remote actor periodically
@@ -34,7 +33,7 @@ import scala.collection.JavaConverters._
 class AkkaReporter(
     system: ActorSystem,
     registry: MetricRegistry)
-  extends ReportTo{
+  extends ReportTo {
   private val LOG = LogUtil.getLogger(getClass)
   LOG.info("Start Metrics AkkaReporter")
 
@@ -57,7 +56,7 @@ class AkkaReporter(
         s.get95thPercentile, s.get99thPercentile, s.get999thPercentile)
     }
 
-    meters.entrySet().asScala.foreach{pair =>
+    meters.entrySet().asScala.foreach { pair =>
       val key = pair.getKey
       val value = pair.getValue
       to ! MeterData(key,
@@ -67,7 +66,7 @@ class AkkaReporter(
         getRateUnit)
     }
 
-    gauges.entrySet().asScala.foreach {kv =>
+    gauges.entrySet().asScala.foreach { kv =>
       val value = kv.getValue.asInstanceOf[CodaGauge[Number]].getValue.longValue()
       to ! GaugeData(kv.getKey, value)
     }

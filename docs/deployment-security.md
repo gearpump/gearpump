@@ -36,7 +36,7 @@ Suppose user `gear` will launch gearpump on YARN, then the corresponding princip
   Before calling "yarnclient launch", make sure you have put all yarn configuration files under classpath.
   Typically, you can just copy all files under `$HADOOP_HOME/etc/hadoop` from one of the YARN cluster machine to `conf/yarnconf` of gearpump.
   `$HADOOP_HOME` points to the Hadoop installation directory. 
-5. Get Kerberos credentials to sumbit the job:
+5. Get Kerberos credentials to submit the job:
 
    ```
    kinit gearpump/fully.qualified.domain.name@YOUR-REALM.COM
@@ -79,7 +79,7 @@ Since Gearpump’s Master-Worker structure is similar to HDFS’s NameNode-DataN
 
 1. User creates kerberos principal and keytab for Gearpump.
 2. Deploy the keytab files to all the cluster nodes.
-3. Configure Gearpump’s conf file, specify kerberos principal and local keytab file localtion.
+3. Configure Gearpump’s conf file, specify kerberos principal and local keytab file location.
 4. Start Master and Worker.
 
 Every application has a submitter/user. We will separate the application from different users, like different log folders for different applications. 

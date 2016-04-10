@@ -18,41 +18,43 @@
 
 package io.gearpump.cluster.appmaster
 
+import scala.concurrent.duration._
+
+
 import akka.actor._
+import org.slf4j.Logger
+
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.ExecutorJVMConfig
-import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.util.{Constants, ActorSystemBooter, ActorUtil, LogUtil}
 import io.gearpump.cluster.WorkerToAppMaster._
 import io.gearpump.cluster.appmaster.ExecutorSystemLauncher._
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, Session}
-import io.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, BindLifeCycle, RegisterActorSystem}
-import org.slf4j.Logger
-
-import scala.concurrent.duration._
+import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, RegisterActorSystem}
+import io.gearpump.util.{ActorSystemBooter, ActorUtil, Constants, LogUtil}
 
 /**
  * This launches single executor system on target worker.
  *
  * Please use ExecutorSystemLauncher.props() to construct this actor
  *
- * @param appId
  * @param session The session that request to launch executor system
  */
 private[appmaster]
-class ExecutorSystemLauncher (appId: Int, session: Session) extends Actor {
+class ExecutorSystemLauncher(appId: Int, session: Session) extends Actor {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   val scheduler = context.system.scheduler
   implicit val executionContext = context.dispatcher
 
-  val timeoutSetting = context.system.settings.config.getInt(Constants.GEARPUMP_START_EXECUTOR_SYSTEM_TIMEOUT_MS)
+  private val systemConfig = context.system.settings.config
+  val timeoutSetting = systemConfig.getInt(Constants.GEARPUMP_START_EXECUTOR_SYSTEM_TIMEOUT_MS)
 
-  val timeout = scheduler.scheduleOnce(timeoutSetting milliseconds,
+  val timeout = scheduler.scheduleOnce(timeoutSetting.milliseconds,
     self, LaunchExecutorSystemTimeout(session))
 
-  def receive : Receive = waitForLaunchCommand
+  def receive: Receive = waitForLaunchCommand
 
   def waitForLaunchCommand: Receive = {
     case LaunchExecutorSystem(worker, executorSystemId, resource) =>
@@ -61,23 +63,27 @@ class ExecutorSystemLauncher (appId: Int, session: Session) extends Actor {
         .map(getExecutorJvmConfig(_, s"app${appId}system${executorSystemId}", launcherPath)).orNull
 
       val launch = LaunchExecutor(appId, executorSystemId, resource, jvmConfig)
-      LOG.info(s"Launching Executor ...appId: $appId, executorSystemId: $executorSystemId, slots: ${resource.slots} on worker $worker")
+      LOG.info(s"Launching Executor ...appId: $appId, executorSystemId: $executorSystemId, " +
+        s"slots: ${resource.slots} on worker $worker")
 
       worker.ref ! launch
       context.become(waitForActorSystemToStart(sender, launch, worker, executorSystemId))
   }
 
-  def waitForActorSystemToStart(replyTo: ActorRef, launch: LaunchExecutor, worker: WorkerInfo, executorSystemId: Int) : Receive = {
+  def waitForActorSystemToStart(
+      replyTo: ActorRef, launch: LaunchExecutor, worker: WorkerInfo, executorSystemId: Int)
+    : Receive = {
     case RegisterActorSystem(systemPath) =>
       import launch._
       timeout.cancel()
       LOG.info(s"Received RegisterActorSystem $systemPath for session ${session.requestor}")
       sender ! ActorSystemRegistered(worker.ref)
-      val system = ExecutorSystem(executorId, AddressFromURIString(systemPath), sender, resource, worker)
+      val system =
+        ExecutorSystem(executorId, AddressFromURIString(systemPath), sender, resource, worker)
       replyTo ! LaunchExecutorSystemSuccess(system, session)
       context.stop(self)
-    case reject @ ExecutorLaunchRejected(reason, ex) =>
-      LOG.error(s"Executor Launch ${launch.resource} failed reason：$reason", ex)
+    case reject@ExecutorLaunchRejected(reason, ex) =>
+      LOG.error(s"Executor Launch ${launch.resource} failed reason: $reason", ex)
       replyTo ! LaunchExecutorSystemRejected(launch.resource, reason, session)
       context.stop(self)
     case timeout: LaunchExecutorSystemTimeout =>
@@ -89,6 +95,7 @@ class ExecutorSystemLauncher (appId: Int, session: Session) extends Actor {
 
 private[appmaster]
 object ExecutorSystemLauncher {
+
   case class LaunchExecutorSystem(worker: WorkerInfo, systemId: Int, resource: Resource)
 
   case class LaunchExecutorSystemSuccess(system: ExecutorSystem, session: Session)

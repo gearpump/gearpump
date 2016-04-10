@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,12 @@
 
 package io.gearpump.streaming.appmaster
 
-import io.gearpump.streaming.{ExecutorId, ProcessorId, LifeTime}
 import io.gearpump._
 import io.gearpump.cluster.AppMasterToMaster.AppMasterSummary
-import io.gearpump.cluster.{UserConfig, MasterToAppMaster}
 import io.gearpump.cluster.MasterToAppMaster.AppMasterStatus
-import AppMaster.ExecutorBrief
+import io.gearpump.cluster.{MasterToAppMaster, UserConfig}
+import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
+import io.gearpump.streaming.{ExecutorId, LifeTime, ProcessorId}
 import io.gearpump.util.Graph
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 
@@ -50,11 +50,11 @@ case class StreamAppMasterSummary(
 case class TaskCount(count: Int)
 
 case class ProcessorSummary(
-  id: ProcessorId,
-  taskClass: String,
-  parallelism : Int,
-  description: String,
-  taskConf: UserConfig,
-  life: LifeTime,
-  executors: List[ExecutorId],
-  taskCount: Map[ExecutorId, TaskCount])
+    id: ProcessorId,
+    taskClass: String,
+    parallelism: Int,
+    description: String,
+    taskConf: UserConfig,
+    life: LifeTime,
+    executors: List[ExecutorId],
+    taskCount: Map[ExecutorId, TaskCount])

@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -15,7 +15,7 @@ angular.module('dashboard')
           templateUrl: 'views/apps/compose/compose.html',
           controller: 'ComposeAppCtrl',
           resolve: {
-            partitioners: ['models', function(models) {
+            partitioners: ['models', function (models) {
               return models.$get.partitioners();
             }]
           }
@@ -25,7 +25,7 @@ angular.module('dashboard')
   // todo: remove the leading $ and rename $visNetworkStyle to vis, internal module does not have a $.
   .controller('ComposeAppCtrl', ['$scope', '$state', '$modal', '$contextmenu',
     'models', 'partitioners', '$visNetworkStyle', 'composeAppDialogs',
-    function($scope, $state, $modal, $contextmenu, models, partitioners, $vis, dialogs) {
+    function ($scope, $state, $modal, $contextmenu, models, partitioners, $vis, dialogs) {
       'use strict';
 
       var chooseProcessorDialog = dialogs.create({
@@ -40,11 +40,11 @@ angular.module('dashboard')
         controller: 'ComposeAppChooseEdgeCtrl'
       });
 
-      $scope.chooseProcessor = function(processor) {
+      $scope.chooseProcessor = function (processor) {
         var args = {
           processor: processor
         };
-        chooseProcessorDialog.show(args, function(processor) {
+        chooseProcessorDialog.show(args, function (processor) {
           if (!processor.hasOwnProperty('id')) {
             processor.id = newProcessorId();
           }
@@ -53,24 +53,25 @@ angular.module('dashboard')
         });
       };
 
-      $scope.chooseEdge = function(edge) {
+      $scope.chooseEdge = function (edge) {
         var args = {
           edge: edge,
           partitioners: partitioners,
           processors: {}
         };
-        angular.forEach($scope.visGraph.data.nodes, function(processor) {
+        angular.forEach($scope.visGraph.data.nodes, function (processor) {
           args.processors[processor.id] = {
             text: 'Processor ' + processor.id,
             subtext: processor.taskClass
           };
         });
-        chooseEdgeDialog.show(args, function(edge) {
+        chooseEdgeDialog.show(args, function (edge) {
           $scope.visGraph.data.edges.update(edge);
         });
       };
 
       var processorId = 0;
+
       function newProcessorId() {
         return processorId++;
       }
@@ -79,7 +80,7 @@ angular.module('dashboard')
         options: $vis.newOptions(/*height=*/'400px'),
         data: $vis.newData(),
         events: {
-          onDoubleClick: function(data) {
+          onDoubleClick: function (data) {
             if (data.nodes.length === 1) {
               var processor = $scope.visGraph.data.nodes.get(data.nodes[0]);
               $scope.chooseProcessor(processor);
@@ -90,19 +91,19 @@ angular.module('dashboard')
               $scope.chooseProcessor();
             }
           },
-          onContext: function(data) {
+          onContext: function (data) {
             if (data.hasOwnProperty('node')) {
-              $scope.selectItemModify = function() {
+              $scope.selectItemModify = function () {
                 $scope.chooseProcessor($scope.visGraph.data.nodes.get(data.node));
               };
-              $scope.selectItemDelete = function() {
+              $scope.selectItemDelete = function () {
                 deleteProcessor(data.node);
               };
             } else if (data.hasOwnProperty('edge')) {
-              $scope.selectItemModify = function() {
+              $scope.selectItemModify = function () {
                 $scope.chooseEdge($scope.visGraph.data.edges.get(data.edge));
               };
-              $scope.selectItemDelete = function() {
+              $scope.selectItemDelete = function () {
                 deleteEdge(data.edge);
               };
             } else {
@@ -111,7 +112,7 @@ angular.module('dashboard')
             var elem = document.getElementById('contextmenu');
             $contextmenu.popup(elem, data.pointer.DOM);
           },
-          onDeletePressed: function(selection) {
+          onDeletePressed: function (selection) {
             if (selection.nodes.length === 1) {
               deleteProcessor(selection.nodes[0]);
             } else if (selection.edges.length === 1) {
@@ -124,7 +125,7 @@ angular.module('dashboard')
       function deleteProcessor(processorId) {
         $scope.visGraph.data.nodes.remove(processorId);
         var edgeIds = _.chain($scope.visGraph.data.edges.get())
-          .filter(function(edge) {
+          .filter(function (edge) {
             return processorId == edge.from || processorId == edge.to;
           })
           .map('id')
@@ -139,32 +140,32 @@ angular.module('dashboard')
       $scope.files = {};
       $scope.submitted = false;
 
-      $scope.$watch('uploads', function(uploads) {
+      $scope.$watch('uploads', function (uploads) {
         $scope.files = {}; // todo: only one file can be uploaded once (issue 1450)
-        angular.forEach(uploads, function(file) {
+        angular.forEach(uploads, function (file) {
           if (_.endsWith(file.name, '.jar')) {
             $scope.files[file.name] = file;
           }
         });
       });
 
-      $scope.removeFile = function(name) {
+      $scope.removeFile = function (name) {
         delete $scope.files[name];
       };
 
-      $scope.canSubmit = function() {
+      $scope.canSubmit = function () {
         return !$scope.submitted &&
           $scope.visGraph.data.nodes.length > 0 &&
           Object.keys($scope.files).length > 0;
       };
 
-      $scope.submit = function() {
+      $scope.submit = function () {
         var data = $scope.visGraph.data;
         var processors = data.nodes.get();
         var edges = data.edges.get();
         var args = {
           appName: 'userapp',
-          processors: processors.map(function(processor) {
+          processors: processors.map(function (processor) {
             return [processor.id, {
               id: processor.id,
               taskClass: processor.taskClass,
@@ -174,7 +175,7 @@ angular.module('dashboard')
           }),
           dag: {
             vertexList: _.map(processors, 'id'),
-            edgeList: edges.map(function(edge) {
+            edgeList: edges.map(function (edge) {
               return [edge.from, edge.partitionerClass, edge.to]
             })
           },
@@ -182,7 +183,7 @@ angular.module('dashboard')
         };
 
         $scope.submitting = true;
-        models.submitDag($scope.files, args, function(response) {
+        models.submitDag($scope.files, args, function (response) {
           $scope.submitting = false;
           $scope.submitted = response.success;
           $scope.shouldNoticeSubmitFailed = !response.success;
@@ -191,7 +192,7 @@ angular.module('dashboard')
           } else {
             $scope.error = response.error;
             $scope.hasStackTrace = response.stackTrace.length > 0;
-            $scope.showErrorInNewWin = function() {
+            $scope.showErrorInNewWin = function () {
               if ($scope.hasStackTrace) {
                 var popup = window.open('', 'Error Log');
                 var html = [$scope.error].concat(response.stackTrace).join('\n');
@@ -204,7 +205,7 @@ angular.module('dashboard')
         });
       };
 
-      $scope.view = function() {
+      $scope.view = function () {
         $state.go('streamingapp.overview', {appId: $scope.appId});
       };
 
@@ -212,11 +213,11 @@ angular.module('dashboard')
       $scope.keys = Object.keys;
     }])
 
-  .factory('composeAppDialogs', ['$modal', function($modal) {
+  .factory('composeAppDialogs', ['$modal', function ($modal) {
     'use strict';
 
     return {
-      create: function(options) {
+      create: function (options) {
         var dialog = $modal({
           scope: options.scope,
           templateUrl: options.templateUrl,
@@ -227,9 +228,9 @@ angular.module('dashboard')
         });
 
         var showDialogFn = dialog.show;
-        dialog.show = function(args, onChange) {
+        dialog.show = function (args, onChange) {
           dialog.$options.scope.onChange = onChange;
-          angular.forEach(args, function(value, key) {
+          angular.forEach(args, function (value, key) {
             dialog.$options.scope[key] = value;
           });
           showDialogFn();

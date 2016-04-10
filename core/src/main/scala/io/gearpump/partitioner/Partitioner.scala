@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,30 +18,50 @@
 
 package io.gearpump.partitioner
 
-import io.gearpump.Message
 import scala.reflect.ClassTag
+
 import org.apache.commons.lang.SerializationUtils
 
+import io.gearpump.Message
+
+/**
+ * For processor chain: A (3 tasks) -> B (3 tasks), partitioner decide how ONE task
+ * of upstream processor A send to several tasks of downstream processor B.
+ */
 sealed trait Partitioner extends Serializable
 
+/**
+ * For processor chain: A (3 tasks) -> B (3 tasks), UnicastPartitioner does ONE-task -> ONE-task
+ * mapping.
+ */
 trait UnicastPartitioner extends Partitioner {
-    /**
+
+  /**
+   * Get the SINGLE downstream processor task index to send message to.
    *
-   * @param msg
-   * @param partitionNum
-   * @param currentPartitionId, used when the downstream processor want to share the same
-   *   partition id,
-   * @return
+   * @param msg Message you want to send
+   * @param partitionNum How many tasks does the downstream processor have.
+   * @param upstreamTaskIndex Upstream task's task index who trigger the getPartition() call.
+   *
+   * @return ONE task index of downstream processor.
    */
-  def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int
+  def getPartition(msg: Message, partitionNum: Int, upstreamTaskIndex: Int): Int
 
   def getPartition(msg: Message, partitionNum: Int): Int = {
     getPartition(msg, partitionNum, Partitioner.UNKNOWN_PARTITION_ID)
   }
 }
 
+
 trait MulticastPartitioner extends Partitioner {
-  def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int): Array[Int]
+
+  /**
+   * Get a list of downstream processor task indexes to send message to.
+   *
+   * @param upstreamTaskIndex Current sender task's task index.
+   *
+   */
+  def getPartitions(msg: Message, partitionNum: Int, upstreamTaskIndex: Int): Array[Int]
 
   def getPartitions(msg: Message, partitionNum: Int): Array[Int] = {
     getPartitions(msg, partitionNum, Partitioner.UNKNOWN_PARTITION_ID)
@@ -56,22 +76,30 @@ sealed trait PartitionerFactory {
   def partitioner: Partitioner
 }
 
-class PartitionerObject(private [this] val _partitioner: Partitioner) extends PartitionerFactory with Serializable {
+/** Store the Partitioner in an object. To use it, user need to deserialize the object */
+class PartitionerObject(private[this] val _partitioner: Partitioner)
+  extends PartitionerFactory with Serializable {
 
   override def name: String = partitioner.getClass.getName
 
-  override def partitioner: Partitioner = SerializationUtils.clone(_partitioner).asInstanceOf[Partitioner]
+  override def partitioner: Partitioner = {
+    SerializationUtils.clone(_partitioner).asInstanceOf[Partitioner]
+  }
 }
 
-class PartitionerByClassName(partitionerClass: String) extends PartitionerFactory with Serializable {
-  override def name: String = partitionerClass
+/** Store the partitioner in class Name, the user need to instantiate a new class */
+class PartitionerByClassName(partitionerClass: String)
+  extends PartitionerFactory with Serializable {
 
-  override def partitioner: Partitioner = Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
+  override def name: String = partitionerClass
+  override def partitioner: Partitioner = {
+    Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
+  }
 }
 
 
 /**
- * @param partitionerFactory
+ * @param partitionerFactory How we construct a Partitioner.
  */
 case class PartitionerDescription(partitionerFactory: PartitionerFactory)
 

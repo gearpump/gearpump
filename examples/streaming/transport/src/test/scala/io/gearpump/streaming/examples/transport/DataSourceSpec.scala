@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,15 +17,14 @@
  */
 package io.gearpump.streaming.examples.transport
 
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.examples.transport.{VelocityInspector, DataSource}
-import io.gearpump.streaming.task.StartTime
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.examples.transport.VelocityInspector
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
+
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.task.StartTime
 
 class DataSourceSpec extends FlatSpec with Matchers {
   it should "create the pass record" in {

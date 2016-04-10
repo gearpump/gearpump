@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,8 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import org.slf4j.Logger
+
 import io.gearpump.cluster.UserConfig
 import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import io.gearpump.metrics.Metrics
@@ -31,49 +33,50 @@ import io.gearpump.streaming.ExecutorToAppMaster._
 import io.gearpump.streaming.{Constants, ProcessorId}
 import io.gearpump.util.{LogUtil, TimeOutScheduler}
 import io.gearpump.{Message, TimeStamp}
-import org.slf4j.Logger
 
 /**
  *
- * All tasks of Gearpump runs inside a Actor.
- * TaskActor is the Actor container for a task.
+ * All tasks of Gearpump runs inside a Actor. TaskActor is the Actor container for a task.
  */
 class TaskActor(
     val taskId: TaskId,
-    val taskContextData : TaskContextData,
-    userConf : UserConfig,
+    val taskContextData: TaskContextData,
+    userConf: UserConfig,
     val task: TaskWrapper,
     inputSerializerPool: SerializationFramework)
-  extends Actor with ExpressTransport  with TimeOutScheduler{
+    extends Actor with ExpressTransport with TimeOutScheduler {
   var upstreamMinClock: TimeStamp = 0L
   private var _minClock: TimeStamp = 0L
 
   def serializerPool: SerializationFramework = inputSerializerPool
 
+  import taskContextData._
+
   import Constants._
   import io.gearpump.streaming.task.TaskActor._
-  import taskContextData._
   val config = context.system.settings.config
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
-  //metrics
+  // Metrics
   private val metricName = s"app${appId}.processor${taskId.processorId}.task${taskId.index}"
-  private val receiveLatency = Metrics(context.system).histogram(s"$metricName:receiveLatency", sampleRate = 1)
+  private val receiveLatency = Metrics(context.system).histogram(
+    s"$metricName:receiveLatency", sampleRate = 1)
   private val processTime = Metrics(context.system).histogram(s"$metricName:processTime")
   private val sendThroughput = Metrics(context.system).meter(s"$metricName:sendThroughput")
   private val receiveThroughput = Metrics(context.system).meter(s"$metricName:receiveThroughput")
 
   private val maxPendingMessageCount = config.getInt(GEARPUMP_STREAMING_MAX_PENDING_MESSAGE_COUNT)
-  private val ackOnceEveryMessageCount =  config.getInt(GEARPUMP_STREAMING_ACK_ONCE_EVERY_MESSAGE_COUNT)
+  private val ackOnceEveryMessageCount = config.getInt(
+    GEARPUMP_STREAMING_ACK_ONCE_EVERY_MESSAGE_COUNT)
 
   private val executor = context.parent
   private var life = taskContextData.life
 
-  //latency probe
-  import context.dispatcher
-
+  // Latency probe
   import scala.concurrent.duration._
+
+  import context.dispatcher
   final val LATENCY_PROBE_INTERVAL = FiniteDuration(1, TimeUnit.SECONDS)
 
   // clock report interval
@@ -88,50 +91,49 @@ class TaskActor(
 
   // securityChecker will be responsible of dropping messages from
   // unknown sources
-  private val securityChecker  = new SecurityChecker(taskId, self)
+  private val securityChecker = new SecurityChecker(taskId, self)
   private[task] var sessionId = NONE_SESSION
 
-  //report to appMaster with my address
+  // Report to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
 
-  final def receive : Receive = null
+  final def receive: Receive = null
 
   task.setTaskActor(this)
 
-  def onStart(startTime : StartTime) : Unit = {
+  def onStart(startTime: StartTime): Unit = {
     task.onStart(startTime)
   }
 
-  def onNext(msg : Message) : Unit = task.onNext(msg)
+  def onNext(msg: Message): Unit = task.onNext(msg)
 
   def onUnManagedMessage(msg: Any): Unit = task.receiveUnManagedMessage.apply(msg)
 
-  def onStop() : Unit = task.onStop()
+  def onStop(): Unit = task.onStop()
 
   /**
    * output to a downstream by specifying a arrayIndex
-   * @param arrayIndex, this is not same as ProcessorId
-   * @param msg
+   * @param arrayIndex this is not same as ProcessorId
    */
-  def output(arrayIndex: Int, msg: Message) : Unit = {
+  def output(arrayIndex: Int, msg: Message): Unit = {
     var count = 0
-    count +=  this.subscriptions(arrayIndex)._2.sendMessage(msg)
+    count += this.subscriptions(arrayIndex)._2.sendMessage(msg)
     sendThroughput.mark(count)
   }
 
-  def output(msg : Message) : Unit = {
+  def output(msg: Message): Unit = {
     var count = 0
-    this.subscriptions.foreach{ subscription =>
+    this.subscriptions.foreach { subscription =>
       count += subscription._2.sendMessage(msg)
     }
     sendThroughput.mark(count)
   }
 
-  final override def postStop() : Unit = {
+  final override def postStop(): Unit = {
     onStop()
   }
 
-  final override def preStart() : Unit = {
+  final override def preStart(): Unit = {
     val register = RegisterTask(taskId, executorId, local)
     LOG.info(s"$register")
     executor ! register
@@ -154,7 +156,7 @@ class TaskActor(
         msg match {
           case SendAck(ack, targetTask) =>
             transport(ack, targetTask)
-          case m : Message =>
+          case m: Message =>
             count += 1
             onNext(m)
           case other =>
@@ -172,18 +174,18 @@ class TaskActor(
     }
   }
 
-  private def onStartClock: Unit = {
+  private def onStartClock(): Unit = {
     LOG.info(s"received start, clock: $upstreamMinClock, sessionId: $sessionId")
     subscriptions = subscribers.map { subscriber =>
-      (subscriber.processorId ,
+      (subscriber.processorId,
         new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
           maxPendingMessageCount, ackOnceEveryMessageCount))
     }.sortBy(_._1)
 
-    subscriptions.foreach(_._2.start)
+    subscriptions.foreach(_._2.start())
 
     import scala.collection.JavaConverters._
-    stashQueue.asScala.foreach{item =>
+    stashQueue.asScala.foreach { item =>
       handleMessages(item.sender).apply(item.msg)
     }
     stashQueue.clear()
@@ -198,7 +200,7 @@ class TaskActor(
   }
 
   def waitForTaskRegistered: Receive = {
-    case start@ TaskRegistered(_, sessionId, startClock) =>
+    case start@TaskRegistered(_, sessionId, startClock) =>
       this.sessionId = sessionId
       this.upstreamMinClock = startClock
       context.become(waitForStartClock)
@@ -206,9 +208,9 @@ class TaskActor(
 
   private val stashQueue = new util.LinkedList[MessageAndSender]()
 
-  def waitForStartClock : Receive = {
+  def waitForStartClock: Receive = {
     case start: StartTask =>
-      onStartClock
+      onStartClock()
     case other: AnyRef =>
       stashQueue.add(MessageAndSender(other, sender()))
   }
@@ -221,8 +223,9 @@ class TaskActor(
         doHandleMessage()
       }
     case ackRequest: AckRequest =>
-      //enqueue to handle the ackRequest and send back ack later
-      val ackResponse = securityChecker.generateAckResponse(ackRequest, sender, ackOnceEveryMessageCount)
+      // Enqueue to handle the ackRequest and send back ack later
+      val ackResponse = securityChecker.generateAckResponse(ackRequest, sender,
+        ackOnceEveryMessageCount)
       if (null != ackResponse) {
         queue.add(SendAck(ackResponse, ackRequest.taskId))
         doHandleMessage()
@@ -231,11 +234,12 @@ class TaskActor(
       subscriptions.find(_._1 == ack.taskId.processorId).foreach(_._2.receiveAck(ack))
       doHandleMessage()
     case inputMessage: SerializedMessage =>
-      val message = Message(serializerPool.get().deserialize(inputMessage.bytes), inputMessage.timeStamp)
+      val message = Message(serializerPool.get().deserialize(inputMessage.bytes),
+        inputMessage.timeStamp)
       receiveMessage(message, sender)
     case inputMessage: Message =>
       receiveMessage(inputMessage, sender)
-    case upstream@ UpstreamMinClock(upstreamClock) =>
+    case upstream@UpstreamMinClock(upstreamClock) =>
       this.upstreamMinClock = upstreamClock
 
       val subMinClock = subscriptions.foldLeft(Long.MaxValue) { (min, sub) =>
@@ -273,10 +277,10 @@ class TaskActor(
           case Some(subscription) =>
             subscription.changeLife(subscriber.lifeTime cross this.life)
           case None =>
-            val subscription = new Subscription(appId, executorId, taskId, subscriber, sessionId, this,
-              maxPendingMessageCount, ackOnceEveryMessageCount)
-            subscription.start
-            subscriptions :+= (subscriber.processorId, subscription)
+            val subscription = new Subscription(appId, executorId, taskId, subscriber,
+              sessionId, this, maxPendingMessageCount, ackOnceEveryMessageCount)
+            subscription.start()
+            subscriptions :+=(subscriber.processorId, subscription)
             // sort, keep the order
             subscriptions = subscriptions.sortBy(_._1)
         }
@@ -309,8 +313,8 @@ class TaskActor(
         queue.add(msg)
         doHandleMessage()
       case None =>
-        //Todo: Indicate the error and avoid the LOG flood
-        //LOG.error(s"Task $taskId drop message $msg")
+      // TODO: Indicate the error and avoid the LOG flood
+      // LOG.error(s"Task $taskId drop message $msg")
     }
   }
 
@@ -320,10 +324,11 @@ class TaskActor(
 }
 
 object TaskActor {
-  val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000 //3 seconds
+  val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000
+  // 3 seconds
 
   // If the message comes from an unknown source, securityChecker will drop it
-  class SecurityChecker(task_id: TaskId, self : ActorRef) {
+  class SecurityChecker(task_id: TaskId, self: ActorRef) {
 
     private val LOG: Logger = LogUtil.getLogger(getClass, task = task_id)
 
@@ -335,13 +340,13 @@ object TaskActor {
     // We store the session Id in the uid of ActorPath
     // ActorPath.hashCode is same as uid.
     private def getSessionId(actor: ActorRef): Int = {
-      //TODO: As method uid is protected in [akka] package. We
+      // TODO: As method uid is protected in [akka] package. We
       // are using hashCode instead of uid.
       actor.hashCode()
     }
 
     def handleInitialAckRequest(ackRequest: InitialAckRequest): Ack = {
-      LOG.debug(s"Handle InitialAckRequest for session $ackRequest" )
+      LOG.debug(s"Handle InitialAckRequest for session $ackRequest")
       val sessionId = ackRequest.sessionId
       if (sessionId == NONE_SESSION) {
         LOG.error(s"SessionId is not initialized, ackRequest: $ackRequest")
@@ -366,8 +371,8 @@ object TaskActor {
     }
 
     // If the message comes from an unknown source, then drop it
-    def checkMessage(message : Message, sender: ActorRef): Option[Message] = {
-      if(sender.equals(self)){
+    def checkMessage(message: Message, sender: ActorRef): Option[Message] = {
+      if (sender.equals(self)) {
         Some(message)
       } else {
         val sessionId = getSessionId(sender)

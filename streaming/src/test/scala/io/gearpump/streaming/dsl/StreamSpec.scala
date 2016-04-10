@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,18 @@
 
 package io.gearpump.streaming.dsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.util.{Either, Left, Right}
+
 import akka.actor._
-import io.gearpump.streaming.task.{StartTime, TaskContext}
+import org.mockito.Mockito.when
+import org.scalatest._
+import org.scalatest.mock.MockitoSugar
+
 import io.gearpump.Message
-import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner}
 import io.gearpump.streaming.dsl.StreamSpec.Join
 import io.gearpump.streaming.dsl.partitioner.GroupByPartitioner
@@ -30,23 +37,18 @@ import io.gearpump.streaming.dsl.plan.OpTranslator._
 import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.mockito.Mockito.when
-import org.scalatest._
-import org.scalatest.mock.MockitoSugar
 
-import scala.util.{Either, Left, Right}
-
-class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with MockitoSugar {
+class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with MockitoSugar {
 
   implicit var system: ActorSystem = null
 
-  override def beforeAll: Unit = {
-    system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
+  override def beforeAll(): Unit = {
+    system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
   }
 
   override def afterAll(): Unit = {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   it should "translate the DSL to a DAG" in {
@@ -55,7 +57,7 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with Mo
 
     val app = StreamApp("dsl", context)
 
-    val data  =
+    val data =
       """
         five  four three  two    one
         five  four three  two
@@ -75,7 +77,9 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with Mo
 
     val appDescription = app.plan
 
-    val dagTopology = appDescription.dag.mapVertex(_.taskClass).mapEdge((node1, edge, node2) => edge.partitionerFactory.partitioner.getClass.getName)
+    val dagTopology = appDescription.dag.mapVertex(_.taskClass).mapEdge { (node1, edge, node2) =>
+      edge.partitionerFactory.partitioner.getClass.getName
+    }
     val expectedDagTopology = getExpectedDagTopology
 
     assert(dagTopology.vertices.toSet.equals(expectedDagTopology.vertices.toSet))
@@ -102,14 +106,14 @@ class StreamSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with Mo
 
 object StreamSpec {
 
-  class Join(taskContext : TaskContext, userConf : UserConfig) extends Task(taskContext, userConf) {
+  class Join(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
     var query: String = null
     override def onStart(startTime: StartTime): Unit = {}
 
     override def onNext(msg: Message): Unit = {
       msg.msg match {
-        case Left(wordCount: (String, Int)) =>
+        case Left(wordCount: (String @unchecked, Int @unchecked)) =>
           if (query != null && wordCount._1 == query) {
             taskContext.output(new Message(wordCount))
           }

@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -18,14 +18,14 @@ angular.module('dashboard')
     }])
 
   .controller('StreamingAppMetricsCtrl', ['$scope', '$sortableTableBuilder',
-    function($scope, $stb) {
+    function ($scope, $stb) {
       'use strict';
 
-      $scope.$watch('dag.metricsUpdateTime', function() {
+      $scope.$watch('dag.metricsUpdateTime', function () {
         reloadMetricsAndUpdateMetricsTable();
       });
 
-      $scope.$watch('metricName', function() {
+      $scope.$watch('metricName', function () {
         reloadMetricsAndUpdateMetricsTable();
       });
 
@@ -74,10 +74,10 @@ angular.module('dashboard')
 
       function updateMetricsTable(table, metrics) {
         table.rows = $stb.$update(table.rows,
-          _.map(metrics, function(metric, processorId) {
+          _.map(metrics, function (metric, processorId) {
             var processor = $scope.dag.getProcessor(processorId);
             var processorUrl = processor.active ?
-              '#/apps/streamingapp/' + $scope.app.appId + '/processor/' + processorId : '';
+            '#/apps/streamingapp/' + $scope.app.appId + '/processor/' + processorId : '';
             return angular.merge({
               active: {
                 tooltip: processor.active ? 'Active' : (processor.replaced ? 'Replaced by another processor' : 'Dead'),

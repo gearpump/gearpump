@@ -19,17 +19,18 @@
 package io.gearpump.transport
 
 import java.util.concurrent.TimeUnit
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{FlatSpec, Matchers}
+
 import io.gearpump.cluster.TestUtil
 import io.gearpump.transport.MockTransportSerializer.NettyMessage
 import io.gearpump.transport.netty.{Context, TaskMessage}
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{FlatSpec, Matchers}
 import io.gearpump.util.Util
-
-import scala.concurrent.duration._
 
 class NettySpec extends FlatSpec with Matchers with MockitoSugar {
 
@@ -39,7 +40,7 @@ class NettySpec extends FlatSpec with Matchers with MockitoSugar {
     val context = new Context(system, conf)
     val serverActor = TestProbe()(system)
 
-    val port = Util.findFreePort
+    val port = Util.findFreePort()
 
     import system.dispatcher
     system.scheduler.scheduleOnce(Duration(1, TimeUnit.SECONDS)) {
@@ -52,10 +53,10 @@ class NettySpec extends FlatSpec with Matchers with MockitoSugar {
     val data = NettyMessage(0)
     val msg = new TaskMessage(0, 1, 2, data)
     client ! msg
-    serverActor.expectMsg(15 seconds, data)
-    
-    context.close
-    system.shutdown()
-    system.awaitTermination()
+    serverActor.expectMsg(15.seconds, data)
+
+    context.close()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 }

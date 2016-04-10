@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,18 @@
 
 package io.gearpump.streaming.state.impl
 
-import io.gearpump._
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.state.api.{Serializer, Group}
+import scala.collection.immutable.TreeMap
+import scala.util.Success
+
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.collection.immutable.TreeMap
-import scala.util.Success
+import io.gearpump._
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.state.api.{Group, Serializer}
 
 class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
@@ -91,7 +92,7 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       state.right shouldBe zero
       state.get shouldBe Some(zero)
 
-      val start =  checkpointTime - 1
+      val start = checkpointTime - 1
       val end = checkpointTime + 1
       val size = end - start
       val step = 1L
@@ -134,7 +135,7 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       when(group.zero).thenReturn(zero, zero)
       val state = new WindowState[AnyRef](group, serializer, taskContext, window)
 
-      val start =  checkpointTime - 1
+      val start = checkpointTime - 1
       val end = checkpointTime + 1
       val size = end - start
       val step = 1L
@@ -176,7 +177,7 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       state.right shouldBe right
       state.get shouldBe Some(plus)
       state.getIntervalStates(start, end) shouldBe
-          TreeMap(Interval(start, start + step) -> left, Interval(start + step, end) -> right)
+        TreeMap(Interval(start, start + step) -> left, Interval(start + step, end) -> right)
 
 
       // slide window
@@ -197,10 +198,10 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       state.right shouldBe plus
       state.get shouldBe Some(plus)
       state.getIntervalStates(start, end + step) shouldBe
-          TreeMap(
-            Interval(start, start + step) -> left,
-            Interval(start + step, end) -> right,
-            Interval(end, end + step) -> right)
+        TreeMap(
+          Interval(start, start + step) -> left,
+          Interval(start + step, end) -> right,
+          Interval(end, end + step) -> right)
     }
   }
 
@@ -232,7 +233,8 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       timestamp / windowStep * windowStep should (be <= interval.startTime)
       (timestamp - windowSize) / windowStep * windowStep should (be <= interval.startTime)
       (timestamp / windowStep + 1) * windowStep should (be >= interval.endTime)
-      ((timestamp - windowSize) / windowStep + 1) * windowStep + windowSize should (be >= interval.endTime)
+      ((timestamp - windowSize) / windowStep + 1) * windowStep + windowSize should
+        (be >= interval.endTime)
       checkpointTime should (be <= interval.startTime or be >= interval.endTime)
     }
   }

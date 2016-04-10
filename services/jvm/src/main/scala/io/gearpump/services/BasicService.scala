@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,18 @@
 
 package io.gearpump.services
 
-import akka.actor.{ActorSystem}
+import scala.concurrent.ExecutionContext
+
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `no-cache`}
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Route}
-import akka.stream.{Materializer}
-import io.gearpump.util.{LogUtil, Constants}
+import akka.http.scaladsl.server.Route
+import akka.stream.Materializer
 
-import scala.concurrent.ExecutionContext
+import io.gearpump.util.{Constants, LogUtil}
+// NOTE: This cannot be removed!!!
+import io.gearpump.services.util.UpickleUtil._
 
 trait RouteService {
   def route: Route
@@ -35,11 +38,11 @@ trait RouteService {
 /**
  * Wrap the cache behavior, and some common utils.
  */
-trait BasicService extends RouteService{
+trait BasicService extends RouteService {
 
   implicit def system: ActorSystem
 
-  implicit def timeout = Constants.FUTURE_TIMEOUT
+  implicit def timeout: akka.util.Timeout = Constants.FUTURE_TIMEOUT
 
   implicit def ec: ExecutionContext = system.dispatcher
 
@@ -53,7 +56,7 @@ trait BasicService extends RouteService{
   private val noCacheHeader = `Cache-Control`(`no-cache`, `max-age`(0L))
 
   def route: Route = encodeResponse {
-    extractMaterializer {implicit mat =>
+    extractMaterializer { implicit mat =>
       rawPathPrefix(prefix) {
         if (cache) {
           doRoute(mat)

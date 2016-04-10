@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,21 @@
 
 package akka.stream.gearpump.example
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.stream.gearpump.GearpumpMaterializer
-import akka.stream.gearpump.scaladsl.{Reduce, GroupBy, GearSource}
+import akka.stream.gearpump.scaladsl.GearSource
 import akka.stream.scaladsl.Sink
+
 import io.gearpump.streaming.dsl.CollectionDataSource
 
 
 /**
- *  WordCount example
-  * Test GroupBy
-  */
+ * WordCount example
+ * Test GroupBy
+ */
 
 import akka.stream.gearpump.scaladsl.Implicits._
 
@@ -45,14 +49,14 @@ object Test6 {
     val sink = Sink.actorRef(echo, "COMPLETE")
     val sourceData = new CollectionDataSource(List("this is a good start", "this is a good time", "time to start", "congratulations", "green plant", "blue sky"))
     val source = GearSource.from[String](sourceData)
-    source.mapConcat{line =>
+    source.mapConcat { line =>
       line.split(" ").toList
-    }.groupBy2(x=>x).map(word => (word, 1))
-      .reduce({(a, b) =>
+    }.groupBy2(x => x).map(word => (word, 1))
+      .reduce({ (a, b) =>
         (a._1, a._2 + b._2)
       }).log("word-count").runWith(sink)
 
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   class Echo extends Actor {

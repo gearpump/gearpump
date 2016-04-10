@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,10 @@
 package io.gearpump.streaming.examples.fsio
 
 import java.io.File
+import scala.collection.mutable.ArrayBuffer
 
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
-import io.gearpump.streaming.{Processor, MockUtil}
-import io.gearpump.streaming.task.{StartTime, TaskId}
-import io.gearpump.Message
-import io.gearpump.cluster.{TestUtil, UserConfig}
-import io.gearpump.streaming.Processor
-import io.gearpump.streaming.task.StartTime
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile.Reader
@@ -36,8 +31,13 @@ import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
-import scala.collection.mutable.ArrayBuffer
-class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+import io.gearpump.Message
+import io.gearpump.cluster.{TestUtil, UserConfig}
+import io.gearpump.streaming.{MockUtil, Processor}
+import io.gearpump.streaming.task.{StartTime, TaskId}
+class SeqFileStreamProcessorSpec
+  extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+
   val kvPairs = new ArrayBuffer[(String, String)]
   val outputDirectory = "SeqFileStreamProcessor_Test"
   val sequenceFilePath = new Path(outputDirectory + File.separator + TaskId(0, 0))
@@ -56,7 +56,8 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
     implicit val system1 = ActorSystem("SeqFileStreamProcessor", TestUtil.DEFAULT_CONFIG)
     val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
     val watcher = TestProbe()(system1)
-    val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProcessor.OUTPUT_PATH, outputDirectory)).withHadoopConf(new Configuration())
+    val conf = HadoopConfig(UserConfig.empty.withString(SeqFileStreamProcessor.OUTPUT_PATH,
+      outputDirectory)).withHadoopConf(new Configuration())
     val context = MockUtil.mockTaskContext
 
     val processorDescription =
@@ -80,7 +81,7 @@ class SeqFileStreamProcessorSpec extends PropSpec with PropertyChecks with Match
     val reader = new SequenceFile.Reader(hadoopConf, Reader.file(sequenceFilePath))
     kvPairs.foreach { kv =>
       val (key, value) = kv
-      if(value.length > 0 && reader.next(_key, _value)) {
+      if (value.length > 0 && reader.next(_key, _value)) {
         assert(_key.toString == key && _value.toString == value)
       }
     }

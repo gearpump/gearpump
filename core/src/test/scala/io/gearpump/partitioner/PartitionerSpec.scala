@@ -18,11 +18,12 @@
 
 package io.gearpump.partitioner
 
-import io.gearpump.Message
 import org.scalatest.{FlatSpec, Matchers}
 
-class PartitionerSpec  extends FlatSpec with Matchers {
-   val NUM = 10
+import io.gearpump.Message
+
+class PartitionerSpec extends FlatSpec with Matchers {
+  val NUM = 10
 
   "HashPartitioner" should "hash same key to same slots" in {
     val partitioner = new HashPartitioner

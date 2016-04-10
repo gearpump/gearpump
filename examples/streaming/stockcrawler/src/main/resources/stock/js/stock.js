@@ -1,10 +1,28 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 function initChart(chartid, tableid, stockId) {
   require.config({
     paths: {
-        echarts: 'http://echarts.baidu.com/build/dist'
+      echarts: 'http://echarts.baidu.com/build/dist'
     }
   });
-      
+
   require(
     [
       'echarts',
@@ -17,13 +35,13 @@ function initChart(chartid, tableid, stockId) {
       var dataPoints = 100;
       var timeTicket;
       clearInterval(timeTicket);
-      timeTicket = setInterval(function (){
-        $.getJSON( "report/" + stockId, function( json ) {
+      timeTicket = setInterval(function () {
+        $.getJSON("report/" + stockId, function (json) {
           STOCK_NAME = json.name
-          
+
           var maxDrawnDown = json.currentMax[0].max.price - json.currentMax[0].min.price;
-          var time = new Date(json.currentMax[0].current.timestamp).toLocaleTimeString().replace(/^\D*/,'');
-           // 动态数据接口 addData
+          var time = new Date(json.currentMax[0].current.timestamp).toLocaleTimeString().replace(/^\D*/, '');
+          // 动态数据接口 addData
           myChart.addData([
             [
               0,        // 系列索引
@@ -40,91 +58,91 @@ function initChart(chartid, tableid, stockId) {
               time
             ]
           ]);
-          document.getElementById(chartid).style.display="block"
+          document.getElementById(chartid).style.display = "block"
           document.getElementById(tableid).innerHTML = "<pre>" + JSON.stringify(json, null, 2) + "</pre>"
-          });
+        });
       }, 2000);
 
       var subtext_ = "Draw Down"
 
       var option = {
-        title : {
-            text: 'Stock Analysis',
-            subtext: "Max " + subtext_
+        title: {
+          text: 'Stock Analysis',
+          subtext: "Max " + subtext_
         },
-        tooltip : {
-            trigger: 'axis'
+        tooltip: {
+          trigger: 'axis'
         },
         legend: {
-            data:["Current Price", "Current Draw Down"]
+          data: ["Current Price", "Current Draw Down"]
         },
         toolbox: {
-          show : false,
-          feature : {
-            mark : {show: true},
-            dataView : {show: true, readOnly: false},
-            magicType : {show: true, type: ['line', 'bar']},
-            restore : {show: true},
-            saveAsImage : {show: true}
+          show: false,
+          feature: {
+            mark: {show: true},
+            dataView: {show: true, readOnly: false},
+            magicType: {show: true, type: ['line', 'bar']},
+            restore: {show: true},
+            saveAsImage: {show: true}
           }
         },
-        dataZoom : {
-          show : false,
-          start : 0,
-          end : 100
+        dataZoom: {
+          show: false,
+          start: 0,
+          end: 100
         },
-        xAxis : [
+        xAxis: [
           {
-            type : 'category',
-            boundaryGap : true,
-            data : (function (){
+            type: 'category',
+            boundaryGap: true,
+            data: (function () {
               var now = new Date();
               var res = [];
               var len = dataPoints;
               while (len--) {
-                res.unshift(now.toLocaleTimeString().replace(/^\D*/,''));
+                res.unshift(now.toLocaleTimeString().replace(/^\D*/, ''));
                 now = new Date(now - 2000);
               }
               return res;
             })()
           }
         ],
-        yAxis : [
+        yAxis: [
           {
-            type : 'value',
+            type: 'value',
             scale: true,
-            name : subtext_ + ' 价格/元',
+            name: subtext_ + ' 价格/元',
             boundaryGap: [0, 0.3]
           },
           {
-            type : 'value',
+            type: 'value',
             scale: true,
-            name : 'Current 价格/元',
+            name: 'Current 价格/元',
             boundaryGap: [0, 0.1]
           }
         ],
-        series : [
+        series: [
           {
-            name:"Current Draw Down",
-            type:'line',
-            data:(function (){
+            name: "Current Draw Down",
+            type: 'line',
+            data: (function () {
               var res = [];
               var len = dataPoints;
               while (len--) {
-                  res.push(0);
+                res.push(0);
               }
               return res;
             })()
           },
           {
-            name:"Current Price",
-            type:'line',
+            name: "Current Price",
+            type: 'line',
             yAxisIndex: 1,
-            data:(function (){
+            data: (function () {
               var res = [];
               var len = dataPoints;
               while (len--) {
-                  res.push(0);
+                res.push(0);
               }
               return res;
             })()

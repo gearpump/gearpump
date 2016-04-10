@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,17 @@
 
 package akka.stream.gearpump.example
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.graph.GraphCutter
-import akka.stream.scaladsl.{Unzip, Source, FlowGraph, Sink}
-import io.gearpump.cluster.ClusterConfig
+import akka.stream.scaladsl.{Sink, Source, Unzip}
 
 /**
- test fanout
- */
+test fanout
+  */
 object Test5 {
 
   def main(args: Array[String]): Unit = {
@@ -42,7 +44,6 @@ object Test5 {
     val source = Source(List(("male", "24"), ("female", "23")))
 
     val graph = FlowGraph.closed() { implicit b =>
-      import FlowGraph.Implicits._
       val unzip = b.add(Unzip[String, String]())
 
       val sink1 = Sink.actorRef(echo, "COMPLETE")
@@ -55,7 +56,7 @@ object Test5 {
 
     graph.run()
 
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   class Echo extends Actor {

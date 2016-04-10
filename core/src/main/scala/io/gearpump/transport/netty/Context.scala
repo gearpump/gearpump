@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,30 +20,26 @@ package io.gearpump.transport.netty
 
 import java.io.Closeable
 import java.util.concurrent._
+import scala.collection.JavaConverters._
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.Config
-import io.gearpump.transport.netty.Server.ServerPipelineFactory
-import io.gearpump.transport.{ActorLookupById, HostPort}
-import io.gearpump.util.{Constants, LogUtil}
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.slf4j.Logger
 
-import scala.collection.JavaConversions._
-import scala.language.implicitConversions
+import io.gearpump.transport.netty.Server.ServerPipelineFactory
+import io.gearpump.transport.{ActorLookupById, HostPort}
+import io.gearpump.util.{Constants, LogUtil}
 
 object Context {
   private final val LOG: Logger = LogUtil.getLogger(getClass)
-
-  implicit def toCloseable(fun : () => Any)  = new Closeable {
-    override def close = fun()
-  }
 }
 
-class Context(system : ActorSystem, conf: NettyConfig) extends IContext {
-import io.gearpump.transport.netty.Context._
+/** Netty Context */
+class Context(system: ActorSystem, conf: NettyConfig) extends IContext {
+  import io.gearpump.transport.netty.Context._
 
-  def this(system : ActorSystem, conf : Config) {
+  def this(system: ActorSystem, conf: Config) {
     this(system, new NettyConfig(conf))
   }
 
@@ -54,52 +50,62 @@ import io.gearpump.transport.netty.Context._
   private lazy val clientChannelFactory: NioClientSocketChannelFactory = {
     val bossFactory: ThreadFactory = new NettyRenameThreadFactory("client" + "-boss")
     val workerFactory: ThreadFactory = new NettyRenameThreadFactory("client" + "-worker")
-    val channelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(bossFactory), Executors.newCachedThreadPool(workerFactory), maxWorkers)
-    closeHandler.add { ()=>
+    val channelFactory =
+      new NioClientSocketChannelFactory(
+        Executors.newCachedThreadPool(bossFactory),
+        Executors.newCachedThreadPool(workerFactory), maxWorkers)
 
-      LOG.info("Closing all client resources....")
-      channelFactory.releaseExternalResources
-    }
+    closeHandler.add(new Closeable {
+      override def close(): Unit = {
+        LOG.info("Closing all client resources....")
+        channelFactory.releaseExternalResources
+      }
+    })
     channelFactory
   }
 
-
-  def bind(name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true, inputPort: Int = 0): Int = {
-    //TODO: whether we should expose it as application config?
-    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor, deserializeFlag).withDispatcher(nettyDispatcher), name)
+  def bind(
+      name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true,
+      inputPort: Int = 0): Int = {
+    // TODO: whether we should expose it as application config?
+    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor,
+      deserializeFlag).withDispatcher(nettyDispatcher), name)
     val (port, channel) = NettyUtil.newNettyServer(name,
       new ServerPipelineFactory(server, conf), 5242880, inputPort)
     val factory = channel.getFactory
-    closeHandler.add{ () =>
+    closeHandler.add(new Closeable {
+      override def close(): Unit = {
         system.stop(server)
         channel.close()
-
         LOG.info("Closing all server resources....")
         factory.releaseExternalResources
       }
+    })
     port
   }
 
-  def connect(hostPort : HostPort) : ActorRef = {
-    val client = system.actorOf(Props(classOf[Client], conf, clientChannelFactory, hostPort).withDispatcher(nettyDispatcher))
-    closeHandler.add { () =>
-
-      LOG.info("closing Client actor....")
+  def connect(hostPort: HostPort): ActorRef = {
+    val client = system.actorOf(Props(classOf[Client], conf, clientChannelFactory, hostPort)
+      .withDispatcher(nettyDispatcher))
+    closeHandler.add(new Closeable {
+      override def close(): Unit =
+        LOG.info("closing Client actor....")
       system.stop(client)
-    }
+    })
     client
   }
 
   /**
    * terminate this context
    */
-  def close {
+  def close(): Unit = {
 
-    LOG.info(s"Context.term, cleanup resources...., we have ${closeHandler.size()} items to close...")
+    LOG.info(s"Context.term, cleanup resources...., " +
+      s"we have ${closeHandler.size()} items to close...")
 
     // clean up resource in reverse order so that client actor can be cleaned
     // before clientChannelFactory
-    closeHandler.iterator().toArray.reverse.foreach(_.close())
+    closeHandler.iterator().asScala.toList.reverse.foreach(_.close())
   }
 }
 

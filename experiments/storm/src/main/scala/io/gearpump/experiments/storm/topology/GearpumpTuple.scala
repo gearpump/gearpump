@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@ import java.util.{List => JList}
 
 import backtype.storm.task.GeneralTopologyContext
 import backtype.storm.tuple.{Tuple, TupleImpl}
+
 import io.gearpump.TimeStamp
 
 
@@ -36,9 +37,9 @@ private[storm] class GearpumpTuple(
     val sourceStreamId: String,
     @transient val targetPartitions: Map[String, Array[Int]]) extends Serializable {
   /**
-   * creates a Storm [[Tuple]] to be passed to a Storm component
+   * creates a Storm [[backtype.storm.tuple.Tuple]] to be passed to a Storm component
    * this is needed for each incoming message
-   * because we cannot get [[GeneralTopologyContext]] at deserialization
+   * because we cannot get [[backtype.storm.task.GeneralTopologyContext]] at deserialization
    * @param topologyContext topology context used for all tasks
    * @return a Tuple
    */
@@ -52,9 +53,9 @@ private[storm] class GearpumpTuple(
   override def equals(other: Any): Boolean = other match {
     case that: GearpumpTuple =>
       (that canEqual this) &&
-          values == that.values &&
-          sourceTaskId == that.sourceTaskId &&
-          sourceStreamId == that.sourceStreamId
+        values == that.values &&
+        sourceTaskId == that.sourceTaskId &&
+        sourceStreamId == that.sourceStreamId
     case _ => false
   }
 

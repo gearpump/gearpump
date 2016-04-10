@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,11 @@
 
 package io.gearpump.experiments.yarn.glue
 
-import io.gearpump.experiments.yarn.glue.Records._
-import io.gearpump.util.LogUtil
 import org.apache.hadoop.yarn.api.records.YarnApplicationState
 import org.apache.hadoop.yarn.client.api
+
+import io.gearpump.experiments.yarn.glue.Records._
+import io.gearpump.util.LogUtil
 
 /**
  * Adapter for api.YarnClient
@@ -36,7 +37,7 @@ class YarnClient(yarn: YarnConfig) {
   LOG.info("Starting YarnClient...")
 
   def createApplication: ApplicationId = {
-    val app  = client.createApplication()
+    val app = client.createApplication()
     val response = app.getNewApplicationResponse()
     LOG.info("Create application, appId: " + response.getApplicationId())
     response.getApplicationId()
@@ -46,7 +47,9 @@ class YarnClient(yarn: YarnConfig) {
     client.getApplicationReport(appId)
   }
 
-  def submit(name: String, appId: ApplicationId, command: String, resource: Resource, queue: String, packagePath: String, configPath: String): ApplicationId = {
+  def submit(
+      name: String, appId: ApplicationId, command: String, resource: Resource, queue: String,
+      packagePath: String, configPath: String): ApplicationId = {
 
     val appContext = Records.newAppSubmissionContext
     appContext.setApplicationName(name)
@@ -61,7 +64,8 @@ class YarnClient(yarn: YarnConfig) {
     client.submitApplication(appContext)
   }
 
-  def awaitApplication(appId: ApplicationId, timeoutMilliseconds: Long = Long.MaxValue): ApplicationReport = {
+  def awaitApplication(appId: ApplicationId, timeoutMilliseconds: Long = Long.MaxValue)
+    : ApplicationReport = {
     import YarnApplicationState._
     val terminated = Set(FINISHED, KILLED, FAILED, RUNNING)
     var result: ApplicationReport = null
@@ -78,7 +82,7 @@ class YarnClient(yarn: YarnConfig) {
       }
     }
 
-    while(!done && !timeout) {
+    while (!done && !timeout) {
       val report = client.getApplicationReport(appId)
       val status = report.getYarnApplicationState
       if (terminated.contains(status)) {
@@ -90,15 +94,13 @@ class YarnClient(yarn: YarnConfig) {
       }
     }
 
-    Console.println()
-
     if (timeout) {
       throw new Exception(s"Launch Application $appId timeout...")
     }
     result
   }
 
-  def stop: Unit = {
+  def stop(): Unit = {
     client.stop()
   }
 }

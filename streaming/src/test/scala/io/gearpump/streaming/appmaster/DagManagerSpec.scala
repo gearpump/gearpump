@@ -18,8 +18,13 @@
 
 package io.gearpump.streaming.appmaster
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+
 import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.streaming.appmaster.DagManager.{DAGOperationFailed, DAGOperationSuccess, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}
@@ -27,7 +32,6 @@ import io.gearpump.streaming.task.{Subscriber, TaskActor}
 import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, StreamApplication}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
@@ -94,8 +98,8 @@ class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   }
 
   override def afterAll {
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   override def beforeAll {

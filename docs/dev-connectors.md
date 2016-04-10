@@ -9,7 +9,7 @@ title: Gearpump Connectors
 ### DataSource
 `DataSource` is the concept in Gearpump that without input and will output messages. So, basically, `DataSource` is the start point of a streaming processing flow.
 
-As Gearpump depends on `DataSource` to be replayable to ensure at-least-once message delivery and exactly-once message delivery, for some data sources, we will need a `io.gearpump.streaming.transaction.api.OffsetStorageFactory` to store the offset (progress) of current `DataSource`. So that, when a replay is needed, Gearpump can guide `DataSource` to replay from certain offset.
+As Gearpump depends on `DataSource` to be replay-able to ensure at-least-once message delivery and exactly-once message delivery, for some data sources, we will need a `io.gearpump.streaming.transaction.api.OffsetStorageFactory` to store the offset (progress) of current `DataSource`. So that, when a replay is needed, Gearpump can guide `DataSource` to replay from certain offset.
 
 Currently Gearpump `DataSource` only support infinite stream. Finite stream support will be added in a near future release.
 

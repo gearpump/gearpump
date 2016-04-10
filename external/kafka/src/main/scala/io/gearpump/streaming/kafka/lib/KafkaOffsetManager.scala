@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,15 @@
 
 package io.gearpump.streaming.kafka.lib
 
+import scala.util.{Failure, Success, Try}
+
 import com.twitter.bijection.Injection
-import io.gearpump.streaming.transaction.api.{OffsetManager, OffsetStorage}
-import io.gearpump._
-import OffsetStorage.{Overflow, StorageEmpty, Underflow}
-import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-import scala.util.{Failure, Success, Try}
+import io.gearpump._
+import io.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
+import io.gearpump.streaming.transaction.api.{OffsetManager, OffsetStorage}
+import io.gearpump.util.LogUtil
 
 object KafkaOffsetManager {
   private val LOG: Logger = LogUtil.getLogger(classOf[KafkaOffsetManager])
@@ -34,7 +35,7 @@ object KafkaOffsetManager {
 private[kafka] class KafkaOffsetManager(storage: OffsetStorage) extends OffsetManager {
   import KafkaOffsetManager._
 
-  var maxTime: TimeStamp  = 0L
+  var maxTime: TimeStamp = 0L
 
   override def filter(messageAndOffset: (Message, Long)): Option[Message] = {
     val (message, offset) = messageAndOffset

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,19 +19,20 @@
 package io.gearpump.experiments.storm.producer
 
 import java.util.{List => JList}
+import scala.collection.JavaConverters._
 
 import backtype.storm.spout.ISpout
 import backtype.storm.utils.Utils
-import io.gearpump.experiments.storm.util.StormOutputCollector
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.collection.JavaConversions._
+import io.gearpump.experiments.storm.util.StormOutputCollector
 
-class StormSpoutOutputCollectorSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
+class StormSpoutOutputCollectorSpec
+  extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   property("StormSpoutOutputCollector should call StormOutputCollector") {
     val valGen = Gen.oneOf(Gen.alphaStr, Gen.alphaChar, Gen.chooseNum[Int](0, 1000))
@@ -42,9 +43,8 @@ class StormSpoutOutputCollectorSpec extends PropSpec with PropertyChecks with Ma
       val spout = mock[ISpout]
       val streamId = Utils.DEFAULT_STREAM_ID
       val spoutCollector = new StormSpoutOutputCollector(collector, spout, false)
-      spoutCollector.emit(streamId, values, null)
-      verify(collector).emit(streamId, values)
+      spoutCollector.emit(streamId, values.asJava, null)
+      verify(collector).emit(streamId, values.asJava)
     }
   }
-
 }

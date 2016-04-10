@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,14 +19,18 @@
 package io.gearpump.services.security.oauth2.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
+import scala.collection.mutable.StringBuilder
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
+import com.typesafe.config.Config
 import com.github.scribejava.core.builder.ServiceBuilderAsync
 import com.github.scribejava.core.builder.api.DefaultApi20
 import com.github.scribejava.core.model._
 import com.github.scribejava.core.oauth.OAuth20Service
 import com.github.scribejava.core.utils.OAuthEncoder
 import com.ning.http.client.AsyncHttpClientConfig
-import com.typesafe.config.Config
+
 import io.gearpump.security.Authenticator
 import io.gearpump.services.SecurityService.UserSession
 import io.gearpump.services.security.oauth2.OAuth2Authenticator
@@ -34,14 +38,10 @@ import io.gearpump.services.security.oauth2.impl.BaseOAuth2Authenticator.BaseApi
 import io.gearpump.util.Constants._
 import io.gearpump.util.Util
 
-import scala.collection.mutable.StringBuilder
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
-
 /**
  * Uses Ning AsyncClient to connect to OAuth2 service.
  *
- * @see [[OAuth2Authenticator]] for more API information.
+ * @see [[io.gearpump.services.security.oauth2.OAuth2Authenticator]] for more API information.
  */
 abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
@@ -139,7 +139,7 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
       new OAuthAsyncRequestCallback[OAuth2AccessToken] {
         override def onCompleted(accessToken: OAuth2AccessToken): Unit = {
-          authenticateWithAccessToken(accessToken).onComplete{
+          authenticateWithAccessToken(accessToken).onComplete {
             case Success(user) => promise.success(user)
             case Failure(ex) => promise.failure(ex)
           }
@@ -167,9 +167,11 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
     }
   }
 
-  private def buildOAuth2Service(clientId: String, clientSecret: String, callback: String): OAuth20Service = {
-    val state: String = "state" + Util.randInt
-    ScribeJavaConfig.setForceTypeOfHttpRequests(ForceTypeOfHttpRequest.FORCE_ASYNC_ONLY_HTTP_REQUESTS)
+  private def buildOAuth2Service(clientId: String, clientSecret: String, callback: String)
+    : OAuth20Service = {
+    val state: String = "state" + Util.randInt()
+    ScribeJavaConfig.setForceTypeOfHttpRequests(
+      ForceTypeOfHttpRequest.FORCE_ASYNC_ONLY_HTTP_REQUESTS)
     val clientConfig: AsyncHttpClientConfig = new AsyncHttpClientConfig.Builder()
       .setMaxConnections(5)
       .setUseProxyProperties(true)
@@ -189,7 +191,6 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
     service
   }
-
 }
 
 object BaseOAuth2Authenticator {
@@ -200,18 +201,21 @@ object BaseOAuth2Authenticator {
     }
 
     def getAuthorizationUrl(config: OAuthConfig): String = {
-      val sb: StringBuilder = new StringBuilder(String.format(authorizeUrl, config.getResponseType, config.getApiKey, OAuthEncoder.encode(config.getCallback), OAuthEncoder.encode(config.getScope)))
+      val sb: StringBuilder = new StringBuilder(String.format(authorizeUrl,
+        config.getResponseType, config.getApiKey, OAuthEncoder.encode(config.getCallback),
+        OAuthEncoder.encode(config.getScope)))
       val state: String = config.getState
       if (state != null) {
         sb.append('&').append(OAuthConstants.STATE).append('=').append(OAuthEncoder.encode(state))
       }
-      return sb.toString
+      sb.toString
     }
 
     override def createService(config: OAuthConfig): OAuth20Service = {
-      return new OAuth20Service(this, config) {
+      new OAuth20Service(this, config) {
 
-        protected override def createAccessTokenRequest[T <: AbstractRequest](code: String, request: T): T = {
+        protected override def createAccessTokenRequest[T <: AbstractRequest](
+            code: String, request: T): T = {
           super.createAccessTokenRequest(code, request)
 
           if (!getConfig.hasGrantType) {

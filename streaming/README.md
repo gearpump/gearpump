@@ -9,17 +9,11 @@ class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val ed
 
   /**
    * convert a value[T] to a list of value[R]
-   * @param fun
-   * @tparam R
-   * @return
    */
   def flatMap[R](fun: T => TraversableOnce[R]): Stream[R]
 
   /**
    * convert value[T] to value[R]
-   * @param fun
-   * @tparam R
-   * @return
    */
   def map[R](fun: T => R): Stream[R]
 
@@ -60,20 +54,11 @@ class Stream[T](dag: Graph[Op, OpEdge], private val thisNode: Op, private val ed
    * For example,
    *
    * Stream[People].groupBy(_.gender).flatmap(..).filter.(..).reduce(..)
-   *
-   * @param fun
-   * @param parallism
-   * @tparam Group
-   * @return
    */
   def groupBy[Group](fun: T => Group, parallism: Int = 1): Stream[T]
 
   /**
    * connect with a low level Processor(TaskDescription)
-   * @param processor
-   * @param parallism
-   * @tparam R
-   * @return
    */
   def process[R](processor: Class[_ <: Task], parallism: Int): Stream[R]
 }

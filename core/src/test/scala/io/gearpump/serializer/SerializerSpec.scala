@@ -18,16 +18,19 @@
 
 package io.gearpump.serializer
 
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.{ActorSystem, ExtendedActorSystem}
-import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
-import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
-import io.gearpump.cluster.TestUtil
-import io.gearpump.serializer.SerializerSpec._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.collection.JavaConverters._
+import io.gearpump.cluster.TestUtil
+import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
+import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
+import io.gearpump.serializer.SerializerSpec._
 
 class SerializerSpec extends FlatSpec with Matchers with MockitoSugar {
   val config = ConfigFactory.empty.withValue("gearpump.serializers",
@@ -56,8 +59,8 @@ class SerializerSpec extends FlatSpec with Matchers with MockitoSugar {
     val anotherA = serializer.deserialize(bytes)
 
     assert(anotherA.isInstanceOf[ClassA])
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 }
 

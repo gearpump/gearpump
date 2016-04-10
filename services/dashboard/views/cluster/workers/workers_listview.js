@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -16,10 +16,10 @@ angular.module('dashboard')
           templateUrl: 'views/cluster/workers/workers_listview.html',
           controller: 'WorkersListViewCtrl',
           resolve: {
-            workers0: ['models', function(models) {
+            workers0: ['models', function (models) {
               return models.$get.workers();
             }],
-            supervisor0: ['models', function(models) {
+            supervisor0: ['models', function (models) {
               return models.$get.supervisor();
             }]
           }
@@ -28,10 +28,10 @@ angular.module('dashboard')
 
   .controller('WorkersListViewCtrl', ['$scope', '$modal', '$sortableTableBuilder', '$dialogs',
     'restapi', 'workers0', 'supervisor0',
-    function($scope, $modal, $stb, $dialogs, restapi, workers0, supervisor0) {
+    function ($scope, $modal, $stb, $dialogs, restapi, workers0, supervisor0) {
       'use strict';
 
-      $scope.isSupervisor = (supervisor0.path||'').length > 0;
+      $scope.isSupervisor = (supervisor0.path || '').length > 0;
       $scope.workersTable = {
         cols: [
           // group 1/3 (4-col)
@@ -51,22 +51,30 @@ angular.module('dashboard')
 
       function updateTable(workers) {
         $scope.workersTable.rows = $stb.$update($scope.workersTable.rows,
-          _.map(workers, function(worker) {
+          _.map(workers, function (worker) {
             return {
               id: {href: worker.pageUrl, text: worker.workerId},
-              state: {tooltip: worker.state, condition: worker.isRunning ? 'good' : 'concern', shape: 'stripe'},
+              state: {
+                tooltip: worker.state,
+                condition: worker.isRunning ? 'good' : 'concern',
+                shape: 'stripe'
+              },
               akkaAddr: worker.akkaAddr,
               jvm: worker.jvmName,
               aliveFor: worker.aliveFor,
-              slots: {current: worker.slots.used, max: worker.slots.total, usage: worker.slots.usage},
+              slots: {
+                current: worker.slots.used,
+                max: worker.slots.total,
+                usage: worker.slots.usage
+              },
               executors: worker.executors.length || 0,
               detail: {href: worker.pageUrl, text: 'Details', class: 'btn-xs btn-primary'},
               conf: {href: worker.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
               kill: {
                 text: 'Kill', class: 'btn-xs',
                 disabled: !$scope.isSupervisor,
-                click: function() {
-                  $dialogs.confirm('Are you sure to kill this worker?', function() {
+                click: function () {
+                  $dialogs.confirm('Are you sure to kill this worker?', function () {
                     restapi.removeWorker(worker.workerId,
                       function handleResponse(response) {
                         if (response.success) {
@@ -87,7 +95,7 @@ angular.module('dashboard')
       }
 
       updateTable(workers0.$data());
-      workers0.$subscribe($scope, function(data) {
+      workers0.$subscribe($scope, function (data) {
         updateTable(data);
       });
 
@@ -99,7 +107,7 @@ angular.module('dashboard')
         show: false
       });
 
-      $scope.showAddWorkerDialog = function() {
+      $scope.showAddWorkerDialog = function () {
         addWorkerDialog.$promise.then(addWorkerDialog.show);
       };
     }])

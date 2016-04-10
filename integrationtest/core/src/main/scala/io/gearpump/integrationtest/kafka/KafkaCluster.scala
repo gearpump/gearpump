@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,9 +17,10 @@
  */
 package io.gearpump.integrationtest.kafka
 
+import org.apache.log4j.Logger
+
 import io.gearpump.integrationtest.minicluster.MiniCluster
 import io.gearpump.integrationtest.{Docker, Util}
-import org.apache.log4j.Logger
 
 object KafkaCluster {
 
@@ -34,7 +35,7 @@ object KafkaCluster {
   }
 
   def withDataProducer(topic: String, brokerList: String)
-                      (testCode: NumericalDataProducer => Unit): Unit = {
+    (testCode: NumericalDataProducer => Unit): Unit = {
     val producer = new NumericalDataProducer(topic, brokerList)
     try {
       producer.start()
@@ -43,7 +44,6 @@ object KafkaCluster {
       producer.stop()
     }
   }
-
 }
 
 /**
@@ -67,7 +67,7 @@ class KafkaCluster(val advertisedHost: String, zkChroot: String = "") {
         "ZK_CHROOT" -> zkChroot),
       tunnelPorts = Set(ZOOKEEPER_PORT, BROKER_PORT)
     )
-    Util.retryUntil(()=>isAlive, "kafka cluster is alive")
+    Util.retryUntil(() => isAlive, "kafka cluster is alive")
     LOG.debug("kafka cluster is started.")
   }
 
@@ -118,14 +118,17 @@ class KafkaCluster(val advertisedHost: String, zkChroot: String = "") {
     kafkaFetchLatestOffset(KAFKA_HOST, topic, KAFKA_HOME, getBrokerListConnectString)
   }
 
-  private def kafkaListTopics(container: String, kafkaHome: String, zookeeperConnectionString: String): String = {
+  private def kafkaListTopics(
+      container: String, kafkaHome: String, zookeeperConnectionString: String): String = {
+
     LOG.debug(s"|=> Kafka list topics...")
     Docker.execute(container,
       s"$kafkaHome/bin/kafka-topics.sh" +
         s" --zookeeper $zookeeperConnectionString -list")
   }
 
-  private def kafkaFetchLatestOffset(container: String, topic: String, kafkaHome: String, brokersList: String): Int = {
+  private def kafkaFetchLatestOffset(
+      container: String, topic: String, kafkaHome: String, brokersList: String): Int = {
     LOG.debug(s"|=> Get latest offset of topic $topic...")
     val output = Docker.execute(container,
       s"$kafkaHome/bin/kafka-run-class.sh kafka.tools.GetOffsetShell" +

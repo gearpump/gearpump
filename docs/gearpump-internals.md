@@ -4,7 +4,7 @@ displayTitle: Gearpump Internals
 title: Gearpump Internals
 description: Gearpump Internals
 ---
-### Actor Hiearachy?
+### Actor Hierarchy?
 
 ![Actor Hierarchy](img/actor_hierarchy.png)
 
@@ -72,7 +72,7 @@ Without flow control, one task can easily flood another task with too many messa
 Figure: Flow control, each task is "star" connected to input tasks and output tasks
 
 The difficult part for our problem is that each task can have multiple input tasks and output tasks. The input and output must be geared together so that the back pressure can be properly propagated from downstream to upstream. The flow control also needs to consider failures, and it needs to be able to recover when there is message loss.
-Another challenge is that the overhead of flow control messages can be big. If we ack every message, there will be huge amount of ack'd messages in the system, degrading streaming performance. The approach we adopted is to use explicit AckRequest message. The target tasks will only ack back when they receive the AckRequest message, and the source will only send AckRequest when it feels necessary. With this approach, we can largely reduce the overhead.
+Another challenge is that the overhead of flow control messages can be big. If we ack every message, there will be huge amount of acked messages in the system, degrading streaming performance. The approach we adopted is to use explicit AckRequest message. The target tasks will only ack back when they receive the AckRequest message, and the source will only send AckRequest when it feels necessary. With this approach, we can largely reduce the overhead.
 
 ### How do we detect message loss?
 
@@ -231,4 +231,4 @@ When there is message loss, the AppMaster will first pause the global clock serv
 
 Kafka queue only expose the offset information for each partition. What KafkaSource do is to maintain its own mapping from Kafka offset to  Application timestamp, so that we can map from a application timestamp to a Kafka offset, and replay Kafka messages from that Kafka offset.
 
-The mapping between Application timestmap with Kafka offset is stored in a distributed file system or as a Kafka topic.
+The mapping between Application timestamp with Kafka offset is stored in a distributed file system or as a Kafka topic.

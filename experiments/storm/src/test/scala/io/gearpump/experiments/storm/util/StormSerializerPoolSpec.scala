@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,20 +19,20 @@
 package io.gearpump.experiments.storm.util
 
 import java.util.{HashMap => JHashMap, List => JList, Map => JMap}
+import scala.collection.JavaConverters._
 
 import akka.actor.ExtendedActorSystem
 import backtype.storm.utils.Utils
 import com.esotericsoftware.kryo.Kryo
-import io.gearpump.cluster.UserConfig
-import io.gearpump.experiments.storm.topology.GearpumpTuple
-import io.gearpump.experiments.storm.util.StormConstants._
-import io.gearpump.streaming.MockUtil
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.collection.JavaConverters._
+import io.gearpump.cluster.UserConfig
+import io.gearpump.experiments.storm.topology.GearpumpTuple
+import io.gearpump.experiments.storm.util.StormConstants._
+import io.gearpump.streaming.MockUtil
 
 class StormSerializerPoolSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
@@ -44,7 +44,7 @@ class StormSerializerPoolSpec extends PropSpec with PropertyChecks with Matchers
     val stormConfig = Utils.readDefaultConfig.asInstanceOf[JMap[AnyRef, AnyRef]]
     val config = UserConfig.empty.withValue[JMap[AnyRef, AnyRef]](STORM_CONFIG, stormConfig)
     serializerPool.init(system, config)
-    serializerPool.get shouldBe a [StormSerializer]
+    serializerPool.get shouldBe a[StormSerializer]
   }
 
   property("StormSerializer should serialize and deserialize GearpumpTuple") {

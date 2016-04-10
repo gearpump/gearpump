@@ -16,7 +16,7 @@ Mail list:
 
 What are the changes for the process for Apache Incubation?
 ------------------
-The code importing to Apache Git is still in process. During this transtion time,
+The code importing to Apache Git is still in process. During this transition time,
 We will follow these procedures:
 
  1. For new issue, we should no longer open issue in Github issues. Instead, we
@@ -92,7 +92,7 @@ From now on, new issues should be submitted to https://issues.apache.org/jira/br
 - #1892: added instruction text to operate network graph (2) minor tweaks of context menu
 - #1963, rename CommitGuideline.md to CONTRIBUTING.md
 - #1958: better test report organizing
-- #1906: some visual glichtes found in mobile view
+- #1906: some visual glitches found in mobile view
 
 Gearpump 0.7.6
 ===================
@@ -344,7 +344,7 @@ Change log:
 - #1369: fixed data initialization issue of echart
 - #1364, add default value for BYTES_PER_MESSAGE of SOLStreamProducer
 - #1361: able to show multiple tasks in chart (better not select mo…
-- #1358: properties will be updated (2) moved roboto font and echar…  
+- #1358: properties will be updated (2) moved roboto font and echart…  
 
 
 Gearpump 0.6
@@ -466,7 +466,7 @@ Change logs:
  - #1149: Shell tools printed too much detail on console
  - #1146: actor hungry when worker use block-io to wait response from FileServer.
  - #1088: move hbase code to external/
- - #1140：pass app name to task
+ - #1140: pass app name to task
  - #1017: Split daemon dependencies with core dependencies
  - #1144: fix out of memory when trying to scale gearpump to 2000 task on a 2 core machine
  - #995: Command line parser should be able to fall back  to MAIN-CLASS definition in MANIFEST.IN when mainClass is not specified in command line options.
@@ -595,7 +595,7 @@ gearpump-0.3.4
 ====================
 Change List:
 ----------------
- - #768, Serious performance degration of ui server on windows
+ - #768, Serious performance degrade of ui server on windows
  - #765, improve the graph type inference so we don't need to set template argument type explicitly
 
 gearpump-0.3.3
@@ -797,7 +797,7 @@ Highlights:
  - Add support for general replay-able data source to support at least once delivery. 
  - More robust streaming. Be resilient to message loss, message duplication, and zombie processes. 
  - Refactor Kafka data source for at least once delivery.
- - Support general applications besides streaming, add an experimental distrubtedshell application under experiments/.
+ - Support general applications besides streaming, add an experimental distributedshell application under experiments/.
  - Re-defined the AppMaster, and Task interface, It is much easier to write an application now.
  - Support submitting and distributing large applications jars.
  - Add CI tool, nightly build, code coverage, and defined a formal commit guideline.

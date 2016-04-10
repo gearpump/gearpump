@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,8 +22,8 @@ import io.gearpump.integrationtest.storm.StormClient
 import io.gearpump.integrationtest.{TestSpecBase, Util}
 
 /**
-  * The test spec checks the compatibility of running Storm applications
-  */
+ * The test spec checks the compatibility of running Storm applications
+ */
 class StormCompatibilitySpec extends TestSpecBase {
 
   private lazy val stormClient = {
@@ -58,7 +58,7 @@ class StormCompatibilitySpec extends TestSpecBase {
 
   "Storm over Gearpump" should withStorm {
     stormVersion =>
-     s"support basic topologies ($stormVersion)" in {
+      s"support basic topologies ($stormVersion)" in {
         val stormJar = getStormJar(stormVersion)
         val topologyName = getTopologyName("exclamation", stormVersion)
 
@@ -70,7 +70,7 @@ class StormCompatibilitySpec extends TestSpecBase {
           appName = topologyName)
 
         // verify
-        Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
+        Util.retryUntil(() => restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
       }
 
       s"support to run a python version of wordcount ($stormVersion)" in {
@@ -85,7 +85,7 @@ class StormCompatibilitySpec extends TestSpecBase {
           appName = topologyName)
 
         // verify
-        Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
+        Util.retryUntil(() => restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
       }
 
       s"support DRPC ($stormVersion)" in {
@@ -102,7 +102,7 @@ class StormCompatibilitySpec extends TestSpecBase {
         val drpcClient = stormClient.getDRPCClient(cluster.getNetworkGateway)
 
         // verify
-        Util.retryUntil(()=>{
+        Util.retryUntil(() => {
           drpcClient.execute("reach", "notaurl.com") == "0"
         }, "drpc reach == 0")
         drpcClient.execute("reach", "foo.com/blog/1") shouldEqual "16"
@@ -121,14 +121,15 @@ class StormCompatibilitySpec extends TestSpecBase {
           appName = topologyName)
 
         // verify
-        Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
+        Util.retryUntil(() => restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
       }
 
       s"support at-least-once semantics with Storm's Kafka connector ($stormVersion)" in {
 
         val stormJar = getStormJar(stormVersion)
         val topologyName = getTopologyName("storm_kafka", stormVersion)
-        val stormKafkaTopology = s"io.gearpump.integrationtest.storm.Storm${stormVersion}KafkaTopology"
+        val stormKafkaTopology =
+          s"io.gearpump.integrationtest.storm.Storm${stormVersion}KafkaTopology"
 
         import KafkaCluster._
         withKafkaCluster(cluster) {
@@ -142,7 +143,7 @@ class StormCompatibilitySpec extends TestSpecBase {
 
             val args = Array("-topologyName", topologyName, "-sourceTopic", sourceTopic,
               "-sinkTopic", sinkTopic, "-zookeeperConnect", zookeeper, "-brokerList", brokerList,
-              "-spoutNum", s"$sourcePartitionNum",  "-boltNum", s"$sinkPartitionNum"
+              "-spoutNum", s"$sourcePartitionNum", "-boltNum", s"$sinkPartitionNum"
             )
 
             kafkaCluster.createTopic(sourceTopic, sourcePartitionNum)
@@ -156,22 +157,24 @@ class StormCompatibilitySpec extends TestSpecBase {
                 args = args.mkString(" "),
                 appName = topologyName)
 
-              Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0,  "app running")
+              Util.retryUntil(() =>
+                restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
 
               // kill executor and verify at-least-once is guaranteed on application restart
               val executorToKill = restClient.queryExecutorBrief(appId).map(_.executorId).max
               restClient.killExecutor(appId, executorToKill) shouldBe true
-              Util.retryUntil(()=>restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill,
+              Util.retryUntil(() =>
+                restClient.queryExecutorBrief(appId).map(_.executorId).max > executorToKill,
                 s"executor $executorToKill killed")
 
               // verify no message loss
               val detector = new
-                      MessageLossDetector(producer.lastWriteNum)
+                  MessageLossDetector(producer.lastWriteNum)
               val kafkaReader = new
-                      SimpleKafkaReader(detector, sinkTopic, host = kafkaCluster.advertisedHost,
-                        port = kafkaCluster.advertisedPort)
+                  SimpleKafkaReader(detector, sinkTopic, host = kafkaCluster.advertisedHost,
+                    port = kafkaCluster.advertisedPort)
 
-              Util.retryUntil (()=>{
+              Util.retryUntil(() => {
                 kafkaReader.read()
                 detector.allReceived
               }, "all kafka message read")

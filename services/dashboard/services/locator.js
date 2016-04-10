@@ -5,18 +5,18 @@
 
 angular.module('dashboard')
 
-  /** Routing helper */
-  .factory('locator', function() {
+/** Routing helper */
+  .factory('locator', function () {
     'use strict';
 
     var self = {
-      worker: function(workerId) {
+      worker: function (workerId) {
         return '#/cluster/workers/worker/' + workerId;
       },
-      executor: function(appId, appType, executorId) {
+      executor: function (appId, appType, executorId) {
         return self.app(appId, appType) + '/executor/' + executorId;
       },
-      app: function(appId, appType) {
+      app: function (appId, appType) {
         var prefix = appType === 'streaming' ? 'streaming' : '';
         return '#/apps/' + prefix + 'app/' + appId;
       }

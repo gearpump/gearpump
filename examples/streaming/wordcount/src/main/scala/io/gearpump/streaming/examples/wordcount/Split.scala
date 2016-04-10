@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,18 +20,18 @@ package io.gearpump.streaming.examples.wordcount
 
 import java.util.concurrent.TimeUnit
 
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-  import taskContext.{output, self}
+class Split(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+  import taskContext.output
 
-  override def onStart(startTime : StartTime) : Unit = {
+  override def onStart(startTime: StartTime): Unit = {
     self ! Message("start")
   }
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message): Unit = {
     Split.TEXT_TO_SPLIT.lines.foreach { line =>
       line.split("[\\s]+").filter(_.nonEmpty).foreach { msg =>
         output(new Message(msg, System.currentTimeMillis()))
@@ -39,7 +39,8 @@ class Split(taskContext : TaskContext, conf: UserConfig) extends Task(taskContex
     }
 
     import scala.concurrent.duration._
-    taskContext.scheduleOnce(Duration(100, TimeUnit.MILLISECONDS))(self ! Message("continue", System.currentTimeMillis()))
+    taskContext.scheduleOnce(Duration(100, TimeUnit.MILLISECONDS))(self !
+      Message("continue", System.currentTimeMillis()))
   }
 }
 

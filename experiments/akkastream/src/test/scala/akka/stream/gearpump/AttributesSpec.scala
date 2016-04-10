@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,7 +19,7 @@
 package akka.stream.gearpump
 
 import akka.stream.Attributes
-import org.scalatest.{FlatSpec, Matchers, WordSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 class AttributesSpec extends FlatSpec with Matchers {
   it should "merge the attributes together" in {
@@ -30,5 +30,4 @@ class AttributesSpec extends FlatSpec with Matchers {
 
     assert("aa-bb" == c.nameOrDefault())
   }
-
 }

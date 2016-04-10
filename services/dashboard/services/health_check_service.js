@@ -8,25 +8,25 @@ angular.module('dashboard')
 /**
  * The service will continuously contact service endpoint. A dialog will be shown, when the service is unreachable.
  */
-  .service('HealthCheckService', ['$http', function($http) {
+  .service('HealthCheckService', ['$http', function ($http) {
     'use strict';
 
     var service = this;
     service._available = true;
 
-    service.config = function(checkUrl, checkInterval, showDialogFn, hideDialogFn) {
+    service.config = function (checkUrl, checkInterval, showDialogFn, hideDialogFn) {
       this.checkUrl = checkUrl;
       this.checkInterval = checkInterval;
       this.showDialogFn = showDialogFn;
       this.hideDialogFn = hideDialogFn;
     };
 
-    service.isServiceAvailable = function() {
+    service.isServiceAvailable = function () {
       return service._available;
     };
 
-    service.checkForever = function() {
-      var fn = function() {
+    service.checkForever = function () {
+      var fn = function () {
         service._check().finally(
           function retry() {
             _.delay(fn, service.checkInterval);
@@ -35,7 +35,7 @@ angular.module('dashboard')
       fn();
     };
 
-    service._check = function() {
+    service._check = function () {
       return $http.get(service.checkUrl).then(
         function handleSuccess() {
           if (!service.isServiceAvailable()) {
@@ -48,7 +48,7 @@ angular.module('dashboard')
       );
     };
 
-    service._setServiceAvailable = function(available) {
+    service._setServiceAvailable = function (available) {
       service._available = available;
       if (available) {
         service.hideDialogFn();

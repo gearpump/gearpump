@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,46 +43,49 @@ public class Processor<T extends io.gearpump.streaming.task.Task> implements io.
   }
 
   /**
-   * Create a Sink Processor
-   * @param dataSink  the data sink itself
-   * @param parallelism  the parallelism of this processor
-   * @param description  the description for this processor
-   * @param taskConf     the configuration for this processor
-   * @param system       actor system
-   * @return   the new created sink processor
+   * Creates a Sink Processor
+   *
+   * @param dataSink    the data sink itself
+   * @param parallelism the parallelism of this processor
+   * @param description the description for this processor
+   * @param taskConf    the configuration for this processor
+   * @param system      actor system
+   * @return the new created sink processor
    */
-  public static Processor<DataSinkTask> sink(DataSink dataSink, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
+  public static Processor<DataSinkTask> sink(DataSink dataSink, int parallelism, String description, UserConfig taskConf, ActorSystem system) {
     io.gearpump.streaming.Processor<DataSinkTask> p = DataSinkProcessor.apply(dataSink, parallelism, description, taskConf, system);
     return new Processor(p);
   }
 
   /**
-   * Create a Source Processor
-   * @param source    the data source itself
-   * @param parallelism   the parallelism of this processor
-   * @param description   the description of this processor
-   * @param taskConf      the configuration of this processor
-   * @param system        actor system
-   * @return              the new created source processor
+   * Creates a Source Processor
+   *
+   * @param source      the data source itself
+   * @param parallelism the parallelism of this processor
+   * @param description the description of this processor
+   * @param taskConf    the configuration of this processor
+   * @param system      actor system
+   * @return the new created source processor
    */
-  public static Processor<DataSourceTask> source(DataSource source, int parallelism, String description,  UserConfig taskConf, ActorSystem system) {
+  public static Processor<DataSourceTask> source(DataSource source, int parallelism, String description, UserConfig taskConf, ActorSystem system) {
     io.gearpump.streaming.Processor<DataSourceTask> p = DataSourceProcessor.apply(source, parallelism, description, taskConf, system);
     return new Processor(p);
   }
 
   public Processor(io.gearpump.streaming.Processor<T> processor) {
-    this._taskClass = (Class)(processor.taskClass());
+    this._taskClass = (Class) (processor.taskClass());
     this._parallelism = processor.parallelism();
     this._description = processor.description();
     this._userConf = processor.taskConf();
   }
 
   /**
-   *  Create a general processor with user specified task logic.
-   * @param taskClass  task implementation class of this processor (shall be a derived class from {@link Task}
+   * Creates a general processor with user specified task logic.
+   *
+   * @param taskClass    task implementation class of this processor (shall be a derived class from {@link Task}
    * @param parallelism, how many initial tasks you want to use
    * @param description, some text to describe this processor
-   * @param taskConf, Processor specific configuration
+   * @param taskConf,    Processor specific configuration
    */
   public Processor(Class<T> taskClass, int parallelism, String description, UserConfig taskConf) {
     this._taskClass = taskClass;

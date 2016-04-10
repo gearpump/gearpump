@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,23 +17,22 @@
  */
 
 package io.gearpump.security
-import io.gearpump.security.Authenticator.AuthenticationResult
-
 import scala.concurrent.{ExecutionContext, Future}
+
+import io.gearpump.security.Authenticator.AuthenticationResult
 
 
 /**
  * Authenticator for UI dashboard.
  *
  * Sub Class must implement a constructor with signature like this:
- *  this(config: Config)
- *
+ * this(config: Config)
  */
 trait Authenticator {
 
-  // TODO: Change the signature to return more attributes of user
-  // credentials...
-  def authenticate(user: String, password: String, ec: ExecutionContext): Future[AuthenticationResult]
+  // TODO: Change the signature to return more attributes of user credentials...
+  def authenticate(
+      user: String, password: String, ec: ExecutionContext): Future[AuthenticationResult]
 }
 
 object Authenticator {
@@ -45,22 +44,25 @@ object Authenticator {
     def permissionLevel: Int
   }
 
-  val UnAuthenticated = new AuthenticationResult{
+  val UnAuthenticated = new AuthenticationResult {
     override val authenticated = false
     override val permissionLevel = -1
   }
 
-  val Guest = new AuthenticationResult{
+  /** Guest can view but have no permission to submit app or write */
+  val Guest = new AuthenticationResult {
     override val authenticated = true
     override val permissionLevel = 1000
   }
 
-  val User = new AuthenticationResult{
+  /** User can submit app, kill app, but have no permission to add or remote machines */
+  val User = new AuthenticationResult {
     override val authenticated = true
     override val permissionLevel = 1000 + Guest.permissionLevel
   }
 
-  val Admin = new AuthenticationResult{
+  /** Super user */
+  val Admin = new AuthenticationResult {
     override val authenticated = true
     override val permissionLevel = 1000 + User.permissionLevel
   }

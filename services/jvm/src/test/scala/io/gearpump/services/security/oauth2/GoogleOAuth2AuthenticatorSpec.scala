@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,21 +18,25 @@
 
 package io.gearpump.services.security.oauth2
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpEntity.Strict
-import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model.Uri.{Query, Path}
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import com.typesafe.config.ConfigFactory
-import io.gearpump.security.Authenticator
-import io.gearpump.services.security.oauth2.GoogleOAuth2AuthenticatorSpec.MockGoogleAuthenticator
-import io.gearpump.services.security.oauth2.impl.{GoogleOAuth2Authenticator, CloudFoundryUAAOAuth2Authenticator}
-import org.scalatest.FlatSpec
-
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpEntity.Strict
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model.Uri.{Path, Query}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.typesafe.config.ConfigFactory
+import org.scalatest.FlatSpec
+
+import io.gearpump.security.Authenticator
+// NOTE: This cannot be removed!!!
+import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.services.security.oauth2.GoogleOAuth2AuthenticatorSpec.MockGoogleAuthenticator
+import io.gearpump.services.security.oauth2.impl.GoogleOAuth2Authenticator
 
 class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
 
@@ -71,7 +75,7 @@ class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
     val refreshToken = "eyJhbGciOiJSUzI1NiJ9.eyJqdGkiOiI2Nm"
     val mail = "test@gearpump.io"
 
-    def accessTokenEndpoint(request: HttpRequest) = {
+    def accessTokenEndpoint(request: HttpRequest): HttpResponse = {
 
       assert(request.entity.contentType.mediaType.value == "application/x-www-form-urlencoded")
 
@@ -85,33 +89,37 @@ class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
       assert(form("redirect_uri") == configMap("callback"))
       assert(form("scope") == GoogleOAuth2Authenticator.Scope)
 
-      val response = s"""
-           |{
-           | "access_token": "$accessToken",
-           | "token_type": "Bearer",
-           | "expires_in": 3591,
-           | "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImY1NjQyYzY2MzdhYWQyOTJiOThlOGIwN2MwMzIxN2QwMzBmOTdkODkifQ.eyJpc3"
-           |}
+      // scalastyle:off line.size.limit
+      val response =
+        s"""
+        |{
+        | "access_token": "$accessToken",
+        | "token_type": "Bearer",
+        | "expires_in": 3591,
+        | "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImY1NjQyYzY2MzdhYWQyOTJiOThlOGIwN2MwMzIxN2QwMzBmOTdkODkifQ.eyJpc3"
+        |}
         """.stripMargin
+      // scalastyle:on line.size.limit
 
       HttpResponse(entity = HttpEntity(ContentType(`application/json`), response))
     }
 
-    def protectedResourceEndpoint(request: HttpRequest) = {
+    def protectedResourceEndpoint(request: HttpRequest): HttpResponse = {
       assert(request.getUri().query().get("access_token").get == accessToken)
-      val response =s"""
-           |{
-           |   "kind": "plus#person",
-           |   "etag": "4OZ_Kt6ujOh1jaML_U6RM6APqoE/mZ57HcMOYXaNXYXS5XEGJ9yVsI8",
-           |   "nickname": "gearpump",
-           |   "gender": "female",
-           |   "emails": [
-           |     {
-           |       "value": "$mail",
-           |       "type": "account"
-           |     }
-           |   ]
-           | }
+      val response =
+        s"""
+        |{
+        |   "kind": "plus#person",
+        |   "etag": "4OZ_Kt6ujOh1jaML_U6RM6APqoE/mZ57HcMOYXaNXYXS5XEGJ9yVsI8",
+        |   "nickname": "gearpump",
+        |   "gender": "female",
+        |   "emails": [
+        |     {
+        |       "value": "$mail",
+        |       "type": "account"
+        |     }
+        |   ]
+        | }
         """.stripMargin
       HttpResponse(entity = HttpEntity(ContentType(`application/json`), response))
     }
@@ -127,7 +135,7 @@ class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
     }
 
     val userFuture = google.authenticate(code)
-    val user = Await.result(userFuture, 30 seconds)
+    val user = Await.result(userFuture, 30.seconds)
     assert(user.user == mail)
     assert(user.permissionLevel == Authenticator.Guest.permissionLevel)
   }

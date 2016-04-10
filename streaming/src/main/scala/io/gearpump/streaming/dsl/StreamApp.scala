@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,36 +18,40 @@
 
 package io.gearpump.streaming.dsl
 
-import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import scala.language.implicitConversions
+
+import akka.actor.ActorSystem
+
+import io.gearpump.cluster.UserConfig
+import io.gearpump.cluster.client.ClientContext
 import io.gearpump.streaming.StreamApplication
-import io.gearpump.streaming.dsl.op.{Shuffle, ProcessorOp, DataSourceOp, OpEdge, Op}
+import io.gearpump.streaming.dsl.op.{DataSourceOp, Op, OpEdge, ProcessorOp}
 import io.gearpump.streaming.dsl.plan.Planner
 import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.task.{Task, TaskContext}
-import io.gearpump.cluster.UserConfig
-import io.gearpump.cluster.client.ClientContext
 import io.gearpump.util.Graph
 import io.gearpump.{Message, TimeStamp}
 
 /**
  * Example:
+ * {{{
+ * val data = "This is a good start, bingo!! bingo!!"
+ * app.fromCollection(data.lines.toList).
+ * // word => (word, count)
+ * flatMap(line => line.split("[\\s]+")).map((_, 1)).
+ * // (word, count1), (word, count2) => (word, count1 + count2)
+ * groupBy(kv => kv._1).reduce(sum(_, _))
  *
- *
-    val data = "This is a good start, bingo!! bingo!!"
-    app.fromCollection(data.lines.toList).
-      // word => (word, count)
-      flatMap(line => line.split("[\\s]+")).map((_, 1)).
-      // (word, count1), (word, count2) => (word, count1 + count2)
-      groupBy(kv => kv._1).reduce(sum(_, _))
-
-    val appId = context.submit(app)
-    context.close()
+ * val appId = context.submit(app)
+ * context.close()
+ * }}}
  *
  * @param name name of app
  */
-class StreamApp(val name: String, system: ActorSystem, userConfig: UserConfig, val graph: Graph[Op, OpEdge]) {
+class StreamApp(
+    val name: String, system: ActorSystem, userConfig: UserConfig, val graph: Graph[Op, OpEdge]) {
 
-  def this(name: String ,system: ActorSystem, userConfig: UserConfig) = {
+  def this(name: String, system: ActorSystem, userConfig: UserConfig) = {
     this(name, system, userConfig, Graph.empty[Op, OpEdge])
   }
 
@@ -60,7 +64,10 @@ class StreamApp(val name: String, system: ActorSystem, userConfig: UserConfig, v
 }
 
 object StreamApp {
-  def apply(name: String, context: ClientContext, userConfig: UserConfig = UserConfig.empty) = new StreamApp(name, context.system, userConfig)
+  def apply(name: String, context: ClientContext, userConfig: UserConfig = UserConfig.empty)
+    : StreamApp = {
+    new StreamApp(name, context.system, userConfig)
+  }
 
   implicit def streamAppToApplication(streamApp: StreamApp): StreamApplication = {
     streamApp.plan
@@ -80,7 +87,8 @@ object StreamApp {
       source(dataSource, parallism, conf, description = null)
     }
 
-    def source[T](dataSource: DataSource, parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+    def source[T](dataSource: DataSource, parallism: Int, conf: UserConfig, description: String)
+      : Stream[T] = {
       implicit val sourceOp = DataSourceOp(dataSource, parallism, conf, description)
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)
@@ -89,7 +97,8 @@ object StreamApp {
       this.source(new CollectionDataSource[T](seq), parallism, UserConfig.empty, description)
     }
 
-    def source[T](source: Class[_ <: Task], parallism: Int, conf: UserConfig, description: String): Stream[T] = {
+    def source[T](source: Class[_ <: Task], parallism: Int, conf: UserConfig, description: String)
+      : Stream[T] = {
       val sourceOp = ProcessorOp(source, parallism, conf, Option(description).getOrElse("source"))
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ package io.gearpump.util
 
 
 import java.io.File
+import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
 import akka.http.scaladsl.server.Directives._
@@ -28,17 +29,14 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.FileIO
 import akka.util.ByteString
 
-import scala.concurrent.{ExecutionContext, Future}
-
 
 /**
  * FileDirective is a set of Akka-http directive to upload/download
- * huge binary files.
- *
+ * huge binary files to/from Akka-Http server.
  */
 object FileDirective {
 
-  //form field name
+  // Form field name
   type Name = String
 
   val CHUNK_SIZE = 262144
@@ -101,9 +99,7 @@ object FileDirective {
     }
   }
 
-  /**
-   * download server file
-   */
+  // download file from server
   def downloadFile(file: File): Route = {
     val responseEntity = HttpEntity(
       MediaTypes.`application/octet-stream`,
@@ -112,14 +108,16 @@ object FileDirective {
     complete(responseEntity)
   }
 
-  private def uploadFileImpl(rootDirectory: File)(implicit mat: Materializer, ec: ExecutionContext): Directive1[Future[Form]] = {
+  private def uploadFileImpl(rootDirectory: File)(implicit mat: Materializer, ec: ExecutionContext)
+    : Directive1[Future[Form]] = {
     Directive[Tuple1[Future[Form]]] { inner =>
       entity(as[Multipart.FormData]) { (formdata: Multipart.FormData) =>
         val form = formdata.parts.mapAsync(1) { p =>
           if (p.filename.isDefined) {
 
-            //reserve the suffix
-            val targetPath = File.createTempFile(s"userfile_${p.name}_", s"${p.filename.getOrElse("")}", rootDirectory)
+            // Reserve the suffix
+            val targetPath = File.createTempFile(s"userfile_${p.name}_",
+              s"${p.filename.getOrElse("")}", rootDirectory)
             val written = p.entity.dataBytes.runWith(FileIO.toFile(targetPath))
             written.map(written =>
               if (written.count > 0) {
@@ -128,14 +126,14 @@ object FileDirective {
                 Map.empty[Name, FormField]
               })
           } else {
-            val valueFuture = p.entity.dataBytes.runFold(ByteString.empty){(total, input) =>
+            val valueFuture = p.entity.dataBytes.runFold(ByteString.empty) {(total, input) =>
               total ++ input
             }
             valueFuture.map{value =>
               Map(p.name -> Right(value.utf8String))
             }
           }
-        }.runFold(new Form(Map.empty[Name, FormField])){(set, value) =>
+        }.runFold(new Form(Map.empty[Name, FormField])) {(set, value) =>
           new Form(set.fields ++ value)
         }
 

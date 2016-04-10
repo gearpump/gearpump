@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,7 @@ import java.util.Properties
 import kafka.admin.AdminUtils
 import kafka.common.KafkaException
 import kafka.server.{KafkaConfig => KafkaServerConfig, KafkaServer}
-import kafka.utils.{Utils, TestUtils}
+import kafka.utils.{TestUtils, Utils}
 
 trait KafkaServerHarness extends ZookeeperHarness {
   val configs: List[KafkaServerConfig]
@@ -35,8 +35,9 @@ trait KafkaServerHarness extends ZookeeperHarness {
 
   override def setUp() {
     super.setUp
-    if (configs.size <= 0)
+    if (configs.size <= 0) {
       throw new KafkaException("Must supply at least one server config.")
+    }
     brokerList = TestUtils.getBrokerListStrFromConfigs(configs)
     servers = configs.map(TestUtils.createServer(_))
   }
@@ -47,7 +48,9 @@ trait KafkaServerHarness extends ZookeeperHarness {
     super.tearDown
   }
 
-  def createTopicUntilLeaderIsElected(topic: String, partitions: Int, replicas: Int, timeout: Long = 10000) = {
+  def createTopicUntilLeaderIsElected(
+      topic: String, partitions: Int, replicas: Int, timeout: Long = 10000)
+    : Map[Int, Option[Int]] = {
     val zkClient = connectZk()
     try {
       // create topic

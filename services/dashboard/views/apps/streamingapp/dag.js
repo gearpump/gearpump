@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -18,7 +18,7 @@ angular.module('dashboard')
     }])
 
   .controller('StreamingAppDagCtrl', ['$scope', '$state', '$modal', '$contextmenu', '$visNetworkStyle',
-    function($scope, $state, $modal, $contextmenu, $vis) {
+    function ($scope, $state, $modal, $contextmenu, $vis) {
       'use strict';
 
       $scope.activeProcessorId = -1;
@@ -41,12 +41,12 @@ angular.module('dashboard')
         controller: 'StreamingAppDagEditCtrl'
       });
 
-      $scope.view = function() {
+      $scope.view = function () {
         var options = {processorId: $scope.activeProcessorId};
         $state.go('streamingapp.processor', options);
       };
 
-      $scope.modify = function(options) {
+      $scope.modify = function (options) {
         $scope.modifyOptions = options;
         editorDialog.$promise.then(editorDialog.show);
       };
@@ -55,33 +55,33 @@ angular.module('dashboard')
         options: $vis.newHierarchicalLayoutOptions({depth: $scope.dag.hierarchyDepth()}),
         data: $vis.newData(),
         events: {
-          onDoubleClick: function(data) {
+          onDoubleClick: function (data) {
             if (data.nodes.length === 1) {
               var processorId = Number(data.nodes[0]);
               $state.go('streamingapp.processor', {processorId: processorId});
             }
           },
-          onContext: function(data) {
+          onContext: function (data) {
             if (data.hasOwnProperty('node')) {
               $scope.activeProcessorId = Number(data.node);
               $scope.$apply();
               showProcessorOperationsContextMenu(data.pointer.DOM);
             }
           },
-          onSelectNode: function(data) {
+          onSelectNode: function (data) {
             if (data.nodes.length === 1) {
               $scope.activeProcessorId = Number(data.nodes[0]);
               $scope.$apply();
             }
           },
-          onDeselectNode: function() {
+          onDeselectNode: function () {
             $scope.activeProcessorId = -1;
             $scope.$apply();
           },
-          onHoverNode: function() {
+          onHoverNode: function () {
             $('html,body').css('cursor', 'pointer');
           },
-          onBlurNode: function() {
+          onBlurNode: function () {
             $('html,body').css('cursor', 'default');
           }
         }
@@ -94,8 +94,8 @@ angular.module('dashboard')
 
       /** Scope independent draw methods */
       var draw = {
-        removeDeadElements: function(visDataSet, aliveElementIds) {
-          var ids = visDataSet.getIds().filter(function(id) {
+        removeDeadElements: function (visDataSet, aliveElementIds) {
+          var ids = visDataSet.getIds().filter(function (id) {
             return !aliveElementIds.hasOwnProperty(id);
           });
           if (ids.length) {
@@ -104,12 +104,12 @@ angular.module('dashboard')
           }
         },
 
-        updateVisGraphNodes: function(visNodes, data) {
+        updateVisGraphNodes: function (visNodes, data) {
           data.processorWeights[-1] = 0; // weight range from 0 to max weight
           var suggestRadiusFn = draw._rangeMapper(data.processorWeights, $vis.nodeRadiusRange());
           var diff = [];
 
-          _.forEach(data.processors, function(processor) {
+          _.forEach(data.processors, function (processor) {
             var label = $vis.processorNameAsLabel(processor);
             var weight = data.processorWeights[processor.id];
             var visNode = visNodes.get(processor.id);
@@ -131,14 +131,14 @@ angular.module('dashboard')
           }
         },
 
-        updateVisGraphEdges: function(visEdges, data) {
+        updateVisGraphEdges: function (visEdges, data) {
           data.edgeBandwidths[-1] = 0; // minimal bandwidth
           var suggestEdgeWidthFn = draw._rangeMapper(data.edgeBandwidths, $vis.edgeWidthRange());
           var suggestEdgeArrowSizeFn = draw._rangeMapper(data.edgeBandwidths, $vis.edgeArrowSizeRange());
           var suggestEdgeOpacityFn = draw._rangeMapper(data.edgeBandwidths, $vis.edgeOpacityRange());
           var diff = [];
 
-          _.forEach(data.edges, function(edge, edgeId) {
+          _.forEach(data.edges, function (edge, edgeId) {
             var bandwidth = data.edgeBandwidths[edgeId];
             var visEdge = visEdges.get(edgeId);
             var width = d3.round(suggestEdgeWidthFn(bandwidth), 1);
@@ -163,7 +163,7 @@ angular.module('dashboard')
           }
         },
 
-        _rangeMapper: function(dict, range) {
+        _rangeMapper: function (dict, range) {
           var values = d3.values(dict);
           return d3.scale.linear().domain(d3.extent(values)).range(range);
         }
@@ -195,7 +195,7 @@ angular.module('dashboard')
         $scope.criticalPathLatency = metricsProvider.getCriticalPathLatency();
       }
 
-      $scope.$watchCollection('dag.metricsUpdateTime', function() {
+      $scope.$watchCollection('dag.metricsUpdateTime', function () {
         redrawGraph($scope.dag.getWeightedDagView());
         updateMetricsValues($scope.dag);
       });

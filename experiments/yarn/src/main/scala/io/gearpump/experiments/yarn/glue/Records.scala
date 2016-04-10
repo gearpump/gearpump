@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,14 +17,19 @@
  */
 
 package io.gearpump.experiments.yarn.glue
-import org.apache.hadoop.yarn.api.records.{ApplicationId => YarnApplicationId, ApplicationReport => YarnApplicationReport, ApplicationSubmissionContext, Container => YarnContainer, ContainerId => YarnContainerId, ContainerStatus => YarnContainerStatus, NodeId => YarnNodeId, Resource => YarnResource}
+
+import scala.language.implicitConversions
+
+import org.apache.hadoop.yarn.api.records.{ApplicationId => YarnApplicationId, ApplicationReport => YarnApplicationReport, ApplicationSubmissionContext, Container => YarnContainer, ContainerId => YarnContainerId, ContainerStatus => YarnContainerStatus, NodeId => YarnNodeId, Resource => YarnResource, YarnApplicationState}
 import org.apache.hadoop.yarn.util.{Records => YarnRecords}
 
 
 object Records {
   def newRecord[T](clazz: Class[T]): T = YarnRecords.newRecord(clazz)
 
-  def newAppSubmissionContext = YarnRecords.newRecord(classOf[ApplicationSubmissionContext])
+  def newAppSubmissionContext: ApplicationSubmissionContext = {
+    YarnRecords.newRecord(classOf[ApplicationSubmissionContext])
+  }
 
   class ApplicationId(private[glue] val impl: YarnApplicationId) {
     def getId: Int = impl.getId
@@ -38,9 +43,13 @@ object Records {
         false
       }
     }
+
+    override def hashCode(): Int = {
+      impl.hashCode()
+    }
   }
 
-  object ApplicationId{
+  object ApplicationId {
     def newInstance(timestamp: Long, id: Int): ApplicationId = {
       YarnApplicationId.newInstance(timestamp, id)
     }
@@ -53,9 +62,9 @@ object Records {
 
     def getFinishTime: Long = impl.getFinishTime
 
-    def getOriginalTrackingUrl = impl.getOriginalTrackingUrl
+    def getOriginalTrackingUrl: String = impl.getOriginalTrackingUrl
 
-    def getYarnApplicationState = impl.getYarnApplicationState
+    def getYarnApplicationState: YarnApplicationState = impl.getYarnApplicationState
 
     override def toString: String = impl.toString
   }
@@ -68,6 +77,10 @@ object Records {
       } else {
         false
       }
+    }
+
+    override def hashCode(): Int = {
+      impl.hashCode()
     }
   }
 
@@ -93,6 +106,10 @@ object Records {
         false
       }
     }
+
+    override def hashCode(): Int = {
+      impl.hashCode()
+    }
   }
 
   class ContainerId(private[glue] val impl: YarnContainerId) {
@@ -104,6 +121,10 @@ object Records {
       } else {
         false
       }
+    }
+
+    override def hashCode(): Int = {
+      impl.hashCode()
     }
   }
 
@@ -122,6 +143,10 @@ object Records {
       } else {
         false
       }
+    }
+
+    override def hashCode(): Int = {
+      impl.hashCode()
     }
   }
 
@@ -167,11 +192,13 @@ object Records {
     app.impl
   }
 
-  private[glue] implicit def yarnContainerStatusToContainerStatus(yarn: YarnContainerStatus): ContainerStatus = {
+  private[glue] implicit def yarnContainerStatusToContainerStatus(yarn: YarnContainerStatus)
+    : ContainerStatus = {
     new ContainerStatus(yarn)
   }
 
-  private[glue] implicit def containerStatusToYarnContainerStatus(app: ContainerStatus): YarnContainerStatus = {
+  private[glue] implicit def containerStatusToYarnContainerStatus(app: ContainerStatus)
+    : YarnContainerStatus = {
     app.impl
   }
 

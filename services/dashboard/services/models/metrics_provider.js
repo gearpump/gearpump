@@ -5,7 +5,7 @@
 
 angular.module('io.gearpump.models')
 
-  .service('MetricsProvider', function() {
+  .service('MetricsProvider', function () {
     'use strict';
 
     /**
@@ -22,12 +22,12 @@ angular.module('io.gearpump.models')
     MetricsProvider.prototype = {
 
       /** Add or update metrics to the repository and return the number of updated metrics. */
-      update: function(metrics, args) {
+      update: function (metrics, args) {
         var that = this;
         var count = 0;
         // metrics is {multi-dimension associative array} name -> path -> array of metric
-        _.forEach(metrics, function(pathAndMetrics, name) {
-          _.forEach(pathAndMetrics, function(metricArray, path) {
+        _.forEach(metrics, function (pathAndMetrics, name) {
+          _.forEach(pathAndMetrics, function (metricArray, path) {
             if (that.paths.hasOwnProperty(path)) {
               count += args.latestOnly ?
                 that._updateLatestMetrics(path, name, metricArray) :
@@ -38,7 +38,7 @@ angular.module('io.gearpump.models')
         return count;
       },
 
-      _updateLatestMetrics: function(path, name, metrics) {
+      _updateLatestMetrics: function (path, name, metrics) {
         if (metrics.length > 0) {
           var metric = _.last(metrics);
           this._updateMetric(path, name, this.LATEST_METRIC_TIME, metric.values);
@@ -49,10 +49,10 @@ angular.module('io.gearpump.models')
         return 0;
       },
 
-      _updateMetricsByRetainInterval: function(path, name, metrics, timeResolution) {
+      _updateMetricsByRetainInterval: function (path, name, metrics, timeResolution) {
         var count = 0;
         if (timeResolution > 0) {
-          _.forEach(metrics, function(metric) {
+          _.forEach(metrics, function (metric) {
             var retainIntervalTime = Math.floor(metric.time / timeResolution) * timeResolution;
             this._updateMetric(path, name, retainIntervalTime, metric.values);
             count++;
@@ -63,7 +63,7 @@ angular.module('io.gearpump.models')
         return count;
       },
 
-      _updateMetric: function(path, name, time, values) {
+      _updateMetric: function (path, name, time, values) {
         this.data[path] = this.data[path] || {};
         this.data[path][name] = this.data[path][name] || {};
         this.data[path][name][time] = values;
@@ -74,11 +74,11 @@ angular.module('io.gearpump.models')
       },
 
       /** Return all metric time as an array in ascending order. */
-      getMetricTimeArray: function() {
+      getMetricTimeArray: function () {
         return _.values(this.timeLookup).sort();
       },
 
-      _getMetricFieldOrElse: function(path, name, field, fallback, time) {
+      _getMetricFieldOrElse: function (path, name, field, fallback, time) {
         try {
           return time > 0 ?
             this.data[path][name][time][field] :
@@ -89,17 +89,17 @@ angular.module('io.gearpump.models')
       },
 
       /** Return the sum of particular metric field of particular processors. */
-      getMeterMetricSum: function(paths, name, field, time) {
+      getMeterMetricSum: function (paths, name, field, time) {
         var result = this.getMeterMetricSumByFields(paths, name, [field], time);
         return result[field];
       },
 
       /** Return a map of the sum of particular metric fields of particular processors. */
-      getMeterMetricSumByFields: function(paths, name, fields, time) {
+      getMeterMetricSumByFields: function (paths, name, fields, time) {
         var result = _.zipObject(fields, _.times(fields.length, 0));
         var that = this;
-        _.forEach(paths, function(path) {
-          _.forEach(fields, function(field) {
+        _.forEach(paths, function (path) {
+          _.forEach(fields, function (field) {
             result[field] += that._getMetricFieldOrElse(path, name, field, 0, time);
           });
         });
@@ -110,9 +110,9 @@ angular.module('io.gearpump.models')
        * Return the average of particular metric field of particular processors.
        * Return a fallback value, if no metric value is captured.
        */
-      getHistogramMetricAverageOrElse: function(paths, name, field, fallback, time) {
+      getHistogramMetricAverageOrElse: function (paths, name, field, fallback, time) {
         var array = [];
-        _.forEach(paths, function(path) {
+        _.forEach(paths, function (path) {
           var value = this._getMetricFieldOrElse(path, name, field, false, time);
           if (value !== false) {
             array.push(value);
@@ -125,13 +125,13 @@ angular.module('io.gearpump.models')
        * Batch read particular metric field from the repository and then return a map. The key is metric
        * time; the value is an array of metric field values or the aggregated field value.
        */
-      getAggregatedMetricsByRetainInterval: function(paths, name, field, options) {
+      getAggregatedMetricsByRetainInterval: function (paths, name, field, options) {
         var that = this;
         var result = {};
 
-        _.forEach(paths, function(path) {
+        _.forEach(paths, function (path) {
           var metrics = that._filterMetricsByPathAndName(path, name);
-          _.forEach(metrics, function(metric, time) {
+          _.forEach(metrics, function (metric, time) {
             if (time !== that.LATEST_METRIC_TIME) {
               result[time] = result[time] || [];
               if (metric.hasOwnProperty(field)) {
@@ -141,14 +141,14 @@ angular.module('io.gearpump.models')
           });
         });
 
-        _.forEach(result, function(array, time) {
+        _.forEach(result, function (array, time) {
           result[time] = _.isFunction(options.aggregateFn) ?
             options.aggregateFn(array) : array;
         });
         return options.unsort ? result : util.keysSortedObject(result);
       },
 
-      _filterMetricsByPathAndName: function(path, name) {
+      _filterMetricsByPathAndName: function (path, name) {
         var match = this.data[path];
         if (match && match.hasOwnProperty(name)) {
           return match[name];
@@ -158,13 +158,13 @@ angular.module('io.gearpump.models')
     };
 
     var util = {
-      mean: function(array) {
+      mean: function (array) {
         // No idea why there is no Math.mean() or Array.mean() or _.mean()
         return array.length ? _.sum(array) / array.length : NaN;
       },
-      keysSortedObject: function(object) {
+      keysSortedObject: function (object) {
         var result = {};
-        _.forEach(_.keys(object).sort(), function(key) {
+        _.forEach(_.keys(object).sort(), function (key) {
           result[key] = object[key];
         });
         return result;

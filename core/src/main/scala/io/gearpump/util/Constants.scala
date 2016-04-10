@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -44,7 +44,8 @@ object Constants {
   val GEARPUMP_TASK_DISPATCHER = "gearpump.task-dispatcher"
   val GEARPUMP_CLUSTER_MASTERS = "gearpump.cluster.masters"
   val GEARPUMP_MASTERCLIENT_TIMEOUT = "gearpump.masterclient.timeout"
-  val GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS = "gearpump.worker.executor-share-same-jvm-as-worker"
+  val GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS =
+    "gearpump.worker.executor-share-same-jvm-as-worker"
 
   val GEARPUMP_HOME = "gearpump.home"
   val GEARPUMP_FULL_SCALA_VERSION = "gearpump.binary-version-with-scala-version"
@@ -60,11 +61,13 @@ object Constants {
 
   // Id used to identity Master JVM process in low level resource manager like YARN.
   // In YARN, it means the container Id.
-  val GEARPUMP_MASTER_RESOURCE_MANAGER_CONTAINER_ID = "gearpump.master-resource-manager-container-id"
+  val GEARPUMP_MASTER_RESOURCE_MANAGER_CONTAINER_ID =
+    "gearpump.master-resource-manager-container-id"
 
   // Id used to identity Worker JVM process in low level resource manager like YARN.
   // In YARN, it means the container Id.
-  val GEARPUMP_WORKER_RESOURCE_MANAGER_CONTAINER_ID = "gearpump.worker-resource-manager-container-id"
+  val GEARPUMP_WORKER_RESOURCE_MANAGER_CONTAINER_ID =
+    "gearpump.worker-resource-manager-container-id"
 
   // true or false
   val GEARPUMP_REMOTE_DEBUG_EXECUTOR_JVM = "gearpump.remote-debug-executor-jvm"
@@ -109,7 +112,7 @@ object Constants {
   val GEARPUMP_CUSTOM_CONFIG_FILE = "gearpump.config.file"
 
 
-  //Metrics related
+  // Metrics related
   val GEARPUMP_METRIC_ENABLED = "gearpump.metrics.enabled"
   val GEARPUMP_METRIC_SAMPLE_RATE = "gearpump.metrics.sample-rate"
   val GEARPUMP_METRIC_REPORT_INTERVAL = "gearpump.metrics.report-interval-ms"
@@ -133,13 +136,13 @@ object Constants {
   // and shutdown itself
   val GEARPUMP_RESOURCE_ALLOCATION_TIMEOUT = "gearpump.resource-allocation-timeout-seconds"
 
-  //Service related
+  // Service related
   val GEARPUMP_SERVICE_HTTP = "gearpump.services.http"
   val GEARPUMP_SERVICE_HOST = "gearpump.services.host"
   val GEARPUMP_SERVICE_SUPERVISOR_PATH = "gearpump.services.supervisor-actor-path"
   val GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE = "gearpump.services.config-render-option-concise"
 
-  //The partitioners provided by Gearpump
+  // The partitioners provided by Gearpump
   val BUILTIN_PARTITIONERS = Array(
     classOf[BroadcastPartitioner],
     classOf[CoLocationPartitioner],
@@ -147,7 +150,7 @@ object Constants {
     classOf[ShuffleGroupingPartitioner],
     classOf[ShufflePartitioner])
 
-  //Security related
+  // Security related
   val GEARPUMP_KEYTAB_FILE = "gearpump.keytab.file"
   val GEARPUMP_KERBEROS_PRINCIPAL = "gearpump.kerberos.principal"
 

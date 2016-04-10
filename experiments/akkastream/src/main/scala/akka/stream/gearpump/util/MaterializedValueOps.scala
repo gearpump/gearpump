@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,14 +25,14 @@ class MaterializedValueOps(mat: MaterializedValueNode) {
     def resolveMaterialized(mat: MaterializedValueNode, materializedValues: Map[Module, Any]): Any = mat match {
       case Atomic(m) => materializedValues.getOrElse(m, ())
       case Combine(f, d1, d2) => f(resolveMaterialized(d1, materializedValues), resolveMaterialized(d2, materializedValues))
-      case Transform(f, d)    => f(resolveMaterialized(d, materializedValues))
-      case Ignore             => ()
+      case Transform(f, d) => f(resolveMaterialized(d, materializedValues))
+      case Ignore => ()
     }
     resolveMaterialized(mat, materializedValues).asInstanceOf[Mat]
   }
 }
 
-object MaterializedValueOps{
+object MaterializedValueOps {
   def apply(mat: MaterializedValueNode): MaterializedValueOps = new MaterializedValueOps(mat)
 }
 

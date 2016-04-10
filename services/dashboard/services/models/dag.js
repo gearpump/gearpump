@@ -5,7 +5,7 @@
 
 angular.module('io.gearpump.models')
 
-  .service('Dag', function() {
+  .service('Dag', function () {
     'use strict';
 
     /** This class represents a DAG. The topology is immutable after creation. */
@@ -20,50 +20,50 @@ angular.module('io.gearpump.models')
     Dag.prototype = {
 
       /** Indicate whether the topology of specified processors and edges is equal to the current topology. */
-      isEqual: function(processors, edges) {
+      isEqual: function (processors, edges) {
         return _.isEqual(this.processors, processors)
           && _.isEqual(this.edges, edges);
       },
 
       /** Return processor ids as an array. */
-      getProcessorIds: function() {
+      getProcessorIds: function () {
         return this.sortedProcessorIds;
       },
 
       /** Return source processor ids as an array. */
-      getSourceProcessorIds: function() {
-        return _.filter(this.getProcessorIds(), function(processorId) {
+      getSourceProcessorIds: function () {
+        return _.filter(this.getProcessorIds(), function (processorId) {
           return this.degrees[processorId].indegree === 0;
         }, this);
       },
 
       /** Return sink processor ids as an array. */
-      getSinkProcessorIds: function() {
-        return _.filter(this.getProcessorIds(), function(processorId) {
+      getSinkProcessorIds: function () {
+        return _.filter(this.getProcessorIds(), function (processorId) {
           return this.degrees[processorId].outdegree === 0;
         }, this);
       },
 
       /** Return the number of processors on the longest path. */
-      hierarchyDepth: function() {
+      hierarchyDepth: function () {
         return _.max(_.map(this.processors, 'hierarchy'));
       },
 
-      _getProcessorIdsByTopologicalOrdering: function() {
+      _getProcessorIdsByTopologicalOrdering: function () {
         return _(this.processors).sortBy('hierarchy').map('id').value();
       },
 
-      _getPredecessorIds: function() {
+      _getPredecessorIds: function () {
         var result = {};
-        _.forEach(this.getProcessorIds(), function(processorId) {
+        _.forEach(this.getProcessorIds(), function (processorId) {
           result[processorId] = this._calculatePredecessorIds(processorId);
         }, this);
         return result;
       },
 
-      _calculatePredecessorIds: function(processorId) {
+      _calculatePredecessorIds: function (processorId) {
         var result = [];
-        _.forEach(this.edges, function(edge) {
+        _.forEach(this.edges, function (edge) {
           if (edge.to === processorId) {
             result.push(edge.from);
           }
@@ -71,13 +71,13 @@ angular.module('io.gearpump.models')
         return result;
       },
 
-      _calculateDegrees: function() {
+      _calculateDegrees: function () {
         var result = {};
-        _.forEach(this.processors, function(_, key) {
+        _.forEach(this.processors, function (_, key) {
           result[key] = {indegree: 0, outdegree: 0};
         });
 
-        _.forEach(this.edges, function(edge) {
+        _.forEach(this.edges, function (edge) {
           result[edge.from].outdegree++;
           result[edge.to].indegree++;
         });
@@ -88,10 +88,10 @@ angular.module('io.gearpump.models')
        * Return the latency of critical path and all matched paths.
        * Note that the latency is the sum of all processors on the path.
        */
-      calculateCriticalPathAndLatency: function(metricsProvider, time) {
+      calculateCriticalPathAndLatency: function (metricsProvider, time) {
         // calculate independent processor latency
         var candidates = {};
-        _.forEach(this.sortedProcessorIds, function(processorId) {
+        _.forEach(this.sortedProcessorIds, function (processorId) {
           candidates[processorId] = {
             latency: this._getProcessorLatency(processorId, metricsProvider, time),
             path: [processorId]
@@ -99,10 +99,10 @@ angular.module('io.gearpump.models')
         }, this);
 
         // iteratively update processor's latency (and path) by adding its maximal predecessor's latency
-        _.forEach(this.sortedProcessorIds, function(processorId) {
+        _.forEach(this.sortedProcessorIds, function (processorId) {
           var predecessorIds = this.predecessorIds[processorId];
           if (predecessorIds.length > 0) {
-            var maxLatencyPredecessor = _.max(_.map(predecessorIds, function(predecessorId) {
+            var maxLatencyPredecessor = _.max(_.map(predecessorIds, function (predecessorId) {
               return candidates[predecessorId];
             }), 'latency');
             var current = candidates[processorId];
@@ -115,7 +115,7 @@ angular.module('io.gearpump.models')
         var criticalPathLatency = _.max(_.map(candidates, 'latency'));
 
         // find the critical paths
-        var criticalPaths = _.map(_.pick(candidates, function(candidate) {
+        var criticalPaths = _.map(_.pick(candidates, function (candidate) {
           return candidate.latency === criticalPathLatency;
         }), 'path');
 
@@ -125,7 +125,7 @@ angular.module('io.gearpump.models')
         };
       },
 
-      _getProcessorLatency: function(processorId, metricsProvider, time) {
+      _getProcessorLatency: function (processorId, metricsProvider, time) {
         if (this.processors[processorId].hierarchy === 0) {
           return 0; // the latency of source process is set to 0
         }

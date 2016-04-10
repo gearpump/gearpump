@@ -15,10 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.gearpump.partitioner
 
-import io.gearpump.Message
 import scala.util.Random
+
+import io.gearpump.Message
 
 /**
  * The idea of ShuffleGroupingPartitioner is derived from Storm.

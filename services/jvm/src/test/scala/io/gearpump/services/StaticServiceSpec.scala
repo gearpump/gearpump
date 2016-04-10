@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,29 +18,33 @@
 
 package io.gearpump.services
 
+import scala.concurrent.duration._
+import scala.util.Try
+
+
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.Constants
+// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
-import org.scalatest.{BeforeAndAfterAll, Matchers, FlatSpec}
 
-import scala.util.Try
-import scala.concurrent.duration._
-
-class StaticServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers with BeforeAndAfterAll {
+class StaticServiceSpec
+  extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
 
   override def testConfig: Config = TestUtil.UI_CONFIG
-  private val supervisorPath = system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
+  private val supervisorPath = system.settings.config.getString(
+    Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
 
 
-  def route = new StaticService(system, supervisorPath).route
+  protected def route = new StaticService(system, supervisorPath).route
 
   it should "return version" in {
-    implicit val customTimeout = RouteTestTimeout(15 seconds)
-    (Get(s"/version") ~> route) ~> check{
+    implicit val customTimeout = RouteTestTimeout(15.seconds)
+    (Get(s"/version") ~> route) ~> check {
       val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(responseBody == "Unknown-Version")
@@ -51,8 +55,8 @@ class StaticServiceSpec extends FlatSpec with ScalatestRouteTest  with Matchers 
   }
 
   it should "get correct supervisor path" in {
-    implicit val customTimeout = RouteTestTimeout(15 seconds)
-    (Get(s"/supervisor-actor-path") ~> route) ~> check{
+    implicit val customTimeout = RouteTestTimeout(15.seconds)
+    (Get(s"/supervisor-actor-path") ~> route) ~> check {
       val responseBody = responseAs[String]
       val defaultSupervisorPath = ""
       assert(responseBody == defaultSupervisorPath)

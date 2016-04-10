@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,15 +17,14 @@
  */
 package io.gearpump.streaming.examples.complexdag
 
-import io.gearpump.streaming.MockUtil
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import MockUtil._
-import org.mockito.ArgumentMatcher
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.MockUtil._
 
 class NodeSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
 
@@ -33,9 +32,10 @@ class NodeSpec extends PropSpec with PropertyChecks with Matchers with BeforeAnd
 
   val node = new Node(context, UserConfig.empty)
 
-  property("Node should send a Vector[String](classOf[Node].getCanonicalName, classOf[Node].getCanonicalName"){
+  property("Node should send a Vector[String](classOf[Node].getCanonicalName, " +
+    "classOf[Node].getCanonicalName") {
     val list = Vector(classOf[Node].getCanonicalName)
-    val expected = Vector(classOf[Node].getCanonicalName,classOf[Node].getCanonicalName)
+    val expected = Vector(classOf[Node].getCanonicalName, classOf[Node].getCanonicalName)
     node.onNext(Message(list))
     verify(context).output(argMatch[Message](_.msg == expected))
   }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 package io.gearpump.experiments.yarn.client
-import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-object Client  {
+import io.gearpump.util.LogUtil
+
+object Client {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
   val LAUNCH = "launch"
@@ -27,14 +28,16 @@ object Client  {
   val commands = Map(LAUNCH -> LaunchCluster) ++
     ManageCluster.commands.map(key => (key, ManageCluster)).toMap
 
-  def usage: Unit = {
+  def usage(): Unit = {
     val keys = commands.keys.toList.sorted
+    // scalastyle:off println
     Console.err.println("Usage: " + "<" + keys.mkString("|") + ">")
+    // scalastyle:on println
   }
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     if (args.length == 0) {
-      usage
+      usage()
     } else {
       val key = args(0)
       val command = commands.get(key)

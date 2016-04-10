@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,13 @@
 
 package io.gearpump.services
 
-import akka.actor.{ActorSystem}
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import akka.stream.{Materializer}
-import io.gearpump.util.{Constants, Util}
+import akka.stream.Materializer
+
+import io.gearpump.util.Util
+// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
 
 /**
@@ -33,13 +35,13 @@ class StaticService(override val system: ActorSystem, supervisorPath: String)
 
   private val version = Util.version
 
-  override def prefix = Neutral
+  protected override def prefix = Neutral
 
-  override def cache = true
+  override def cache: Boolean = true
 
-  override def doRoute(implicit mat: Materializer) = {
+  protected override def doRoute(implicit mat: Materializer) = {
     path("version") {
-      get {ctx =>
+      get { ctx =>
         ctx.complete(version)
       }
     } ~

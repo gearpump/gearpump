@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,18 +18,19 @@
 
 package io.gearpump.services.security.oauth2
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.model.{HttpResponse, HttpRequest}
-import akka.http.scaladsl.server.Route
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Directives._
-import akka.stream.scaladsl.{Sink, Source}
-import io.gearpump.util.Util
-import akka.pattern.ask
-
 import scala.concurrent.{Await, Future}
+
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
+
+import io.gearpump.util.Util
+// NOTE: This cannot be removed!!
+import io.gearpump.services.util.UpickleUtil._
 
 /**
  * Serves as a fake OAuth2 server.
@@ -48,12 +49,11 @@ class MockOAuth2Server(
   def port: Int = _port
 
   def start(): Unit = {
-    _port = Util.findFreePort.get
+    _port = Util.findFreePort().get
 
     val serverSource = Http().bind(interface = "127.0.0.1", port = _port)
     bindingFuture = {
       serverSource.to(Sink.foreach { connection =>
-        println("Accepted new connection from " + connection.remoteAddress)
         connection handleWithSyncHandler requestHandler
       }).run()
     }
@@ -61,6 +61,6 @@ class MockOAuth2Server(
 
   def stop(): Unit = {
     import scala.concurrent.duration._
-    Await.result(bindingFuture.map(_.unbind()), 120 seconds)
+    Await.result(bindingFuture.map(_.unbind()), 120.seconds)
   }
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,17 @@
 
 package io.gearpump.util
 
-import java.io.{DataInputStream, FileInputStream, File}
-import java.net.{URL, URI, ServerSocket}
-import java.util.jar.Manifest
-import com.typesafe.config.{ConfigFactory, Config}
-import io.gearpump.cluster.AppJar
-import io.gearpump.jarstore.{FilePath, JarStoreService}
-import io.gearpump.transport.HostPort
-
+import java.io.{BufferedReader, InputStreamReader, DataInputStream, File, FileInputStream}
+import java.net.{ServerSocket, URI}
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import scala.sys.process.{ProcessLogger, Process}
+import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
+
+import com.typesafe.config.{Config, ConfigFactory}
+
+import io.gearpump.cluster.AppJar
+import io.gearpump.jarstore.JarStoreService
+import io.gearpump.transport.HostPort
 
 object Util {
   val LOG = LogUtil.getLogger(getClass)
@@ -39,7 +39,7 @@ object Util {
     appNamePattern.matcher(appName).matches()
   }
 
-  def getCurrentClassPath : Array[String] = {
+  def getCurrentClassPath: Array[String] = {
     val classpath = System.getProperty("java.class.path")
     val classpathList = classpath.split(File.pathSeparator)
     classpathList
@@ -48,8 +48,9 @@ object Util {
   def version: String = {
     val home = System.getProperty(Constants.GEARPUMP_HOME)
     val version = Try {
-      val versionFile = new DataInputStream(new FileInputStream(new File(home, "VERSION")))
-      val version = versionFile.readLine().replace("version:=", "")
+      val versionFile = new FileInputStream(new File(home, "VERSION"))
+      val reader = new BufferedReader(new InputStreamReader(versionFile))
+      val version = reader.readLine().replace("version:=", "")
       versionFile.close()
       version
     }
@@ -62,11 +63,13 @@ object Util {
     }
   }
 
-  def startProcess(options : Array[String], classPath : Array[String], mainClass : String,
-                   arguments : Array[String]) : RichProcess = {
+  def startProcess(options: Array[String], classPath: Array[String], mainClass: String,
+      arguments: Array[String]): RichProcess = {
     val java = System.getProperty("java.home") + "/bin/java"
-    val command = List(java) ++ options ++ List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
-    LOG.info(s"Starting executor process java $mainClass ${arguments.mkString(" ")} \n ${options.mkString(" ")}")
+    val command = List(java) ++ options ++
+      List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
+    LOG.info(s"Starting executor process java $mainClass ${arguments.mkString(" ")} " +
+      s"\n ${options.mkString(" ")}")
     val logger = new ProcessLogRedirector()
     val process = Process(command).run(logger)
     new RichProcess(process, logger)
@@ -75,7 +78,7 @@ object Util {
   /**
    * hostList format: host1:port1,host2:port2,host3:port3...
    */
-  def parseHostList(hostList : String) : List[HostPort] = {
+  def parseHostList(hostList: String): List[HostPort] = {
     val masters = hostList.trim.split(",").map { address =>
       val hostAndPort = address.split(":")
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
@@ -85,7 +88,7 @@ object Util {
 
   def resolvePath(path: String): String = {
     val uri = new URI(path)
-    if(uri.getScheme == null && uri.getFragment == null) {
+    if (uri.getScheme == null && uri.getFragment == null) {
       val absolutePath = new File(path).getCanonicalPath.replaceAll("\\\\", "/")
       "file://" + absolutePath
     } else {
@@ -106,16 +109,16 @@ object Util {
     }
   }
 
-  def randInt: Int = {
+  def randInt(): Int = {
     Math.abs(ThreadLocalRandom.current.nextInt())
   }
 
-  def findFreePort: Try[Int] = {
+  def findFreePort(): Try[Int] = {
     Try {
-      val socket = new ServerSocket(0);
-      socket.setReuseAddress(true);
-      val port = socket.getLocalPort();
-      socket.close;
+      val socket = new ServerSocket(0)
+      socket.setReuseAddress(true)
+      val port = socket.getLocalPort()
+      socket.close
       port
     }
   }
@@ -132,7 +135,6 @@ object Util {
    * Then you can use like this:
    *
    * filterOutOrigin(config, "reference.conf")
-   *
    */
   import scala.collection.JavaConverters._
   def filterOutOrigin(config: Config, originFile: String): Config = {
@@ -148,16 +150,19 @@ object Util {
     }
   }
 
-  case class JvmSetting(vmargs : Array[String], classPath : Array[String])
+  case class JvmSetting(vmargs: Array[String], classPath: Array[String])
 
-  case class AppJvmSettings(appMater : JvmSetting, executor : JvmSetting)
+  case class AppJvmSettings(appMater: JvmSetting, executor: JvmSetting)
 
-  def resolveJvmSetting(conf : Config) : AppJvmSettings = {
+  /** Get an effective AppJvmSettings from Config */
+  def resolveJvmSetting(conf: Config): AppJvmSettings = {
 
     import Constants._
 
-    val appMasterVMArgs = Try(conf.getString(GEARPUMP_APPMASTER_ARGS).split("\\s+").filter(_.nonEmpty)).toOption
-    val executorVMArgs = Try(conf.getString(GEARPUMP_EXECUTOR_ARGS).split("\\s+").filter(_.nonEmpty)).toOption
+    val appMasterVMArgs = Try(conf.getString(GEARPUMP_APPMASTER_ARGS).split("\\s+")
+      .filter(_.nonEmpty)).toOption
+    val executorVMArgs = Try(conf.getString(GEARPUMP_EXECUTOR_ARGS).split("\\s+")
+      .filter(_.nonEmpty)).toOption
 
     val appMasterClassPath = Try(
       conf.getString(GEARPUMP_APPMASTER_EXTRA_CLASSPATH)
@@ -169,7 +174,7 @@ object Util {
 
     AppJvmSettings(
       JvmSetting(appMasterVMArgs.getOrElse(Array.empty[String]),
-        appMasterClassPath.getOrElse(Array.empty[String]) ),
+        appMasterClassPath.getOrElse(Array.empty[String])),
       JvmSetting(executorVMArgs
         .getOrElse(Array.empty[String]), executorClassPath.getOrElse(Array.empty[String])))
   }

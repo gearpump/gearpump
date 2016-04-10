@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,9 +28,11 @@ import kafka.common.TopicAndPartition
  * @param msg message payload
  */
 case class KafkaMessage(topicAndPartition: TopicAndPartition, offset: Long,
-                        key: Option[Array[Byte]], msg: Array[Byte]) {
+    key: Option[Array[Byte]], msg: Array[Byte]) {
+
   def this(topic: String, partition: Int, offset: Long,
-    key: Option[Array[Byte]], msg: Array[Byte]) =
+      key: Option[Array[Byte]], msg: Array[Byte]) = {
     this(TopicAndPartition(topic, partition), offset, key, msg)
+  }
 }
 

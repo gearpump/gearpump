@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,10 @@
 package io.gearpump.streaming.state.api
 
 trait Monoid[T] extends java.io.Serializable {
-   def plus(l: T, r: T): T
-   def zero: T
+  def plus(l: T, r: T): T
+  def zero: T
 }
 
 trait Group[T] extends Monoid[T] {
-   def minus(l: T, r: T): T
- }
+  def minus(l: T, r: T): T
+}

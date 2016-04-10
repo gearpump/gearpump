@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,30 +20,30 @@ package io.gearpump.util
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
-import akka.actor.{ActorSystem, Props}
-import akka.pattern.ask
-import io.gearpump.google.common.io.Files
-import io.gearpump.cluster.{ClusterConfig, TestUtil}
-import io.gearpump.jarstore.FilePath
-import io.gearpump.util.FileServer._
+
+import akka.actor.ActorSystem
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-import scala.util.Success
+import io.gearpump.cluster.TestUtil
+import io.gearpump.google.common.io.Files
+import io.gearpump.jarstore.FilePath
+import io.gearpump.util.FileServer._
 
-class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll {
+class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   implicit val timeout = akka.util.Timeout(25, TimeUnit.SECONDS)
   val host = "localhost"
+  private val LOG = LogUtil.getLogger(getClass)
 
   var system: ActorSystem = null
 
   override def afterAll {
     if (null != system) {
-      system.shutdown()
-      system.awaitTermination()
+      system.terminate()
+      Await.result(system.whenTerminated, Duration.Inf)
     }
   }
 
@@ -57,7 +57,7 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
     FileUtils.writeByteArrayToFile(file, data)
     val future = client.upload(file)
     import scala.concurrent.duration._
-    val path = Await.result(future, 30 seconds)
+    val path = Await.result(future, 30.seconds)
     file.delete()
     path
   }
@@ -66,7 +66,7 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
     val file = File.createTempFile("fileserverspec", "test")
     val future = client.download(remote, file)
     import scala.concurrent.duration._
-    val data = Await.result(future, 10 seconds)
+    val data = Await.result(future, 10.seconds)
 
     val bytes = FileUtils.readFileToByteArray(file)
     file.delete()
@@ -81,7 +81,7 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
       val server = new FileServer(system, host, 0, rootDir)
       val port = Await.result((server.start), Duration(25, TimeUnit.SECONDS))
 
-      println("start test web server on port " + port)
+      LOG.info("start test web server on port " + port)
 
       val sizes = List(1, 100, 1000000, 50000000)
       val client = new Client(system, host, port.port)
@@ -113,7 +113,7 @@ class FileServerSpec  extends WordSpecLike with Matchers with BeforeAndAfterAll 
     }
   }
 
-  private def randomBytes(size : Int) : Array[Byte] = {
+  private def randomBytes(size: Int): Array[Byte] = {
     val bytes = new Array[Byte](size)
     (new java.util.Random()).nextBytes(bytes)
     bytes

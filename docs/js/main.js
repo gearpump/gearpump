@@ -25,7 +25,7 @@ function codeTabs() {
     "python": "img/python-sm.png",
     "java": "img/java-sm.png"
   };
-  $("div.codetabs").each(function() {
+  $("div.codetabs").each(function () {
     $(this).addClass("tab-content");
 
     // Insert the tab bar
@@ -34,7 +34,7 @@ function codeTabs() {
 
     // Add each code sample to the tab bar:
     var codeSamples = $(this).children("div");
-    codeSamples.each(function() {
+    codeSamples.each(function () {
       $(this).addClass("tab-pane");
       var lang = $(this).data("lang");
       var image = $(this).data("image");
@@ -44,7 +44,7 @@ function codeTabs() {
       var id = "tab_" + lang + "_" + counter;
       $(this).attr("id", id);
       if (image != null && langImages[lang]) {
-        var buttonLabel = "<img src='" +langImages[lang] + "' alt='" + capitalizedLang + "' />";
+        var buttonLabel = "<img src='" + langImages[lang] + "' alt='" + capitalizedLang + "' />";
       } else if (notabs == null) {
         var buttonLabel = "<b>" + capitalizedLang + "</b>";
       } else {
@@ -67,7 +67,7 @@ function codeTabs() {
     $(this).tab('show');
     $(document).scrollTop($(this).offset().top - scrollOffset);
   });
-  $("table").each(function() {
+  $("table").each(function () {
     $(this).addClass("table table-bordered");
   });
 }
@@ -82,7 +82,7 @@ function maybeScrollToHash() {
   }
 }
 
-$(function() {
+$(function () {
   codeTabs();
   // Display anchor links when hovering over headers. For documentation of the
   // configuration options, see the AnchorJS documentation.
@@ -91,11 +91,15 @@ $(function() {
   };
   anchors.add();
 
-  $(window).bind('hashchange', function() {
+  $(window).bind('hashchange', function () {
     maybeScrollToHash();
   });
 
   // Scroll now too in case we had opened the page on a hash, but wait a bit because some browsers
   // will try to do *their* initial scroll after running the onReady handler.
-  $(window).load(function() { setTimeout(function() { maybeScrollToHash(); }, 25); }); 
+  $(window).load(function () {
+    setTimeout(function () {
+      maybeScrollToHash();
+    }, 25);
+  });
 });

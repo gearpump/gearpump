@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,13 +17,15 @@
  */
 package io.gearpump.streaming.executor
 
-import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
+
+
 import org.scalatest._
-import io.gearpump.streaming.executor.Executor.{TaskArgumentStore}
-import scala.language.postfixOps
+
+import io.gearpump.streaming.executor.Executor.TaskArgumentStore
+import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.task.TaskId
 
-class TaskArgumentStoreSpec  extends FlatSpec with Matchers with BeforeAndAfterEach {
+class TaskArgumentStoreSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   it should "retain all history of taskArgument" in {
     val version0 = TaskArgument(0, null, null)
     val version2 = version0.copy(dagVersion = 2)
@@ -37,10 +39,9 @@ class TaskArgumentStoreSpec  extends FlatSpec with Matchers with BeforeAndAfterE
     assert(store.get(dagVersion = 0, task) == Some(version0))
     assert(store.get(dagVersion = 2, task) == Some(version2))
 
-    store.removeObsoleteVersion
+    store.removeObsoleteVersion()
     assert(store.get(dagVersion = 1, task) == None)
     assert(store.get(dagVersion = 0, task) == None)
     assert(store.get(dagVersion = 2, task) == Some(version2))
   }
-
 }

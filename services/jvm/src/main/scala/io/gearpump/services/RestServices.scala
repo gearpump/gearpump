@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,20 +18,24 @@
 
 package io.gearpump.services
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Route, _}
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
-import io.gearpump.jarstore.JarStoreService
-import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import io.gearpump.jarstore.JarStoreService
+import io.gearpump.util.{Constants, LogUtil}
+// NOTE: This cannot be removed!!!
+import io.gearpump.services.util.UpickleUtil._
 
-class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem) extends RouteService {
+class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem)
+  extends RouteService {
 
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
@@ -42,9 +46,11 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
 
   private val LOG = LogUtil.getLogger(getClass)
 
-  private val securityEnabled = config.getBoolean(Constants.GEARPUMP_UI_SECURITY_AUTHENTICATION_ENABLED)
+  private val securityEnabled = config.getBoolean(
+    Constants.GEARPUMP_UI_SECURITY_AUTHENTICATION_ENABLED)
 
-  private val supervisorPath = system.settings.config.getString(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
+  private val supervisorPath = system.settings.config.getString(
+    Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
 
   private val myExceptionHandler: ExceptionHandler = ExceptionHandler {
     case ex: Throwable => {

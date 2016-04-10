@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,21 @@
 
 package io.gearpump.services
 
-import akka.actor.{ActorSystem, ActorRef}
+import scala.util.{Failure, Success}
+
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
-import akka.stream.{Materializer}
-import io.gearpump.WorkerId
+import akka.stream.Materializer
+
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
-import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics, QueryWorkerConfig}
+import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig, ReadOption}
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, WorkerConfig}
 import io.gearpump.util.ActorUtil._
 import io.gearpump.util.Constants
+// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
-
-import scala.util.{Failure, Success}
 
 class WorkerService(val master: ActorRef, override val system: ActorSystem)
   extends BasicService {
@@ -39,15 +41,17 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
   private val systemConfig = system.settings.config
   private val concise = systemConfig.getBoolean(Constants.GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE)
 
-  override def doRoute(implicit mat: Materializer) = pathPrefix("worker" / Segment) { workerIdString =>
-    pathEnd {
-      val workerId = WorkerId.parse(workerIdString)
-      onComplete(askWorker[WorkerData](master, workerId, GetWorkerData(workerId))) {
-        case Success(value: WorkerData) =>
-          complete(write(value.workerDescription))
-        case Failure(ex) => failWith(ex)
+  protected override def doRoute(implicit mat: Materializer) = pathPrefix("worker" / Segment) {
+    workerIdString => {
+      pathEnd {
+        val workerId = WorkerId.parse(workerIdString)
+        onComplete(askWorker[WorkerData](master, workerId, GetWorkerData(workerId))) {
+          case Success(value: WorkerData) =>
+            complete(write(value.workerDescription))
+          case Failure(ex) => failWith(ex)
+        }
       }
-    } ~
+    }~
     path("config") {
       val workerId = WorkerId.parse(workerIdString)
       onComplete(askWorker[WorkerConfig](master, workerId, QueryWorkerConfig(workerId))) {
