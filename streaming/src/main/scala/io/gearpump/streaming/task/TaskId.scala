@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,9 +20,9 @@ package io.gearpump.streaming.task
 
 import io.gearpump.streaming._
 
-case class TaskId(processorId : ProcessorId, index : TaskIndex)
+case class TaskId(processorId: ProcessorId, index: TaskIndex)
 
 object TaskId {
-  def toLong(id : TaskId) = (id.processorId.toLong << 32) + id.index
-  def fromLong(id : Long) = TaskId(((id >> 32) & 0xFFFFFFFF).toInt, (id & 0xFFFFFFFF).toInt)
+  def toLong(id: TaskId): Long = (id.processorId.toLong << 32) + id.index
+  def fromLong(id: Long): TaskId = TaskId(((id >> 32) & 0xFFFFFFFF).toInt, (id & 0xFFFFFFFF).toInt)
 }

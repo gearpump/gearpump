@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,10 @@
 
 package io.gearpump.util
 
+import java.io.{File, IOException}
 import java.nio.charset.Charset
+
 import io.gearpump.google.common.io.Files
-import java.io.{IOException, File}
 
 object FileUtils {
   private val UTF8 = Charset.forName("UTF-8")
@@ -41,7 +42,7 @@ object FileUtils {
     Files.toByteArray(file)
   }
 
-  // recursively making all parent directories including itself
+  /** recursively making all parent directories including itself */
   def forceMkdir(directory: File): Unit = {
     if (directory.exists() && directory.isFile) {
       throw new IOException(s"Failed to create directory ${directory.toString}, it already exist")

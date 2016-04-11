@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,17 +17,19 @@
  */
 package io.gearpump.cluster
 
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.pattern.ask
-import akka.actor.{Actor, ActorRef, Props, ActorSystem}
 import akka.testkit.TestActorRef
 import com.typesafe.config.ConfigValueFactory
+
 import io.gearpump.cluster.AppMasterToMaster.GetAllWorkers
 import io.gearpump.cluster.MasterToAppMaster.WorkerList
 import io.gearpump.cluster.master.Master
 import io.gearpump.cluster.worker.Worker
 import io.gearpump.util.Constants
-
-import scala.concurrent.{Await, Future}
 
 class MiniCluster {
   private val mockMasterIP = "127.0.0.1"
@@ -39,7 +41,7 @@ class MiniCluster {
     val master = system.actorOf(Props(classOf[Master]), "master")
     val worker = system.actorOf(Props(classOf[Worker], master), "worker")
 
-    //wait until worker register itself to master
+    // Wait until worker register itself to master
     waitUtilWorkerIsRegistered(master)
     (master, worker)
   }
@@ -48,11 +50,9 @@ class MiniCluster {
     TestActorRef(props)
   }
 
-
   private def waitUtilWorkerIsRegistered(master: ActorRef): Unit = {
-    while(!isWorkerRegistered(master)) {}
+    while (!isWorkerRegistered(master)) {}
   }
-
 
   private def isWorkerRegistered(master: ActorRef): Boolean = {
     import scala.concurrent.duration._
@@ -62,13 +62,13 @@ class MiniCluster {
 
     val workerListFuture = (master ? GetAllWorkers).asInstanceOf[Future[WorkerList]]
 
-    // wait until the worker is registered.
-    val workers = Await.result[WorkerList](workerListFuture, 15 seconds)
+    // Waits until the worker is registered.
+    val workers = Await.result[WorkerList](workerListFuture, 15.seconds)
     workers.workers.size > 0
   }
 
-  def shutDown() = {
-    system.shutdown()
-    system.awaitTermination()
+  def shutDown(): Unit = {
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 }

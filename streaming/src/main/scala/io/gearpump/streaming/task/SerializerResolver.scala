@@ -15,19 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.gearpump.streaming.task
 
-import io.gearpump.esotericsoftware.kryo.util.ObjectMap
-import io.gearpump.esotericsoftware.kryo.util.IntMap
+import io.gearpump.esotericsoftware.kryo.util.{IntMap, ObjectMap}
 import io.gearpump.streaming.task.SerializerResolver.Registration
 
 private[task] class SerializerResolver {
   private var classId = 0
-  val idToRegistration = new IntMap[Registration]()
-  val classToRegistration = new ObjectMap[Class[_], Registration]()
+  private val idToRegistration = new IntMap[Registration]()
+  private val classToRegistration = new ObjectMap[Class[_], Registration]()
 
-  def register(clazz: Class[_], serializer: TaskMessageSerializer[_]): Unit = {
-    val registration = Registration(classId, clazz, serializer)
+  def register[T](clazz: Class[T], serializer: TaskMessageSerializer[T]): Unit = {
+    val registration = new Registration(classId, clazz, serializer)
     idToRegistration.put(classId, registration)
     classToRegistration.put(clazz, registration)
     classId += 1
@@ -42,6 +42,6 @@ private[task] class SerializerResolver {
   }
 }
 
-object SerializerResolver{
-  case class Registration(id: Int, clazz: Class[_], serializer: TaskMessageSerializer[_])
+object SerializerResolver {
+  class Registration(val id: Int, val clazz: Class[_], val serializer: TaskMessageSerializer[_])
 }

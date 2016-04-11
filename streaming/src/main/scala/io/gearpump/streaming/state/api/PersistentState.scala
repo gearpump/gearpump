@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,33 +30,32 @@ import io.gearpump._
 trait PersistentState[T] {
 
   /**
-   * recover state to a previous checkpoint
+   * Recovers state to a previous checkpoint
    * usually invoked by the framework
    */
   def recover(timestamp: TimeStamp, bytes: Array[Byte]): Unit
 
   /**
-   * update state on a new message
+   * Updates state on a new message
    * this is invoked by user
    */
   def update(timestamp: TimeStamp, t: T): Unit
 
   /**
-   * set next checkpoint time
+   * Sets next checkpoint time
    * should be invoked by the framework
    */
   def setNextCheckpointTime(timeStamp: TimeStamp): Unit
 
   /**
-   * get a binary snapshot of state
+   * Gets a binary snapshot of state
    * usually invoked by the framework
    */
   def checkpoint(): Array[Byte]
 
   /**
-   * unwrap the raw value of state
+   * Unwraps the raw value of state
    */
   def get: Option[T]
 }
-
 

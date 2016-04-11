@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -18,7 +18,7 @@ angular.module('dashboard')
     }])
 
   .controller('StreamingAppOverviewCtrl', ['$scope', '$propertyTableBuilder', 'helper', 'models',
-    function($scope, $ptb, helper, models) {
+    function ($scope, $ptb, helper, models) {
       'use strict';
 
       $scope.appSummary = [
@@ -43,15 +43,15 @@ angular.module('dashboard')
         ]);
       }
 
-      $scope.$watch('app', function(app) {
+      $scope.$watch('app', function (app) {
         updateSummaryTable(app);
       });
 
       $scope.alerts = [];
       models.$get.appAlerts($scope.app.appId)
-        .then(function(alerts0) {
+        .then(function (alerts0) {
           $scope.alerts = alerts0.$data();
-          alerts0.$subscribe($scope, function(alerts) {
+          alerts0.$subscribe($scope, function (alerts) {
             $scope.alerts = alerts;
           });
         });

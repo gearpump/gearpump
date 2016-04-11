@@ -5,7 +5,7 @@
 
 angular.module('dashboard')
 
-  .directive('metricSelector', function() {
+  .directive('metricSelector', function () {
     'use strict';
 
     return {
@@ -16,7 +16,7 @@ angular.module('dashboard')
         metricType: '=',
         metricDescription: '=?'
       },
-      link: function(scope) {
+      link: function (scope) {
         'use strict';
 
         var metricNameLookup = {
@@ -28,11 +28,11 @@ angular.module('dashboard')
 
         scope.names = {available: _.keys(metricNameLookup)};
         scope.names.selected = scope.names.available[1]; // use Receive Throughput by default
-        scope.types = function(name) {
+        scope.types = function (name) {
           return metricNameLookup[name].type;
         };
 
-        scope.$watch('names.selected', function(val) {
+        scope.$watch('names.selected', function (val) {
           scope.metricName = metricNameLookup[val].name;
           scope.metricType = metricNameLookup[val].type;
           scope.metricDescription = val;

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,13 +17,15 @@
  */
 package io.gearpump.experiments.distributeservice
 
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.cluster.{Application, AppJar, UserConfig, AppDescription}
-import io.gearpump.cluster.main.{ParseResult, CLIOption, ArgumentsParser}
-import io.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
-object DistributeService extends AkkaApp with ArgumentsParser  {
+import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import io.gearpump.cluster.{Application, UserConfig}
+import io.gearpump.util.{AkkaApp, LogUtil}
+
+/** Demo app to remotely deploy and start system service on machines in the cluster */
+object DistributeService extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
@@ -31,7 +33,8 @@ object DistributeService extends AkkaApp with ArgumentsParser  {
   override def main(akkaConf: Config, args: Array[String]): Unit = {
     LOG.info(s"Distribute Service submitting application...")
     val context = ClientContext(akkaConf)
-    val appId = context.submit(Application[DistServiceAppMaster]("DistributedService", UserConfig.empty))
+    val appId = context.submit(Application[DistServiceAppMaster]("DistributedService",
+      UserConfig.empty))
     context.close()
     LOG.info(s"Distribute Service Application started with appId $appId !")
   }

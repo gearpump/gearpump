@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,11 +17,11 @@
  */
 package io.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.Docker._
+import org.apache.log4j.Logger
+
 import io.gearpump.integrationtest.{Docker, TestSpecBase, Util}
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.ProcessorSummary
-import org.apache.log4j.Logger
 
 /**
  * The test spec will perform destructive operations to check the stability
@@ -49,12 +49,13 @@ class ExampleSpec extends TestSpecBase {
 
       def verify(): Boolean = {
         val workerNum = cluster.getWorkerHosts.length
-        val result = commandLineClient.submitAppAndCaptureOutput(distShellJar, workerNum, args.mkString(" ")).split("\n").
+        val result = commandLineClient.submitAppAndCaptureOutput(distShellJar,
+          workerNum, args.mkString(" ")).split("\n").
           filterNot(line => line.startsWith("[INFO]") || line.isEmpty)
         expectedHostNames.forall(result.contains)
       }
 
-      Util.retryUntil(()=>verify(),
+      Util.retryUntil(() => verify(),
         s"executors started on all expected hosts ${expectedHostNames.mkString(", ")}")
     }
   }
@@ -66,10 +67,12 @@ class ExampleSpec extends TestSpecBase {
     "can submit immediately after killing a former one" in {
       // setup
       val formerAppId = restClient.getNextAvailableAppId()
-      val formerSubmissionSuccess = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length)
+      val formerSubmissionSuccess =
+        restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length)
       formerSubmissionSuccess shouldBe true
       expectAppIsRunning(formerAppId, wordCountName)
-      Util.retryUntil(()=>restClient.queryStreamingAppDetail(formerAppId).clock > 0, "app running")
+      Util.retryUntil(() =>
+        restClient.queryStreamingAppDetail(formerAppId).clock > 0, "app running")
       restClient.killApp(formerAppId)
 
       // exercise
@@ -109,9 +112,9 @@ class ExampleSpec extends TestSpecBase {
       expectAppIsRunning(appId, appName)
 
       // exercise
-      Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > 0, "app submitted")
+      Util.retryUntil(() => restClient.queryStreamingAppDetail(appId).clock > 0, "app submitted")
       val formerClock = restClient.queryStreamingAppDetail(appId).clock
-      Util.retryUntil(()=>restClient.queryStreamingAppDetail(appId).clock > formerClock,
+      Util.retryUntil(() => restClient.queryStreamingAppDetail(appId).clock > formerClock,
         "app clock is advancing")
     }
 
@@ -126,14 +129,14 @@ class ExampleSpec extends TestSpecBase {
       val expectedProcessorId = formerProcessors.size
       val expectedParallelism = processor0.parallelism + 1
       val expectedDescription = processor0.description + "new"
-      val replaceMe = new ProcessorDescription(processor0.id, processor0.taskClass, expectedParallelism,
-        description = expectedDescription)
+      val replaceMe = new ProcessorDescription(processor0.id, processor0.taskClass,
+        expectedParallelism, description = expectedDescription)
 
       // exercise
       val success = restClient.replaceStreamingAppProcessor(appId, replaceMe)
       success shouldBe true
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
-      Util.retryUntil(()=>{
+      Util.retryUntil(() => {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
         laterProcessors.size == formerProcessors.size + 1
       }, "new process added")
@@ -142,5 +145,4 @@ class ExampleSpec extends TestSpecBase {
       laterProcessor0.description shouldEqual expectedDescription
     }
   }
-
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,26 +16,28 @@
  * limitations under the License.
  */
 
-
 package io.gearpump.streaming.examples.stock
 
-import akka.actor.ActorRef
-
-case class StockPrice(stockId: String, name: String, price: String, delta: String, pecent: String, volume: String, money: String, timestamp: Long) {
+// scalastyle:off equals.hash.code  case class has equals defined
+case class StockPrice(
+    stockId: String, name: String, price: String, delta: String, pecent: String, volume: String,
+    money: String, timestamp: Long) {
   override def hashCode: Int = stockId.hashCode
 }
-
+// scalastyle:on equals.hash.code  case class has equals defined
 
 case class Price(price: Float, timestamp: Long)
 
 object Price {
 
+  import scala.language.implicitConversions
+
   implicit def StockPriceToPrice(stock: StockPrice): Price = {
     Price(stock.price.toFloat, stock.timestamp)
   }
 
-  def min(first: Price, second: Price) = {
-    if(first.price < second.price) {
+  def min(first: Price, second: Price): Price = {
+    if (first.price < second.price) {
       first
     } else {
       second
@@ -45,13 +47,15 @@ object Price {
 
 case class StockPriceState(stockID: String, max: Price, min: Price, current: Price) {
 
-  def drawDownPeriod = min.timestamp - max.timestamp
+  def drawDownPeriod: Long = min.timestamp - max.timestamp
 
-  def recoveryPeriod = current.timestamp - min.timestamp
+  def recoveryPeriod: Long = current.timestamp - min.timestamp
 
-  def drawDown = max.price - min.price
+  def drawDown: Float = max.price - min.price
 }
 
 case class GetReport(stockId: String, date: String)
 
-case class Report(stockId: String, name: String, date: String, historyMax: Option[StockPriceState], currentMax: Option[StockPriceState])
+case class Report(
+    stockId: String, name: String, date: String, historyMax: Option[StockPriceState],
+    currentMax: Option[StockPriceState])

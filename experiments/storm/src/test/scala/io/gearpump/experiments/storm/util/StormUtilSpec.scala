@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,26 +20,24 @@ package io.gearpump.experiments.storm.util
 
 import java.lang.{Boolean => JBoolean, Long => JLong}
 import java.util.{HashMap => JHashMap, Map => JMap}
+import scala.collection.JavaConverters._
 
 import backtype.storm.Config
 import backtype.storm.generated.StormTopology
-import io.gearpump.cluster.UserConfig
-import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
-import io.gearpump.experiments.storm.util.StormConstants._
-import io.gearpump.experiments.storm.util.StormUtil._
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.task.TaskId
 import org.apache.storm.shade.org.json.simple.JSONValue
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
+import io.gearpump.cluster.UserConfig
+import io.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
+import io.gearpump.experiments.storm.util.StormConstants._
+import io.gearpump.experiments.storm.util.StormUtil._
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.task.TaskId
 
 class StormUtilSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
-
 
   property("convert Storm task ids to gearpump TaskIds and back") {
     val idGen = Gen.chooseNum[Int](0, Int.MaxValue)
@@ -60,23 +58,23 @@ class StormUtilSpec extends PropSpec with PropertyChecks with Matchers with Mock
     val topology = TopologyUtil.getTestTopology
     implicit val actorSystem = taskContext.system
     val userConfig = UserConfig.empty
-          .withValue[StormTopology](STORM_TOPOLOGY, topology)
-          .withValue[JMap[AnyRef, AnyRef]](STORM_CONFIG, new JHashMap[AnyRef, AnyRef])
-    topology.get_spouts foreach { case (spoutId, _) =>
+      .withValue[StormTopology](STORM_TOPOLOGY, topology)
+      .withValue[JMap[AnyRef, AnyRef]](STORM_CONFIG, new JHashMap[AnyRef, AnyRef])
+    topology.get_spouts.asScala.foreach { case (spoutId, _) =>
       val config = userConfig.withString(STORM_COMPONENT, spoutId)
       val component = getGearpumpStormComponent(taskContext, config)(taskContext.system)
-      component shouldBe a [GearpumpSpout]
+      component shouldBe a[GearpumpSpout]
     }
-    topology.get_bolts foreach { case (boltId, _) =>
+    topology.get_bolts.asScala.foreach { case (boltId, _) =>
       val config = userConfig.withString(STORM_COMPONENT, boltId)
       val component = getGearpumpStormComponent(taskContext, config)(taskContext.system)
-      component shouldBe a [GearpumpBolt]
+      component shouldBe a[GearpumpBolt]
     }
   }
 
   property("parse json to map") {
     val mapGen = Gen.listOf[String](Gen.alphaStr)
-        .map(_.map(s => (s, s)).toMap.asJava.asInstanceOf[JMap[AnyRef, AnyRef]])
+      .map(_.map(s => (s, s)).toMap.asJava.asInstanceOf[JMap[AnyRef, AnyRef]])
 
     forAll(mapGen) { (map: JMap[AnyRef, AnyRef]) =>
       parseJsonStringToMap(JSONValue.toJSONString(map)) shouldBe map
@@ -86,7 +84,7 @@ class StormUtilSpec extends PropSpec with PropertyChecks with Matchers with Mock
     forAll(invalidJsonGen) { (invalidJson: String) =>
       val map = parseJsonStringToMap(invalidJson)
       map shouldBe empty
-      map shouldBe a [JMap[_, _]]
+      map shouldBe a[JMap[_, _]]
     }
   }
 
@@ -109,7 +107,7 @@ class StormUtilSpec extends PropSpec with PropertyChecks with Matchers with Mock
 
     forAll(Gen.alphaStr) { (s: String) =>
       conf.put(name, s)
-      an [IllegalArgumentException] should be thrownBy getInt(conf, name)
+      an[IllegalArgumentException] should be thrownBy getInt(conf, name)
     }
   }
 
@@ -127,7 +125,7 @@ class StormUtilSpec extends PropSpec with PropertyChecks with Matchers with Mock
 
     forAll(Gen.alphaStr) { (s: String) =>
       conf.put(name, s)
-      an [IllegalArgumentException] should be thrownBy getBoolean(conf, name)
+      an[IllegalArgumentException] should be thrownBy getBoolean(conf, name)
     }
   }
 

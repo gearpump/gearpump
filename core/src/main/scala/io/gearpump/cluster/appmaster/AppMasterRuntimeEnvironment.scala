@@ -19,32 +19,34 @@
 package io.gearpump.cluster.appmaster
 
 import akka.actor._
+
 import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment._
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{Session, StartExecutorSystems}
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.MasterConnectionStatus._
 import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.cluster.{AppMasterContext, AppDescription}
+import io.gearpump.cluster.{AppDescription, AppMasterContext}
 import io.gearpump.util.LogUtil
 
 /**
  * This serves as runtime environment for AppMaster.
- * When starting an AppMaster, we need to setup the connection to master, and prepare other environemnts.
+ * When starting an AppMaster, we need to setup the connection to master,
+ * and prepare other environments.
  *
  * This also extend the function of Master, by providing a scheduler service for Executor System.
  * AppMaster can ask Master for executor system directly. details like requesting resource,
- * contacting worker to start a process, and then starting an executor system is hidden from AppMaster.
+ * contacting worker to start a process, and then starting an executor system is hidden from
+ * AppMaster.
  *
  * Please use AppMasterRuntimeEnvironment.props() to construct this actor.
- *
  */
 private[appmaster]
-class AppMasterRuntimeEnvironment (
+class AppMasterRuntimeEnvironment(
     appContextInput: AppMasterContext,
     app: AppDescription,
     masters: Iterable[ActorPath],
     masterFactory: (AppId, MasterActorRef) => Props,
-    appMasterFactory: (AppMasterContext, AppDescription)=> Props,
+    appMasterFactory: (AppMasterContext, AppDescription) => Props,
     masterConnectionKeeperFactory: (MasterActorRef, RegisterAppMaster, ListenerActorRef) => Props)
   extends Actor {
 
@@ -52,15 +54,18 @@ class AppMasterRuntimeEnvironment (
   private val LOG = LogUtil.getLogger(getClass, app = appId)
 
   import scala.concurrent.duration._
-  private val master = context.actorOf(masterFactory(appId, context.actorOf(Props(new MasterProxy(masters, 30 seconds)))))
+
+  private val master = context.actorOf(
+    masterFactory(appId, context.actorOf(Props(new MasterProxy(masters, 30.seconds)))))
   private val appContext = appContextInput.copy(masterProxy = master)
 
-  //create appMaster proxy to receive command and forward to appmaster
+  // Create appMaster proxy to receive command and forward to appmaster
   private val appMaster = context.actorOf(appMasterFactory(appContext, app))
   context.watch(appMaster)
 
   private val registerAppMaster = RegisterAppMaster(appMaster, appContext.registerData)
-  private val masterConnectionKeeper =  context.actorOf(masterConnectionKeeperFactory(master, registerAppMaster, self))
+  private val masterConnectionKeeper = context.actorOf(
+    masterConnectionKeeperFactory(master, registerAppMaster, self))
   context.watch(masterConnectionKeeper)
 
   def receive: Receive = {
@@ -72,20 +77,21 @@ class AppMasterRuntimeEnvironment (
       context.stop(self)
     case Terminated(actor) => actor match {
       case `appMaster` =>
-        LOG.error (s"AppMaster ${appId} is stopped, shutdown myself")
-        context.stop (self)
+        LOG.error(s"AppMaster ${appId} is stopped, shutdown myself")
+        context.stop(self)
       case `masterConnectionKeeper` =>
-        LOG.error (s"Master connection keeper is stopped, appId: ${appId}, shutdown myself")
-        context.stop (self)
-      case _ => //skip
+        LOG.error(s"Master connection keeper is stopped, appId: ${appId}, shutdown myself")
+        context.stop(self)
+      case _ => // Skip
     }
   }
 }
 
 object AppMasterRuntimeEnvironment {
 
-
-  def props(masters: Iterable[ActorPath], app : AppDescription, appContextInput: AppMasterContext): Props = {
+  def props(
+      masters: Iterable[ActorPath], app: AppDescription, appContextInput: AppMasterContext)
+    : Props = {
 
     val master = (appId: AppId, masterProxy: MasterActorRef) =>
       MasterWithExecutorSystemProvider.props(appId, masterProxy)
@@ -93,26 +99,25 @@ object AppMasterRuntimeEnvironment {
     val appMaster = (appContext: AppMasterContext, app: AppDescription) =>
       LazyStartAppMaster.props(appContext, app)
 
-    val masterConnectionKeeper =
-      (master: MasterActorRef, registerAppMaster: RegisterAppMaster, listener: ListenerActorRef) =>
-      Props(new MasterConnectionKeeper(registerAppMaster, master, masterStatusListener = listener))
+    val masterConnectionKeeper = (master: MasterActorRef, registerAppMaster:
+      RegisterAppMaster, listener: ListenerActorRef) => Props(new MasterConnectionKeeper(
+        registerAppMaster, master, masterStatusListener = listener))
 
     Props(new AppMasterRuntimeEnvironment(
       appContextInput, app, masters, master, appMaster, masterConnectionKeeper))
   }
 
   /**
-   * This behavior as AppMaster, and will lazy start the real AppMaster. When real AppMaster
-   * is not started yet, all messages will be stashed. The stashed messages will be forwarded to
-   * real AppMaster when it is started.
+   * This behavior like a AppMaster. Under the hood, It start start the real AppMaster in a lazy
+   * way. When real AppMaster is not started yet, all messages are stashed. The stashed
+   * messages are forwarded to real AppMaster when the real AppMaster is started.
    *
    * Please use LazyStartAppMaster.props to construct this actor
    *
-   * @param appId
    * @param appMasterProps  underlying AppMaster Props
    */
   private[appmaster]
-  class LazyStartAppMaster (appId: Int, appMasterProps: Props) extends Actor with Stash {
+  class LazyStartAppMaster(appId: Int, appMasterProps: Props) extends Actor with Stash {
 
     private val LOG = LogUtil.getLogger(getClass, app = appId)
 
@@ -151,14 +156,11 @@ object AppMasterRuntimeEnvironment {
 
   private[appmaster] case object StartAppMaster
 
-
   /**
    * This enhance Master by providing new service: StartExecutorSystems
    *
-   * * Please use MasterWithExecutorSystemProvider.props to construct this actor
+   * Please use MasterWithExecutorSystemProvider.props to construct this actor
    *
-   * @param master
-   * @param executorSystemProviderProps
    */
   private[appmaster]
   class MasterWithExecutorSystemProvider(master: ActorRef, executorSystemProviderProps: Props)
@@ -168,7 +170,7 @@ object AppMasterRuntimeEnvironment {
 
     override def receive: Receive = {
       case request: StartExecutorSystems =>
-        executorSystemProvider forward  request
+        executorSystemProvider forward request
       case msg =>
         master forward msg
     }
@@ -181,12 +183,11 @@ object AppMasterRuntimeEnvironment {
       val executorSystemLauncher = (appId: Int, session: Session) =>
         Props(new ExecutorSystemLauncher(appId, session))
 
-      val scheduler = Props(new ExecutorSystemScheduler(appId, master,  executorSystemLauncher))
+      val scheduler = Props(new ExecutorSystemScheduler(appId, master, executorSystemLauncher))
 
       Props(new MasterWithExecutorSystemProvider(master, scheduler))
     }
   }
-
 
   private[appmaster] type AppId = Int
   private[appmaster] type MasterActorRef = ActorRef

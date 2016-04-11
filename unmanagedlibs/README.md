@@ -1,5 +1,3 @@
-This folder contains the unmanaged dependency files that couldn't be achieved from public repositories.
+This folder contains the unmanaged dependency libraries. We will copy the jars under directory {scala-version}/ to out/target/pack/lib/
 
-Related issue: https://github.com/gearpump/gearpump/issues/1816
-
-We built a new akka-actor artifact to replace the flawed one.
+For example, jars under 2.11/ will be copied to output/target/pack/lib when building for scala 2.11.

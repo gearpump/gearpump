@@ -18,17 +18,18 @@
 
 package io.gearpump.util
 
-import io.gearpump.transport.HostPort
-import io.gearpump.util.Util._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
+
+import io.gearpump.transport.HostPort
+import io.gearpump.util.Util._
 
 class UtilSpec extends FlatSpec with Matchers with MockitoSugar {
   it should "work" in {
 
-    assert(findFreePort.isSuccess)
+    assert(findFreePort().isSuccess)
 
-    assert(randInt != randInt)
+    assert(randInt() != randInt())
 
     val hosts = parseHostList("host1:1,host2:2")
     assert(hosts(1) == HostPort("host2", 2))

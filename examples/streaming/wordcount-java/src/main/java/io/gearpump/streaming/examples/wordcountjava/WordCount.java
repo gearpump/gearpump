@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,6 +29,7 @@ import io.gearpump.streaming.javaapi.Graph;
 import io.gearpump.streaming.javaapi.Processor;
 import io.gearpump.streaming.javaapi.StreamApplication;
 
+/** Java version of WordCount with Processor Graph API */
 public class WordCount {
 
   public static void main(String[] args) throws InterruptedException {
@@ -53,10 +54,8 @@ public class WordCount {
     Partitioner partitioner = new HashPartitioner();
     graph.addEdge(split, partitioner, sum);
 
-
     UserConfig conf = UserConfig.empty();
     StreamApplication app = new StreamApplication("wordcountJava", conf, graph);
-
 
     EmbeddedCluster localCluster = null;
 

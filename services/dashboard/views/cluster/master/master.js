@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -15,7 +15,7 @@ angular.module('dashboard')
           templateUrl: 'views/cluster/master/master.html',
           controller: 'MasterCtrl',
           resolve: {
-            master0: ['models', function(models) {
+            master0: ['models', function (models) {
               return models.$get.master();
             }]
           }
@@ -23,7 +23,7 @@ angular.module('dashboard')
     }])
 
   .controller('MasterCtrl', ['$scope', '$propertyTableBuilder', 'i18n', 'helper', 'models', 'master0',
-    function($scope, $ptb, i18n, helper, models, master0) {
+    function ($scope, $ptb, i18n, helper, models, master0) {
       'use strict';
 
       $scope.whatIsMaster = i18n.terminology.master;
@@ -54,12 +54,12 @@ angular.module('dashboard')
 
       $scope.metricsConfig = master0.historyMetricsConfig;
       updateSummaryTable(master0);
-      master0.$subscribe($scope, function(master) {
+      master0.$subscribe($scope, function (master) {
         updateSummaryTable(master);
       });
 
       // Delegate JvmMetrics directive to manage metrics
-      $scope.queryMetricsFnRef = function(all) {
+      $scope.queryMetricsFnRef = function (all) {
         return all ?
           models.$get.masterHistMetrics() :
           models.$get.masterMetrics($scope.metricsConfig.retainRecentDataIntervalMs);

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,36 +19,37 @@
 package io.gearpump.streaming.kafka
 
 import java.util.Properties
+import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 import com.twitter.bijection.Injection
-import io.gearpump.streaming.kafka.lib.KafkaUtil
-import io.gearpump.streaming.kafka.lib.consumer.KafkaConsumer
-import io.gearpump.streaming.transaction.api.{OffsetStorageFactory, OffsetStorage}
 import kafka.api.OffsetRequest
 import kafka.consumer.ConsumerConfig
 import org.I0Itec.zkclient.ZkClient
-import io.gearpump.TimeStamp
-import OffsetStorage.{Overflow, StorageEmpty, Underflow}
-import io.gearpump.util.LogUtil
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.slf4j.Logger
 
-import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
+import io.gearpump.TimeStamp
+import io.gearpump.streaming.kafka.lib.KafkaUtil
+import io.gearpump.streaming.kafka.lib.consumer.KafkaConsumer
+import io.gearpump.streaming.transaction.api.OffsetStorage.{Overflow, StorageEmpty, Underflow}
+import io.gearpump.streaming.transaction.api.{OffsetStorage, OffsetStorageFactory}
+import io.gearpump.util.LogUtil
 
 /**
- * factory that builds [[KafkaStorage]]
+ * Factory that builds [[KafkaStorage]]
  *
  * @param consumerProps kafka consumer config
  * @param producerProps kafka producer config
  */
-class KafkaStorageFactory(consumerProps: Properties, producerProps: Properties) extends OffsetStorageFactory {
+class KafkaStorageFactory(consumerProps: Properties, producerProps: Properties)
+  extends OffsetStorageFactory {
 
   /**
-   *
-   * this creates consumer config properties with `zookeeper.connect` set to zkConnect
+   * Creates consumer config properties with `zookeeper.connect` set to zkConnect
    * and producer config properties with `bootstrap.servers` set to bootstrapServers
+   *
    * @param zkConnect kafka consumer config `zookeeper.connect`
    * @param bootstrapServers kafka producer config `bootstrap.servers`
    */
@@ -70,7 +71,8 @@ object KafkaStorage {
 }
 
 /**
- * this stores offset-timestamp mapping to kafka
+ * Stores offset-timestamp mapping to kafka
+ *
  * @param topic kafka store topic
  * @param producer kafka producer
  * @param getConsumer function to get kafka consumer
@@ -83,11 +85,10 @@ class KafkaStorage private[kafka](
     connectZk: => ZkClient)
   extends OffsetStorage {
 
-
   private lazy val consumer = getConsumer
 
   private val dataByTime: List[(TimeStamp, Array[Byte])] = {
-    if (KafkaUtil.topicExists(connectZk, topic)){
+    if (KafkaUtil.topicExists(connectZk, topic)) {
       load(consumer)
     } else {
       List.empty[(TimeStamp, Array[Byte])]
@@ -95,8 +96,9 @@ class KafkaStorage private[kafka](
   }
 
   /**
-   * offsets with timestamp < `time` have already been processed by the system
-   * so we look up the storage for the first offset with timestamp >= `time` on replay
+   * Offsets with timestamp less than `time` have already been processed by the system
+   * so we look up the storage for the first offset with timestamp large equal than `time`
+   * on replay.
    *
    * @param time the timestamp to look up for the earliest unprocessed offset
    * @return the earliest unprocessed offset if `time` is in the range, otherwise failure
@@ -143,5 +145,4 @@ class KafkaStorage private[kafka](
     consumer.close()
     messagesBuilder.result().toList
   }
-
 }

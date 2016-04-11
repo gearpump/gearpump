@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,9 +32,11 @@ case class InitialAckRequest(taskId: TaskId, sessionId: Int)
  */
 case class AckRequest(taskId: TaskId, seq: Short, sessionId: Int)
 
-/*
-  Here the seq field represents the expected number of received messages
-    and the actualReceivedNum field means the actual received number since start
+/**
+ * Ack back to sender task actor.
+ *
+ * @param seq The seq field represents the expected number of received messages and the
+ *            actualReceivedNum field means the actual received number since start.
  */
 case class Ack(taskId: TaskId, seq: Short, actualReceivedNum: Short, sessionId: Int)
 
@@ -60,6 +62,7 @@ case object GetStartClock
 
 case class StartClock(clock: TimeStamp)
 
+/** Probe the latency between two upstream to downstream tasks. */
 case class LatencyProbe(timestamp: Long)
 
 case class SendMessageLoss()

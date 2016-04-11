@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,19 +19,19 @@
 package io.gearpump.util
 
 import java.util
+import scala.collection.mutable.ListBuffer
 
 import akka.actor.Actor
 import com.typesafe.config.Config
+import org.slf4j.Logger
+
 import io.gearpump.TimeStamp
-import io.gearpump.cluster.ClientToMaster.{ReadOption, QueryHistoryMetrics}
+import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, ReadOption}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
 import io.gearpump.metrics.Metrics._
 import io.gearpump.metrics.MetricsAggregator
 import io.gearpump.util.Constants._
-import io.gearpump.util.HistoryMetricsService.{HistoryMetricsStore, SkipAllAggregator, DummyMetricsAggregator, MetricsStore, HistoryMetricsConfig}
-import org.slf4j.Logger
-
-import scala.collection.mutable.ListBuffer
+import io.gearpump.util.HistoryMetricsService.{DummyMetricsAggregator, HistoryMetricsConfig, HistoryMetricsStore, SkipAllAggregator}
 
 /**
  *
@@ -44,7 +44,6 @@ import scala.collection.mutable.ListBuffer
  * for each hour.
  *
  * For fine-grained data in last 5 min, there will be 1 sample point per 15 seconds.
- *
  */
 class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass, name = name)
@@ -75,14 +74,15 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
     } + ".*$"
   }
 
-  private def fetchMetricsHistory(pathPattern: String, readOption: ReadOption.ReadOption): List[HistoryMetricsItem] = {
+  private def fetchMetricsHistory(pathPattern: String, readOption: ReadOption.ReadOption)
+  : List[HistoryMetricsItem] = {
 
     val result = new ListBuffer[HistoryMetricsItem]
 
     val regex = toRegularExpression(pathPattern).r.pattern
 
     val iter = metricsStore.iterator
-    while(iter.hasNext) {
+    while (iter.hasNext) {
       val (name, store) = iter.next()
 
       val matcher = regex.matcher(name)
@@ -95,7 +95,7 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
           case ReadOption.ReadHistory =>
             result.append(store.readHistory: _*)
           case _ =>
-          //skip all other options.
+          // Skip all other options.
         }
       }
     }
@@ -106,42 +106,41 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
   private var aggregators: Map[String, MetricsAggregator] = Map.empty[String, MetricsAggregator]
 
   import scala.collection.JavaConverters._
-  val validAggregators = {
-    systemConfig.getConfig(Constants.GEARPUMP_METRICS_AGGREGATORS).root.unwrapped.keySet().asScala.toSet
+  private val validAggregators: Set[String] = {
+    val rootConfig = systemConfig.getConfig(Constants.GEARPUMP_METRICS_AGGREGATORS).root.unwrapped
+    rootConfig.keySet().asScala.toSet
   }
 
   def commandHandler: Receive = {
-    //path accept syntax ? *, ? will match one char, * will match at least one char
+    // Path accept syntax ? *, ? will match one char, * will match at least one char
     case QueryHistoryMetrics(inputPath, readOption, aggregatorClazz, options) =>
 
-       val aggregator = {
-         if (aggregatorClazz == null || aggregatorClazz.isEmpty) {
-           dummyAggregator
-         } else if (aggregators.contains(aggregatorClazz)) {
-           aggregators(aggregatorClazz)
-         } else if (validAggregators.contains(aggregatorClazz)) {
-           val clazz = Class.forName(aggregatorClazz)
-           val constructor = clazz.getConstructor(classOf[Config])
-           val aggregator = constructor.newInstance(systemConfig).asInstanceOf[MetricsAggregator]
-           aggregators += aggregatorClazz -> aggregator
-           aggregator
-         } else {
-           LOG.error(s"Aggregator $aggregatorClazz is not in the white list ${validAggregators}, we will drop all messages. " +
-             s"Please see config at ${GEARPUMP_METRICS_AGGREGATORS}")
-           val skipAll = new SkipAllAggregator
-           aggregators += aggregatorClazz -> new SkipAllAggregator
-           skipAll
-         }
-       }
+      val aggregator = {
+        if (aggregatorClazz == null || aggregatorClazz.isEmpty) {
+          dummyAggregator
+        } else if (aggregators.contains(aggregatorClazz)) {
+          aggregators(aggregatorClazz)
+        } else if (validAggregators.contains(aggregatorClazz)) {
+          val clazz = Class.forName(aggregatorClazz)
+          val constructor = clazz.getConstructor(classOf[Config])
+          val aggregator = constructor.newInstance(systemConfig).asInstanceOf[MetricsAggregator]
+          aggregators += aggregatorClazz -> aggregator
+          aggregator
+        } else {
+          LOG.error(s"Aggregator $aggregatorClazz is not in the white list ${validAggregators}, " +
+            s"we will drop all messages. Please see config at ${GEARPUMP_METRICS_AGGREGATORS}")
+          val skipAll = new SkipAllAggregator
+          aggregators += aggregatorClazz -> new SkipAllAggregator
+          skipAll
+        }
+      }
 
-      import collection.JavaConversions._
-      val metrics =  fetchMetricsHistory(inputPath, readOption).iterator
+      val metrics = fetchMetricsHistory(inputPath, readOption).iterator
       sender ! HistoryMetrics(inputPath, aggregator.aggregate(options, metrics))
-   }
+  }
 }
 
 object HistoryMetricsService {
-
 
   trait MetricsStore {
     def add(inputMetrics: MetricType): Unit
@@ -169,7 +168,7 @@ object HistoryMetricsService {
     def readHistory: List[HistoryMetricsItem]
   }
 
-  class DummyHistoryMetricsStore extends HistoryMetricsStore{
+  class DummyHistoryMetricsStore extends HistoryMetricsStore {
 
     val empty = List.empty[HistoryMetricsItem]
 
@@ -187,7 +186,8 @@ object HistoryMetricsService {
   }
 
   object HistoryMetricsStore {
-    def apply(name: String, metric: MetricType, config: HistoryMetricsConfig): HistoryMetricsStore = {
+    def apply(name: String, metric: MetricType, config: HistoryMetricsConfig)
+      : HistoryMetricsStore = {
       metric match {
         case histogram: Histogram => new HistogramMetricsStore(config)
         case meter: Meter => new MeterMetricsStore(config)
@@ -199,18 +199,18 @@ object HistoryMetricsService {
   }
 
   /**
-   ** Metrics store to store history data points
+   * Metrics store to store history data points
    * For each time point, we will store single data point.
    *
    * @param retainCount how many data points to retain, old data will be removed
    * @param retainIntervalMs time interval between two data points.
    */
-  class SingleValueMetricsStore (retainCount: Int, retainIntervalMs: Long) extends MetricsStore{
+  class SingleValueMetricsStore(retainCount: Int, retainIntervalMs: Long) extends MetricsStore {
 
-    private val queue =  new util.ArrayDeque[HistoryMetricsItem]()
+    private val queue = new util.ArrayDeque[HistoryMetricsItem]()
     private var latest = List.empty[HistoryMetricsItem]
 
-    // end of the time window we are tracking
+    // End of the time window we are tracking
     private var endTime = 0L
 
     override def add(inputMetrics: MetricType): Unit = {
@@ -226,7 +226,7 @@ object HistoryMetricsService {
         queue.addFirst(metrics)
         endTime = (now / retainIntervalMs + 1) * retainIntervalMs
 
-        // remove old data
+        // Removes old data
         if (queue.size() > retainCount) {
           queue.removeLast()
         }
@@ -235,8 +235,8 @@ object HistoryMetricsService {
 
     def read: List[HistoryMetricsItem] = {
       val result = new ListBuffer[HistoryMetricsItem]
-      import scala.collection.JavaConversions.asScalaIterator
-      queue.iterator().foreach(result.prepend(_))
+      import scala.collection.JavaConverters._
+      queue.iterator().asScala.foreach(result.prepend(_))
       result.toList
     }
 
@@ -246,11 +246,14 @@ object HistoryMetricsService {
   }
 
   /**
+   * Config for how long to keep history metrics data.
    *
    * @param retainHistoryDataHours Retain at max @RETAIN_HISTORY_HOURS history data(unit hour)
    * @param retainHistoryDataIntervalMs time interval between two history data points.(unit: ms)
-   * @param retainRecentDataSeconds Retain at max @RETAIN_LATEST_SECONDS recent data points(unit: seconds)
-   * @param retainRecentDataIntervalMs Retain at max @RETAIN_LATEST_SECONDS recent data points(unit: ms)
+   * @param retainRecentDataSeconds Retain at max @RETAIN_LATEST_SECONDS
+   *                                recent data points(unit: seconds)
+   * @param retainRecentDataIntervalMs Retain at max @RETAIN_LATEST_SECONDS recent
+   *                                   data points(unit: ms)
    */
   case class HistoryMetricsConfig(
       retainHistoryDataHours: Int,
@@ -385,14 +388,17 @@ object HistoryMetricsService {
   }
 
   class DummyMetricsAggregator extends MetricsAggregator {
-    def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem] = {
-      import scala.collection.JavaConverters._
+    def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem])
+      : List[HistoryMetricsItem] = {
       inputs.toList
     }
   }
 
   class SkipAllAggregator extends MetricsAggregator {
     private val empty = List.empty[HistoryMetricsItem]
-    def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem] = empty
+    def aggregate(options: Map[String, String], inputs: Iterator[HistoryMetricsItem])
+    : List[HistoryMetricsItem] = {
+      empty
+    }
   }
 }

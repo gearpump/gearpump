@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,10 +19,11 @@ package io.gearpump.integrationtest.kafka
 
 import java.util.Properties
 
-import io.gearpump.streaming.serializer.ChillSerializer
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.log4j.Logger
+
+import io.gearpump.streaming.serializer.ChillSerializer
 
 class NumericalDataProducer(topic: String, bootstrapServers: String) {
 
@@ -44,7 +45,7 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
     producer.close()
   }
 
-  /** How many message we have written in total*/
+  /** How many message we have written in total */
   def producedNumbers: Range = {
     Range(1, lastWriteNum + 1)
   }
@@ -52,7 +53,8 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
   private def createProducer: KafkaProducer[Array[Byte], Array[Byte]] = {
     val properties = new Properties()
     properties.setProperty("bootstrap.servers", bootstrapServers)
-    new KafkaProducer[Array[Byte], Array[Byte]](properties, new ByteArraySerializer, new ByteArraySerializer)
+    new KafkaProducer[Array[Byte], Array[Byte]](properties,
+      new ByteArraySerializer, new ByteArraySerializer)
   }
 
   private val produceThread = new Thread(new Runnable {
@@ -71,5 +73,4 @@ class NumericalDataProducer(topic: String, bootstrapServers: String) {
       }
     }
   })
-
 }

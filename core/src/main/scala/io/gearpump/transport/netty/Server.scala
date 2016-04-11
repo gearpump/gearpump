@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,32 +19,36 @@
 package io.gearpump.transport.netty
 
 import java.util
+import scala.collection.JavaConverters._
+import scala.collection.immutable.IntMap
+import scala.concurrent.Future
 
 import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
-import io.gearpump.transport.ActorLookupById
-import io.gearpump.util.{LogUtil, AkkaHelper}
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
 
-import scala.collection.JavaConversions._
-import scala.collection.immutable.{IntMap, LongMap}
-import scala.concurrent.Future
+import io.gearpump.transport.ActorLookupById
+import io.gearpump.util.{AkkaHelper, LogUtil}
 
-class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, deserializeFlag : Boolean) extends Actor {
+/** Netty server actor, message received will be forward to the target on the address line. */
+class Server(
+    name: String, conf: NettyConfig, lookupActor: ActorLookupById, deserializeFlag: Boolean)
+  extends Actor {
+
   private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = name)
-
   import io.gearpump.transport.netty.Server._
 
   val allChannels: ChannelGroup = new DefaultChannelGroup("gearpump-server")
 
   val system = context.system.asInstanceOf[ExtendedActorSystem]
 
-  def receive = msgHandler orElse channelManager
-  //As we will only transfer TaskId on the wire, this object will translate taskId to or from ActorRef
+  def receive: Receive = msgHandler orElse channelManager
+  // As we will only transfer TaskId on the wire,
+  // this object will translate taskId to or from ActorRef
   private val taskIdActorRefTranslation = new TaskIdActorRefTranslation(context)
 
-  def channelManager : Receive = {
+  def channelManager: Receive = {
     case AddChannel(channel) => allChannels.add(channel)
     case CloseChannel(channel) =>
       import context.dispatcher
@@ -54,9 +58,9 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
       }
   }
 
-  def msgHandler : Receive = {
+  def msgHandler: Receive = {
     case MsgBatch(msgs) =>
-      msgs.groupBy(_.targetTask()).foreach { taskBatch =>
+      msgs.asScala.groupBy(_.targetTask()).foreach { taskBatch =>
         val (taskId, taskMessages) = taskBatch
         val actor = lookupActor.lookupLocalActor(taskId)
 
@@ -69,18 +73,13 @@ class Server(name: String, conf: NettyConfig, lookupActor : ActorLookupById, des
       }
   }
 
-  override def postStop() = {
+  override def postStop(): Unit = {
     allChannels.close.awaitUninterruptibly
   }
 }
 
 object Server {
 
-  // Create a 1-1 mapping fake ActorRef for task
-  // The path is fake, don't use the ActorRef directly.
-  // As we must use actorFor() which is deprecated,
-  // according to the advice https://issues.scala-lang.org/browse/SI-7934,
-  // use a helper object to bypass this deprecation warning.
   class ServerPipelineFactory(server: ActorRef, conf: NettyConfig) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
       val pipeline: ChannelPipeline = Channels.pipeline
@@ -114,8 +113,9 @@ object Server {
   class TaskIdActorRefTranslation(context: ActorContext) {
     private var taskIdtoActorRef = IntMap.empty[ActorRef]
 
-    def translateToActorRef(sessionId : Int): ActorRef = {
-      if(!taskIdtoActorRef.contains(sessionId)){
+    /** 1-1 mapping from session id to fake ActorRef */
+    def translateToActorRef(sessionId: Int): ActorRef = {
+      if (!taskIdtoActorRef.contains(sessionId)) {
 
         // A fake ActorRef for performance optimization.
         val actorRef = AkkaHelper.actorFor(context.system, s"/session#$sessionId")
@@ -123,13 +123,12 @@ object Server {
       }
       taskIdtoActorRef.get(sessionId).get
     }
-
   }
 
   case class AddChannel(channel: Channel)
 
   case class CloseChannel(channel: Channel)
 
-  case class MsgBatch(messages: Iterable[TaskMessage])
+  case class MsgBatch(messages: java.lang.Iterable[TaskMessage])
 
 }

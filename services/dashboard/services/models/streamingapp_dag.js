@@ -5,7 +5,7 @@
 
 angular.module('io.gearpump.models')
 
-  .service('StreamingAppDag', ['Dag', 'StreamingAppMetricsProvider', function(Dag, StreamingAppMetricsProvider) {
+  .service('StreamingAppDag', ['Dag', 'StreamingAppMetricsProvider', function (Dag, StreamingAppMetricsProvider) {
     'use strict';
 
     /**
@@ -23,7 +23,7 @@ angular.module('io.gearpump.models')
     StreamingAppDag.prototype = {
 
       /** Set the current dag data */
-      setData: function(clock, processors, edges) {
+      setData: function (clock, processors, edges) {
         this.clock = clock;
         // The physical view contains all the processors of the application, even those dead processors.
         // The logical view contains only the alive processors. Once processors or edges are changed, we
@@ -38,12 +38,12 @@ angular.module('io.gearpump.models')
         }
       },
 
-      setStallingTasks: function(tasks) {
+      setStallingTasks: function (tasks) {
         this.stallingTasks = tasks;
       },
 
       /** Update (or add) a set of latest metrics. */
-      updateLatestMetrics: function(metrics) {
+      updateLatestMetrics: function (metrics) {
         var count = this.metricsProvider.updateLatestMetrics(metrics);
         if (count > 0) {
           // advance the metric update time so that view can subscribe metric changes
@@ -52,7 +52,7 @@ angular.module('io.gearpump.models')
       },
 
       /** Replace existing historical metrics with new data. */
-      replaceHistoricalMetrics: function(metrics, timeResolution) {
+      replaceHistoricalMetrics: function (metrics, timeResolution) {
         // as the metrics can be application wide or processor wide, to be perfectly clean, we store
         // historical metrics in a separate metrics provider
         var processorIds = this.dagPhysicalView.getProcessorIds();
@@ -61,28 +61,28 @@ angular.module('io.gearpump.models')
       },
 
       /** Return the number of current active processors. */
-      getProcessorCount: function() {
+      getProcessorCount: function () {
         return this.dagLogicalView.getProcessorIds().length;
       },
 
       /** Return the processor object. */
-      getProcessor: function(processorId) {
+      getProcessor: function (processorId) {
         return this.dagPhysicalView.processors[processorId];
       },
 
       /** Return the logical view of dag with weighted information for drawing a DAG graph. */
-      getWeightedDagView: function() {
+      getWeightedDagView: function () {
         var viewProvider = this.dagLogicalView;
         var processors = viewProvider.processors;
         var edges = viewProvider.edges;
 
         var weights = {};
-        _.forEach(processors, function(processor) {
+        _.forEach(processors, function (processor) {
           weights[processor.id] = this._calculateProcessorWeight(processor.id);
         }, this);
 
         var bandwidths = {};
-        _.forEach(edges, function(edge, key) {
+        _.forEach(edges, function (edge, key) {
           bandwidths[key] = this._calculateEdgeBandwidth(edge);
         }, this);
 
@@ -96,7 +96,7 @@ angular.module('io.gearpump.models')
       },
 
       /** Weight of a processor equals the sum of its send throughput and receive throughput. */
-      _calculateProcessorWeight: function(processorId) {
+      _calculateProcessorWeight: function (processorId) {
         return Math.max(
           this.metricsProvider.getSendMessageMovingAverage([processorId]),
           this.metricsProvider.getReceiveMessageMovingAverage([processorId])
@@ -104,7 +104,7 @@ angular.module('io.gearpump.models')
       },
 
       /** Bandwidth of an edge equals the minimum of average send throughput and average receive throughput. */
-      _calculateEdgeBandwidth: function(edge) {
+      _calculateEdgeBandwidth: function (edge) {
         var sourceOutdegree = this.dagLogicalView.degrees[edge.from].outdegree;
         var targetIndegree = this.dagLogicalView.degrees[edge.to].indegree;
         var sourceSendThroughput = this.metricsProvider.getSendMessageMovingAverage([edge.from]);
@@ -116,71 +116,71 @@ angular.module('io.gearpump.models')
       },
 
       /** Return total received messages and rate of all active sink processors. */
-      getSinkProcessorReceivedMessageTotalAndRate: function() {
+      getSinkProcessorReceivedMessageTotalAndRate: function () {
         var processorIds = this.dagLogicalView.getSinkProcessorIds();
         return this.metricsProvider.getReceiveMessageTotalAndRate(processorIds);
       },
 
       /** Return total received messages and rate of particular processor. */
-      getProcessorReceivedMessages: function(processorId) {
+      getProcessorReceivedMessages: function (processorId) {
         return this.metricsProvider.getReceiveMessageTotalAndRate([processorId]);
       },
 
       /** Return total sent messages and rate of all active source processors. */
-      getSourceProcessorSentMessageTotalAndRate: function() {
+      getSourceProcessorSentMessageTotalAndRate: function () {
         var processorIds = this.dagLogicalView.getSourceProcessorIds();
         return this.metricsProvider.getSendMessageTotalAndRate(processorIds);
       },
 
       /** Return total sent messages and rate of particular processor. */
-      getProcessorSentMessages: function(processorId) {
+      getProcessorSentMessages: function (processorId) {
         return this.metricsProvider.getSendMessageTotalAndRate([processorId]);
       },
 
       /** Return the latency on critical path. */
-      getCriticalPathLatency: function() {
+      getCriticalPathLatency: function () {
         var criticalPathAndLatency = this.dagLogicalView.calculateCriticalPathAndLatency(this.metricsProvider);
         return criticalPathAndLatency.latency;
       },
 
       /** Return the average message processing time of particular processor. */
-      getProcessorAverageMessageProcessingTime: function(processorId) {
+      getProcessorAverageMessageProcessingTime: function (processorId) {
         return this.metricsProvider.getAverageMessageProcessingTime([processorId]);
       },
 
       /** Return the average message receive latency of particular processor or the latency on critical path. */
-      getProcessorMessageReceiveLatency: function(processorId) {
+      getProcessorMessageReceiveLatency: function (processorId) {
         return this.metricsProvider.getAverageMessageReceiveLatency([processorId]);
       },
 
       /** Return the historical message receive throughput of data sink processors as an array. */
-      getSinkProcessorHistoricalMessageReceiveThroughput: function() {
+      getSinkProcessorHistoricalMessageReceiveThroughput: function () {
         var processorIds = this.dagPhysicalView.getSinkProcessorIds();
         return this.histMetricsProvider.getReceiveMessageThroughputByRetainInterval(processorIds);
       },
 
       /** Return the historical message receive throughput of particular processor as an array. */
-      getProcessorHistoricalMessageReceiveThroughput: function(processorId) {
+      getProcessorHistoricalMessageReceiveThroughput: function (processorId) {
         return this.histMetricsProvider.getReceiveMessageThroughputByRetainInterval([processorId]);
       },
 
       /** Return the historical message send throughput of data sink processors as an array. */
-      getSourceProcessorHistoricalMessageSendThroughput: function() {
+      getSourceProcessorHistoricalMessageSendThroughput: function () {
         var processorIds = this.dagPhysicalView.getSourceProcessorIds();
         return this.histMetricsProvider.getSendMessageThroughputByRetainInterval(processorIds);
       },
 
       /** Return the historical message send throughput of particular processor as an array. */
-      getProcessorHistoricalMessageSendThroughput: function(processorId) {
+      getProcessorHistoricalMessageSendThroughput: function (processorId) {
         return this.histMetricsProvider.getSendMessageThroughputByRetainInterval([processorId]);
       },
 
       /** Return the historical message receive latency on critical path as an array. */
-      getHistoricalCriticalPathLatency: function() {
+      getHistoricalCriticalPathLatency: function () {
         var provider = this.histMetricsProvider;
         var metricTimeArray = provider.getMetricTimeArray();
         var result = {};
-        _.forEach(metricTimeArray, function(time) {
+        _.forEach(metricTimeArray, function (time) {
           var criticalPathAndLatency = this.dagPhysicalView.calculateCriticalPathAndLatency(provider, time);
           result[time] = criticalPathAndLatency.latency;
         }, this);
@@ -188,27 +188,27 @@ angular.module('io.gearpump.models')
       },
 
       /** Return the historical average message processing time of particular processor as an array. */
-      getProcessorHistoricalAverageMessageProcessingTime: function(processorId) {
+      getProcessorHistoricalAverageMessageProcessingTime: function (processorId) {
         return this.histMetricsProvider.getAverageMessageProcessingTimeByRetainInterval([processorId]);
       },
 
       /** Return the historical average message receive latency of particular processor. */
-      getProcessorHistoricalAverageMessageReceiveLatency: function(processorId) {
+      getProcessorHistoricalAverageMessageReceiveLatency: function (processorId) {
         return this.histMetricsProvider.getAverageMessageReceiveLatencyByRetainInterval([processorId]);
       },
 
       /** Return an array of all processors' metrics of particular metric name. */
-      getMetricsByMetricName: function(name) {
+      getMetricsByMetricName: function (name) {
         return this.metricsProvider.getMetricsByMetricName(name);
       },
 
       /** Return the logical indegree and outdegree of a processor. */
-      getProcessorIndegreeAndOutdegree: function(processorId) {
+      getProcessorIndegreeAndOutdegree: function (processorId) {
         return this.dagLogicalView.degrees[processorId];
       },
 
       /** Return the number of processors on the longest alive path. */
-      hierarchyDepth: function() {
+      hierarchyDepth: function () {
         return this.dagLogicalView.hierarchyDepth();
       }
 
@@ -216,14 +216,14 @@ angular.module('io.gearpump.models')
 
     /** static method */
     function filterActiveProcessors(processors) {
-      return _.pick(processors, function(processor) {
+      return _.pick(processors, function (processor) {
         return processor.active;
       });
     }
 
     /** static method */
     function filterRelatedEdges(edges, processors) {
-      return _.pick(edges, function(edge) {
+      return _.pick(edges, function (edge) {
         return processors.hasOwnProperty(edge.from) &&
           processors.hasOwnProperty(edge.to);
       });

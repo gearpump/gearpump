@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,16 @@
 package akka.stream.gearpump.task
 
 import akka.stream.gearpump.task.UnZip2Task.UnZipFunction
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.task.TaskContext
 
-class UnZip2Task(context: TaskContext, userConf : UserConfig) extends GraphTask(context, userConf) {
+class UnZip2Task(context: TaskContext, userConf: UserConfig) extends GraphTask(context, userConf) {
 
   val unzip = userConf.getValue[UnZipFunction](UnZip2Task.UNZIP2_FUNCTION)(context.system).get.unzip
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message): Unit = {
     val message = msg.msg
     val time = msg.timestamp
     val pair = unzip(message)

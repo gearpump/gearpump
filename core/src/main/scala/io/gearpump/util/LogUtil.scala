@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,16 @@
  * limitations under the License.
  */
 
-
 package io.gearpump.util
 
 import java.io.File
 import java.net.InetAddress
 import java.util.Properties
+import scala.util.Try
 
 import com.typesafe.config.Config
 import org.apache.log4j.PropertyConfigurator
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.util.Try
 
 object LogUtil {
   object ProcessType extends Enumeration {
@@ -35,8 +33,9 @@ object LogUtil {
     val MASTER, WORKER, LOCAL, APPLICATION, UI = Value
   }
 
-  def getLogger[T](clazz : Class[T], context : String = null, master : Any = null, worker : Any = null, executor : Any = null, task : Any = null, app : Any = null, name: String = null) : Logger = {
-
+  def getLogger[T](
+      clazz: Class[T], context: String = null, master: Any = null, worker: Any = null,
+      executor: Any = null, task: Any = null, app: Any = null, name: String = null): Logger = {
     var env = ""
 
     if (null != context) {
@@ -70,8 +69,9 @@ object LogUtil {
     }
   }
 
-  def loadConfiguration(config : Config, processType : ProcessType.ProcessType) : Unit = {
-    //set log file name
+  /** Custom the log file locations by reading config from system properties */
+  def loadConfiguration(config: Config, processType: ProcessType.ProcessType): Unit = {
+    // Set log file name
     val propName = s"gearpump.${processType.toString.toLowerCase}.log.file"
     val props = loadConfiguration
 
@@ -82,7 +82,8 @@ object LogUtil {
     processType match {
       case ProcessType.APPLICATION =>
         props.setProperty("log4j.rootAppender", "${gearpump.application.logger}")
-        props.setProperty("gearpump.application.log.rootdir", applicationLogDir(config).getAbsolutePath)
+        props.setProperty("gearpump.application.log.rootdir",
+          applicationLogDir(config).getAbsolutePath)
       case _ =>
         props.setProperty("log4j.rootAppender", "${gearpump.root.logger}")
         props.setProperty("gearpump.log.dir", daemonLogDir(config).getAbsolutePath)
@@ -96,7 +97,7 @@ object LogUtil {
     new File(dir)
   }
 
-  def verboseLogToConsole: Unit = {
+  def verboseLogToConsole(): Unit = {
     val props = loadConfiguration
     props.setProperty("log4j.rootLogger", "DEBUG,console")
     PropertyConfigurator.configure(props)
@@ -105,14 +106,14 @@ object LogUtil {
   def loadConfiguration: Properties = {
     val props = new Properties()
     val log4jConfStream = getClass().getClassLoader.getResourceAsStream("log4j.properties")
-    if(log4jConfStream!=null) {
+    if (log4jConfStream != null) {
       props.load(log4jConfStream)
     }
     log4jConfStream.close()
     props
   }
 
-  private def jvmName : String = {
+  private def jvmName: String = {
     val hostname = Try(InetAddress.getLocalHost.getHostName).getOrElse("local")
     java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
   }

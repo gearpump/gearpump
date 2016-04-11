@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,11 @@
 package io.gearpump.integrationtest.minicluster
 
 import java.io.IOException
+import scala.collection.mutable.ListBuffer
 
-import io.gearpump.cluster.master.MasterNode
-import io.gearpump.integrationtest.{Docker, Util}
 import org.apache.log4j.Logger
 
-import scala.collection.mutable.ListBuffer
+import io.gearpump.integrationtest.{Docker, Util}
 
 /**
  * This class is a test driver for end-to-end integration test.
@@ -53,7 +52,7 @@ class MiniCluster {
   def start(workerNum: Int = 2): Unit = {
 
     // Kill master
-    MASTER_ADDRS.foreach{case (host, _) =>
+    MASTER_ADDRS.foreach { case (host, _) =>
       if (Docker.containerExists(host)) {
         Docker.killAndRemoveContainer(host)
       }
@@ -61,7 +60,7 @@ class MiniCluster {
 
     // Kill existing workers
     workers ++= (0 until workerNum).map("worker" + _)
-    workers.foreach{ worker =>
+    workers.foreach { worker =>
       if (Docker.containerExists(worker)) {
         Docker.killAndRemoveContainer(worker)
       }
@@ -73,7 +72,7 @@ class MiniCluster {
     })
 
     // Start Workers
-    workers.foreach{worker =>
+    workers.foreach { worker =>
       val container = new BaseContainer(worker, "worker", MASTER_ADDRS)
       container.createAndStart()
     }
@@ -94,7 +93,8 @@ class MiniCluster {
       container.createAndStart()
       workers += host
     } else {
-      throw new IOException(s"Cannot add new worker $host, as worker with same hostname already exists")
+      throw new IOException(s"Cannot add new worker $host, " +
+        s"as worker with same hostname already exists")
     }
   }
 
@@ -102,7 +102,7 @@ class MiniCluster {
    * @throws RuntimeException if rest client is not authenticated after N attempts
    */
   private def expectRestClientAuthenticated(): Unit = {
-    Util.retryUntil(()=>{
+    Util.retryUntil(() => {
       restClient.login()
       LOG.info("rest client has been authenticated")
       true
@@ -113,7 +113,7 @@ class MiniCluster {
    * @throws RuntimeException if service is not available after N attempts
    */
   private def expectClusterAvailable(): Unit = {
-    Util.retryUntil(()=>{
+    Util.retryUntil(() => {
       val response = restClient.queryMaster()
       LOG.info(s"cluster is now available with response: $response.")
       response.aliveFor > 0
@@ -148,8 +148,9 @@ class MiniCluster {
 
   def restart(): Unit = {
     shutDown()
-    Util.retryUntil(()=>
-      !(getMasterHosts ++ getWorkerHosts).exists(Docker.containerExists), "all docker containers killed")
+    Util.retryUntil(() => {
+      !(getMasterHosts ++ getWorkerHosts).exists(Docker.containerExists)
+    }, "all docker containers killed")
     LOG.info("all docker containers have been killed. restarting...")
     start()
   }

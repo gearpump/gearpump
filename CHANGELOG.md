@@ -16,7 +16,7 @@ Mail list:
 
 What are the changes for the process for Apache Incubation?
 ------------------
-The code importing to Apache Git is still in process. During this transtion time,
+The code importing to Apache Git is still in process. During this transition time,
 We will follow these procedures:
 
  1. For new issue, we should no longer open issue in Github issues. Instead, we
@@ -42,7 +42,6 @@ After the transition period, the proposed process is like this:
  6. For document change, we can have further discussion on whether it should requires a +1.
 
 Before completing importing source code to Apache Git, we will still use
-
 
 Why we make a tag release now, but not wait until Apache importing complete?
 ------------------
@@ -92,7 +91,7 @@ From now on, new issues should be submitted to https://issues.apache.org/jira/br
 - #1892: added instruction text to operate network graph (2) minor tweaks of context menu
 - #1963, rename CommitGuideline.md to CONTRIBUTING.md
 - #1958: better test report organizing
-- #1906: some visual glichtes found in mobile view
+- #1906: some visual glitches found in mobile view
 
 Gearpump 0.7.6
 ===================
@@ -232,13 +231,13 @@ Change logs:
 - #1701: wrong dirty check of modify processor and more
 - #1384: rest service url was not set correctly
 - #1682: allow specify a transition time when changing parallelism
-- #1691: dashboard layout and textual changes and update to dashing…
-- #1640 YARN deployment - no easy way of obtaining master address… 
+- #1691: dashboard layout and textual changes and update to dashing...
+- #1640 YARN deployment - no easy way of obtaining master address...
 - #1688, Reduce unimportant logs in travis UT console
 - #1671, make default timeout shorter to be more UI responsive.
 - #1685, Should not publish gearpump-integration-test to maven
 - #1683, Allow metrics to be aggregated before sending to UI
-- #1223: will mark application with a warning when stalling task de…
+- #1223: will mark application with a warning when stalling task de...
 - #1670, #1653, fix dynamic dag bug
 - #1659 add a rest api to terminate service process
 - #1672: when worker is killed, its detail page will no longer be updated
@@ -251,7 +250,7 @@ Change logs:
 - #1639 refine daemon's classpath
 - #1652, submit app with no arguments from dashboard returns warning
 - #1547 add a SequenceFileSink
-- #1424: when application is terminated, related status indicators …
+- #1424: when application is terminated, related status indicators ...
 - #1645: parse appid in submission response better
 - #1514, add an experimental module to support akka-stream 1.0
 - #1643, fix UI timeout issue when metrics is disabled
@@ -322,9 +321,9 @@ Change log:
 - #1194 add graph cycle detection
 - #491, add a rest api to acquire Gearpump's built-in partitioners
 - #1405: now the number of executors is back
-- #1371: a right way to show historical metrics (2) added committed… 
+- #1371: a right way to show historical metrics (2) added committed�? 
 - #1402, fix NoneGroupingPartitioner
-- #1399: in application overview page the task count of executor wa…
+- #1399: in application overview page the task count of executor wa...
 - #1397, allow KafkaSink to receive Message of bytes
 - #1395, cross publishSigned
 - #1374 remove jars of yarn in executor's classpath
@@ -337,15 +336,13 @@ Gearpump 0.6.1
 ==========================
 Highlight: new version UI dashboard.
 
-
 Change log:
 --------------------
 - #1369: object path and metrics name are divided by ':' now
 - #1369: fixed data initialization issue of echart
 - #1364, add default value for BYTES_PER_MESSAGE of SOLStreamProducer
-- #1361: able to show multiple tasks in chart (better not select mo…
-- #1358: properties will be updated (2) moved roboto font and echar…  
-
+- #1361: able to show multiple tasks in chart (better not select mo�?
+- #1358: properties will be updated (2) moved roboto font and echart�?  
 
 Gearpump 0.6
 ==========================
@@ -356,7 +353,6 @@ Change log:
 - #606: ui v2
 - #1352, return appmaster config
 - #1344 fix Master HA bug
-
 
 Gearpump 0.5.0
 ==========================
@@ -466,7 +462,7 @@ Change logs:
  - #1149: Shell tools printed too much detail on console
  - #1146: actor hungry when worker use block-io to wait response from FileServer.
  - #1088: move hbase code to external/
- - #1140：pass app name to task
+ - #1140: pass app name to task
  - #1017: Split daemon dependencies with core dependencies
  - #1144: fix out of memory when trying to scale gearpump to 2000 task on a 2 core machine
  - #995: Command line parser should be able to fall back  to MAIN-CLASS definition in MANIFEST.IN when mainClass is not specified in command line options.
@@ -540,7 +536,7 @@ Change list
  - #775, fix netty config
  - #778, log improvements
  - #781 when launching lots of tasks, the application failed to transfer message across hosts 
- - #782, a) add wildcard match to return metrics(support glob char … and *), b) add diagnosis message if the clock stop advancing
+ - #782, a) add wildcard match to return metrics(support glob char . and *), b) add diagnosis message if the clock stop advancing
  - #786, Read user config from classpath, the appmaster/executor wil use the dynamic user config
  - #773: skew chart will show relative skew
  - #790, 1) return detail task data in appmaster REST. 2) bind executor id with executor system id
@@ -567,8 +563,8 @@ Change list
  - #843, Can't put custom user config in application.conf
  - #849, set default hostname to 127.0.0.1 in UT
  - #851, JVM not exited when there is exception due to akka create non-daemon threads
- - #854， fix storm connector performance
- - #856， Service launch failed
+ - #854, fix storm connector performance
+ - #856, Service launch failed
  - #853, fix resource leak(thread not closed, process not killed in UT. Also increase the PermGen size to avoid Permgen OOM.
  - #859, random UT fail due to akka bug, "akka cluster deadlock when initializing"
  - #865, Change the default timeout setting in akka test expectMsg
@@ -595,7 +591,7 @@ gearpump-0.3.4
 ====================
 Change List:
 ----------------
- - #768, Serious performance degration of ui server on windows
+ - #768, Serious performance degrade of ui server on windows
  - #765, improve the graph type inference so we don't need to set template argument type explicitly
 
 gearpump-0.3.3
@@ -718,7 +714,7 @@ Change List:
  - #479, publish test jar as artifacts
  - #419, Reorder the application log by master startup timestamp
  - #456, Use visdag to render the graph DAG
- - #464， Travis bower integration
+ - #464, Travis bower integration
  - #394, fix kafka producer hang issue
  - #468, For test code, the ClockService will throw exception when the DAG is not defined
  - #465, fix appname prefix bug
@@ -751,13 +747,12 @@ Change List:
  - #378, construct the serializer explicitly, instead of implicitly via the kryo serializer akka extension
  - #380, set the context class loader as the URL class loader for ActorSystem.
 
-
 gearpump-0.2.3
 ====================
 Change List:
 ---------------
  - #333, KafkaUtilSpec causes out of memory on travis
- - #335, #359， Enable auto-deployment to sonatype
+ - #335, #359, Enable auto-deployment to sonatype
  - #299, Some UT may fail randomly, most because of the expectMsg time out
  - #338, fix kafka leader not available exception
  - #349, scoverage dependencies get into snapshot build binaries.
@@ -797,7 +792,7 @@ Highlights:
  - Add support for general replay-able data source to support at least once delivery. 
  - More robust streaming. Be resilient to message loss, message duplication, and zombie processes. 
  - Refactor Kafka data source for at least once delivery.
- - Support general applications besides streaming, add an experimental distrubtedshell application under experiments/.
+ - Support general applications besides streaming, add an experimental distributedshell application under experiments/.
  - Re-defined the AppMaster, and Task interface, It is much easier to write an application now.
  - Support submitting and distributing large applications jars.
  - Add CI tool, nightly build, code coverage, and defined a formal commit guideline.

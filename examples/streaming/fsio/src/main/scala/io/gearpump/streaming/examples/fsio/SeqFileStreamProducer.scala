@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,18 +17,20 @@
  */
 package io.gearpump.streaming.examples.fsio
 
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import SeqFileStreamProducer._
-import HadoopConfig._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
 
-class SeqFileStreamProducer(taskContext : TaskContext, config: UserConfig) extends Task(taskContext, config){
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.examples.fsio.HadoopConfig._
+import io.gearpump.streaming.examples.fsio.SeqFileStreamProducer._
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-  import taskContext.{output, self}
+class SeqFileStreamProducer(taskContext: TaskContext, config: UserConfig)
+  extends Task(taskContext, config) {
+
+  import taskContext.output
 
   val value = new Text()
   val key = new Text()
@@ -37,14 +39,14 @@ class SeqFileStreamProducer(taskContext : TaskContext, config: UserConfig) exten
   val fs = FileSystem.get(hadoopConf)
   val inputPath = new Path(config.getString(INPUT_PATH).get)
 
-  override def onStart(startTime : StartTime) = {
+  override def onStart(startTime: StartTime): Unit = {
     reader = new SequenceFile.Reader(hadoopConf, Reader.file(inputPath))
     self ! Start
     LOG.info("sequence file spout initiated")
   }
 
-  override def onNext(msg: Message) = {
-    if(reader.next(key, value)){
+  override def onNext(msg: Message): Unit = {
+    if (reader.next(key, value)) {
       output(Message(key + "++" + value))
     } else {
       reader.close()
@@ -53,13 +55,13 @@ class SeqFileStreamProducer(taskContext : TaskContext, config: UserConfig) exten
     self ! Continue
   }
 
-  override def onStop(): Unit ={
+  override def onStop(): Unit = {
     reader.close()
   }
 }
 
-object SeqFileStreamProducer{
-  def INPUT_PATH = "inputpath"
+object SeqFileStreamProducer {
+  def INPUT_PATH: String = "inputpath"
 
   val Start = Message("start")
   val Continue = Message("continue")

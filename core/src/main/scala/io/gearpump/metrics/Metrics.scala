@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,39 +18,40 @@
 
 package io.gearpump.metrics
 
+import scala.collection.JavaConverters._
 
 import akka.actor._
+import org.slf4j.Logger
+
 import io.gearpump.codahale.metrics._
 import io.gearpump.metrics
 import io.gearpump.util.LogUtil
-import org.slf4j.Logger
 
-import scala.collection.JavaConverters._
-
+/** Metric objects registry */
 class Metrics(sampleRate: Int) extends Extension {
 
   val registry = new MetricRegistry()
 
-  def meter(name : String) = {
+  def meter(name: String): metrics.Meter = {
     new metrics.Meter(name, registry.meter(name), sampleRate)
   }
 
-  def histogram(name : String) = {
+  def histogram(name: String): Histogram = {
     new Histogram(name, registry.histogram(name), sampleRate)
   }
 
-  def histogram(name : String, sampleRate: Int) = {
+  def histogram(name: String, sampleRate: Int): Histogram = {
     new Histogram(name, registry.histogram(name), sampleRate)
   }
 
-  def counter(name : String) = {
+  def counter(name: String): Counter = {
     new Counter(name, registry.counter(name), sampleRate)
   }
 
   def register(set: MetricSet): Unit = {
     val names = registry.getNames
-    val metrics = set.getMetrics.asScala.filterKeys {key => !names.contains(key)}
-    metrics.foreach{kv =>
+    val metrics = set.getMetrics.asScala.filterKeys { key => !names.contains(key) }
+    metrics.foreach { kv =>
       registry.register(kv._1, kv._2)
     }
   }
@@ -88,10 +89,10 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
     }
   }
 
-  case class Histogram
-      (name: String, mean: Double,
-       stddev: Double, median: Double,
-       p95: Double, p99: Double, p999: Double)
+  case class Histogram (
+      name: String, mean: Double,
+      stddev: Double, median: Double,
+      p95: Double, p99: Double, p999: Double)
     extends MetricType
 
   case class Counter(name: String, value: Long) extends MetricType
@@ -118,7 +119,7 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
 
   override def get(system: ActorSystem): Metrics = super.get(system)
 
-  override def lookup = Metrics
+  override def lookup: ExtensionId[Metrics] = Metrics
 
   override def createExtension(system: ExtendedActorSystem): Metrics = {
     val metricsEnabled = system.settings.config.getBoolean(GEARPUMP_METRIC_ENABLED)
@@ -133,27 +134,27 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
   }
 
   class DummyMetrics extends Metrics(1) {
-    override def register(set: MetricSet) = Unit
+    override def register(set: MetricSet): Unit = Unit
 
     private val meter = new metrics.Meter("", null) {
-      override def mark() = Unit
-      override  def mark(n: Long) = Unit
+      override def mark(): Unit = Unit
+      override def mark(n: Long): Unit = Unit
       override def getOneMinuteRate(): Double = 0
     }
 
     private val histogram = new metrics.Histogram("", null) {
-      override def update(value: Long) = Unit
-      override def getMean() : Double = 0
-      override def getStdDev() : Double = 0
+      override def update(value: Long): Unit = Unit
+      override def getMean(): Double = 0
+      override def getStdDev(): Double = 0
     }
 
     private val counter = new metrics.Counter("", null) {
-      override def inc() = Unit
-      override def inc(n: Long) = Unit
+      override def inc(): Unit = Unit
+      override def inc(n: Long): Unit = Unit
     }
 
-    override def meter(name : String) =  meter
-    override def histogram(name : String) = histogram
-    override def counter(name : String) = counter
+    override def meter(name: String): metrics.Meter = meter
+    override def histogram(name: String): metrics.Histogram = histogram
+    override def counter(name: String): metrics.Counter = counter
   }
 }

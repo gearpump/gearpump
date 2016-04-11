@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,13 +26,14 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.{PublisherSource, SubscriberSink}
 import akka.stream.{Outlet, SinkShape, SourceShape}
-import io.gearpump.util.Graph
 import org.reactivestreams.{Publisher, Subscriber}
+
+import io.gearpump.util.Graph
 
 /**
  *
  * [[LocalGraph]] is a [[SubGraph]] of the application DSL Graph, which only
- *  contain module that can be materialized in local JVM.
+ * contain module that can be materialized in local JVM.
  *
  * @param graph
  */
@@ -46,7 +47,7 @@ object LocalGraph {
    */
   class LocalGraphMaterializer(system: ActorSystem) extends SubGraphMaterializer {
 
-    // create a local materializer
+    // Creates a local materializer
     val materializer = LocalMaterializer()(system)
 
     /**
@@ -55,7 +56,7 @@ object LocalGraph {
      * @return Materialized Values for each Module after the materialization.
      */
     override def materialize(graph: SubGraph, matValues: Map[Module, Any]): Map[Module, Any] = {
-      val newGraph: Graph[Module, Edge] = graph.graph.mapVertex{ module =>
+      val newGraph: Graph[Module, Edge] = graph.graph.mapVertex { module =>
         module match {
           case source: SourceBridgeModule[AnyRef, AnyRef] =>
             val subscriber = matValues(source).asInstanceOf[Subscriber[AnyRef]]
@@ -72,7 +73,7 @@ object LocalGraph {
       materializer.materialize(newGraph, matValues)
     }
 
-    override def shutdown: Unit = {
+    override def shutdown(): Unit = {
       materializer.shutdown()
     }
   }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,9 +28,9 @@ import io.gearpump.TimeStamp
  * the incoming value using monoid.plus to get a new state value
  */
 abstract class MonoidState[T](monoid: Monoid[T]) extends PersistentState[T] {
-  // left state updated by messages before checkpoint time
+  // Left state updated by messages before checkpoint time
   private[state] var left: T = monoid.zero
-  // right state updated by message after checkpoint time
+  // Right state updated by message after checkpoint time
   private[state] var right: T = monoid.zero
 
   protected var checkpointTime = Long.MaxValue

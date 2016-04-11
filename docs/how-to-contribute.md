@@ -3,7 +3,6 @@ layout: global
 title: How to contribute
 ---
 
-
 ## Contributions Welcome!
 Gearpump is developed by an open and friendly community. Everybody is cordially welcome to join the community and contribute to Gearpump. There are several ways to interact with the community and to contribute to Gearpump including asking questions, filing bug reports, implementing new use cases, proposing new features, joining discussions on the mailing lists, contributing code or documentation, improving the website, or testing release candidates.
 
@@ -53,7 +52,6 @@ The Gearpump website presents Gearpump and its community. It serves several purp
 We welcome any contribution to improve our website.
 
 Please open an issue at [Gearpump Website Issue Tracker](https://github.com/gearpump/gearpump.github.io/issues) if you think our website could be improved.
-
 
 ### More ways to contribute…
 

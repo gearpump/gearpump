@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,19 +17,19 @@
  */
 package io.gearpump.examples.distributedshell
 
+import scala.concurrent.Future
+import scala.util.Success
+
 import com.typesafe.config.Config
+import org.scalatest.prop.PropertyChecks
+import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+
 import io.gearpump.cluster.ClientToMaster.SubmitApplication
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import io.gearpump.cluster.{TestUtil, MasterHarness}
-import io.gearpump.util.Util
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
+import io.gearpump.cluster.{MasterHarness, TestUtil}
 
-import scala.util.{Try, Success}
-
-import scala.concurrent.Future
-
-class DistributedShellSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
+class DistributedShellSpec
+  extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
 
   before {
     startActorSystem()
@@ -46,7 +46,9 @@ class DistributedShellSpec extends PropSpec with PropertyChecks with Matchers wi
 
     val masterReceiver = createMockMaster()
 
-    Future{DistributedShell.main(masterConfig, requiredArgs)}
+    Future {
+      DistributedShell.main(masterConfig, requiredArgs)
+    }
 
     masterReceiver.expectMsgType[SubmitApplication](PROCESS_BOOT_TIME)
     masterReceiver.reply(SubmitApplicationResult(Success(0)))

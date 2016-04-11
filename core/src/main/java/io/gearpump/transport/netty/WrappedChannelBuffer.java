@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.gearpump.transport.netty;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -22,16 +23,18 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import java.io.DataInput;
 import java.io.IOException;
 
-public class WrappedChannelBuffer implements DataInput{
+/** Wrap ChannelBuffer as a DataInput */
+public class WrappedChannelBuffer implements DataInput {
   private ChannelBuffer channelBuffer;
 
-  public WrappedChannelBuffer(){}
+  public WrappedChannelBuffer() {
+  }
 
-  public WrappedChannelBuffer(ChannelBuffer channelBuffer){
+  public WrappedChannelBuffer(ChannelBuffer channelBuffer) {
     this.channelBuffer = channelBuffer;
   }
 
-  public void setChannelBuffer(ChannelBuffer channelBuffer){
+  public void setChannelBuffer(ChannelBuffer channelBuffer) {
     this.channelBuffer = channelBuffer;
   }
 

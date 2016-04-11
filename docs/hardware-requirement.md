@@ -25,7 +25,6 @@ CPU	| Nothing special
 HDFS installation	| Default is not required. You only need to install it when you want to store the application jars in HDFS.
 Kafka installation |	Default is not required. You need to install Kafka when you want the at-least once message delivery feature. Currently, the only supported data source for this feature is Kafka
 
-
 **  Table: The default port used in Gearpump:**
 
 | usage	| Port |	Description |

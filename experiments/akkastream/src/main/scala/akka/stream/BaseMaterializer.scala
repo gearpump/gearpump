@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,7 +27,7 @@ import scala.concurrent.ExecutionContextExecutor
  * [[materialize]] accepts a [[ModuleGraph]] instead of a RunnableGraph.
  *
  * @see [[ModuleGraph]] for the difference between RunnableGraph and
- * [[ModuleGraph]]
+ *      [[ModuleGraph]]
  *
  */
 abstract class BaseMaterializer extends akka.stream.Materializer {
@@ -36,7 +36,6 @@ abstract class BaseMaterializer extends akka.stream.Materializer {
 
   override implicit def executionContext: ExecutionContextExecutor = throw new UnsupportedOperationException()
 
-
   def materialize[Mat](graph: ModuleGraph[Mat]): Mat
 
   override def materialize[Mat](runnableGraph: Graph[ClosedShape, Mat]): Mat = {
@@ -44,5 +43,5 @@ abstract class BaseMaterializer extends akka.stream.Materializer {
     materialize(graph)
   }
 
-  def shutdown: Unit
+  def shutdown(): Unit
 }

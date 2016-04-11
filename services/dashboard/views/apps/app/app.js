@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -16,7 +16,7 @@ angular.module('dashboard')
           templateUrl: 'views/apps/app/app.html',
           controller: 'AppCtrl',
           resolve: {
-            app0: ['$stateParams', 'models', function($stateParams, models) {
+            app0: ['$stateParams', 'models', function ($stateParams, models) {
               return models.$get.app($stateParams.appId);
             }]
           }
@@ -27,11 +27,11 @@ angular.module('dashboard')
  * This controller is used to obtain app. All nested views will read status from here.
  */
   .controller('AppCtrl', ['$scope', 'app0',
-    function($scope, app0) {
+    function ($scope, app0) {
       'use strict';
 
       $scope.app = app0.$data();
-      app0.$subscribe($scope, function(app) {
+      app0.$subscribe($scope, function (app) {
         $scope.app = app;
       });
     }])

@@ -19,24 +19,27 @@
 package io.gearpump.cluster
 
 import java.io.File
+
 import com.typesafe.config._
+
 import io.gearpump.util.Constants._
-import io.gearpump.util.{Util, FileUtils, Constants, LogUtil}
-import scala.collection.JavaConversions._
+import io.gearpump.util.{Constants, FileUtils, LogUtil, Util}
 
 /**
  *
  * All Gearpump application should use this class to load configurations.
  *
- * Compared with Akka built-in [[ConfigFactory]], this class will also
- * resolve file gear.conf and geardefault.conf.
+ * Compared with Akka built-in com.typesafe.config.ConfigFactory, this class also
+ * resolve config from file gear.conf and geardefault.conf.
  *
  * Overriding order:
+ * {{{
  *   System Properties
  *     > Custom configuration file (by using system property -Dgearpump.config.file) >
  *     > gear.conf
  *     > geardefault.conf
  *     > reference.conf
+ * }}}
  */
 
 object ClusterConfig {
@@ -81,11 +84,10 @@ object ClusterConfig {
     load(configFile).ui
   }
 
-
   /**
    * try to load system property gearpump.config.file, or use configFile
    */
-  private def load(configFile: String) : Configs = {
+  private def load(configFile: String): Configs = {
     val file = Option(System.getProperty(GEARPUMP_CUSTOM_CONFIG_FILE))
     file match {
       case Some(path) =>
@@ -100,7 +102,7 @@ object ClusterConfig {
   val APPLICATION = "application.conf"
   val LOG = LogUtil.getLogger(getClass)
 
-  def saveConfig(conf : Config, file : File) : Unit = {
+  def saveConfig(conf: Config, file: File): Unit = {
     val serialized = conf.root().render()
     FileUtils.write(file, serialized)
   }
@@ -113,13 +115,13 @@ object ClusterConfig {
     }
   }
 
-  // filter JVM reserved keys and akka default reference.conf
+  /** filter JVM reserved keys and akka default reference.conf */
   def filterOutDefaultConfig(input: Config): Config = {
     val updated = filterOutJvmReservedKeys(input)
     Util.filterOutOrigin(updated, "reference.conf")
   }
 
-  private[gearpump] def load(source: ClusterConfigSource) : Configs = {
+  private[gearpump] def load(source: ClusterConfigSource): Configs = {
 
     val systemProperties = getSystemProperties
 
@@ -162,8 +164,8 @@ object ClusterConfig {
   )
 
   private def getSystemProperties: Config = {
-    // exclude default java system properties
-    JVM_RESERVED_PROPERTIES.foldLeft(ConfigFactory.systemProperties()) {(config, property) =>
+    // Excludes default java system properties
+    JVM_RESERVED_PROPERTIES.foldLeft(ConfigFactory.systemProperties()) { (config, property) =>
       config.withoutPath(property)
     }
   }
@@ -177,5 +179,6 @@ object ClusterConfig {
     filterJvmReservedKeys
   }
 
-  protected class Configs (val master: Config, val worker: Config, val ui: Config, val default: Config)
+  protected class Configs(
+      val master: Config, val worker: Config, val ui: Config, val default: Config)
 }

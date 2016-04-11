@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,21 +17,23 @@
  */
 package io.gearpump.experiments.storm.util
 
-import java.util.{Map => JMap, List => JList}
+import java.util.{List => JList, Map => JMap}
+import scala.collection.JavaConverters._
+
 import backtype.storm.generated.Grouping
-import io.gearpump._
-import io.gearpump.experiments.storm.topology.GearpumpTuple
-import io.gearpump.streaming.MockUtil
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
 
-import scala.collection.JavaConverters._
+import io.gearpump._
+import io.gearpump.experiments.storm.topology.GearpumpTuple
+import io.gearpump.streaming.MockUtil
 
-class StormOutputCollectorSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
+class StormOutputCollectorSpec
+  extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   val stormTaskId = 0
   val streamIdGen = Gen.alphaStr
@@ -43,13 +45,15 @@ class StormOutputCollectorSpec extends PropSpec with PropertyChecks with Matcher
       (timestamp: TimeStamp, streamId: String, values: JList[AnyRef]) =>
         val targets = mock[JMap[String, JMap[String, Grouping]]]
         val taskToComponent = mock[JMap[Integer, String]]
-        val getTargetPartitionsFn = mock[(String, JList[AnyRef]) => (Map[String, Array[Int]], JList[Integer])]
+        val getTargetPartitionsFn = mock[(String, JList[AnyRef]) =>
+          (Map[String, Array[Int]], JList[Integer])]
         val targetPartitions = mock[Map[String, Array[Int]]]
         val targetStormTaskIds = mock[JList[Integer]]
-        when(getTargetPartitionsFn(streamId, values)).thenReturn((targetPartitions, targetStormTaskIds))
+        when(getTargetPartitionsFn(streamId, values)).thenReturn((targetPartitions,
+          targetStormTaskIds))
         val taskContext = MockUtil.mockTaskContext
-        val stormOutputCollector = new StormOutputCollector(stormTaskId, taskToComponent, targets, getTargetPartitionsFn,
-          taskContext, LatestTime)
+        val stormOutputCollector = new StormOutputCollector(stormTaskId, taskToComponent,
+          targets, getTargetPartitionsFn, taskContext, LatestTime)
 
         when(targets.containsKey(streamId)).thenReturn(false)
         stormOutputCollector.emit(streamId, values) shouldBe StormOutputCollector.EMPTY_LIST
@@ -59,12 +63,11 @@ class StormOutputCollectorSpec extends PropSpec with PropertyChecks with Matcher
         stormOutputCollector.setTimestamp(timestamp)
         stormOutputCollector.emit(streamId, values) shouldBe targetStormTaskIds
         verify(taskContext, times(1)).output(MockUtil.argMatch[Message]({
-           case Message(tuple: GearpumpTuple, t) =>
-             val expected = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
-             tuple == expected && t == timestamp
+          case Message(tuple: GearpumpTuple, t) =>
+            val expected = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
+            tuple == expected && t == timestamp
         }))
     }
-
   }
 
   property("StormOutputCollector emit direct to a task") {
@@ -75,13 +78,15 @@ class StormOutputCollectorSpec extends PropSpec with PropertyChecks with Matcher
         val targets = mock[JMap[String, JMap[String, Grouping]]]
         val taskToComponent = mock[JMap[Integer, String]]
         when(taskToComponent.get(id)).thenReturn(target)
-        val getTargetPartitionsFn = mock[(String, JList[AnyRef]) => (Map[String, Array[Int]], JList[Integer])]
+        val getTargetPartitionsFn = mock[(String, JList[AnyRef]) =>
+          (Map[String, Array[Int]], JList[Integer])]
         val targetPartitions = mock[Map[String, Array[Int]]]
         val targetStormTaskIds = mock[JList[Integer]]
-        when(getTargetPartitionsFn(streamId, values)).thenReturn((targetPartitions, targetStormTaskIds))
+        when(getTargetPartitionsFn(streamId, values)).thenReturn((targetPartitions,
+          targetStormTaskIds))
         val taskContext = MockUtil.mockTaskContext
-        val stormOutputCollector = new StormOutputCollector(stormTaskId, taskToComponent, targets, getTargetPartitionsFn,
-          taskContext, LatestTime)
+        val stormOutputCollector = new StormOutputCollector(stormTaskId, taskToComponent,
+          targets, getTargetPartitionsFn, taskContext, LatestTime)
 
         when(targets.containsKey(streamId)).thenReturn(false)
         verify(taskContext, times(0)).output(anyObject[Message])
@@ -91,11 +96,14 @@ class StormOutputCollectorSpec extends PropSpec with PropertyChecks with Matcher
         stormOutputCollector.emitDirect(id, streamId, values)
         val partitions = Array(StormUtil.stormTaskIdToGearpump(id).index)
         verify(taskContext, times(1)).output(MockUtil.argMatch[Message]({
-          case Message(tuple: GearpumpTuple, t) =>
-            val expected = new GearpumpTuple(values, stormTaskId, streamId, Map(target -> partitions))
-            tuple == expected && t == timestamp
+          case Message(tuple: GearpumpTuple, t) => {
+            val expected = new GearpumpTuple(values, stormTaskId, streamId,
+            Map(target -> partitions))
+
+            val result = tuple == expected && t == timestamp
+            result
+          }
         }))
     }
   }
-
 }

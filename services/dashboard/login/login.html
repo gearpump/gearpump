@@ -5,7 +5,8 @@
   <!-- Standard Meta -->
   <meta charset="utf-8"/>
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
 
   <title>Login</title>
 
@@ -83,30 +84,34 @@
   <title>Login</title>
 </head>
 
-<body  style="background-color: #555;">
+<body style="background-color: #555;">
 
 <h1 class="icon"><span class="glyphicon glyphicon-th" aria-hidden="true"/></h1>
+
 <h1 class="text-center welcome-message">Sign in to Gearpump</h1>
 
-<a href="../login" id = "loginUrl"></a>
-<a href="../logout" id = "logoutUrl"></a>
-<a href="../" id = "index"></a>
+<a href="../login" id="loginUrl"></a>
+<a href="../logout" id="logoutUrl"></a>
+<a href="../" id="index"></a>
 
 <div class="container">
   <div class="row">
     <div class="col-md-4 col-md-offset-4 ">
 
       <form id="loginForm" class="login-form" method="post">
-        <input type="text" class="form-control" name="username" placeholder="User Name" required autofocus />
-        <input type="password" class="form-control" name="password" placeholder="Password" required />
-        <button class="btn btn-lg btn-primary btn-block" type="button" onclick="login()">Sign In</button>
+        <input type="text" class="form-control" name="username" placeholder="User Name" required
+               autofocus/>
+        <input type="password" class="form-control" name="password" placeholder="Password"
+               required/>
+        <button class="btn btn-lg btn-primary btn-block" type="button" onclick="login()">Sign In
+        </button>
 
         <div class="social-login" id="social_login"></div>
         <div class="error" id="error"></div>
 
         <a href="#" class="pull-left" style="margin-top: 15px;"><!--Need help? --></a>
 
-        <span class="clearfix" ></span>
+        <span class="clearfix"></span>
       </form>
     </div>
   </div>

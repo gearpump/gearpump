@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,24 +18,21 @@
 
 package io.gearpump.cluster.master
 
+import scala.concurrent.duration.FiniteDuration
 
 import akka.actor._
-import io.gearpump.transport.HostPort
-import io.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
 
-import scala.concurrent.duration.{FiniteDuration, Duration}
+import io.gearpump.transport.HostPort
+import io.gearpump.util.{ActorUtil, LogUtil}
 
 /**
  * This works with Master HA. When there are multiple Master nodes,
  * This will find a active one.
- *
- *
- * @param masters
  */
-class MasterProxy (masters: Iterable[ActorPath], timeout: FiniteDuration)
+class MasterProxy(masters: Iterable[ActorPath], timeout: FiniteDuration)
   extends Actor with Stash {
-  import MasterProxy._
+  import io.gearpump.cluster.master.MasterProxy._
 
   val LOG: Logger = LogUtil.getLogger(getClass, name = self.path.name)
 
@@ -48,10 +45,12 @@ class MasterProxy (masters: Iterable[ActorPath], timeout: FiniteDuration)
 
   import context.dispatcher
 
-  def findMaster() = repeatActionUtil(timeout){
-    contacts foreach { contact =>
-      LOG.info(s"sending identity to $contact")
-      contact ! Identify(None)
+  def findMaster(): Cancellable = {
+    repeatActionUtil(timeout) {
+      contacts foreach { contact =>
+        LOG.info(s"sending identity to $contact")
+        contact ! Identify(None)
+      }
     }
   }
 
@@ -64,11 +63,11 @@ class MasterProxy (masters: Iterable[ActorPath], timeout: FiniteDuration)
     super.postStop()
   }
 
-  override def receive : Receive = {
-    case _=>
+  override def receive: Receive = {
+    case _ =>
   }
 
-  def establishing(findMaster : Cancellable): Actor.Receive = {
+  def establishing(findMaster: Cancellable): Actor.Receive = {
     case ActorIdentity(_, Some(receptionist)) =>
       context watch receptionist
       LOG.info("Connected to [{}]", receptionist.path)
@@ -85,10 +84,10 @@ class MasterProxy (masters: Iterable[ActorPath], timeout: FiniteDuration)
   }
 
   def active(receptionist: ActorRef): Actor.Receive = {
-    case Terminated(receptionist) ⇒
+    case Terminated(receptionist) =>
       LOG.info("Lost contact with [{}], restablishing connection", receptionist)
       context.become(establishing(findMaster))
-    case _: ActorIdentity ⇒ // ok, from previous establish, already handled
+    case _: ActorIdentity => // ok, from previous establish, already handled
     case WatchMaster(watcher) =>
       watchers = watchers :+ watcher
   }
@@ -99,10 +98,10 @@ class MasterProxy (masters: Iterable[ActorPath], timeout: FiniteDuration)
       master forward msg
   }
 
-  def scheduler = context.system.scheduler
+  def scheduler: Scheduler = context.system.scheduler
   import scala.concurrent.duration._
-  private def repeatActionUtil(timeout: FiniteDuration)(action : => Unit) : Cancellable = {
-    val send = scheduler.schedule(0 seconds, 2 seconds)(action)
+  private def repeatActionUtil(timeout: FiniteDuration)(action: => Unit): Cancellable = {
+    val send = scheduler.schedule(0.seconds, 2.seconds)(action)
     val suicide = scheduler.scheduleOnce(timeout) {
       send.cancel()
       self ! PoisonPill
@@ -128,7 +127,7 @@ object MasterProxy {
   case class WatchMaster(watcher: ActorRef)
 
   import scala.concurrent.duration._
-  def props(masters: Iterable[HostPort], duration: FiniteDuration = 30 seconds): Props = {
+  def props(masters: Iterable[HostPort], duration: FiniteDuration = 30.seconds): Props = {
     val contacts = masters.map(ActorUtil.getMasterActorPath(_))
     Props(new MasterProxy(contacts, duration))
   }

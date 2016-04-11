@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,15 @@
 
 package io.gearpump.streaming.state.impl
 
-import io.gearpump.TimeStamp
-import io.gearpump.streaming.transaction.api.CheckpointStore
-import org.mockito.{Matchers => MockitoMatchers}
 import org.mockito.Mockito._
+import org.mockito.{Matchers => MockitoMatchers}
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.{Matchers, PropSpec}
+
+import io.gearpump.TimeStamp
+import io.gearpump.streaming.transaction.api.CheckpointStore
 
 class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
@@ -56,7 +57,7 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
     }
   }
 
-   property("CheckpointManager should close CheckpointStore") {
+  property("CheckpointManager should close CheckpointStore") {
     forAll(checkpointIntervalGen) {
       (checkpointInterval: Long) =>
         val checkpointStore = mock[CheckpointStore]
@@ -85,5 +86,4 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
         checkpointManager.getCheckpointTime shouldBe empty
     }
   }
-
 }

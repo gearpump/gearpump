@@ -5,7 +5,7 @@
 
 angular.module('dashboard')
 
-  .directive('metricsPeriodSwitcher', function() {
+  .directive('metricsPeriodSwitcher', function () {
     'use strict';
 
     return {
@@ -15,7 +15,7 @@ angular.module('dashboard')
         pastHours: '=',
         viewCurrent: '='
       },
-      link: function(scope) {
+      link: function (scope) {
         'use strict';
 
         scope.options = {
@@ -23,7 +23,7 @@ angular.module('dashboard')
           hist: 'Past %d Hours'.replace('%d', scope.pastHours)
         };
         scope.value = scope.viewCurrent ? 'current' : 'hist';
-        scope.$watch('value', function(value) {
+        scope.$watch('value', function (value) {
           scope.viewCurrent = String(value) === 'current';
         });
       }

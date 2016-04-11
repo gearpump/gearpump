@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,39 +20,44 @@ package io.gearpump.cluster.main
 
 import io.gearpump.cluster.main.ArgumentsParser.Syntax
 
-case class CLIOption[+T] (description:String = "", required: Boolean = false, defaultValue: Option[T] = None)
+case class CLIOption[+T](
+    description: String = "", required: Boolean = false, defaultValue: Option[T] = None)
 
-class ParseResult(optionMap : Map[String, String], remainArguments : Array[String]) {
-  def getInt(key : String) = optionMap.get(key).get.toInt
+class ParseResult(optionMap: Map[String, String], remainArguments: Array[String]) {
+  def getInt(key: String): Int = optionMap.get(key).get.toInt
 
-  def getString (key : String) = optionMap.get(key).get
+  def getString(key: String): String = optionMap.get(key).get
 
-  def getBoolean (key : String) = optionMap.get(key).get.toBoolean
+  def getBoolean(key: String): Boolean = optionMap.get(key).get.toBoolean
 
-  def exists(key : String) = !optionMap.getOrElse(key,"").isEmpty
+  def exists(key: String): Boolean = !(optionMap.getOrElse(key, "").isEmpty)
 
-  def remainArgs : Array[String] = this.remainArguments
+  def remainArgs: Array[String] = this.remainArguments
 }
 
 /**
- * Parse command line arguments
+ * Parser for command line arguments
+ *
  * Grammar: -option1 value1 -option2 value3 -flag1 -flag2 remainArg1 remainArg2...
  */
-trait  ArgumentsParser {
+trait ArgumentsParser {
 
   val ignoreUnknownArgument = false
 
-  def help: Unit = {
-    Console.err.println(s"\nHelp: $description")
+  // scalastyle:off println
+  def help(): Unit = {
+    Console.println(s"\nHelp: $description")
     var usage = List.empty[String]
-    options.map(kv => if(kv._2.required) {
+    options.map(kv => if (kv._2.required) {
       usage = usage :+ s"-${kv._1} (required:${kv._2.required})${kv._2.description}"
     } else {
-      usage = usage :+ s"-${kv._1} (required:${kv._2.required}, default:${kv._2.defaultValue.getOrElse("")})${kv._2.description}"
+      usage = usage :+ s"-${kv._1} (required:${kv._2.required}, " +
+        s"default:${kv._2.defaultValue.getOrElse("")})${kv._2.description}"
     })
     usage :+= remainArgs.map(k => s"<$k>").mkString(" ")
-    usage.foreach(Console.err.println(_))
+    usage.foreach(Console.println(_))
   }
+  // scalastyle:on println
 
   def parse(args: Array[String]): ParseResult = {
     val syntax = Syntax(options, remainArgs, ignoreUnknownArgument)
@@ -60,16 +65,18 @@ trait  ArgumentsParser {
   }
 
   val description: String = ""
-  val options : Array[(String, CLIOption[Any])] = Array.empty[(String, CLIOption[Any])]
-  val remainArgs : Array[String] = Array.empty[String]
+  val options: Array[(String, CLIOption[Any])] = Array.empty[(String, CLIOption[Any])]
+  val remainArgs: Array[String] = Array.empty[String]
 }
 
 object ArgumentsParser {
 
-  case class Syntax(val options: Array[(String, CLIOption[Any])], val remainArgs : Array[String], val ignoreUnknownArgument: Boolean)
+  case class Syntax(
+      val options: Array[(String, CLIOption[Any])], val remainArgs: Array[String],
+      val ignoreUnknownArgument: Boolean)
 
   def parse(syntax: Syntax, args: Array[String]): ParseResult = {
-    import syntax.{options, remainArgs, ignoreUnknownArgument}
+    import syntax.{ignoreUnknownArgument, options, remainArgs}
     var config = Map.empty[String, String]
     var remain = Array.empty[String]
 
@@ -100,14 +107,16 @@ object ArgumentsParser {
           doParse(rest)
 
         case value :: rest =>
+          // scalastyle:off println
           Console.err.println(s"Warning: get unknown argument $value, maybe it is a main class")
+          // scalastyle:on println
           remain ++= value :: rest
           doParse(Nil)
       }
     }
     doParse(args.toList)
 
-    options.foreach{pair =>
+    options.foreach { pair =>
       val (key, option) = pair
       if (!config.contains(key) && !option.required) {
         config += key -> option.defaultValue.getOrElse("").toString

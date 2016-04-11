@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,7 @@ object GearAttributes {
    * @param count
    * @return
    */
-  def count(count: Int): Attributes =  Attributes(ParallismAttribute(count))
+  def count(count: Int): Attributes = Attributes(ParallismAttribute(count))
 
   /**
    * Define we want to render this module locally.
@@ -52,7 +52,7 @@ object GearAttributes {
   def location(attrs: Attributes): Location = {
     attrs.attributeList.foldLeft(Local: Location) { (s, attr) =>
       attr match {
-        case LocationAttribute(location)    => location
+        case LocationAttribute(location) => location
         case other => s
       }
     }
@@ -66,7 +66,7 @@ object GearAttributes {
   def count(attrs: Attributes): Int = {
     attrs.attributeList.foldLeft(1) { (s, attr) =>
       attr match {
-        case ParallismAttribute(count)    => count
+        case ParallismAttribute(count) => count
         case other => s
       }
     }

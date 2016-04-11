@@ -5,7 +5,7 @@
 
 angular.module('dashboard')
 
-  .directive('header', function() {
+  .directive('header', function () {
     'use strict';
 
     return {
@@ -13,7 +13,7 @@ angular.module('dashboard')
       templateUrl: 'views/landing/header.html',
       replace: true,
       scope: {},
-      controller: ['$scope', '$cookies', 'restapi', 'conf', function($scope, $cookies, restapi, conf) {
+      controller: ['$scope', '$cookies', 'restapi', 'conf', function ($scope, $cookies, restapi, conf) {
         $scope.clusterMenuItems = [
           {text: 'Master', pathPatt: 'master', icon: 'fa fa-laptop'},
           {text: 'Workers', pathPatt: 'workers', icon: 'fa fa-server'}
@@ -28,7 +28,7 @@ angular.module('dashboard')
         ];
 
         $scope.version = 'beta';
-        restapi.serviceVersion(function(version) {
+        restapi.serviceVersion(function (version) {
           $scope.version = version;
         });
       }]

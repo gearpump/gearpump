@@ -18,24 +18,25 @@
 
 package io.gearpump.cluster.appmaster
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigValueFactory
-import io.gearpump.WorkerId
-import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import io.gearpump.cluster.appmaster.ExecutorSystemLauncher._
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.Session
 import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, RegisterActorSystem}
 import io.gearpump.util.Constants
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
-import scala.concurrent.duration._
-
-class ExecutorSystemLauncherSpec  extends FlatSpec with Matchers with BeforeAndAfterAll {
+class ExecutorSystemLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
   val workerId: WorkerId = WorkerId(0, 0L)
   val appId = 0
@@ -45,15 +46,15 @@ class ExecutorSystemLauncherSpec  extends FlatSpec with Matchers with BeforeAndA
   val launchExecutorSystemTimeout = 3000
   val activeConfig = TestUtil.DEFAULT_CONFIG.
     withValue(Constants.GEARPUMP_START_EXECUTOR_SYSTEM_TIMEOUT_MS,
-              ConfigValueFactory.fromAnyRef(launchExecutorSystemTimeout))
+      ConfigValueFactory.fromAnyRef(launchExecutorSystemTimeout))
 
-  override def beforeAll() = {
+  override def beforeAll(): Unit = {
     system = ActorSystem("test", activeConfig)
   }
 
-  override def afterAll() = {
-    system.shutdown()
-    system.awaitTermination()
+  override def afterAll(): Unit = {
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   it should "report success when worker launch the system successfully" in {
@@ -90,14 +91,15 @@ class ExecutorSystemLauncherSpec  extends FlatSpec with Matchers with BeforeAndA
     client.expectTerminated(launcher)
   }
 
-  it should "report timeout when trying to start a executor system on worker, and worker doesn't response" in {
+  it should "report timeout when trying to start a executor system on worker, " +
+    "and worker doesn't response" in {
     val client = TestProbe()
     val worker = TestProbe()
     val launcher = system.actorOf(Props(new ExecutorSystemLauncher(appId, session)))
     client.send(launcher, LaunchExecutorSystem(WorkerInfo(workerId, worker.ref), 0, Resource(1)))
     client.watch(launcher)
     val waitFor = launchExecutorSystemTimeout + 10000
-    client.expectMsgType[LaunchExecutorSystemTimeout](waitFor milliseconds)
-    client.expectTerminated(launcher, waitFor milliseconds)
+    client.expectMsgType[LaunchExecutorSystemTimeout](waitFor.milliseconds)
+    client.expectTerminated(launcher, waitFor.milliseconds)
   }
 }

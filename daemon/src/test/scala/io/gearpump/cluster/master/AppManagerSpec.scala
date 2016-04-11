@@ -18,42 +18,44 @@
 
 package io.gearpump.cluster.master
 
+import scala.util.Success
+
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
-import io.gearpump.cluster.AppMasterToMaster.AppDataSaved
-import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, AppMasterRegistered}
-import io.gearpump.cluster.TestUtil
-import io.gearpump.cluster.AppMasterToMaster._
-import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication, SubmitApplication}
-import io.gearpump.cluster.MasterToAppMaster._
-import io.gearpump.cluster.MasterToClient.{SubmitApplicationResult, ShutdownApplicationResult, ReplayApplicationResult, ResolveAppIdResult}
-import io.gearpump.cluster._
-import io.gearpump.cluster.master.AppManager._
-import io.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, ApplicationState}
-import io.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVSuccess, PutKV, PutKVSuccess}
+import com.typesafe.config.Config
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
-import scala.util.Success
+import io.gearpump.cluster.AppMasterToMaster.{AppDataSaved, _}
+import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication, SubmitApplication}
+import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterRegistered, AppMastersData, AppMastersDataRequest, _}
+import io.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
+import io.gearpump.cluster.appmaster.{AppMasterRuntimeInfo, ApplicationState}
+import io.gearpump.cluster.master.AppManager._
+import io.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVSuccess, PutKV, PutKVSuccess}
+import io.gearpump.cluster.{TestUtil, _}
+import io.gearpump.util.LogUtil
 
 class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   var kvService: TestProbe = null
   var haService: TestProbe = null
   var appLauncher: TestProbe = null
-  var appManager : ActorRef = null
+  var appManager: ActorRef = null
+  private val LOG = LogUtil.getLogger(getClass)
 
-  override def config = TestUtil.DEFAULT_CONFIG
+  override def config: Config = TestUtil.DEFAULT_CONFIG
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     startActorSystem()
     kvService = TestProbe()(getActorSystem)
     appLauncher = TestProbe()(getActorSystem)
 
-    appManager = getActorSystem.actorOf(Props(new AppManager(kvService.ref, new DummyAppMasterLauncherFactory(appLauncher))))
+    appManager = getActorSystem.actorOf(Props(new AppManager(kvService.ref,
+      new DummyAppMasterLauncherFactory(appLauncher))))
     kvService.expectMsgType[GetKV]
     kvService.reply(GetKVSuccess(MASTER_STATE, MasterState(0, Map.empty, Map.empty)))
   }
 
-  override def afterEach() = {
+  override def afterEach(): Unit = {
     shutdownActorSystem()
   }
 
@@ -84,7 +86,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
   }
 
   "AppManager" should "support application submission and recover if appmaster dies" in {
-    Console.out.println("=================testing recover==============")
+    LOG.info("=================testing recover==============")
     testClientSubmission(withRecover = true)
   }
 
@@ -112,14 +114,15 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
 
     kvService.expectMsgType[PutKV]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId, app.name)))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref,
+      AppMasterRuntimeInfo(appId, app.name)))
     appMaster.expectMsgType[AppMasterRegistered]
 
     client.send(appManager, submit)
     assert(client.receiveN(1).head.asInstanceOf[SubmitApplicationResult].appId.isFailure)
   }
 
-  def testClientSubmission(withRecover: Boolean) : Unit = {
+  def testClientSubmission(withRecover: Boolean): Unit = {
     val app = TestUtil.dummyApp
     val submit = SubmitApplication(app, None, "username")
     val client = TestProbe()(getActorSystem)
@@ -131,7 +134,8 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
 
     kvService.expectMsgType[PutKV]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId, app.name)))
+    appMaster.send(appManager, RegisterAppMaster(appMaster.ref,
+      AppMasterRuntimeInfo(appId, app.name)))
     kvService.expectMsgType[PutKV]
     appMaster.expectMsgType[AppMasterRegistered]
 
@@ -148,10 +152,10 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
       client.send(appManager, ShutdownApplication(appId))
       client.expectMsg(ShutdownApplicationResult(Success(appId)))
     } else {
-      //do recover
+      // Do recovery
       getActorSystem.stop(appMaster.ref)
       kvService.expectMsgType[GetKV]
-      val appState = ApplicationState(appId, "application1", 1, app , None, "username", null)
+      val appState = ApplicationState(appId, "application1", 1, app, None, "username", null)
       kvService.reply(GetKVSuccess(APP_STATE, appState))
       appLauncher.expectMsg(LauncherStarted(appId))
     }
@@ -160,7 +164,8 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
 
 class DummyAppMasterLauncherFactory(test: TestProbe) extends AppMasterLauncherFactory {
 
-  override def props(appId: Int, executorId: Int, app: AppDescription, jar: Option[AppJar], username: String, master: ActorRef, client: Option[ActorRef]): Props = {
+  override def props(appId: Int, executorId: Int, app: AppDescription, jar: Option[AppJar],
+      username: String, master: ActorRef, client: Option[ActorRef]): Props = {
     Props(new DummyAppMasterLauncher(test, appId))
   }
 }
@@ -169,8 +174,8 @@ class DummyAppMasterLauncher(test: TestProbe, appId: Int) extends Actor {
 
   test.ref ! LauncherStarted(appId)
   override def receive: Receive = {
-    case any : Any => test.ref forward any
+    case any: Any => test.ref forward any
   }
 }
 
-case class LauncherStarted(appId : Int)
+case class LauncherStarted(appId: Int)

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,27 +18,29 @@
 
 package io.gearpump.streaming.dsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.ActorSystem
-import io.gearpump.streaming.dsl.plan.OpTranslator.SourceTask
-import io.gearpump.cluster.TestUtil
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.dsl.plan.OpTranslator._
 import org.mockito.Mockito.when
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
-class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with MockitoSugar {
+
+import io.gearpump.cluster.TestUtil
+import io.gearpump.cluster.client.ClientContext
+import io.gearpump.streaming.dsl.plan.OpTranslator.SourceTask
+class StreamAppSpec extends FlatSpec with Matchers with BeforeAndAfterAll with MockitoSugar {
 
   implicit var system: ActorSystem = null
 
-  override def beforeAll: Unit = {
-    system = ActorSystem("test",  TestUtil.DEFAULT_CONFIG)
+  override def beforeAll(): Unit = {
+    system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
   }
 
-  override def afterAll: Unit = {
-    system.shutdown()
-    system.awaitTermination()
+  override def afterAll(): Unit = {
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
-
 
   it should "be able to generate multiple new streams" in {
     val context: ClientContext = mock[ClientContext]
@@ -57,7 +59,7 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with
 
     val app = StreamApp("dsl", context)
     val parallism = 3
-    app.source(List("A","B","C"), parallism, "").flatMap(Array(_)).reduce(_+_)
+    app.source(List("A", "B", "C"), parallism, "").flatMap(Array(_)).reduce(_ + _)
     val task = app.plan.dag.vertices.iterator.next()
     assert(task.taskClass == classOf[SourceTask[_, _]].getName)
     assert(task.parallelism == parallism)
@@ -72,7 +74,7 @@ class StreamAppSpec  extends FlatSpec with Matchers with BeforeAndAfterAll  with
       "1",
       "2"
     )
-    val producer = app.source(list, 1, "producer").flatMap(Array(_)).reduce(_+_)
+    val producer = app.source(list, 1, "producer").flatMap(Array(_)).reduce(_ + _)
     val task = app.plan.dag.vertices.iterator.next()
       /*
       val task = app.plan.dag.vertices.iterator.map(desc => {

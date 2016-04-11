@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,11 +21,10 @@ package io.gearpump.streaming.transaction.api
 import io.gearpump.streaming.source.DataSource
 
 /**
- * AT-LEAST-ONCE API
+ * AT-LEAST-ONCE API. Represents a data source which allow replaying.
  *
- * subclass should be able to replay messages on recovery from the time
- * when an application crashed
+ * Subclass should be able to replay messages on recovery from the time
+ * when an application crashed.
  */
 trait TimeReplayableSource extends DataSource
-
 

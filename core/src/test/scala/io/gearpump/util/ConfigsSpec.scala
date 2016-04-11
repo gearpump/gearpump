@@ -19,16 +19,20 @@
 package io.gearpump.util
 
 import java.io.File
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 import akka.actor.ActorSystem
-import io.gearpump.cluster.{ClusterConfigSource, ClusterConfig, UserConfig}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
-class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
+import io.gearpump.cluster.{ClusterConfig, ClusterConfigSource, UserConfig}
+
+class ConfigsSpec extends FlatSpec with Matchers with MockitoSugar {
   "Typesafe Cluster Configs" should "follow the override rules" in {
 
-    val conf =  """
+    val conf =
+      """
       gearpump {
         gear = "gearpump"
       }
@@ -40,7 +44,7 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
         conf = "worker"
       }
       conf = "base"
-  """
+      """
 
     val file = File.createTempFile("test", ".conf")
     FileUtils.write(file, conf)
@@ -68,8 +72,7 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
 
     implicit val system = ActorSystem("forSerialization")
 
-
-    val map = Map[String,String]("key1"->"1", "key2"->"value2")
+    val map = Map[String, String]("key1" -> "1", "key2" -> "value2")
 
     val user = new UserConfig(map)
       .withLong("key3", 2L)
@@ -86,11 +89,11 @@ class ConfigsSpec  extends FlatSpec with Matchers with MockitoSugar {
 
     val data = new ConfigsSpec.Data(3)
     assert(data == user.withValue("data", data).getValue[ConfigsSpec.Data]("data").get)
-    system.shutdown()
-    system.awaitTermination()
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 }
 
-object ConfigsSpec{
+object ConfigsSpec {
   case class Data(value: Int)
 }

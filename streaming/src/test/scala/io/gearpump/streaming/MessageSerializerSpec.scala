@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,10 +17,11 @@
  */
 package io.gearpump.streaming
 
-import io.gearpump.streaming.task._
-import io.gearpump.transport.netty.WrappedChannelBuffer
 import org.jboss.netty.buffer.{ChannelBufferOutputStream, ChannelBuffers}
 import org.scalatest.{Matchers, WordSpec}
+
+import io.gearpump.streaming.task._
+import io.gearpump.transport.netty.WrappedChannelBuffer
 
 class MessageSerializerSpec extends WordSpec with Matchers {
 
@@ -32,7 +33,7 @@ class MessageSerializerSpec extends WordSpec with Matchers {
     taskMessageSerializer.read(input)
   }
 
-  "SerializedMessageSerializer"  should {
+  "SerializedMessageSerializer" should {
     "serialize and deserialize SerializedMessage properly" in {
       val serializer = new SerializedMessageSerializer
       val data = new Array[Byte](256)
@@ -43,7 +44,7 @@ class MessageSerializerSpec extends WordSpec with Matchers {
     }
   }
 
-  "TaskIdSerializer"  should {
+  "TaskIdSerializer" should {
     "serialize and deserialize TaskId properly" in {
       val taskIdSerializer = new TaskIdSerializer
       val taskId = TaskId(1, 3)
@@ -51,7 +52,7 @@ class MessageSerializerSpec extends WordSpec with Matchers {
     }
   }
 
-  "AckRequestSerializer"  should {
+  "AckRequestSerializer" should {
     "serialize and deserialize AckRequest properly" in {
       val serializer = new AckRequestSerializer
       val ackRequest = AckRequest(TaskId(1, 2), 1000, 1024)
@@ -59,7 +60,7 @@ class MessageSerializerSpec extends WordSpec with Matchers {
     }
   }
 
-  "InitialAckRequestSerializer"  should {
+  "InitialAckRequestSerializer" should {
     "serialize and deserialize AckRequest properly" in {
       val serializer = new InitialAckRequestSerializer
       val ackRequest = InitialAckRequest(TaskId(1, 2), 1024)
@@ -67,7 +68,7 @@ class MessageSerializerSpec extends WordSpec with Matchers {
     }
   }
 
-  "AckSerializer"  should {
+  "AckSerializer" should {
     "serialize and deserialize Ack properly" in {
       val serializer = new AckSerializer
       val ack = Ack(TaskId(1, 2), 1024, 1023, 1799)

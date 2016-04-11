@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,14 +18,16 @@
 
 package io.gearpump.streaming
 
-import io.gearpump.streaming.task.TaskId
 import io.gearpump.partitioner.PartitionerDescription
+import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.Graph
 
 /**
- * DAG is wrapper for [[Graph]] for streaming applications.
+ * DAG is wrapper for [[io.gearpump.util.Graph]] for streaming applications.
  */
-case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription], graph : Graph[ProcessorId, PartitionerDescription]) extends Serializable {
+case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription],
+    graph : Graph[ProcessorId, PartitionerDescription])
+  extends Serializable {
 
   def isEmpty: Boolean = {
     processors.isEmpty
@@ -46,15 +48,15 @@ case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription]
 }
 
 object DAG {
-  def apply (graph : Graph[ProcessorDescription, PartitionerDescription], version: Int = 0) : DAG = {
-    val processors = graph.vertices.map{processorDescription =>
+  def apply(graph: Graph[ProcessorDescription, PartitionerDescription], version: Int = 0): DAG = {
+    val processors = graph.vertices.map { processorDescription =>
       (processorDescription.id, processorDescription)
     }.toMap
-    val dag = graph.mapVertex{ processor =>
+    val dag = graph.mapVertex { processor =>
       processor.id
     }
     new DAG(version, processors, dag)
   }
 
-  def empty() = apply(Graph.empty[ProcessorDescription, PartitionerDescription])
+  def empty: DAG = apply(Graph.empty[ProcessorDescription, PartitionerDescription])
 }

@@ -9,7 +9,6 @@ Standalone mode is a distributed cluster mode. That is, Gearpump runs as service
 
 To deploy Gearpump in cluster mode, please first check that the [Pre-requisites](hardware-requirement.html) are met.
 
-
 ### How to Install
 You need to have Gearpump binary at hand. Please refer to [How to get gearpump distribution](get-gearpump-distribution.html) to get the Gearpump binary.
 

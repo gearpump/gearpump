@@ -38,5 +38,4 @@ Step3: Post-Release
    where NEXT_SNPASHOT_VERSION must end with "-SNAPSHOT". For example, 0.2.3-SNPASHOT is a good snapshot version, 0.2.3 is NOT
 2. Make PR by following https://github.com/gearpump/gearpump/blob/master/doc/CommitGuideline.md 
 
-
 Done!!!

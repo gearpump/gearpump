@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,21 +18,26 @@
 
 package io.gearpump.services.main
 
-import akka.actor.{ActorSystem}
+import java.util.Random
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
+
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigValueFactory
+import org.slf4j.Logger
+import sun.misc.BASE64Encoder
+
 import io.gearpump.cluster.ClusterConfig
-import io.gearpump.cluster.main.{Gear, CLIOption, ArgumentsParser}
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, Gear}
 import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.services.{SecurityService, RestServices}
+import io.gearpump.services.{RestServices, SecurityService}
 import io.gearpump.util.LogUtil.ProcessType
 import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
-import org.slf4j.Logger
 
-import scala.concurrent.Await
-
+/** Command line to start UI server */
 object Services extends AkkaApp with ArgumentsParser {
 
   private val LOG = LogUtil.getLogger(getClass)
@@ -48,11 +53,13 @@ object Services extends AkkaApp with ArgumentsParser {
     ClusterConfig.ui()
   }
 
-  override def help: Unit = {
+  override def help(): Unit = {
+    // scalastyle:off println
     Console.println("UI Server")
+    // scalastyle:on println
   }
 
-  private var killFunction: Option[() =>Unit] = None
+  private var killFunction: Option[() => Unit] = None
 
   override def main(inputAkkaConf: Config, args: Array[String]): Unit = {
 
@@ -69,48 +76,59 @@ object Services extends AkkaApp with ArgumentsParser {
       LogUtil.getLogger(getClass)
     }
 
-
-    import scala.collection.JavaConversions._
     if (argConfig.exists("master")) {
       val master = argConfig.getString("master")
       akkaConf = akkaConf.withValue(Constants.GEARPUMP_CLUSTER_MASTERS,
-        ConfigValueFactory.fromIterable(List(master)))
+        ConfigValueFactory.fromIterable(List(master).asJava))
     }
 
     akkaConf = akkaConf.withValue(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH,
       ConfigValueFactory.fromAnyRef(argConfig.getString("supervisor")))
-      // Create a random unique secret key for session manager.
+      // Creates a random unique secret key for session manager.
       // All previous stored session token cookies will be invalidated when UI
       // server is restarted.
       .withValue(SecurityService.SESSION_MANAGER_KEY,
-        ConfigValueFactory.fromAnyRef(java.util.UUID.randomUUID().toString()))
+        ConfigValueFactory.fromAnyRef(randomSeverSecret()))
 
-    val masterCluster = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).toList.flatMap(Util.parseHostList)
+    val masterCluster = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
+      .flatMap(Util.parseHostList)
 
-    implicit val system = ActorSystem("services" , akkaConf)
+    implicit val system = ActorSystem("services", akkaConf)
     implicit val executionContext = system.dispatcher
 
     import scala.concurrent.duration._
-    val master = system.actorOf(MasterProxy.props(masterCluster, 1 day), s"masterproxy${system.name}")
+    val master = system.actorOf(MasterProxy.props(masterCluster, 1.day),
+      s"masterproxy${system.name}")
     val (host, port) = parseHostPort(system.settings.config)
-
 
     implicit val mat = ActorMaterializer()
     val services = new RestServices(master, mat, system)
 
     val bindFuture = Http().bindAndHandle(Route.handlerFlow(services.route), host, port)
-    Await.result(bindFuture, 15 seconds)
+    Await.result(bindFuture, 15.seconds)
 
-    val displayHost = if(host == "0.0.0.0") "127.0.0.1" else host
+    val displayHost = if (host == "0.0.0.0") "127.0.0.1" else host
     LOG.info(s"Please browse to http://$displayHost:$port to see the web UI")
-    println(s"Please browse to http://$displayHost:$port to see the web UI")
 
-    killFunction = Some{() =>
+    // scalastyle:off println
+    println(s"Please browse to http://$displayHost:$port to see the web UI")
+    // scalastyle:on println
+
+    killFunction = Some { () =>
       LOG.info("Shutting down UI Server")
-      system.shutdown()
+      system.terminate()
     }
 
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
+  }
+
+  private def randomSeverSecret(): String = {
+    val random = new Random()
+    val length = 64 // Required
+    val bytes = new Array[Byte](length)
+    random.nextBytes(bytes)
+    val endecoder = new BASE64Encoder()
+    endecoder.encode(bytes)
   }
 
   private def parseHostPort(config: Config): (String, Int) = {
@@ -120,7 +138,8 @@ object Services extends AkkaApp with ArgumentsParser {
   }
 
   // TODO: fix this
-  // Hack around for YARN module, so that we can kill the UI server when application is shutting down.
+  // Hacks around for YARN module, so that we can kill the UI server
+  // when application is shutting down.
   def kill(): Unit = {
     if (killFunction.isDefined) {
       killFunction.get.apply()

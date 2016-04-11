@@ -6,7 +6,7 @@
 angular.module('dashboard')
 
   .config(['$stateProvider',
-    function($stateProvider) {
+    function ($stateProvider) {
       'use strict';
 
       $stateProvider
@@ -18,7 +18,7 @@ angular.module('dashboard')
     }])
 
   .controller('AppOverviewCtrl', ['$scope', 'helper', '$propertyTableBuilder', 'models',
-    function($scope, helper, $ptb, models) {
+    function ($scope, helper, $ptb, models) {
       'use strict';
 
       $scope.appSummary = [
@@ -29,7 +29,7 @@ angular.module('dashboard')
         $ptb.button('Quick Links').done()
       ];
 
-      $scope.$watch('app', function(app) {
+      $scope.$watch('app', function (app) {
         $ptb.$update($scope.appSummary, [
           app.appId,
           app.actorPath,
@@ -45,9 +45,9 @@ angular.module('dashboard')
 
       $scope.alerts = [];
       models.$get.appAlerts($scope.app.appId)
-        .then(function(alerts0) {
+        .then(function (alerts0) {
           $scope.alerts = alerts0.$data();
-          alerts0.$subscribe($scope, function(alerts) {
+          alerts0.$subscribe($scope, function (alerts) {
             $scope.alerts = alerts;
           });
         });

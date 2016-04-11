@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,7 +25,9 @@ trait ConsoleOutput {
   def error: String
 }
 
-class RichProcess(process: Process, val logger: ConsoleOutput) extends Process {
-  def exitValue() : scala.Int = process.exitValue()
-  def destroy() : scala.Unit = process.destroy()
+/** Extends Process by providing a additional logger: ConsoleOutput interface. */
+class RichProcess(process: Process, _logger: ConsoleOutput) extends Process {
+  def exitValue(): scala.Int = process.exitValue()
+  def destroy(): scala.Unit = process.destroy()
+  def logger: ConsoleOutput = _logger
 }

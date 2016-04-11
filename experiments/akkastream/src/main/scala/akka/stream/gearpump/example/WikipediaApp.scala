@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,26 +20,26 @@ package akka.stream.gearpump.example
 
 import java.io.{File, FileInputStream}
 import java.util.zip.GZIPInputStream
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 import akka.actor.ActorSystem
-import akka.stream.gearpump.{GearAttributes, GearpumpMaterializer}
 import akka.stream.gearpump.graph.GraphCutter
-import akka.stream.io.{Framing, InputStreamSource}
+import akka.stream.gearpump.{GearAttributes, GearpumpMaterializer}
 import akka.stream.scaladsl._
 import akka.util.ByteString
-import io.gearpump.cluster.main.{CLIOption, ArgumentsParser}
-import io.gearpump.util.AkkaApp
 import org.json4s.JsonAST.JString
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import io.gearpump.util.AkkaApp
 
 /**
  * this example is ported from http://engineering.intenthq.com/2015/06/wikidata-akka-streams/
  * which showcases running Akka Streams DSL across JVMs on Gearpump
  *
  * Usage: output/target/pack/bin/gear app -jar experiments/akkastream/target/scala_2.11/akkastream-${VERSION}-SNAPSHOT-assembly.jar
- *            -input wikidata-${DATE}-all.json.gz -languages en,de
+ * -input wikidata-${DATE}-all.json.gz -languages en,de
  *
  * (Note: Wikipedia data can be downloaded from https://dumps.wikimedia.org/wikidatawiki/entities/)
  *
@@ -66,11 +66,10 @@ object WikipediaApp extends ArgumentsParser with AkkaApp {
 
     val g = FlowGraph.closed(count) { implicit b =>
       sinkCount => {
-        import FlowGraph.Implicits._
 
         val broadcast = b.add(Broadcast[WikidataElement](2))
         elements ~> broadcast ~> logEveryNSink(1000)
-                    broadcast ~> checkSameTitles(langs.toSet) ~> sinkCount
+        broadcast ~> checkSameTitles(langs.toSet) ~> sinkCount
       }
     }
 
@@ -79,9 +78,9 @@ object WikipediaApp extends ArgumentsParser with AkkaApp {
         case Success((t, f)) => printResults(t, f)
         case Failure(tr) => println("Something went wrong")
       }
-      system.shutdown()
+      system.terminate()
     }
-    system.awaitTermination()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   def source(file: File): Source[String, Future[Long]] = {
@@ -124,21 +123,21 @@ object WikipediaApp extends ArgumentsParser with AkkaApp {
     .filter(_.sites.keySet == langs)
     .map { x =>
       val titles = x.sites.values
-      titles.forall( _ == titles.head)
+      titles.forall(_ == titles.head)
     }.withAttributes(GearAttributes.remote)
 
-  def count: Sink[Boolean, Future[(Int, Int)]] = Sink.fold((0,0)) {
-    case ((t, f), true) => (t+1, f)
-    case ((t, f), false) => (t, f+1)
+  def count: Sink[Boolean, Future[(Int, Int)]] = Sink.fold((0, 0)) {
+    case ((t, f), true) => (t + 1, f)
+    case ((t, f), false) => (t, f + 1)
   }
 
   def printResults(t: Int, f: Int) = {
-    val message = s"""
-                     | Number of items with the same title: $t
-        | Number of items with the different title: $f
-        | Ratios: ${t.toDouble / (t + f)} / ${f.toDouble / (t + f)}
+    val message =
+      s"""
+         | Number of items with the same title: $t
+         | Number of items with the different title: $f
+         | Ratios: ${t.toDouble / (t + f)} / ${f.toDouble / (t + f)}
                   """.stripMargin
     println(message)
   }
-
 }

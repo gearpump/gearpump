@@ -5,7 +5,6 @@ title: UI Dashboard Authentication and Authorization
 
 ## What is this about?
 
-
 ## How to enable UI authentication?
 
 1. Change config file gear.conf, find entry `gearpump-ui.gearpump.ui-security.authentication-enabled`, change the value to true
@@ -47,7 +46,6 @@ is the steps to configure ConfigFileBasedAuthenticator.
 #### How to add or remove user?
 
 For the default authentication plugin, it has three categories of users: admins, users, and guests.
-
 
 * admins: have unlimited permission, like shutdown a cluster, add/remove machines.
 * users: have limited permission to submit an application and etc..
@@ -245,7 +243,7 @@ To use Google OAuth2 Authenticator, there are several steps:
 3. Config gear.conf `gearpump.ui-security.oauth2-authenticators.cloudfoundryuaa` section.
 Please make sure class name, client ID, client Secret, and callback URL are set properly.
 
-**NOTE:** The callback URL here should matche what you set on CloudFoundry UAA in step1.
+**NOTE:** The callback URL here should match what you set on CloudFoundry UAA in step1.
 
 #### Step3: Configure network proxy for Gearpump UI server if applies
 
@@ -286,7 +284,7 @@ You can follow the Google OAuth2 example code to define a custom OAuth2Authentic
     * parameters and form fields.
     *
     * @note '''Thread-safety''' is a MUST requirement. Developer need to ensure the sub-class is thread-safe.
-    * Sub-class should have a parameterless constructor.
+    * Sub-class should have a parameter-less constructor.
     *
     * @note OAuth2 Authenticator requires access of Internet. Please make sure HTTP proxy are
     * set properly if applied.
@@ -373,5 +371,4 @@ You can follow the Google OAuth2 example code to define a custom OAuth2Authentic
    }
    ```
    The configuration entry is supposed to be used by class `SocialNetworkXAuthenticator`.
-
 

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,20 +19,21 @@ package io.gearpump.streaming.examples.fsio
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.Cancellable
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import SeqFileStreamProcessor._
-import HadoopConfig._
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
 
-import scala.concurrent.duration.FiniteDuration
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.examples.fsio.HadoopConfig._
+import io.gearpump.streaming.examples.fsio.SeqFileStreamProcessor._
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-class SeqFileStreamProcessor(taskContext : TaskContext, config: UserConfig) extends Task(taskContext, config){
+class SeqFileStreamProcessor(taskContext: TaskContext, config: UserConfig)
+  extends Task(taskContext, config) {
 
   import taskContext.taskId
 
@@ -43,16 +44,17 @@ class SeqFileStreamProcessor(taskContext : TaskContext, config: UserConfig) exte
   val value = new Text()
   val hadoopConf = config.hadoopConf
 
-  private var msgCount : Long = 0
-  private var snapShotKVCount : Long = 0
-  private var snapShotTime : Long = 0
+  private var msgCount: Long = 0
+  private var snapShotKVCount: Long = 0
+  private var snapShotTime: Long = 0
   private var scheduler: Cancellable = null
 
-  override def onStart(startTime : StartTime) = {
+  override def onStart(startTime: StartTime): Unit = {
 
     val fs = FileSystem.get(hadoopConf)
     fs.deleteOnExit(outputPath)
-    writer = SequenceFile.createWriter(hadoopConf, Writer.file(outputPath), Writer.keyClass(textClass), Writer.valueClass(textClass))
+    writer = SequenceFile.createWriter(hadoopConf, Writer.file(outputPath),
+      Writer.keyClass(textClass), Writer.valueClass(textClass))
 
     scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(5, TimeUnit.SECONDS))(reportStatus())
@@ -62,7 +64,7 @@ class SeqFileStreamProcessor(taskContext : TaskContext, config: UserConfig) exte
 
   override def onNext(msg: Message): Unit = {
     val kv = msg.msg.asInstanceOf[String].split("\\+\\+")
-    if(kv.length >= 2) {
+    if (kv.length >= 2) {
       key.set(kv(0))
       value.set(kv(1))
       writer.append(key, value)
@@ -70,7 +72,7 @@ class SeqFileStreamProcessor(taskContext : TaskContext, config: UserConfig) exte
     msgCount += 1
   }
 
-  override def onStop(): Unit ={
+  override def onStop(): Unit = {
     if (scheduler != null) {
       scheduler.cancel()
     }
@@ -78,14 +80,17 @@ class SeqFileStreamProcessor(taskContext : TaskContext, config: UserConfig) exte
     LOG.info("sequence file bolt stopped")
   }
 
-  def reportStatus() = {
-    val current : Long = System.currentTimeMillis()
-    LOG.info(s"Task $taskId Throughput: ${(msgCount - snapShotKVCount, (current - snapShotTime) / 1000)} (KVPairs, second)")
+  private def reportStatus() = {
+    val current: Long = System.currentTimeMillis()
+    LOG.info(s"Task $taskId Throughput: ${
+      (msgCount - snapShotKVCount,
+        (current - snapShotTime) / 1000)
+    } (KVPairs, second)")
     snapShotKVCount = msgCount
     snapShotTime = current
   }
 }
 
-object SeqFileStreamProcessor{
+object SeqFileStreamProcessor {
   val OUTPUT_PATH = "outputpath"
 }

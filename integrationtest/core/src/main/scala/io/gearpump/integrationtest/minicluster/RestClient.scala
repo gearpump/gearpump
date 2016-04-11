@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,29 +17,30 @@
  */
 package io.gearpump.integrationtest.minicluster
 
+import scala.reflect.ClassTag
+
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.WorkerId
-import io.gearpump.cluster.{AppJar, MasterToAppMaster}
+import org.apache.log4j.Logger
+import upickle.Js
+import upickle.default._
+
+import io.gearpump.cluster.AppMasterToMaster.MasterData
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.cluster.MasterToClient.HistoryMetrics
+import io.gearpump.cluster.master.MasterSummary
+import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
+import io.gearpump.cluster.{AppJar, MasterToAppMaster}
 import io.gearpump.integrationtest.{Docker, Util}
 import io.gearpump.services.AppMasterService.Status
 import io.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners}
+// NOTE: This cannot be removed!!!
+import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.ProcessorDescription
-import io.gearpump.cluster.AppMasterToMaster.MasterData
-import io.gearpump.cluster.master.MasterSummary
-import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
 import io.gearpump.streaming.appmaster.DagManager.{DAGOperationResult, ReplaceProcessor}
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.ExecutorSummary
 import io.gearpump.util.{Constants, Graph}
-import org.apache.log4j.Logger
-import upickle.Js
-import upickle.default._
-import io.gearpump.services.util.UpickleUtil._
-
-import scala.reflect.ClassTag
 
 /**
  * A REST client to operate a Gearpump cluster
@@ -50,14 +51,16 @@ class RestClient(host: String, port: Int) {
 
   private val cookieFile: String = "cookie.txt"
 
-  implicit val graphReader: upickle.default.Reader[Graph[Int, String]] = upickle.default.Reader[Graph[Int, String]] {
+  implicit val graphReader: upickle.default.Reader[Graph[Int, String]] =
+    upickle.default.Reader[Graph[Int, String]] {
     case Js.Obj(verties, edges) =>
       val vertexList = upickle.default.readJs[List[Int]](verties._2)
       val edgeList = upickle.default.readJs[List[(Int, String, Int)]](edges._2)
       Graph(vertexList, edgeList)
   }
 
-  private def decodeAs[T](expr: String)(implicit reader: upickle.default.Reader[T], classTag: ClassTag[T]): T = try {
+  private def decodeAs[T](
+      expr: String)(implicit reader: upickle.default.Reader[T], classTag: ClassTag[T]): T = try {
     read[T](expr)
   } catch {
     case ex: Throwable =>
@@ -91,7 +94,8 @@ class RestClient(host: String, port: Int) {
     listApps().length + 1
   }
 
-  def submitApp(jar: String, executorNum: Int, args: String = "", config: String = ""): Boolean = try {
+  def submitApp(jar: String, executorNum: Int, args: String = "", config: String = "")
+    : Boolean = try {
     var endpoint = "master/submitapp"
 
     var options = Seq(s"jar=@$jar")
@@ -130,7 +134,8 @@ class RestClient(host: String, port: Int) {
     decodeAs[StreamAppMasterSummary](resp)
   }
 
-  def queryStreamingAppMetrics(appId: Int, current: Boolean, path: String = "processor*"): HistoryMetrics = {
+  def queryStreamingAppMetrics(appId: Int, current: Boolean, path: String = "processor*")
+    : HistoryMetrics = {
     val args = if (current) "?readLatest=true" else ""
     val resp = callApi(s"appmaster/$appId/metrics/app$appId.$path$args")
     decodeAs[HistoryMetrics](resp)
@@ -196,7 +201,8 @@ class RestClient(host: String, port: Int) {
   def replaceStreamingAppProcessor(appId: Int, replaceMe: ProcessorDescription): Boolean = try {
     val replaceOperation = new ReplaceProcessor(replaceMe.id, replaceMe)
     val args = upickle.default.write(replaceOperation)
-    val resp = callApi(s"appmaster/$appId/dynamicdag?args=" + Util.encodeUriComponent(args), CRUD_POST)
+    val resp = callApi(s"appmaster/$appId/dynamicdag?args=" + Util.encodeUriComponent(args),
+      CRUD_POST)
     decodeAs[DAGOperationResult](resp)
     true
   } catch {

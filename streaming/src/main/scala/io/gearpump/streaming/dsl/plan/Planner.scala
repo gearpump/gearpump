@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,35 +19,38 @@
 package io.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
+
+import io.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner, Partitioner}
 import io.gearpump.streaming.Processor
 import io.gearpump.streaming.dsl.op._
 import io.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import io.gearpump.streaming.task.Task
-import io.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner, Partitioner}
 import io.gearpump.util.Graph
 
 class Planner {
 
   /*
-   * Convert Dag[Op] to Dag[TaskDescription] so that we can run it easily.
+   * Converts Dag of Op to Dag of TaskDescription. TaskDescription is part of the low
+   * level Graph API.
    */
-  def plan(dag: Graph[Op, OpEdge])(implicit system: ActorSystem): Graph[Processor[_ <: Task], _ <: Partitioner] = {
+  def plan(dag: Graph[Op, OpEdge])(implicit system: ActorSystem)
+    : Graph[Processor[_ <: Task], _ <: Partitioner] = {
 
     val opTranslator = new OpTranslator()
 
     val newDag = optimize(dag)
-    newDag.mapEdge {(node1, edge, node2) =>
+    newDag.mapEdge { (node1, edge, node2) =>
       edge match {
         case Shuffle =>
           node2.head match {
-            case groupBy: GroupByOp[Any, Any] =>
+            case groupBy: GroupByOp[Any @unchecked, Any @unchecked] =>
               new GroupByPartitioner(groupBy.fun)
             case _ => new HashPartitioner
           }
         case Direct =>
           new CoLocationPartitioner
       }
-    }.mapVertex {opChain =>
+    }.mapVertex { opChain =>
       opTranslator.translate(opChain)
     }
   }
@@ -65,11 +68,12 @@ class Planner {
     newGraph
   }
 
-  private def merge(dag: Graph[OpChain, OpEdge], node1: OpChain, node2: OpChain): Graph[OpChain, OpEdge] = {
+  private def merge(dag: Graph[OpChain, OpEdge], node1: OpChain, node2: OpChain)
+    : Graph[OpChain, OpEdge] = {
     if (dag.outDegreeOf(node1) == 1 &&
       dag.inDegreeOf(node2) == 1 &&
-      // for processor node, we don't allow it to merge with downstream operators
-      !node1.head.isInstanceOf[ProcessorOp[_<:Task]]) {
+      // For processor node, we don't allow it to merge with downstream operators
+      !node1.head.isInstanceOf[ProcessorOp[_ <: Task]]) {
       val (_, edge, _) = dag.outgoingEdgesOf(node1)(0)
       if (edge == Direct) {
         val opList = OpChain(node1.ops ++ node2.ops)
@@ -82,7 +86,7 @@ class Planner {
           dag.addEdge(opList, outgoingEdge._2, outgoingEdge._3)
         }
 
-        //remove the old vertex
+        // Remove the old vertex
         dag.removeVertex(node1)
         dag.removeVertex(node2)
       }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,19 +18,19 @@
 package io.gearpump.examples.distributedshell
 
 import java.util.concurrent.TimeUnit
-
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import DistShellAppMaster.ShellCommand
-
-import akka.pattern.ask
-import io.gearpump.util.{AkkaApp, Constants}
-import org.slf4j.{LoggerFactory, Logger}
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-object DistributedShellClient extends AkkaApp with ArgumentsParser  {
+import akka.pattern.ask
+import org.slf4j.{Logger, LoggerFactory}
+
+import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
+import io.gearpump.util.{AkkaApp, Constants}
+
+/** Client to DistributedShell to input "shell command" */
+object DistributedShellClient extends AkkaApp with ArgumentsParser {
   implicit val timeout = Constants.FUTURE_TIMEOUT
   private val LOG: Logger = LoggerFactory.getLogger(getClass)
 

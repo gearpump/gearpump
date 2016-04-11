@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,14 @@
 
 package io.gearpump.experiments.yarn.client
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
 import io.gearpump.cluster.ClientToMaster.{AddWorker, CommandResult, RemoveWorker}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.main.ParseResult
@@ -28,21 +33,18 @@ import io.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, Clust
 import io.gearpump.experiments.yarn.client.ManageCluster._
 import io.gearpump.experiments.yarn.glue.Records.ApplicationId
 import io.gearpump.util.FileUtils
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-
-import scala.concurrent.Await
 
 class ManageClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   implicit var system: ActorSystem = null
 
-  override def beforeAll() = {
+  override def beforeAll(): Unit = {
     system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
   }
 
-  override def afterAll() = {
-    system.shutdown()
-    system.awaitTermination()
+  override def afterAll(): Unit = {
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
   it should "getConfig from remote Gearpump" in {
@@ -52,11 +54,12 @@ class ManageClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
     val output = java.io.File.createTempFile("managerClusterSpec", ".conf")
 
-    val future = manager.command(GET_CONFIG, new ParseResult(Map("output" -> output.toString), Array.empty[String]))
+    val future = manager.command(GET_CONFIG, new ParseResult(Map("output" -> output.toString),
+      Array.empty[String]))
     appMaster.expectMsgType[GetActiveConfig]
     appMaster.reply(ActiveConfig(ConfigFactory.empty()))
     import scala.concurrent.duration._
-    Await.result(future, 30 seconds)
+    Await.result(future, 30.seconds)
 
     val content = FileUtils.read(output)
     assert(content.length > 0)
@@ -68,11 +71,12 @@ class ManageClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val appMaster = TestProbe()
     val manager = new ManageCluster(appId, appMaster.ref, system)
 
-    val future = manager.command(ADD_WORKER, new ParseResult(Map("count" -> 1.toString), Array.empty[String]))
+    val future = manager.command(ADD_WORKER, new ParseResult(Map("count" -> 1.toString),
+      Array.empty[String]))
     appMaster.expectMsg(AddWorker(1))
     appMaster.reply(CommandResult(true))
     import scala.concurrent.duration._
-    val result = Await.result(future, 30 seconds).asInstanceOf[CommandResult]
+    val result = Await.result(future, 30.seconds).asInstanceOf[CommandResult]
     assert(result.success)
   }
 
@@ -81,11 +85,12 @@ class ManageClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val appMaster = TestProbe()
     val manager = new ManageCluster(appId, appMaster.ref, system)
 
-    val future = manager.command(REMOVE_WORKER, new ParseResult(Map("container" -> "1"), Array.empty[String]))
+    val future = manager.command(REMOVE_WORKER, new ParseResult(Map("container" -> "1"),
+      Array.empty[String]))
     appMaster.expectMsg(RemoveWorker("1"))
     appMaster.reply(CommandResult(true))
     import scala.concurrent.duration._
-    val result = Await.result(future, 30 seconds).asInstanceOf[CommandResult]
+    val result = Await.result(future, 30.seconds).asInstanceOf[CommandResult]
     assert(result.success)
   }
 
@@ -93,11 +98,12 @@ class ManageClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val appId = ApplicationId.newInstance(0L, 0)
     val appMaster = TestProbe()
     val manager = new ManageCluster(appId, appMaster.ref, system)
-    val future = manager.command(VERSION, new ParseResult(Map("container" -> "1"), Array.empty[String]))
+    val future = manager.command(VERSION, new ParseResult(Map("container" -> "1"),
+      Array.empty[String]))
     appMaster.expectMsg(QueryVersion)
     appMaster.reply(Version("version 0.1"))
     import scala.concurrent.duration._
-    val result = Await.result(future, 30 seconds).asInstanceOf[Version]
+    val result = Await.result(future, 30.seconds).asInstanceOf[Version]
     assert(result.version == "version 0.1")
   }
 
@@ -108,11 +114,12 @@ class ManageClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
     val output = java.io.File.createTempFile("managerClusterSpec", ".conf")
 
-    val future = manager.command(QUERY, new ParseResult(Map.empty[String, String], Array.empty[String]))
+    val future = manager.command(QUERY, new ParseResult(Map.empty[String, String],
+      Array.empty[String]))
     appMaster.expectMsg(QueryClusterInfo)
     appMaster.reply(ClusterInfo(List("master"), List("worker")))
     import scala.concurrent.duration._
-    val result = Await.result(future, 30 seconds).asInstanceOf[ClusterInfo]
+    val result = Await.result(future, 30.seconds).asInstanceOf[ClusterInfo]
     assert(result.masters.sameElements(List("master")))
     assert(result.workers.sameElements(List("worker")))
   }
@@ -124,11 +131,12 @@ class ManageClusterSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
     val output = java.io.File.createTempFile("managerClusterSpec", ".conf")
 
-    val future = manager.command(KILL, new ParseResult(Map("container" -> "1"), Array.empty[String]))
+    val future = manager.command(KILL, new ParseResult(Map("container" -> "1"),
+      Array.empty[String]))
     appMaster.expectMsg(Kill)
     appMaster.reply(CommandResult(true))
     import scala.concurrent.duration._
-    val result = Await.result(future, 30 seconds).asInstanceOf[CommandResult]
+    val result = Await.result(future, 30.seconds).asInstanceOf[CommandResult]
     assert(result.success)
   }
 }

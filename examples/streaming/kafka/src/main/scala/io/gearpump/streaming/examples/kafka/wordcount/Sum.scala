@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,18 +19,19 @@
 package io.gearpump.streaming.examples.kafka.wordcount
 
 import com.twitter.bijection.Injection
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
+
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.task.{StartTime, Task, TaskContext}
 
-class Sum(taskContext : TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
+class Sum(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.output
 
   private[wordcount] var wordcount = Map.empty[String, Long]
 
-  override def onStart(startTime : StartTime) : Unit = {}
+  override def onStart(startTime: StartTime): Unit = {}
 
-  override def onNext(message : Message) : Unit = {
+  override def onNext(message: Message): Unit = {
     val word = message.msg.asInstanceOf[String]
     val count = wordcount.getOrElse(word, 0L) + 1
     wordcount += word -> count

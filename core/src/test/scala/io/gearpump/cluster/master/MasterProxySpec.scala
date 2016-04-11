@@ -18,8 +18,7 @@
 
 package io.gearpump.cluster.master
 
-//TODO
 class MasterProxySpec {
 
-  // master proxy will retry to find the master
+  // Master proxy retries multiple times to find the master
 }

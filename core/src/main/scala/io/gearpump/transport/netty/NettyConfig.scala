@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@
 package io.gearpump.transport.netty
 
 import com.typesafe.config.Config
+
 import io.gearpump.util.Constants
 
 class NettyConfig(conf: Config) {
@@ -30,6 +31,9 @@ class NettyConfig(conf: Config) {
   val messageBatchSize = conf.getInt(Constants.NETTY_MESSAGE_BATCH_SIZE)
   val flushCheckInterval = conf.getInt(Constants.NETTY_FLUSH_CHECK_INTERVAL)
 
-  def newTransportSerializer = Class.forName(conf.getString(Constants.GEARPUMP_TRANSPORT_SERIALIZER)).
-    newInstance().asInstanceOf[ITransportMessageSerializer]
+  def newTransportSerializer: ITransportMessageSerializer = {
+    Class.forName(
+      conf.getString(Constants.GEARPUMP_TRANSPORT_SERIALIZER))
+      .newInstance().asInstanceOf[ITransportMessageSerializer]
+  }
 }

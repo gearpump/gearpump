@@ -18,11 +18,13 @@
 
 package io.gearpump
 
-import akka.actor.{Terminated, Actor, Props}
+import scala.language.implicitConversions
+
+import akka.actor.{Actor, Props, Terminated}
 import akka.testkit.TestProbe
 
 object TestProbeUtil {
-  implicit def toProps(probe: TestProbe) = {
+  implicit def toProps(probe: TestProbe): Props = {
     Props(new Actor {
       val probeRef = probe.ref
       context.watch(probeRef)

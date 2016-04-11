@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,42 +18,46 @@
 package io.gearpump.cluster.worker
 
 import java.io.File
-
-import com.typesafe.config.Config
-import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.util.{ProcessLogRedirector, RichProcess}
-import org.slf4j.{LoggerFactory, Logger}
-
 import scala.sys.process.Process
 
+import com.typesafe.config.Config
+import org.slf4j.{Logger, LoggerFactory}
+
+import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.util.{ProcessLogRedirector, RichProcess}
+
 /**
-  * CGroupProcessLauncher is used to launch a process for Executor with CGroup.
-  * For more details, please refer http://gearpump.io
-  */
-class CGroupProcessLauncher(val config: Config) extends ExecutorProcessLauncher{
+ * CGroupProcessLauncher is used to launch a process for Executor with CGroup.
+ * For more details, please refer http://gearpump.io
+ */
+class CGroupProcessLauncher(val config: Config) extends ExecutorProcessLauncher {
   private val APP_MASTER = -1
   private val cgroupManager: Option[CGroupManager] = CGroupManager.getInstance(config)
   private val LOG: Logger = LoggerFactory.getLogger(getClass)
 
   override def cleanProcess(appId: Int, executorId: Int): Unit = {
-    if(executorId != APP_MASTER) {
+    if (executorId != APP_MASTER) {
       cgroupManager.foreach(_.shutDownExecutor(appId, executorId))
     }
   }
 
-  override def createProcess(appId: Int, executorId: Int, resource: Resource, appConfig: Config, options: Array[String],
+  override def createProcess(
+    appId: Int, executorId: Int, resource: Resource, appConfig: Config, options: Array[String],
     classPath: Array[String], mainClass: String, arguments: Array[String]): RichProcess = {
     val cgroupCommand = if (executorId != APP_MASTER) {
-      cgroupManager.map(_.startNewExecutor(appConfig, resource.slots, appId, executorId)).getOrElse(List.empty)
+      cgroupManager.map(_.startNewExecutor(appConfig, resource.slots, appId,
+        executorId)).getOrElse(List.empty)
     } else List.empty
-    LOG.info(s"Launch executor with CGroup ${cgroupCommand.mkString(" ")}, classpath: ${classPath.mkString(File.pathSeparator)}")
+    LOG.info(s"Launch executor with CGroup ${cgroupCommand.mkString(" ")}, " +
+      s"classpath: ${classPath.mkString(File.pathSeparator)}")
 
     val java = System.getProperty("java.home") + "/bin/java"
-    val command = cgroupCommand ++ List(java) ++ options ++ List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
-    LOG.info(s"Starting executor process java $mainClass ${arguments.mkString(" ")}; options: ${options.mkString(" ")}")
+    val command = cgroupCommand ++ List(java) ++ options ++ List("-cp", classPath
+      .mkString(File.pathSeparator), mainClass) ++ arguments
+    LOG.info(s"Starting executor process java $mainClass ${arguments.mkString(" ")}; " +
+      s"options: ${options.mkString(" ")}")
     val logger = new ProcessLogRedirector()
     val process = Process(command).run(logger)
     new RichProcess(process, logger)
   }
-
 }

@@ -18,8 +18,13 @@
 
 package io.gearpump.cluster.appmaster
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 import akka.actor._
 import akka.testkit.TestProbe
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
 import io.gearpump.TestProbeUtil._
 import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster._
@@ -27,27 +32,28 @@ import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment._
 import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironmentSpec.TestAppMasterEnv
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.StartExecutorSystems
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.MasterConnectionStatus.{MasterConnected, MasterStopped}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
-class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with BeforeAndAfterAll  {
+class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
 
-  override def beforeAll() = {
+  override def beforeAll(): Unit = {
     system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
   }
 
-  override def afterAll() = {
-    system.shutdown()
-    system.awaitTermination()
+  override def afterAll(): Unit = {
+    system.terminate()
+    Await.result(system.whenTerminated, Duration.Inf)
   }
 
-  "MasterWithExecutorSystemProvider" should "forward request StartExecutorSystem to ExecutorSystemProvider" in {
+  "MasterWithExecutorSystemProvider" should
+    "forward request StartExecutorSystem to ExecutorSystemProvider" in {
 
     val client = TestProbe()
     val master = TestProbe()
     val provider = TestProbe()
     val providerProps: Props = provider
-    val masterEnhanced = system.actorOf(Props(new MasterWithExecutorSystemProvider(master.ref, providerProps)))
+    val masterEnhanced = system.actorOf(Props(
+      new MasterWithExecutorSystemProvider(master.ref, providerProps)))
 
     val start = StartExecutorSystems(null, null)
     client.send(masterEnhanced, start)
@@ -76,7 +82,8 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
   }
 
   "AppMasterRuntimeEnvironment" should "start appMaster when master is connected" in {
-    val TestAppMasterEnv(master, appMaster, masterConnectionKeeper, runtimeEnv) = setupAppMasterRuntimeEnv
+    val TestAppMasterEnv(master, appMaster, masterConnectionKeeper, runtimeEnv) =
+      setupAppMasterRuntimeEnv()
 
     masterConnectionKeeper.send(runtimeEnv, MasterConnected)
     appMaster.expectMsg(StartAppMaster)
@@ -84,7 +91,8 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
 
   "AppMasterRuntimeEnvironment" should "shutdown itself when master is stopped" in {
 
-    val TestAppMasterEnv(master, appMaster, masterConnectionKeeper, runtimeEnv) = setupAppMasterRuntimeEnv
+    val TestAppMasterEnv(master, appMaster, masterConnectionKeeper, runtimeEnv) =
+      setupAppMasterRuntimeEnv()
 
     masterConnectionKeeper.send(runtimeEnv, MasterStopped)
     val client = TestProbe()
@@ -94,7 +102,8 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
 
   "AppMasterRuntimeEnvironment" should "shutdown itself when appMaster is stopped" in {
 
-    val TestAppMasterEnv(master, appMaster, masterConnectionKeeper, runtimeEnv) = setupAppMasterRuntimeEnv
+    val TestAppMasterEnv(master, appMaster, masterConnectionKeeper, runtimeEnv) =
+      setupAppMasterRuntimeEnv()
 
     val client = TestProbe()
     client.watch(runtimeEnv)
@@ -102,13 +111,13 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
     client.expectTerminated(runtimeEnv)
   }
 
-  private def setupAppMasterRuntimeEnv: TestAppMasterEnv = {
-    val appContext = AppMasterContext(0, null, null, null,  null, null, null)
+  private def setupAppMasterRuntimeEnv(): TestAppMasterEnv = {
+    val appContext = AppMasterContext(0, null, null, null, null, null, null)
     val app = AppDescription("app", "AppMasterClass", null, null)
     val master = TestProbe()
     val masterFactory = (_: AppId, _: MasterActorRef) => toProps(master)
     val appMaster = TestProbe()
-    val appMasterFactory = (_: AppMasterContext, _: AppDescription)=> toProps(appMaster)
+    val appMasterFactory = (_: AppMasterContext, _: AppDescription) => toProps(appMaster)
     val masterConnectionKeeper = TestProbe()
     val masterConnectionKeeperFactory =
       (_: MasterActorRef, _: RegisterAppMaster, _: ListenerActorRef) =>
@@ -125,5 +134,7 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
 
 object AppMasterRuntimeEnvironmentSpec {
 
-  case class TestAppMasterEnv(master: TestProbe, appMaster: TestProbe, connectionkeeper: TestProbe, appMasterRuntimeEnv: ActorRef)
+  case class TestAppMasterEnv(
+      master: TestProbe, appMaster: TestProbe, connectionkeeper: TestProbe,
+      appMasterRuntimeEnv: ActorRef)
 }

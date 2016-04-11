@@ -11,7 +11,6 @@ What Distributed Shell do is that user send a shell command to the cluster and t
 
 Repository and library dependencies can be found at [Maven Setting](maven-setting.html)
 
-
 ### Define Executor Class
 
 ```scala
