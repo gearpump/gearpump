@@ -46,12 +46,18 @@ class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(contex
   override def onStart(newStartTime: StartTime): Unit = {
     startTime = newStartTime.startTime
     LOG.info(s"opening data source at $startTime")
-    source.open(context, Some(startTime))
+    source.open(context, startTime)
     self ! Message("start", System.currentTimeMillis())
   }
 
   override def onNext(message: Message): Unit = {
-    source.read(batchSize).foreach(context.output)
+    var i = 0
+    var available = source.advance()
+    while (available && i < batchSize) {
+      context.output(source.read())
+      i += 1
+      available = source.advance()
+    }
     self ! Message("continue", System.currentTimeMillis())
   }
 

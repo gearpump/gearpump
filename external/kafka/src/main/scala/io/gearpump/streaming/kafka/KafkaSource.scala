@@ -31,7 +31,6 @@ import io.gearpump.util.LogUtil
 import io.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
 
-import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success}
 
 
@@ -52,6 +51,7 @@ object KafkaSource {
  * such that obsolete messages are dropped.
  *
  * @param config kafka source config
+ * @param offsetStorageFactory factory to build [[OffsetStorage]]
  * @param messageDecoder decodes [[Message]] from raw bytes
  * @param timestampFilter filters out message based on timestamp
  * @param fetchThread fetches messages and puts on a in-memory queue
@@ -68,14 +68,13 @@ class KafkaSource(
   import KafkaSource._
 
   private var startTime: Option[TimeStamp] = None
-
+  private var currentMessage: Option[Message] = None
 
   /**
    * @param topics comma-separated string of topics
    * @param properties kafka consumer config
    * @param offsetStorageFactory [[io.gearpump.streaming.transaction.api.OffsetStorageFactory]]
    *                            that creates [[io.gearpump.streaming.transaction.api.OffsetStorage]]
-   *
    */
   def this(topics: String, properties: Properties, offsetStorageFactory: OffsetStorageFactory) = {
     this(KafkaSourceConfig(properties).withConsumerTopics(topics), offsetStorageFactory)
@@ -142,7 +141,7 @@ class KafkaSource(
     }
   }
 
-  override def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {
+  override def open(context: TaskContext, startTime: TimeStamp): Unit = {
     import context.{appId, appName, parallelism, taskId}
 
     val topics = config.getConsumerTopics
@@ -158,21 +157,16 @@ class KafkaSource(
       tp -> new KafkaOffsetManager(storage)
     }.toMap
 
-    setStartTime(startTime)
+    setStartTime(Option(startTime))
   }
 
-  override def read(batchSize: Int): List[Message] = {
-    val messageBuffer = ArrayBuffer.empty[Message]
+  override def advance(): Boolean = {
+    currentMessage = fetchThread.flatMap(_.poll.flatMap(filterMessage))
+    currentMessage.nonEmpty
+  }
 
-    fetchThread.foreach {
-      fetch =>
-        var count = 0
-        while (count < batchSize) {
-          fetch.poll.flatMap(filterMessage).foreach(messageBuffer += _)
-          count += 1
-        }
-    }
-    messageBuffer.toList
+  override def read(): Message = {
+    currentMessage.getOrElse(throw new NoSuchElementException)
   }
 
   private def filterMessage(kafkaMsg: KafkaMessage): Option[Message] = {

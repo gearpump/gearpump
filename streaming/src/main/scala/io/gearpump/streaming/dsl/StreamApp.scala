@@ -98,24 +98,24 @@ object StreamApp {
 }
 
 class CollectionDataSource[T](seq: Seq[T]) extends DataSource {
-  val list = seq.toList
-  var index = 0
+  private var rest: Seq[T] = seq
+  private var element: Option[Message] = None
 
-  def readOne(): List[Message] = {
-    if (index < list.length) {
-      val element = List(Message(list(index).asInstanceOf[AnyRef]))
-      index += 1
-      element
+  override def advance(): Boolean = {
+    if (rest.nonEmpty) {
+      element = rest.headOption.map(Message(_))
+      rest = rest.tail
+      element.nonEmpty
     } else {
-      List.empty[Message]
+      false
     }
   }
 
-  override def read(batchSize: Int): List[Message] = {
-    readOne()
+  override def read(): Message = {
+    element.getOrElse(throw new NoSuchElementException)
   }
 
   override def close(): Unit = {}
 
-  override def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {}
+  override def open(context: TaskContext, startTime: TimeStamp): Unit = {}
 }
