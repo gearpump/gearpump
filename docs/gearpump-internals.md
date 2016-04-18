@@ -119,7 +119,7 @@ In case of a master crash, other standby masters will be notified, they will res
 
 #### What happens when a worker crashes?
 
-In case of a worker crash, the Master will get notified and stop scheduling new computation to this worker. All supervised executors on current worker will be killed, AppMaster can treat it as recovery of executor crash like [What happen when executor crash?](#what-happen-when-executor-crash)
+In case of a worker crash, the Master will get notified and stop scheduling new computation to this worker. All supervised executors on current worker will be killed, AppMaster can treat it as recovery of executor crash like [What happen when executor crash?](#what-happen-when-an-executor-crashes)
 
 #### What happens when the AppMaster crashes?
 

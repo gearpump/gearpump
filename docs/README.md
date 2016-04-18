@@ -26,8 +26,28 @@ ERROR:  While executing gem ... (Errno::EPERM)
     Operation not permitted - /usr/bin/listen
 ```
 
+If you are using Mac OSX 10.11+ (El Capitan), you will need to execute following command:
+```
+sudo gvim /Library/Ruby/Gems/2.0.0/gems/ffi-1.9.10/lib/ffi/library.rb
+```
+And change following code in this file:
+```ruby
+module FFI
+...
+    def self.map_library_name(lib)
+        ...
+        lib = Library::LIBC if lib == 'c'
+        lib = Library::LIBCURL if lib == 'libcurl'
+...
+module Library
+    CURRENT_PROCESS = FFI::CURRENT_PROCESS
+    LIBC = '/usr/lib/libc.dylib'
+    LIBCURL = '/usr/lib/libcurl.dylib'
+```
+
 Kramdown is needed for Markdown processing and the Python based Pygments is used for syntax
 highlighting.
+
 
 # How to Build
 Command `./build_doc.sh` can be used to create a full document folder under site/. 
