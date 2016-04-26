@@ -179,7 +179,8 @@ class RestClient(host: String, port: Int) {
 
   def queryWorkerMetrics(workerId: WorkerId, current: Boolean): HistoryMetrics = {
     val args = if (current) "?readLatest=true" else ""
-    val resp = callApi(s"worker/${WorkerId.render(workerId)}/metrics/worker$workerId?$args")
+    val workerIdStr = WorkerId.render(workerId)
+    val resp = callApi(s"worker/$workerIdStr/metrics/worker$workerIdStr?$args")
     decodeAs[HistoryMetrics](resp)
   }
 

@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 
 import io.gearpump.cluster.MasterToAppMaster
 import io.gearpump.cluster.master.MasterStatus
-import io.gearpump.cluster.worker.WorkerSummary
+import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
 import io.gearpump.integrationtest.{TestSpecBase, Util}
 
 /**
@@ -262,7 +262,7 @@ class RestServiceSpec extends TestSpecBase {
           restClient.queryWorkerMetrics(workerId, current = true).metrics.nonEmpty,
           "metrics available")
         val actual = restClient.queryWorkerMetrics(workerId, current = true)
-        actual.path shouldEqual s"worker$workerId"
+        actual.path shouldEqual s"worker${WorkerId.render(workerId)}"
         actual.metrics.foreach(metric => {
           metric.time should be > 0L
           metric.value should not be null
