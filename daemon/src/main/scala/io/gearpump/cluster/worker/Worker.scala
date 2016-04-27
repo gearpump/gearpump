@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
 
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ConfigValueFactory, Config, ConfigFactory}
 import org.slf4j.Logger
 
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
@@ -341,6 +341,8 @@ private[cluster] object Worker {
       procLauncher: ExecutorProcessLauncher) extends Actor {
     import launch.{appId, executorId, resource}
 
+    private val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId)
+
     val executorConfig: Config = {
       val workerConfig = context.system.settings.config
 
@@ -362,11 +364,18 @@ private[cluster] object Worker {
         // Falls back to workerConfig
         .withFallback(workerConfig)
 
-      // Excludes reference.conf, and JVM properties..
-      ClusterConfig.filterOutDefaultConfig(config)
-    }
+      // Minimum supported akka.scheduler.tick-duration on Windows is 10ms
+      val duration = config.getInt(AKKA_SCHEDULER_TICK_DURATION)
+      val updatedConf = if (akka.util.Helpers.isWindows && duration < 10) {
+        LOG.warn(s"$AKKA_SCHEDULER_TICK_DURATION on Windows must be larger than 10ms, set to 10ms")
+        config.withValue(AKKA_SCHEDULER_TICK_DURATION, ConfigValueFactory.fromAnyRef(10))
+      } else {
+        config
+      }
 
-    private val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId)
+      // Excludes reference.conf, and JVM properties..
+      ClusterConfig.filterOutDefaultConfig(updatedConf)
+    }
 
     implicit val executorService = ioPool
 

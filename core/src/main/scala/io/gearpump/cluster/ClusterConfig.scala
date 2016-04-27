@@ -142,7 +142,7 @@ object ClusterConfig {
 
     if (!akka.util.Helpers.isWindows) {
 
-      // Change the akka.scheduler.tick-duration to 10ms for Linux or Mac
+      // Change the akka.scheduler.tick-duration to 1 ms for Linux or Mac
       basic = linux.withFallback(basic)
     }
 
