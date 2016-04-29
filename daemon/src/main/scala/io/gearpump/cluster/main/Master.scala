@@ -33,7 +33,8 @@ import com.typesafe.config.ConfigValueFactory
 import org.slf4j.Logger
 
 import io.gearpump.cluster.ClusterConfig
-import io.gearpump.cluster.master.{Master => MasterActor}
+import io.gearpump.cluster.master.{Master => MasterActor, MasterNode}
+import io.gearpump.cluster.master.Master.MasterListUpdated
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
 import io.gearpump.util.{AkkaApp, Constants, LogUtil}
@@ -176,15 +177,17 @@ class MasterWatcher(role: String) extends Actor with ActorLogging {
         context.become(waitForShutdown)
         self ! MasterWatcher.Shutdown
       } else {
-        context.actorOf(Props(classOf[MasterActor]), MASTER)
-        context.become(waitForClusterEvent)
+        val master = context.actorOf(Props(classOf[MasterActor]), MASTER)
+        notifyMasterMembersChange(master)
+        context.become(waitForClusterEvent(master))
       }
     }
   }
 
-  def waitForClusterEvent: Receive = {
+  def waitForClusterEvent(master: ActorRef): Receive = {
     case MemberUp(m) if matchingRole(m) => {
       membersByAge += m
+      notifyMasterMembersChange(master)
     }
     case mEvent: MemberEvent if (mEvent.isInstanceOf[MemberExited] ||
       mEvent.isInstanceOf[MemberRemoved]) && matchingRole(mEvent.member) => {
@@ -196,8 +199,18 @@ class MasterWatcher(role: String) extends Actor with ActorLogging {
           s"shutting down...${membersByAge.iterator.mkString(",")}")
         context.become(waitForShutdown)
         self ! MasterWatcher.Shutdown
+      } else {
+        notifyMasterMembersChange(master)
       }
     }
+  }
+
+  private def notifyMasterMembersChange(master: ActorRef): Unit = {
+    val masters = membersByAge.toList.map{ member =>
+      MasterNode(member.address.host.getOrElse("Unknown-Host"),
+        member.address.port.getOrElse(0))
+    }
+    master ! MasterListUpdated(masters)
   }
 
   def waitForShutdown: Receive = {

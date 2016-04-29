@@ -86,6 +86,12 @@ private[cluster] class Master extends Actor with Stash {
 
   private val hostPort = HostPort(ActorUtil.getSystemAddress(context.system).hostPort)
 
+  // Maintain the list of active masters.
+  private var masters: List[MasterNode] = {
+    // Add myself into the list of initial masters.
+    List(MasterNode(hostPort.host, hostPort.port))
+  }
+
   val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
 
   val getHistoryMetricsConfig = HistoryMetricsConfig(systemConfig)
@@ -124,6 +130,7 @@ private[cluster] class Master extends Actor with Stash {
 
   def receiveHandler: Receive = workerMsgHandler orElse
     appMasterMsgHandler orElse
+    onMasterListChange orElse
     clientMsgHandler orElse
     metricsService orElse
     jarStoreService orElse
@@ -195,7 +202,7 @@ private[cluster] class Master extends Actor with Stash {
       val masterDescription =
         MasterSummary(
           MasterNode(hostPort.host, hostPort.port),
-          getMasterClusterList.map(hostPort => MasterNode(hostPort.host, hostPort.port)),
+          masters,
           aliveFor,
           logFileDir,
           jarStoreRootPath,
@@ -212,20 +219,12 @@ private[cluster] class Master extends Actor with Stash {
       appManager forward invalidAppMaster
   }
 
-  private def getMasterClusterList: List[HostPort] = {
-    val cluster = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS)
-      .asScala.map(HostPort(_)).toList
-
-    if (cluster.isEmpty) {
-
-      // Add myself into the list if it is a single node cluster
-      List(hostPort)
-    } else {
-      cluster
-    }
-  }
-
   import scala.util.{Failure, Success}
+
+  def onMasterListChange: Receive = {
+    case MasterListUpdated(masters: List[MasterNode]) =>
+      this.masters = masters
+  }
 
   def clientMsgHandler: Receive = {
     case app: SubmitApplication =>
@@ -302,6 +301,9 @@ object Master {
   case class WorkerTerminated(workerId: WorkerId)
 
   case class MasterInfo(master: ActorRef, startTime: Long = 0L)
+
+  /** Notify the subscriber that master actor list has been updated */
+  case class MasterListUpdated(masters: List[MasterNode])
 
   object MasterInfo {
     def empty: MasterInfo = MasterInfo(null)

@@ -264,7 +264,7 @@ object Build extends sbt.Build {
   lazy val daemon = Project(
     id = "gearpump-daemon",
     base = file("daemon"),
-    settings = commonSettings ++ noPublish ++ daemonDependencies
+    settings = commonSettings ++ daemonDependencies
   ) dependsOn(core % "test->test; compile->compile", cgroup % "test->test; compile->compile")
 
   lazy val cgroup = Project(
