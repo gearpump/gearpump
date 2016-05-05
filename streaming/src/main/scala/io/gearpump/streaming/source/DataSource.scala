@@ -19,7 +19,9 @@
 package io.gearpump.streaming.source
 
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.{Message, TimeStamp}
+import io.gearpump.Message
+
+import scala.util.Random
 
 /**
  * Interface to implement custom source where data is read into the system.
@@ -27,12 +29,12 @@ import io.gearpump.{Message, TimeStamp}
  *
  * An example would be like
  * {{{
- *  GenStringSource extends DataSource {
+ *  GenMsgSource extends DataSource {
  *
- *    def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {}
+ *    def open(context: TaskContext, startTime: TimeStamp): Unit = {}
  *
- *    def read(batchSize: Int): List[Message] = {
- *      List.fill(batchSize)(Message("message"))
+ *    def read(context: TaskContext): Message = {
+ *      Message("message")
  *    }
  *
  *    def close(): Unit = {}
@@ -46,18 +48,19 @@ trait DataSource extends java.io.Serializable {
   /**
    * Opens connection to data source
    * invoked in onStart() method of [[io.gearpump.streaming.source.DataSourceTask]]
+   *
    * @param context is the task context at runtime
    * @param startTime is the start time of system
    */
-  def open(context: TaskContext, startTime: Option[TimeStamp]): Unit
+  def open(context: TaskContext, startTime: Long): Unit
 
   /**
-   * Reads a number of messages from data source.
-   * invoked in each onNext() method of [[io.gearpump.streaming.source.DataSourceTask]]
-   * @param batchSize max number of messages to read
-   * @return a list of messages wrapped in [[io.gearpump.Message]]
+   * Reads next message from data source and
+   * returns null if no message is available
+   *
+   * @return a [[io.gearpump.Message]] or null
    */
-  def read(batchSize: Int): List[Message]
+  def read(): Message
 
   /**
    * Closes connection to data source.

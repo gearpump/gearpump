@@ -55,6 +55,7 @@ object KafkaSource {
  * such that obsolete messages are dropped.
  *
  * @param config kafka source config
+ * @param offsetStorageFactory factory to build [[OffsetStorage]]
  * @param messageDecoder decodes [[io.gearpump.Message]] from raw bytes
  * @param timestampFilter filters out message based on timestamp
  * @param fetchThread fetches messages and puts on a in-memory queue
@@ -152,7 +153,7 @@ class KafkaSource(
     }
   }
 
-  override def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {
+  override def open(context: TaskContext, startTime: TimeStamp): Unit = {
     import context.{appId, appName, parallelism, taskId}
 
     val topics = config.getConsumerTopics
@@ -168,21 +169,11 @@ class KafkaSource(
       tp -> new KafkaOffsetManager(storage)
     }.toMap
 
-    setStartTime(startTime)
+    setStartTime(Option(startTime))
   }
 
-  override def read(batchSize: Int): List[Message] = {
-    val messageBuffer = ArrayBuffer.empty[Message]
-
-    fetchThread.foreach {
-      fetch =>
-        var count = 0
-        while (count < batchSize) {
-          fetch.poll.flatMap(filterMessage).foreach(messageBuffer += _)
-          count += 1
-        }
-    }
-    messageBuffer.toList
+  override def read(): Message = {
+    fetchThread.flatMap(_.poll.flatMap(filterMessage)).orNull
   }
 
   private def filterMessage(kafkaMsg: KafkaMessage): Option[Message] = {

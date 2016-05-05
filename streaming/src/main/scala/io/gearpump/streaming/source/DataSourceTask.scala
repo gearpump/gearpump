@@ -27,14 +27,14 @@ object DataSourceTask {
 }
 
 /**
- * Task container for [[io.gearpump.streaming.source.DataSource]].
+ * Default Task container for [[io.gearpump.streaming.source.DataSource]] that
+ * reads from DataSource in batch
  * See [[io.gearpump.streaming.source.DataSourceProcessor]] for its usage
  *
  * DataSourceTask calls:
  *  - `DataSource.open()` in `onStart` and pass in [[io.gearpump.streaming.task.TaskContext]]
  * and application start time
- *  - `DataSource.read()` in each `onNext`, which reads a batch of messages whose size are
- * defined by `gearpump.source.read.batch.size`.
+ *  - `DataSource.read()` in each `onNext`, which reads a batch of messages
  *  - `DataSource.close()` in `onStop`
  */
 class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(context, conf) {
@@ -47,12 +47,14 @@ class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(contex
   override def onStart(newStartTime: StartTime): Unit = {
     startTime = newStartTime.startTime
     LOG.info(s"opening data source at $startTime")
-    source.open(context, Some(startTime))
+    source.open(context, startTime)
     self ! Message("start", System.currentTimeMillis())
   }
 
   override def onNext(message: Message): Unit = {
-    source.read(batchSize).foreach(context.output)
+    0.until(batchSize).foreach { _ =>
+      Option(source.read()).foreach(context.output)
+    }
     self ! Message("continue", System.currentTimeMillis())
   }
 

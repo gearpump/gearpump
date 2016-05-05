@@ -108,24 +108,17 @@ object StreamApp {
 
 /** A test message source which generated message sequence repeatedly. */
 class CollectionDataSource[T](seq: Seq[T]) extends DataSource {
-  val list = seq.toList
-  var index = 0
+  private val iterator: Iterator[T] = seq.iterator
 
-  def readOne(): List[Message] = {
-    if (index < list.length) {
-      val element = List(Message(list(index).asInstanceOf[AnyRef]))
-      index += 1
-      element
+  override def read(): Message = {
+    if (iterator.hasNext) {
+      Message(iterator.next())
     } else {
-      List.empty[Message]
+      null
     }
-  }
-
-  override def read(batchSize: Int): List[Message] = {
-    readOne()
   }
 
   override def close(): Unit = {}
 
-  override def open(context: TaskContext, startTime: Option[TimeStamp]): Unit = {}
+  override def open(context: TaskContext, startTime: TimeStamp): Unit = {}
 }

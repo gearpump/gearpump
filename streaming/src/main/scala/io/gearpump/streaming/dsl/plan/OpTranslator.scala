@@ -217,14 +217,13 @@ object OpTranslator {
     }
 
     override def onStart(startTime: StartTime): Unit = {
-      source.open(taskContext, Some(startTime.startTime))
+      source.open(taskContext, startTime.startTime)
       self ! Message("start", System.currentTimeMillis())
     }
 
     override def onNext(msg: Message): Unit = {
       val time = System.currentTimeMillis()
-      // TODO: determine the batch size
-      source.read(1).foreach(msg => {
+      Option(source.read()).foreach { msg =>
         operator match {
           case Some(operator) =>
             operator match {
@@ -238,7 +237,8 @@ object OpTranslator {
           case None =>
             taskContext.output(msg)
         }
-      })
+      }
+
       self ! Message("next", System.currentTimeMillis())
     }
 

@@ -88,7 +88,7 @@ private[kafka] class FetchThread(topicAndPartitions: Array[TopicAndPartition],
           }
           val hasMoreMessages = fetchMessage
           sleeper.reset()
-          if (!hasMoreMessages || incomingQueue.size >= fetchThreshold) {
+          if (!hasMoreMessages) {
             Thread.sleep(fetchSleepMS)
           }
         } catch {
