@@ -5,7 +5,7 @@
 
 RECIPIENTS_FILE="recipients.txt"
 CHECK_INTERVAL="1m"
-GIT_REPO="https://github.com/gearpump/gearpump.git"
+GIT_REPO="https://github.com/apache/incubator-gearpump.git"
 
 # Read recipients from file
 if [ ! -f $RECIPIENTS_FILE ]; then

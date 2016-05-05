@@ -11,7 +11,7 @@ script:
 - echo "TRAVIS_TAG" $TRAVIS_TAG
 - echo "repo" $TRAVIS_REPO_SLUG
 - set -o pipefail; skipLogs="Resolving |Compiling |Done updating|Updating |scoverage|coverage-report";
-  if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]];
+  if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "apache/incubator-gearpump" ]];
     then sbt -jvm-opts project/travis/jvmopts clean  scalastyle test:scalastyle it:scalastyle unidoc coverage +test | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_BRANCH == "master" ]];
     then sbt -jvm-opts project/travis/jvmopts clean +publish | grep -v -E "$skipLogs"; sbt -jvm-opts project/travis/jvmopts scalastyle test:scalastyle it:scalastyle unidoc coverage  +test  | grep -v -E "$skipLogs";
@@ -33,7 +33,7 @@ cache:
 git:
   depth: 1
 after_success:
-- if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" || $TRAVIS_BRANCH == "master" ]];
+- if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "apache/incubator-gearpump" || $TRAVIS_BRANCH == "master" ]];
     then bash <(curl -s https://codecov.io/bash);  
   elif [[ $TRAVIS_TAG != "" ]];
     then set -o pipefail; openssl aes-256-cbc -K $encrypted_3d8d53d5fdbf_key -iv $encrypted_3d8d53d5fdbf_iv -in secring.asc.enc -out secring.asc -d; sbt +publishSigned sonatypeReleaseAll | grep -v -E "Resolving ";
@@ -46,7 +46,7 @@ deploy:
   file_glob: true
   file: output/target/gearpump-*.zip  
   on:
-    repo: gearpump/gearpump
+    repo: apache/incubator-gearpump
     tags: true
     all_branches: true
 install:

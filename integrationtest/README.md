@@ -26,7 +26,7 @@ The integration test framework use docker to simulate a real cluster. The test s
 ### Step to Run Tests
 
 1. Checkout Gearpump project
-   `git clone https://github.com/gearpump/gearpump.git`
+   `git clone https://github.com/apache/incubator-gearpump.git`
 2. Build Gearpump project
    `sbt assembly pack`
 3. Run Integration test

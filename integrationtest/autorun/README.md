@@ -1,7 +1,7 @@
 ## Getting Started
 
 This package provides the facility to do continuous integration. Assume you already know how to run 
-integration test manually. If you don't know, Please refer [the instruction](https://github.com/gearpump/gearpump/blob/master/integrationtest/README.md) to setup your environment first. The 
+integration test manually. If you don't know, Please refer [the instruction](https://github.com/apache/incubator-gearpump/blob/master/integrationtest/README.md) to setup your environment first. The 
 integration test framework requires Docker. 
 
 To take a test drive, please run: 
