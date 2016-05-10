@@ -3,7 +3,7 @@ layout: global
 title: Gearpump Non-Streaming Example
 ---
 
-We'll use [Distributed Shell](https://github.com/gearpump/gearpump/tree/master/examples/distributedshell/src/main/scala/io/gearpump/examples/distributedshell) as an example to illustrate how to do that.
+We'll use [Distributed Shell](https://github.com/gearpump/gearpump/tree/master/examples/distributedshell/src/main/scala/org.apache.gearpump/examples/distributedshell) as an example to illustrate how to do that.
 
 What Distributed Shell do is that user send a shell command to the cluster and the command will the executed on each node, then the result will be return to user.
 

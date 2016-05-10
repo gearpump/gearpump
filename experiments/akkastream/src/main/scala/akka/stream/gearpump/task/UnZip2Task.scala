@@ -20,9 +20,9 @@ package akka.stream.gearpump.task
 
 import akka.stream.gearpump.task.UnZip2Task.UnZipFunction
 
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.task.TaskContext
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.TaskContext
 
 class UnZip2Task(context: TaskContext, userConf: UserConfig) extends GraphTask(context, userConf) {
 

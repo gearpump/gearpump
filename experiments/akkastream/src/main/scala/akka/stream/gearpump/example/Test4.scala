@@ -26,7 +26,7 @@ import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.scaladsl.GearSink
 import akka.stream.scaladsl.Source
 
-import io.gearpump.streaming.dsl.LoggerSink
+import org.apache.gearpump.streaming.dsl.LoggerSink
 
 /**
  * read from local and write to remote

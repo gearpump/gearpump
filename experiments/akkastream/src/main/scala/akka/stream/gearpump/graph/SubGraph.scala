@@ -21,7 +21,7 @@ package akka.stream.gearpump.graph
 import akka.stream.ModuleGraph.Edge
 import akka.stream.impl.StreamLayout.Module
 
-import io.gearpump.util.Graph
+import org.apache.gearpump.util.Graph
 
 /**
  * [[SubGraph]] is a partial part of [[akka.stream.ModuleGraph]]

@@ -6,12 +6,12 @@ How to use
   ```
 2. Submit the stock crawler
   ```
-  bin\gear app -jar examples\gearpump-examples-assembly-0.3.2-SNAPSHOT.jar io.gearpump.streaming.examples.stock.main.Stock
+  bin\gear app -jar examples\gearpump-examples-assembly-0.3.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.stock.main.Stock
   ```
   
   If you are behind  a proxy, you need to set the proxy address
   ```
-  bin\gear app -jar examples\gearpump-examples-assembly-0.3.2-SNAPSHOT.jar io.gearpump.streaming.examples.stock.main.Stock -proxy host:port
+  bin\gear app -jar examples\gearpump-examples-assembly-0.3.2-SNAPSHOT.jar org.apache.gearpump.streaming.examples.stock.main.Stock -proxy host:port
   ```
   
 3. Check the UI

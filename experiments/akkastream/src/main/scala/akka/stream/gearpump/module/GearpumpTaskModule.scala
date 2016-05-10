@@ -22,10 +22,10 @@ import akka.stream.impl.FlowModule
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.{Attributes, Inlet, Outlet, Shape, SinkShape, SourceShape}
 
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.sink.DataSink
-import io.gearpump.streaming.source.DataSource
-import io.gearpump.streaming.task.Task
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.sink.DataSink
+import org.apache.gearpump.streaming.source.DataSource
+import org.apache.gearpump.streaming.task.Task
 
 /**
  * [[GearpumpTaskModule]] represent modules that can be materialized as Gearpump Tasks.

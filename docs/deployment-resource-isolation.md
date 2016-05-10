@@ -83,7 +83,7 @@ The following steps are supposed to be executed by root user.
 2. Enter into Gearpump's home folder, edit gear.conf under folder ```${GEARPUMP_HOME}/conf/```
 
    ```
-   gearpump.worker.executor-process-launcher = "io.gearpump.cluster.worker.CGroupProcessLauncher"
+   gearpump.worker.executor-process-launcher = "org.apache.gearpump.cluster.worker.CGroupProcessLauncher"
    
    gearpump.cgroup.root = "gearpump"
    ```

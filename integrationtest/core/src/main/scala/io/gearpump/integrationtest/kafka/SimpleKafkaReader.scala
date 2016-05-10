@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.kafka
+package org.apache.gearpump.integrationtest.kafka
 
 import scala.util.{Failure, Success}
 
@@ -23,7 +23,7 @@ import kafka.api.FetchRequestBuilder
 import kafka.consumer.SimpleConsumer
 import kafka.utils.Utils
 
-import io.gearpump.streaming.serializer.ChillSerializer
+import org.apache.gearpump.streaming.serializer.ChillSerializer
 
 class SimpleKafkaReader(verifier: ResultVerifier, topic: String, partition: Int = 0,
     host: String, port: Int) {

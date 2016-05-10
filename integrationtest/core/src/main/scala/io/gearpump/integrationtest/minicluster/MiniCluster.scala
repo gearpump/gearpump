@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.minicluster
+package org.apache.gearpump.integrationtest.minicluster
 
 import java.io.IOException
 import scala.collection.mutable.ListBuffer
 
 import org.apache.log4j.Logger
 
-import io.gearpump.integrationtest.{Docker, Util}
+import org.apache.gearpump.integrationtest.{Docker, Util}
 
 /**
  * This class is a test driver for end-to-end integration test.

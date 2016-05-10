@@ -27,13 +27,13 @@ import akka.stream.gearpump.task.SinkBridgeTask.RequestMessage
 import akka.util.Timeout
 import org.reactivestreams.{Publisher, Subscriber, Subscription}
 
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.ProcessorId
-import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
-import io.gearpump.util.LogUtil
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.streaming.ProcessorId
+import org.apache.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
+import org.apache.gearpump.util.LogUtil
 
 /**
  * Bridge Task when data flow is from remote Gearpump Task to local Akka-Stream Module

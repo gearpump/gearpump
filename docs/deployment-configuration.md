@@ -76,7 +76,7 @@ This is the default configuration for `gear.conf`.
 | gearpump.executor.vmargs | "-server -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3  -Djava.rmi.server.hostname=localhost" | JVM arguments for executor |
 | gearpump.executor.extraClasspath | "" | JVM default class path for executor |
 | gearpump.jarstore.rootpath | "jarstore/" |   Define where the submitted jar file will be stored. This path follows the hadoop path schema. For HDFS, use `hdfs://host:port/path/`; if you want to store on master nodes, then use local directory. `jarstore.rootpath = "jarstore/"` will point to relative directory where master is started. `jarstore.rootpath = "/jarstore/"` will point to absolute directory on master server |
-| gearpump.scheduling.scheduler-class |"io.gearpump.cluster.scheduler.PriorityScheduler" | Class to schedule the applications. |
+| gearpump.scheduling.scheduler-class |"org.apache.gearpump.cluster.scheduler.PriorityScheduler" | Class to schedule the applications. |
 | gearpump.services.host | "127.0.0.1" | dashboard UI host address |
 | gearpump.services.port | 8090 | dashboard UI host port |
 | gearpump.netty.buffer-size | 5242880 | netty connection buffer size |
@@ -88,4 +88,4 @@ This is the default configuration for `gear.conf`.
 | gearpump.netty.dispatcher | "gearpump.shared-thread-pool-dispatcher" | default dispatcher for netty client and server |
 | gearpump.shared-thread-pool-dispatcher | default Dispatcher with "fork-join-executor" | default shared thread pool dispatcher |
 | gearpump.single-thread-dispatcher | PinnedDispatcher | default single thread dispatcher |
-| serialization-framework | "io.gearpump.serializer.FastKryoSerializationFramework" | Gearpump has built-in serialization framework using Kryo. Users are allowed to use a different serialization framework, like Protobuf. See `io.gearpump.serializer.FastKryoSerializationFramework` to find how a custom serialization framework can be defined |
+| serialization-framework | "org.apache.gearpump.serializer.FastKryoSerializationFramework" | Gearpump has built-in serialization framework using Kryo. Users are allowed to use a different serialization framework, like Protobuf. See `org.apache.gearpump.serializer.FastKryoSerializationFramework` to find how a custom serialization framework can be defined |

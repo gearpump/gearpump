@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.minicluster
+package org.apache.gearpump.integrationtest.minicluster
 
 import org.apache.log4j.Logger
 
-import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.integrationtest.Docker
+import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.integrationtest.Docker
 
 /**
  * A command-line client to operate a Gearpump cluster

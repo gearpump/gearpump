@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.minicluster
+package org.apache.gearpump.integrationtest.minicluster
 
 import scala.sys.process._
 
-import io.gearpump.integrationtest.Docker
+import org.apache.gearpump.integrationtest.Docker
 
 /**
  * A helper to instantiate the base image for different usage.

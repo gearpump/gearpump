@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.kafka
+package org.apache.gearpump.integrationtest.kafka
 
 import org.apache.log4j.Logger
 
-import io.gearpump.integrationtest.minicluster.MiniCluster
-import io.gearpump.integrationtest.{Docker, Util}
+import org.apache.gearpump.integrationtest.minicluster.MiniCluster
+import org.apache.gearpump.integrationtest.{Docker, Util}
 
 object KafkaCluster {
 

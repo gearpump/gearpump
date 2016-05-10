@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package io.gearpump.integrationtest.hadoop
+package org.apache.gearpump.integrationtest.hadoop
 
 import org.apache.log4j.Logger
 
-import io.gearpump.integrationtest.{Docker, Util}
+import org.apache.gearpump.integrationtest.{Docker, Util}
 
 object HadoopCluster {
 

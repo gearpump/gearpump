@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.checklist
+package org.apache.gearpump.integrationtest.checklist
 
 import org.scalatest.TestData
 
-import io.gearpump.integrationtest.kafka._
-import io.gearpump.integrationtest.{TestSpecBase, Util}
+import org.apache.gearpump.integrationtest.kafka._
+import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
 
 /**
  * The test spec checks the Kafka datasource connector
@@ -58,7 +58,7 @@ class ConnectorKafkaSpec extends TestSpecBase {
       kafkaCluster.produceDataToKafka(sourceTopic, messageNum)
 
       // exercise
-      val args = Array("io.gearpump.streaming.examples.kafka.KafkaReadWrite",
+      val args = Array("org.apache.gearpump.streaming.examples.kafka.KafkaReadWrite",
         "-zookeeperConnect", kafkaCluster.getZookeeperConnectString,
         "-brokerList", kafkaCluster.getBrokerListConnectString,
         "-sourceTopic", sourceTopic,
@@ -86,7 +86,7 @@ class ConnectorKafkaSpec extends TestSpecBase {
       producer.start()
 
       // exercise
-      val args = Array("io.gearpump.streaming.examples.kafka.KafkaReadWrite",
+      val args = Array("org.apache.gearpump.streaming.examples.kafka.KafkaReadWrite",
         "-zookeeperConnect", kafkaCluster.getZookeeperConnectString,
         "-brokerList", kafkaCluster.getBrokerListConnectString,
         "-sourceTopic", sourceTopic,

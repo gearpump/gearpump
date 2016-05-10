@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.checklist
+package org.apache.gearpump.integrationtest.checklist
 
 import org.apache.log4j.Logger
 
-import io.gearpump.integrationtest.{Docker, TestSpecBase, Util}
-import io.gearpump.streaming._
-import io.gearpump.streaming.appmaster.ProcessorSummary
+import org.apache.gearpump.integrationtest.{Docker, TestSpecBase, Util}
+import org.apache.gearpump.streaming._
+import org.apache.gearpump.streaming.appmaster.ProcessorSummary
 
 /**
  * The test spec will perform destructive operations to check the stability
@@ -33,8 +33,8 @@ class ExampleSpec extends TestSpecBase {
   "distributed shell" should {
     "execute commands on machines where its executors are running" in {
       val distShellJar = cluster.queryBuiltInExampleJars("distributedshell-").head
-      val mainClass = "io.gearpump.examples.distributedshell.DistributedShell"
-      val clientClass = "io.gearpump.examples.distributedshell.DistributedShellClient"
+      val mainClass = "org.apache.gearpump.examples.distributedshell.DistributedShell"
+      val clientClass = "org.apache.gearpump.examples.distributedshell.DistributedShellClient"
       val appId = restClient.getNextAvailableAppId()
       val success = restClient.submitApp(distShellJar, cluster.getWorkerHosts.length, mainClass)
       success shouldBe true

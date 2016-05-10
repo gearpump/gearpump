@@ -5,7 +5,7 @@ title: Write Your 1st Gearpump App
 description: Write Your 1st Gearpump App
 ---
 
-We'll use [wordcount](https://github.com/gearpump/gearpump/blob/master/examples/streaming/wordcount/src/main/scala/io/gearpump/streaming/examples/wordcount/) as an example to illustrate how to write Gearpump applications.
+We'll use [wordcount](https://github.com/gearpump/gearpump/blob/master/examples/streaming/wordcount/src/main/scala/org.apache.gearpump/streaming/examples/wordcount/) as an example to illustrate how to write Gearpump applications.
 
 ### Maven/Sbt Settings
 
@@ -17,9 +17,9 @@ You can get your preferred IDE ready for Gearpump by following [this guide](dev-
 ### Decide which language and API to use for writing 
 Gearpump supports two level APIs:
 
-1. Low level API, which is more similar to Akka programming, operating on each event. The API document can be found at [Low Level API Doc](http://www.gearpump.io/releases/latest/api/scala/index.html#io.gearpump.streaming.package).
+1. Low level API, which is more similar to Akka programming, operating on each event. The API document can be found at [Low Level API Doc](http://www.gearpump.io/releases/latest/api/scala/index.html#org.apache.gearpump.streaming.package).
 
-2. High level API (aka DSL), which is operating on streaming instead of individual event. The API document can be found at [DSL API Doc](http://www.gearpump.io/releases/latest/api/scala/index.html#io.gearpump.streaming.dsl.package).
+2. High level API (aka DSL), which is operating on streaming instead of individual event. The API document can be found at [DSL API Doc](http://www.gearpump.io/releases/latest/api/scala/index.html#org.apache.gearpump.streaming.dsl.package).
 
 And both APIs have their Java version and Scala version.
 

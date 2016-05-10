@@ -22,7 +22,7 @@
     'cfp.loadingBarInterceptor',
     'ngFileUpload',
     'dashing',
-    'io.gearpump.models'
+    'org.apache.gearpump.models'
   ])
 
     // configure routes

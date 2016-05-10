@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-package io.gearpump.integrationtest.storm
+package org.apache.gearpump.integrationtest.storm
 
 import scala.util.Random
 
 import backtype.storm.utils.{DRPCClient, Utils}
 
-import io.gearpump.integrationtest.minicluster.{BaseContainer, MiniCluster, RestClient}
-import io.gearpump.integrationtest.{Docker, Util}
+import org.apache.gearpump.integrationtest.minicluster.{BaseContainer, MiniCluster, RestClient}
+import org.apache.gearpump.integrationtest.{Docker, Util}
 
 class StormClient(cluster: MiniCluster, restClient: RestClient) {
 

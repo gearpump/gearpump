@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest
+package org.apache.gearpump.integrationtest
 
-import io.gearpump.integrationtest.minicluster.MiniCluster
+import org.apache.gearpump.integrationtest.minicluster.MiniCluster
 
 /**
  * Provides a min cluster of Gearpump, which contains one or more masters, and workers.

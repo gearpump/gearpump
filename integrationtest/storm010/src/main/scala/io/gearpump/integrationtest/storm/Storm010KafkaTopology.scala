@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package io.gearpump.integrationtest.storm
+package org.apache.gearpump.integrationtest.storm
 
 import java.util.{ArrayList => JArrayList, HashMap => JHashMap, Map => JMap}
 
@@ -25,7 +25,7 @@ import backtype.storm.{Config, StormSubmitter}
 import storm.kafka.bolt.KafkaBolt
 import storm.kafka.{KafkaSpout, SpoutConfig, ZkHosts}
 
-import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 
 /**
  * Tests Storm 0.10.x compatibility over Gearpump

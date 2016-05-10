@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.checklist
+package org.apache.gearpump.integrationtest.checklist
 
-import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.integrationtest.TestSpecBase
+import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.integrationtest.TestSpecBase
 
 /**
  * The test spec checks the command-line usage

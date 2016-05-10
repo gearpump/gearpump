@@ -29,7 +29,7 @@ import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.StreamSupervisor
 import akka.stream.{ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Attributes, ClosedShape, Graph => AkkaGraph, MaterializationContext, ModuleGraph}
 
-import io.gearpump.util.Graph
+import org.apache.gearpump.util.Graph
 
 /**
  * [[LocalMaterializer]] will use local actor to materialize the graph

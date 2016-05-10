@@ -24,12 +24,12 @@ import akka.actor.Actor.Receive
 import akka.stream.gearpump.task.SourceBridgeTask.{AkkaStreamMessage, Complete, Error}
 import org.reactivestreams.{Subscriber, Subscription}
 
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.ProcessorId
-import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.streaming.ProcessorId
+import org.apache.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
 
 /**
  * Bridge Task when data flow is from local Akka-Stream Module to remote Gearpump Task

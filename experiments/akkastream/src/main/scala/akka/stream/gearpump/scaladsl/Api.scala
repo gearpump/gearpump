@@ -23,10 +23,10 @@ import akka.stream.gearpump.module.{DummySink, DummySource, GroupByModule, Proce
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import org.reactivestreams.{Publisher, Subscriber}
 
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.sink.DataSink
-import io.gearpump.streaming.source.DataSource
-import io.gearpump.streaming.task.Task
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.sink.DataSink
+import org.apache.gearpump.streaming.source.DataSource
+import org.apache.gearpump.streaming.task.Task
 
 object GearSource {
 
@@ -61,7 +61,7 @@ object GearSource {
   }
 
   /**
-   * Construct a Source from Gearpump [[io.gearpump.streaming.Processor]].
+   * Construct a Source from Gearpump [[org.apache.gearpump.streaming.Processor]].
    *
    * [[ProcessorModule]] -> downstream Sink
    *
@@ -106,7 +106,7 @@ object GearSink {
   }
 
   /**
-   * Construct a Sink from Gearpump [[io.gearpump.streaming.Processor]].
+   * Construct a Sink from Gearpump [[org.apache.gearpump.streaming.Processor]].
    *
    * Upstream Source -> [[ProcessorModule]]
    *

@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-package io.gearpump.integrationtest.checklist
+package org.apache.gearpump.integrationtest.checklist
 
 import org.apache.log4j.Logger
 
-import io.gearpump.integrationtest.hadoop.HadoopCluster._
-import io.gearpump.integrationtest.kafka.KafkaCluster._
-import io.gearpump.integrationtest.kafka.{ResultVerifier, SimpleKafkaReader}
-import io.gearpump.integrationtest.{TestSpecBase, Util}
+import org.apache.gearpump.integrationtest.hadoop.HadoopCluster._
+import org.apache.gearpump.integrationtest.kafka.KafkaCluster._
+import org.apache.gearpump.integrationtest.kafka.{ResultVerifier, SimpleKafkaReader}
+import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
 
 /**
  * Checks message delivery consistency, like at-least-once, and exactly-once.
@@ -55,7 +55,7 @@ class MessageDeliverySpec extends TestSpecBase {
 
           withHadoopCluster { hadoopCluster =>
             // exercise
-            val args = Array("io.gearpump.streaming.examples.state.MessageCountApp",
+            val args = Array("org.apache.gearpump.streaming.examples.state.MessageCountApp",
               "-defaultFS", hadoopCluster.getDefaultFS,
               "-zookeeperConnect", kafkaCluster.getZookeeperConnectString,
               "-brokerList", kafkaCluster.getBrokerListConnectString,

@@ -9,7 +9,7 @@ title: Gearpump Connectors
 ### DataSource
 `DataSource` is the concept in Gearpump that without input and will output messages. So, basically, `DataSource` is the start point of a streaming processing flow.
 
-As Gearpump depends on `DataSource` to be replay-able to ensure at-least-once message delivery and exactly-once message delivery, for some data sources, we will need a `io.gearpump.streaming.transaction.api.OffsetStorageFactory` to store the offset (progress) of current `DataSource`. So that, when a replay is needed, Gearpump can guide `DataSource` to replay from certain offset.
+As Gearpump depends on `DataSource` to be replay-able to ensure at-least-once message delivery and exactly-once message delivery, for some data sources, we will need a `org.apache.gearpump.streaming.transaction.api.OffsetStorageFactory` to store the offset (progress) of current `DataSource`. So that, when a replay is needed, Gearpump can guide `DataSource` to replay from certain offset.
 
 Currently Gearpump `DataSource` only support infinite stream. Finite stream support will be added in a near future release.
 
@@ -143,7 +143,7 @@ To implement your own `DataSource`, you need to implement two things:
 2. a helper class to easy the usage in a DSL
 
 ### Implement your own `DataSource`
-You need to implement a class derived from `io.gearpump.streaming.transaction.api.TimeReplayableSource`.
+You need to implement a class derived from `org.apache.gearpump.streaming.transaction.api.TimeReplayableSource`.
 
 ### Implement DSL helper (Optional)
 If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.
@@ -174,7 +174,7 @@ To implement your own `DataSink`, you need to implement two things:
 2. a helper class to make it easy use in DSL
 
 ### Implement your own `DataSink`
-You need to implement a class derived from `io.gearpump.streaming.sink.DataSink`.
+You need to implement a class derived from `org.apache.gearpump.streaming.sink.DataSink`.
 
 ### Implement DSL helper (Optional)
 If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.

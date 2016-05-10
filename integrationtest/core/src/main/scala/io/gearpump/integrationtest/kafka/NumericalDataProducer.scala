@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.kafka
+package org.apache.gearpump.integrationtest.kafka
 
 import java.util.Properties
 
@@ -23,7 +23,7 @@ import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.ByteArraySerializer
 import org.apache.log4j.Logger
 
-import io.gearpump.streaming.serializer.ChillSerializer
+import org.apache.gearpump.streaming.serializer.ChillSerializer
 
 class NumericalDataProducer(topic: String, bootstrapServers: String) {
 

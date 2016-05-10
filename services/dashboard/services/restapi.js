@@ -220,7 +220,7 @@ angular.module('dashboard')
         replaceDagProcessor: function (files, formFormNames, appId, oldProcessorId, newProcessorDescription, onComplete) {
           var url = restapiV1Root + 'appmaster/' + appId + '/dynamicdag';
           var args = {
-            "$type": 'io.gearpump.streaming.appmaster.DagManager.ReplaceProcessor',
+            "$type": 'org.apache.gearpump.streaming.appmaster.DagManager.ReplaceProcessor',
             oldProcessorId: oldProcessorId,
             newProcessorDescription: angular.merge({
               id: oldProcessorId

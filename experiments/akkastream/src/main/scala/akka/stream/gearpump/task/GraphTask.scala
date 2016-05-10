@@ -20,10 +20,10 @@ package akka.stream.gearpump.task
 
 import akka.stream.gearpump.task.GraphTask.{Index, PortId}
 
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.ProcessorId
-import io.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskWrapper}
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.ProcessorId
+import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskWrapper}
 
 class GraphTask(inputTaskContext: TaskContext, userConf: UserConfig)
   extends Task(inputTaskContext, userConf) {

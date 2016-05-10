@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.kafka
+package org.apache.gearpump.integrationtest.kafka
 
 import scala.collection.mutable
 

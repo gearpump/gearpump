@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.suites
+package org.apache.gearpump.integrationtest.suites
 
 import org.scalatest._
 
-import io.gearpump.integrationtest.MiniClusterProvider
-import io.gearpump.integrationtest.checklist._
-import io.gearpump.integrationtest.minicluster.MiniCluster
+import org.apache.gearpump.integrationtest.MiniClusterProvider
+import org.apache.gearpump.integrationtest.checklist._
+import org.apache.gearpump.integrationtest.minicluster.MiniCluster
 
 /**
  * Launch a Gearpump cluster in standalone mode and run all test specs. To test a specific

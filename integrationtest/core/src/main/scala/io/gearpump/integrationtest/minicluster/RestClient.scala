@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.minicluster
+package org.apache.gearpump.integrationtest.minicluster
 
 import scala.reflect.ClassTag
 
@@ -24,23 +24,23 @@ import org.apache.log4j.Logger
 import upickle.Js
 import upickle.default._
 
-import io.gearpump.cluster.AppMasterToMaster.MasterData
-import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
-import io.gearpump.cluster.MasterToClient.HistoryMetrics
-import io.gearpump.cluster.master.MasterSummary
-import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import io.gearpump.cluster.{AppJar, MasterToAppMaster}
-import io.gearpump.integrationtest.{Docker, Util}
-import io.gearpump.services.AppMasterService.Status
-import io.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners}
+import org.apache.gearpump.cluster.AppMasterToMaster.MasterData
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
+import org.apache.gearpump.cluster.MasterToClient.HistoryMetrics
+import org.apache.gearpump.cluster.master.MasterSummary
+import org.apache.gearpump.cluster.worker.{WorkerId, WorkerSummary}
+import org.apache.gearpump.cluster.{AppJar, MasterToAppMaster}
+import org.apache.gearpump.integrationtest.{Docker, Util}
+import org.apache.gearpump.services.AppMasterService.Status
+import org.apache.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners}
 // NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
-import io.gearpump.streaming.ProcessorDescription
-import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
-import io.gearpump.streaming.appmaster.DagManager.{DAGOperationResult, ReplaceProcessor}
-import io.gearpump.streaming.appmaster.StreamAppMasterSummary
-import io.gearpump.streaming.executor.Executor.ExecutorSummary
-import io.gearpump.util.{Constants, Graph}
+import org.apache.gearpump.services.util.UpickleUtil._
+import org.apache.gearpump.streaming.ProcessorDescription
+import org.apache.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
+import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperationResult, ReplaceProcessor}
+import org.apache.gearpump.streaming.appmaster.StreamAppMasterSummary
+import org.apache.gearpump.streaming.executor.Executor.ExecutorSummary
+import org.apache.gearpump.util.{Constants, Graph}
 
 /**
  * A REST client to operate a Gearpump cluster

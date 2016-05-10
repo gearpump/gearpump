@@ -33,8 +33,8 @@ import akka.stream.impl.StreamLayout._
 import akka.stream.impl._
 import akka.stream.{Graph => AkkaGraph}
 
-import _root_.io.gearpump.util
-import _root_.io.gearpump.util.Graph
+import _root_.org.apache.gearpump.util
+import _root_.org.apache.gearpump.util.Graph
 
 /**
  *

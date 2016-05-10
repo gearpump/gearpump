@@ -26,10 +26,10 @@ import akka.stream.gearpump.task.SinkBridgeTask.SinkBridgeTaskClient
 import akka.stream.gearpump.task.SourceBridgeTask.SourceBridgeTaskClient
 import akka.stream.impl.StreamLayout.Module
 
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.cluster.embedded.EmbeddedCluster
-import io.gearpump.streaming.ProcessorId
-import io.gearpump.util.Graph
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.embedded.EmbeddedCluster
+import org.apache.gearpump.streaming.ProcessorId
+import org.apache.gearpump.util.Graph
 
 /**
  *

@@ -28,11 +28,11 @@ import akka.stream.impl.Stages.StageModule
 import akka.stream.impl.StreamLayout.Module
 import org.slf4j.LoggerFactory
 
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.dsl.StreamApp
-import io.gearpump.streaming.dsl.op.{DataSinkOp, DataSourceOp, Direct, FlatMapOp, GroupByOp, MasterOp, MergeOp, Op, OpEdge, ProcessorOp, Shuffle, SlaveOp}
-import io.gearpump.streaming.{ProcessorId, StreamApplication}
-import io.gearpump.util.Graph
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.dsl.StreamApp
+import org.apache.gearpump.streaming.dsl.op.{DataSinkOp, DataSourceOp, Direct, FlatMapOp, GroupByOp, MasterOp, MergeOp, Op, OpEdge, ProcessorOp, Shuffle, SlaveOp}
+import org.apache.gearpump.streaming.{ProcessorId, StreamApplication}
+import org.apache.gearpump.util.Graph
 
 /**
  * [[RemoteMaterializerImpl]] will materialize the [[Graph[Module, Edge]] to a Gearpump

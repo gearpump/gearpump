@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest
+package org.apache.gearpump.integrationtest
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}

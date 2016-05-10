@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest
+package org.apache.gearpump.integrationtest
 
 import org.scalatest._
 
-import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.cluster.MasterToAppMaster.AppMasterData
-import io.gearpump.util.LogUtil
+import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
+import org.apache.gearpump.util.LogUtil
 
 /**
  * The abstract test spec

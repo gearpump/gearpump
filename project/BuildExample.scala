@@ -36,7 +36,7 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         mainClass in(Compile, packageBin) :=
-          Some("io.gearpump.streaming.examples.wordcountjava.WordCount"),
+          Some("org.apache.gearpump.streaming.examples.wordcountjava.WordCount"),
 
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -49,7 +49,7 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         mainClass in(Compile, packageBin) :=
-          Some("io.gearpump.streaming.examples.wordcount.WordCount"),
+          Some("org.apache.gearpump.streaming.examples.wordcount.WordCount"),
 
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -61,7 +61,7 @@ object BuildExample extends sbt.Build {
     base = file("examples/streaming/sol"),
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
-        mainClass in(Compile, packageBin) := Some("io.gearpump.streaming.examples.sol.SOL"),
+        mainClass in(Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.sol.SOL"),
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
 
@@ -74,7 +74,7 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         mainClass in(Compile, packageBin) :=
-          Some("io.gearpump.streaming.examples.complexdag.Dag"),
+          Some("org.apache.gearpump.streaming.examples.complexdag.Dag"),
 
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -93,7 +93,7 @@ object BuildExample extends sbt.Build {
           "com.lihaoyi" %% "upickle" % upickleVersion
         ),
         mainClass in(Compile, packageBin) :=
-          Some("io.gearpump.streaming.examples.transport.Transport"),
+          Some("org.apache.gearpump.streaming.examples.transport.Transport"),
 
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -106,7 +106,7 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         mainClass in(Compile, packageBin) :=
-          Some("io.gearpump.examples.distributedshell.DistributedShell"),
+          Some("org.apache.gearpump.examples.distributedshell.DistributedShell"),
 
         target in assembly := baseDirectory.value.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -126,7 +126,7 @@ object BuildExample extends sbt.Build {
           "io.spray" %% "spray-routing-shapeless2" % sprayVersion
         ),
         mainClass in(Compile, packageBin) :=
-          Some("io.gearpump.experiments.distributeservice.DistributeService"),
+          Some("org.apache.gearpump.experiments.distributeservice.DistributeService"),
 
         target in assembly := baseDirectory.value.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -150,7 +150,7 @@ object BuildExample extends sbt.Build {
             exclude("org.ow2.asm", "asm")
         ),
         mainClass in(Compile, packageBin) :=
-          Some("io.gearpump.streaming.examples.fsio.SequenceFileIO"),
+          Some("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO"),
 
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -163,7 +163,7 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         mainClass in(Compile, packageBin) :=
-          Some("io.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount"),
+          Some("org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount"),
 
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -186,7 +186,7 @@ object BuildExample extends sbt.Build {
           "io.spray" %% "spray-json" % sprayJsonVersion
         ),
         mainClass in(Compile, packageBin) :=
-          Some("io.gearpump.streaming.examples.stock.main.Stock"),
+          Some("org.apache.gearpump.streaming.examples.stock.main.Stock"),
 
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -210,7 +210,7 @@ object BuildExample extends sbt.Build {
         "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion
       ),
       mainClass in(Compile, packageBin) :=
-        Some("io.gearpump.streaming.examples.state.MessageCountApp"),
+        Some("org.apache.gearpump.streaming.examples.state.MessageCountApp"),
 
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
         CrossVersion.binaryScalaVersion(scalaVersion.value)
@@ -223,7 +223,7 @@ object BuildExample extends sbt.Build {
     base = file("examples/pagerank"),
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       mainClass in(Compile, packageBin) :=
-        Some("io.gearpump.experiments.pagerank.example.PageRankExample"),
+        Some("org.apache.gearpump.experiments.pagerank.example.PageRankExample"),
 
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
         CrossVersion.binaryScalaVersion(scalaVersion.value)

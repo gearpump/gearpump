@@ -3,7 +3,7 @@
  * See accompanying LICENSE file.
  */
 
-angular.module('io.gearpump.models')
+angular.module('org.apache.gearpump.models')
 
   .service('Dag', function () {
     'use strict';

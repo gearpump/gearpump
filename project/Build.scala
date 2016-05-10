@@ -226,8 +226,7 @@ object Build extends sbt.Build {
     external_monoid,
     external_serializer,
     external_hbase,
-    external_hadoopfs,
-    streaming)
+    external_hadoopfs)
 
   lazy val gearpumpUnidocSetting = scalaJavaUnidocSettings ++ Seq(
     unidocProjectFilter in(ScalaUnidoc, unidoc) := projectsWithDoc,
@@ -244,7 +243,9 @@ object Build extends sbt.Build {
   )
 
   private def ignoreUndocumentedPackages(packages: Seq[Seq[File]]): Seq[Seq[File]] = {
-    packages.map(_.filterNot(_.getCanonicalPath.contains("akka")))
+    packages
+      .map(_.filterNot(_.getName.contains("$")))
+      .map(_.filterNot(_.getCanonicalPath.contains("akka")))
   }
 
   lazy val root = Project(

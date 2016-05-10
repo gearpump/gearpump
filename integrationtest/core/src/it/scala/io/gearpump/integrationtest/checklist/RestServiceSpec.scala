@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.checklist
+package org.apache.gearpump.integrationtest.checklist
 
 import scala.concurrent.duration._
 
-import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.cluster.master.MasterStatus
-import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import io.gearpump.integrationtest.{TestSpecBase, Util}
+import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.cluster.master.MasterStatus
+import org.apache.gearpump.cluster.worker.{WorkerId, WorkerSummary}
+import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
 
 /**
  * The test spec checks REST service usage

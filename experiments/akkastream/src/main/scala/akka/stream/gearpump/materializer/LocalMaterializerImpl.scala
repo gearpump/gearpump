@@ -33,7 +33,7 @@ import akka.stream.impl.{ActorProcessorFactory, ActorPublisher, ExposedPublisher
 import akka.stream.{ActorMaterializerSettings, Attributes, Graph => AkkaGraph, InPort, MaterializationContext, Materializer, OutPort, Shape}
 import org.reactivestreams.{Processor, Publisher, Subscriber}
 
-import io.gearpump.util.Graph
+import org.apache.gearpump.util.Graph
 
 /**
  * This materializer is functional equivalent to [[akka.stream.impl.ActorMaterializerImpl]]

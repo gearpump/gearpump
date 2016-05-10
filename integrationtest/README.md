@@ -34,7 +34,7 @@ The integration test framework use docker to simulate a real cluster. The test s
 
 The test will launch a Gearpump cluster with 1 master and 2 worker nodes as 3 Docker containers. It might take 10-20 minutes to go through all the test cases. It depends on, how powerful your machine is. The Docker container itself does not have a Gearpump distribution. It will link your local build to the Docker container. When tests are finished, you can see the test result on the screen, or you can save them to a file with this command `sbt it:test > test_report.out`. To investigate Gearpump log, please check the directory `output/target/pack/logs`.
 
-### How To test single integration test suite like `io.gearpump.integrationtest.checklist.CommandlineSpec`?
+### How To test single integration test suite like `org.apache.gearpump.integrationtest.checklist.CommandlineSpec`?
 
 Unfortunately, I searched around, and didn't find a clean way to do this in sbt. Gearpump is using nested suite for
 integration test, which I think sbt don't support well with `sbt test-only <className>`. Please also see discussion at:
@@ -42,8 +42,8 @@ integration test, which I think sbt don't support well with `sbt test-only <clas
 
 For a not that clean solution, here is the steps:
 
-1. Locate class `io.gearpump.integrationtest.suites.StandaloneModeSuite` source file at
-  `gearpump/integrationtest/core/src/it/scala/io/gearpump/integrationtest/suites`
+1. Locate class `org.apache.gearpump.integrationtest.suites.StandaloneModeSuite` source file at
+  `gearpump/integrationtest/core/src/it/scala/org.apache.gearpump/integrationtest/suites`
 2. Document out suite you don't want to test like this:
 
   ```

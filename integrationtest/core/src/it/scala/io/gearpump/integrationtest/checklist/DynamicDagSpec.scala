@@ -15,18 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.checklist
+package org.apache.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.{TestSpecBase, Util}
-import io.gearpump.metrics.Metrics.Meter
-import io.gearpump.streaming._
-import io.gearpump.streaming.appmaster.ProcessorSummary
+import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
+import org.apache.gearpump.metrics.Metrics.Meter
+import org.apache.gearpump.streaming._
+import org.apache.gearpump.streaming.appmaster.ProcessorSummary
 
 class DynamicDagSpec extends TestSpecBase {
 
   lazy val solJar = cluster.queryBuiltInExampleJars("sol-").head
-  val splitTaskClass = "io.gearpump.streaming.examples.wordcount.Split"
-  val sumTaskClass = "io.gearpump.streaming.examples.wordcount.Sum"
+  val splitTaskClass = "org.apache.gearpump.streaming.examples.wordcount.Split"
+  val sumTaskClass = "org.apache.gearpump.streaming.examples.wordcount.Sum"
   val solName = "sol"
 
   "dynamic dag" should {
@@ -34,7 +34,7 @@ class DynamicDagSpec extends TestSpecBase {
       val partitioners = restClient.queryBuiltInPartitioners()
       partitioners.length should be > 0
       partitioners.foreach(clazz =>
-        clazz should startWith("io.gearpump.partitioner.")
+        clazz should startWith("org.apache.gearpump.partitioner.")
       )
     }
 
@@ -86,7 +86,7 @@ class DynamicDagSpec extends TestSpecBase {
       }, "new processor added")
       processorHasThroughput(appId, laterProcessors.keySet.max, "receiveThroughput")
 
-      val fakeTaskClass = "io.gearpump.streaming.examples.wordcount.Fake"
+      val fakeTaskClass = "org.apache.gearpump.streaming.examples.wordcount.Fake"
       replaceProcessor(appId, laterProcessors.keySet.max, fakeTaskClass)
       Util.retryUntil(() => {
         val processorsAfterFailure = restClient.queryStreamingAppDetail(appId).processors

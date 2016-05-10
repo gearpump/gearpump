@@ -18,9 +18,9 @@
 
 package akka.stream.gearpump.task
 
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.task.TaskContext
+import org.apache.gearpump.Message
+import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.task.TaskContext
 
 class BroadcastTask(context: TaskContext, userConf: UserConfig) extends GraphTask(context, userConf) {
   override def onNext(msg: Message): Unit = {

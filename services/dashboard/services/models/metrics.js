@@ -3,7 +3,7 @@
  * See accompanying LICENSE file.
  */
 
-angular.module('io.gearpump.models')
+angular.module('org.apache.gearpump.models')
 
 /** TODO: to be absorbed as scalajs (#458) */
   .factory('Metrics', [function () {
@@ -54,11 +54,11 @@ angular.module('io.gearpump.models')
       /** automatically guess metric type and decode or return null */
       $auto: function (data) {
         switch (data.value.$type) {
-          case 'io.gearpump.metrics.Metrics.Meter':
+          case 'org.apache.gearpump.metrics.Metrics.Meter':
             return decoder.meter(data);
-          case 'io.gearpump.metrics.Metrics.Histogram':
+          case 'org.apache.gearpump.metrics.Metrics.Histogram':
             return decoder.histogram(data);
-          case 'io.gearpump.metrics.Metrics.Gauge':
+          case 'org.apache.gearpump.metrics.Metrics.Gauge':
             return decoder.gauge(data);
           default:
             console.warn({message: 'Unknown metric type', type: data.value.$type});

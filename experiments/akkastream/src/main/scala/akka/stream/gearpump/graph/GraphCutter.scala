@@ -28,7 +28,7 @@ import akka.stream.impl.Stages.DirectProcessor
 import akka.stream.impl.StreamLayout.{MaterializedValueNode, Module}
 import akka.stream.impl.{SinkModule, SourceModule}
 
-import io.gearpump.util.Graph
+import org.apache.gearpump.util.Graph
 
 /**
  *

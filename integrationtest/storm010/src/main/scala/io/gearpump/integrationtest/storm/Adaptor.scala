@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.storm
+package org.apache.gearpump.integrationtest.storm
 
 import backtype.storm.topology.base.BaseBasicBolt
 import backtype.storm.topology.{BasicOutputCollector, OutputFieldsDeclarer}

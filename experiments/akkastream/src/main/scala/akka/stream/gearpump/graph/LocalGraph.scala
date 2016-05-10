@@ -28,7 +28,7 @@ import akka.stream.impl.{PublisherSource, SubscriberSink}
 import akka.stream.{Outlet, SinkShape, SourceShape}
 import org.reactivestreams.{Publisher, Subscriber}
 
-import io.gearpump.util.Graph
+import org.apache.gearpump.util.Graph
 
 /**
  *

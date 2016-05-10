@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.checklist
+package org.apache.gearpump.integrationtest.checklist
 
 import scala.concurrent.duration.Duration
 
-import io.gearpump.cluster.MasterToAppMaster
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.integrationtest.{TestSpecBase, Util}
-import io.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.cluster.worker.WorkerId
+import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
+import org.apache.gearpump.util.{Constants, LogUtil}
 
 /**
  * The test spec will perform destructive operations to check the stability. Operations

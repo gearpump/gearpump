@@ -31,8 +31,8 @@ import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.json4s.JsonAST.JString
 
-import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import io.gearpump.util.AkkaApp
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import org.apache.gearpump.util.AkkaApp
 
 /**
  * this example is ported from http://engineering.intenthq.com/2015/06/wikidata-akka-streams/

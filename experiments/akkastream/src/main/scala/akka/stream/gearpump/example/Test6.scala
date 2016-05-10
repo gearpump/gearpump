@@ -26,7 +26,7 @@ import akka.stream.gearpump.GearpumpMaterializer
 import akka.stream.gearpump.scaladsl.GearSource
 import akka.stream.scaladsl.Sink
 
-import io.gearpump.streaming.dsl.CollectionDataSource
+import org.apache.gearpump.streaming.dsl.CollectionDataSource
 
 /**
  * WordCount example

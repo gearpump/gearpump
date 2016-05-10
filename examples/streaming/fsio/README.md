@@ -16,7 +16,7 @@ In order to run the example:
 
   3. Submit the application:<br>
   ```bash
-  ./target/pack/bin/gear app -jar ./examples/target/$SCALA_VERSION_MAJOR/gearpump-examples-assembly-$VERSION.jar io.gearpump.streaming.examples.sol.SOL -input $INPUT_FILE_PATH -output $OUTPUT_DIRECTORY
+  ./target/pack/bin/gear app -jar ./examples/target/$SCALA_VERSION_MAJOR/gearpump-examples-assembly-$VERSION.jar org.apache.gearpump.streaming.examples.sol.SOL -input $INPUT_FILE_PATH -output $OUTPUT_DIRECTORY
   ```
   4. Stop the application:<br>
   ```bash

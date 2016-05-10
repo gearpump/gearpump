@@ -35,7 +35,7 @@ UI server admin can also choose to enable **auxiliary** OAuth2 authentication ch
    Gearpump provides a built-in ConfigFileBasedAuthenticator which verify user name and password
    against password hashcode stored in config files.
 
-   However, developer can choose to extends the ```io.gearpump.security.Authenticator``` to provide a custom
+   However, developer can choose to extends the ```org.apache.gearpump.security.Authenticator``` to provide a custom
    User-Password based authenticator, to support LDAP, Kerberos, and Database-based authentication...
 
 ### ConfigFileBasedAuthenticator: built-in User-Password Authenticator
@@ -59,7 +59,7 @@ Suppose we want to add user jerry as an administrator, here are the steps:
    to generate the digest:
    
    ```
-   bin/gear io.gearpump.security.PasswordUtil -password  ilovegearpump
+   bin/gear org.apache.gearpump.security.PasswordUtil -password  ilovegearpump
    ```
    
    It will generate a digest value like this:
@@ -110,8 +110,8 @@ If developer choose to define his/her own User-Password based authenticator, it 
     modify configuration option:
 
 ```
-## Replace "io.gearpump.security.CustomAuthenticator" with your real authenticator class.
-gearpump.ui-security.authenticator = "io.gearpump.security.CustomAuthenticator"
+## Replace "org.apache.gearpump.security.CustomAuthenticator" with your real authenticator class.
+gearpump.ui-security.authenticator = "org.apache.gearpump.security.CustomAuthenticator"
 ```
 
 Make sure CustomAuthenticator extends interface:
@@ -357,7 +357,7 @@ You can follow the Google OAuth2 example code to define a custom OAuth2Authentic
    ```
     ## name of this authenticator
    "socialnetworkx" {
-     "class" = "io.gearpump.services.security.oauth2.impl.SocialNetworkXAuthenticator"
+     "class" = "org.apache.gearpump.services.security.oauth2.impl.SocialNetworkXAuthenticator"
 
      ## Please make sure this URL matches the name
      "callback" = "http://127.0.0.1:8090/login/oauth2/socialnetworkx/callback"

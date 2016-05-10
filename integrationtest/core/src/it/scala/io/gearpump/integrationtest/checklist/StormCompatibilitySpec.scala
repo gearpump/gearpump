@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.integrationtest.checklist
+package org.apache.gearpump.integrationtest.checklist
 
-import io.gearpump.integrationtest.kafka.{KafkaCluster, MessageLossDetector, SimpleKafkaReader}
-import io.gearpump.integrationtest.storm.StormClient
-import io.gearpump.integrationtest.{TestSpecBase, Util}
+import org.apache.gearpump.integrationtest.kafka.{KafkaCluster, MessageLossDetector, SimpleKafkaReader}
+import org.apache.gearpump.integrationtest.storm.StormClient
+import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
 
 /**
  * The test spec checks the compatibility of running Storm applications
@@ -129,9 +129,9 @@ class StormCompatibilitySpec extends TestSpecBase {
         val stormJar = getStormJar(stormVersion)
         val topologyName = getTopologyName("storm_kafka", stormVersion)
         val stormKafkaTopology =
-          s"io.gearpump.integrationtest.storm.Storm${stormVersion}KafkaTopology"
+          s"org.apache.gearpump.integrationtest.storm.Storm${stormVersion}KafkaTopology"
 
-        import io.gearpump.integrationtest.kafka.KafkaCluster._
+        import org.apache.gearpump.integrationtest.kafka.KafkaCluster._
         withKafkaCluster(cluster) {
           kafkaCluster =>
             val sourcePartitionNum = 2
