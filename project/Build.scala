@@ -89,7 +89,7 @@ object Build extends sbt.Build {
     Seq(
       scalaVersion := scalaVersionNumber,
       crossScalaVersions := crossScalaVersionNumbers,
-      organization := "com.github.intel-hadoop",
+      organization := "org.apache.gearpump",
       useGpg := false,
       pgpSecretRing := file("./secring.asc"),
       pgpPublicRing := file("./pubring.asc"),
@@ -99,14 +99,14 @@ object Build extends sbt.Build {
       pgpPassphrase := Option(System.getenv().get("PASSPHRASE")).map(_.toArray),
       credentials += Credentials(
         "Sonatype Nexus Repository Manager",
-        "oss.sonatype.org",
+        "repository.apache.org",
         System.getenv().get("SONATYPE_USERNAME"),
         System.getenv().get("SONATYPE_PASSWORD")),
 
       pomIncludeRepository := { _ => false },
 
       publishTo := {
-        val nexus = "https://oss.sonatype.org/"
+        val nexus = "https://repository.apache.org/"
         if (isSnapshot.value) {
           Some("snapshots" at nexus + "content/repositories/snapshots")
         } else {
@@ -117,7 +117,7 @@ object Build extends sbt.Build {
       publishArtifact in Test := true,
 
       pomExtra := {
-        <url>https://github.com/intel-hadoop/gearpump</url>
+        <url>https://github.com/apache/incubator-gearpump</url>
           <licenses>
             <license>
               <name>Apache 2</name>
@@ -125,15 +125,15 @@ object Build extends sbt.Build {
             </license>
           </licenses>
           <scm>
-            <connection>scm:git:github.com/intel-hadoop/gearpump</connection>
-            <developerConnection>scm:git:git@github.com:intel-hadoop/gearpump</developerConnection>
-            <url>github.com/intel-hadoop/gearpump</url>
+            <connection>scm:git://git.apache.org/incubator-gearpump.git</connection>
+            <developerConnection>scm:git:git@github.com:apache/incubator-gearpump</developerConnection>
+            <url>github.com/apache/incubator-gearpump</url>
           </scm>
           <developers>
             <developer>
               <id>gearpump</id>
               <name>Gearpump Team</name>
-              <url>https://github.com/intel-hadoop/teams/gearpump</url>
+              <url>http://gearpump.incubator.apache.org/community.html#who-we-are</url>
             </developer>
           </developers>
       }
