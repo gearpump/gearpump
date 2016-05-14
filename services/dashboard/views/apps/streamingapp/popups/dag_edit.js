@@ -16,6 +16,7 @@ angular.module('dashboard')
       $scope.taskClass = processor.taskClass;
       $scope.description = processor.description;
       $scope.parallelism = processor.parallelism;
+      $scope.taskConf = processor.taskConf;
 
       $scope.invalid = {};
       $scope.canReplace = function () {
@@ -37,6 +38,13 @@ angular.module('dashboard')
           description: $scope.description,
           parallelism: $scope.parallelism
         };
+
+        //If only change processor's parallelism, inherit old processor's configuration
+        if ($scope.changeParallelismOnly) {
+          newProcessor = angular.merge(newProcessor, {
+            taskConf: $scope.taskConf
+          })
+        }
 
         if (Array.isArray($scope.transitTime) && $scope.transitTime.length === 2) {
           var tuple = [$scope.transitTime[0] || '', $scope.transitTime[1] || ''];

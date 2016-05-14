@@ -116,7 +116,7 @@ final class UserConfig(private val _config: Map[String, String]) extends Seriali
 
   def getValue[T](key: String)(implicit system: ActorSystem): Option[T] = {
     val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
-    _config.get(key).map(BaseEncoding.base64().decode(_))
+    _config.get(key).map(BaseEncoding.base64Url().decode(_))
       .map(serializer.fromBinary(_).asInstanceOf[T])
   }
 
@@ -137,7 +137,7 @@ final class UserConfig(private val _config: Map[String, String]) extends Seriali
     } else {
       val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
       val bytes = serializer.toBinary(value)
-      val encoded = BaseEncoding.base64().encode(bytes)
+      val encoded = BaseEncoding.base64Url().encode(bytes)
       this.withString(key, encoded)
     }
   }
