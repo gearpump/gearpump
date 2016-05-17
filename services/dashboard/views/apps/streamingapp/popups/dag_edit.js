@@ -39,13 +39,6 @@ angular.module('dashboard')
           parallelism: $scope.parallelism
         };
 
-        //If only change processor's parallelism, inherit old processor's configuration
-        if ($scope.changeParallelismOnly) {
-          newProcessor = angular.merge(newProcessor, {
-            taskConf: $scope.taskConf
-          })
-        }
-
         if (Array.isArray($scope.transitTime) && $scope.transitTime.length === 2) {
           var tuple = [$scope.transitTime[0] || '', $scope.transitTime[1] || ''];
           var format = 'YYYY-MM-DD';
@@ -60,7 +53,9 @@ angular.module('dashboard')
           };
         }
 
-        $scope.dag.replaceProcessor(files, fileFormNames, $scope.app.appId, $scope.processorId, newProcessor, function (response) {
+        //If only change processor's parallelism, inherit old processor's configuration
+        var inheritConf = $scope.changeParallelismOnly || false;
+        $scope.dag.replaceProcessor(files, fileFormNames, $scope.app.appId, $scope.processorId, newProcessor, inheritConf, function (response) {
           $scope.shouldNoticeSubmitFailed = !response.success;
           if (response.success) {
             $scope.$hide();

@@ -65,7 +65,7 @@ class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       client.send(dagManager, WatchChange(watcher.ref))
       val task3 = task2.copy(id = 3, life = LifeTime(100, Long.MaxValue))
 
-      client.send(dagManager, ReplaceProcessor(task2.id, task3))
+      client.send(dagManager, ReplaceProcessor(task2.id, task3, false))
       client.expectMsg(DAGOperationSuccess)
 
       client.send(dagManager, GetLatestDAG)
@@ -76,11 +76,11 @@ class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       watcher.expectMsgType[LatestDAG]
 
       val task4 = task3.copy(id = 4)
-      client.send(dagManager, ReplaceProcessor(task3.id, task4))
+      client.send(dagManager, ReplaceProcessor(task3.id, task4, false))
       client.expectMsgType[DAGOperationFailed]
 
       client.send(dagManager, NewDAGDeployed(newDag.version))
-      client.send(dagManager, ReplaceProcessor(task3.id, task4))
+      client.send(dagManager, ReplaceProcessor(task3.id, task4, false))
       client.expectMsg(DAGOperationSuccess)
     }
 

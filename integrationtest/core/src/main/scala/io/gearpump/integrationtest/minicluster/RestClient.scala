@@ -199,8 +199,13 @@ class RestClient(host: String, port: Int) {
     decodeAs[AppJar](resp)
   }
 
-  def replaceStreamingAppProcessor(appId: Int, replaceMe: ProcessorDescription): Boolean = try {
-    val replaceOperation = new ReplaceProcessor(replaceMe.id, replaceMe)
+  def replaceStreamingAppProcessor(appId: Int, replaceMe: ProcessorDescription): Boolean = {
+    replaceStreamingAppProcessor(appId, replaceMe, false)
+  }
+
+  def replaceStreamingAppProcessor(
+      appId: Int, replaceMe: ProcessorDescription, inheritConf: Boolean): Boolean = try {
+    val replaceOperation = new ReplaceProcessor(replaceMe.id, replaceMe, inheritConf)
     val args = upickle.default.write(replaceOperation)
     val resp = callApi(s"appmaster/$appId/dynamicdag?args=" + Util.encodeUriComponent(args),
       CRUD_POST)

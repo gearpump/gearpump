@@ -102,7 +102,7 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
         LOG.info(s"Get task launcher data for processor: $processorId, dagVersion: $version")
         sender ! taskLaunchData(dag, processorId, context)
       }
-    case ReplaceProcessor(oldProcessorId, inputNewProcessor) =>
+    case ReplaceProcessor(oldProcessorId, inputNewProcessor, inheritConfig) =>
       // Replace a processor with new implementation. The upstream processors and downstream
       // processors are NOT changed.
       var newProcessor = inputNewProcessor.copy(id = nextProcessorId)
@@ -110,6 +110,12 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
         val oldJar = dags.last.processors.get(oldProcessorId).get
         newProcessor = newProcessor.copy(jar = oldJar.jar)
       }
+
+      if (inheritConfig) {
+        val oldConf = dags.last.processors.get(oldProcessorId).get.taskConf
+        newProcessor = newProcessor.copy(taskConf = oldConf)
+      }
+
       if (dags.length > 1) {
         sender ! DAGOperationFailed(
           "We are in the process of handling previous dynamic dag change")
@@ -171,7 +177,7 @@ object DagManager {
   sealed trait DAGOperation
 
   case class ReplaceProcessor(oldProcessorId: ProcessorId,
-      newProcessorDescription: ProcessorDescription) extends DAGOperation
+      newProcessorDescription: ProcessorDescription, inheritConf: Boolean) extends DAGOperation
 
   sealed trait DAGOperationResult
   case object DAGOperationSuccess extends DAGOperationResult
