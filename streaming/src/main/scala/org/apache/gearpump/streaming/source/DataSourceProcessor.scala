@@ -39,7 +39,7 @@ import org.apache.gearpump.streaming.Processor
 object DataSourceProcessor {
   def apply(
       dataSource: DataSource,
-      parallelism: Int,
+      parallelism: Int = 1,
       description: String = "",
       taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem)
     : Processor[DataSourceTask] = {
