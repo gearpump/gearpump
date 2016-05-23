@@ -86,11 +86,19 @@ class HBaseSink(
     table.close()
   }
 
+  /**
+   * Overrides Java's default serialization
+   * Please do not remove this
+   */
   private def writeObject(out: ObjectOutputStream): Unit = {
     out.defaultWriteObject()
     configuration.write(out)
   }
 
+  /**
+   * Overrides Java's default deserialization
+   * Please do not remove this
+   */
   private def readObject(in: ObjectInputStream): Unit = {
     in.defaultReadObject()
     val clientConf = new Configuration(false)

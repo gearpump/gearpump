@@ -38,6 +38,11 @@ In `conf/gear.conf`, For entry `gearpump.jarstore.rootpath`, please choose the s
 ```bash
   hdfs://host:port/path/
 ```
+  For HDFS HA,
+  
+```bash
+  hdfs"//namespace/path/
+```
 
   2). Shared NFS folder
   First you need to map the NFS directory to local directory(same path) on all machines of master nodes.
