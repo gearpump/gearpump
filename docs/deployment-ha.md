@@ -33,20 +33,23 @@ to a list of master nodes. For example, if I have 3 master nodes (node1, node2, 
 In `conf/gear.conf`, For entry `gearpump.jarstore.rootpath`, please choose the storage folder for application jars. You need to make sure this jar storage is highly available. We support two storage systems:
 
   1). HDFS
+  
   You need to configure the `gearpump.jarstore.rootpath` like this
 
 ```bash
   hdfs://host:port/path/
 ```
+
   For HDFS HA,
   
 ```bash
-  hdfs"//namespace/path/
+  hdfs://namespace/path/
 ```
 
   2). Shared NFS folder
+  
   First you need to map the NFS directory to local directory(same path) on all machines of master nodes.
-Then you need to set the `gearpump.jarstore.rootPath` like this:
+Then you need to set the `gearpump.jarstore.rootpath` like this:
 
 ```bash
   file:///your_nfs_mapping_directory
