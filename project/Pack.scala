@@ -119,6 +119,7 @@ object Pack extends sbt.Build {
         ),
         packExclude := Seq(thisProjectRef.value.project),
 
+        packResourceDir += (baseDirectory.value / ".." / "bin" -> "bin"),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "yarnconf" -> "conf/yarnconf"),
         packResourceDir += (baseDirectory.value / ".." / "unmanagedlibs" /

@@ -18,7 +18,7 @@ To install Gearpump, you at least need to change the configuration in `conf/gear
 Config	| Default value	| Description
 ------------ | ---------------|------------
 gearpump.hostname	| "127.0.0.1"	 | Host or IP address of current machine. The ip/host need to be reachable from other machines in the cluster.
-Gearpump.cluster.masters |	["127.0.0.1:3000"] |	List of all master nodes, with each item represents host and port of one master.
+gearpump.cluster.masters |	["127.0.0.1:3000"] |	List of all master nodes, with each item represents host and port of one master.
 gearpump.worker.slots	 | 1000 | how many slots this worker has
 
 Besides this, there are other optional configurations related with logs, metrics, transports, ui. You can refer to [Configuration Guide](deployment-configuration.html) for more details.
@@ -55,3 +55,12 @@ The default username and password is "admin:admin", you can check
 ![Dashboard](img/dashboard.gif)
 
 **NOTE:** The UI port can be configured in `gear.conf`. Check [Configuration Guide](deployment-configuration.html) for information.
+
+### Bash tool to start cluster
+
+There is a bash tool `bin/start-cluster.sh` can launch the cluster conveniently. You need to change the file `conf/masters`, `conf/workers` and `conf/dashboard` to specify the corresponding machines.
+Before running the bash tool, please make sure the Gearpump package is already unzipped to the same directory path on every machine.
+`bin/stop-cluster.sh` is used to stop the whole cluster of course.
+
+The bash tool is able to launch the cluster without changing the `conf/gear.conf` on every machine. The bash sets the `gearpump.cluster.masters` and other configurations using JAVA_OPTS.
+However, please note when you log into any these unconfigured machine and try to launch the dashboard or submit the application, you still need to modify `conf/gear.conf` manually because the JAVA_OPTS is missing.

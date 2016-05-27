@@ -40,7 +40,6 @@ intellij
 .project
 .cache
 .classpath
-bin/
 tmp/
 *.tmp
 *.bak
