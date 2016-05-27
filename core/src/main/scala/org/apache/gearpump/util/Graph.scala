@@ -318,6 +318,11 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
    * http://www.drdobbs.com/database/topological-sorting/184410262
    */
   def topologicalOrderWithCirclesIterator: Iterator[N] = {
+    val topo = getAcyclicCopy().topologicalOrderIterator
+    topo.flatMap(_.sortBy(_indexs(_)).iterator)
+  }
+
+  private def getAcyclicCopy(): Graph[mutable.MutableList[N], E] = {
     val circles = findCircles
     val newGraph = Graph.empty[mutable.MutableList[N], E]
     circles.foreach {
@@ -339,9 +344,7 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
         }
       }
     }
-
-    val topo = newGraph.topologicalOrderIterator
-    topo.flatMap(_.sortBy(_indexs(_)).iterator)
+    newGraph
   }
 
   /**
@@ -377,12 +380,19 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
    * }}}
    */
   def vertexHierarchyLevelMap(): Map[N, Int] = {
-    val newGraph = copy
+    val newGraph = getAcyclicCopy()
     var output = Map.empty[N, Int]
     var level = 0
     while (!newGraph.isEmpty) {
-      output ++= newGraph.removeZeroInDegree.map((_, level)).toMap
-      level += 1
+      val toBeRemovedLists = newGraph.removeZeroInDegree
+      val maxLength = toBeRemovedLists.map(_.length).max
+      for (subGraph <- toBeRemovedLists) {
+        val sorted = subGraph.sortBy(_indexs)
+        for (i <- sorted.indices) {
+          output += sorted(i) -> (level + i)
+        }
+      }
+      level += maxLength
     }
     output
   }

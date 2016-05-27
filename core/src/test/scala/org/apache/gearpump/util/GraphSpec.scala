@@ -108,15 +108,15 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     val levelMap = graph.vertexHierarchyLevelMap()
 
     // Check whether the rule holds: : if vertex A -> B, then level(A) < level(B)
-    levelMap("A") < levelMap("B")
-    levelMap("A") < levelMap("C")
-    levelMap("B") < levelMap("C")
+    assert(levelMap("A") < levelMap("B"))
+    assert(levelMap("A") < levelMap("C"))
+    assert(levelMap("B") < levelMap("C"))
 
-    levelMap("D") < levelMap("E")
-    levelMap("D") < levelMap("F")
-    levelMap("E") < levelMap("F")
+    assert(levelMap("D") < levelMap("E"))
+    assert(levelMap("D") < levelMap("F"))
+    assert(levelMap("E") < levelMap("F"))
 
-    levelMap("C") < levelMap("F")
+    assert(levelMap("C") < levelMap("F"))
   }
 
   property("copy should return a immutalbe new Graph") {
@@ -194,6 +194,15 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     val trueTopoWithCircles = Iterator[Int](0, 8, 1, 3, 4, 2, 6, 5, 7, 10, 9)
 
     assert(trueTopoWithCircles.zip(topoWithCircles).forall(x => x._1 == x._2))
+  }
+
+  property("Hierarchy level map should handle graph with cycles") {
+    val graph = Graph(0 ~> 1 ~> 2 ~> 3 ~> 4, 3 ~>1)
+    val map = graph.vertexHierarchyLevelMap()
+    assert(map(0) < map(1))
+    assert(map(1) < map(2))
+    assert(map(2) < map(3))
+    assert(map(3) < map(4))
   }
 
   property("Duplicated edges detecting should work properly") {
