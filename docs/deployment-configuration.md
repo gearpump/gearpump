@@ -89,3 +89,4 @@ This is the default configuration for `gear.conf`.
 | gearpump.shared-thread-pool-dispatcher | default Dispatcher with "fork-join-executor" | default shared thread pool dispatcher |
 | gearpump.single-thread-dispatcher | PinnedDispatcher | default single thread dispatcher |
 | gearpump.serialization-framework | "org.apache.gearpump.serializer.FastKryoSerializationFramework" | Gearpump has built-in serialization framework using Kryo. Users are allowed to use a different serialization framework, like Protobuf. See `org.apache.gearpump.serializer.FastKryoSerializationFramework` to find how a custom serialization framework can be defined |
+| worker.executor-share-same-jvm-as-worker | false | whether the executor actor is started in the same jvm(process) from which running the worker actor |
