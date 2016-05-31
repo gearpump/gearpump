@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.services
 
+import org.apache.gearpump.jarstore.local.LocalJarStoreService
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -38,14 +40,22 @@ import org.apache.gearpump.services.util.UpickleUtil._
 class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem)
   extends RouteService {
 
+  private val LOG = LogUtil.getLogger(getClass)
+
   implicit val timeout = Constants.FUTURE_TIMEOUT
 
   private val config = system.settings.config
 
-  private val jarStoreService = JarStoreService.get(config)
+  // only LocalJarStoreService is supported now for "Compose DAG"
+  // since DFSJarStoreService requires HDFS to be on the classpath.
+  // Note this won't affect users  "Submit Gearpump Application" through
+  // dashboard with "jarstore.rootpath" set to HDFS.
+  if (!JarStoreService.get(config).isInstanceOf[LocalJarStoreService]) {
+    LOG.warn("only local jar store is supported for Compose DAG")
+  }
+  private val jarStoreService = new LocalJarStoreService
   jarStoreService.init(config, system)
 
-  private val LOG = LogUtil.getLogger(getClass)
 
   private val securityEnabled = config.getBoolean(
     Constants.GEARPUMP_UI_SECURITY_AUTHENTICATION_ENABLED)

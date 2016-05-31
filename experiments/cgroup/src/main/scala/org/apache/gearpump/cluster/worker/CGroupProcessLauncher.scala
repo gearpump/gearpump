@@ -48,7 +48,7 @@ class CGroupProcessLauncher(val config: Config) extends ExecutorProcessLauncher 
       cgroupManager.map(_.startNewExecutor(appConfig, resource.slots, appId,
         executorId)).getOrElse(List.empty)
     } else List.empty
-    LOG.info(s"Launch executor with CGroup ${cgroupCommand.mkString(" ")}, " +
+    LOG.info(s"Launch executor $executorId with CGroup ${cgroupCommand.mkString(" ")}, " +
       s"classpath: ${classPath.mkString(File.pathSeparator)}")
 
     val java = System.getProperty("java.home") + "/bin/java"

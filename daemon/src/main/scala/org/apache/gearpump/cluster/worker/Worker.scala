@@ -465,7 +465,6 @@ private[cluster] object Worker {
         val options = ctx.jvmArguments ++ username ++
           logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ ipv4 ++ configArgs
 
-        LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
         val process = procLauncher.createProcess(appId, executorId, resource, executorConfig,
           options, classPath, ctx.mainClass, ctx.arguments)
 

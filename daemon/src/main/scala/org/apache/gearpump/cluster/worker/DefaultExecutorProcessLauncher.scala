@@ -33,7 +33,7 @@ class DefaultExecutorProcessLauncher(val config: Config) extends ExecutorProcess
       appId: Int, executorId: Int, resource: Resource, config: Config, options: Array[String],
       classPath: Array[String], mainClass: String, arguments: Array[String]): RichProcess = {
 
-    LOG.info(s"Launch executor, classpath: ${classPath.mkString(File.pathSeparator)}")
+    LOG.info(s"Launch executor $executorId, classpath: ${classPath.mkString(File.pathSeparator)}")
     Util.startProcess(options, classPath, mainClass, arguments)
   }
 

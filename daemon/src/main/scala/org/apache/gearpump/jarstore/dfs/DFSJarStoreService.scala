@@ -53,9 +53,9 @@ class DFSJarStoreService extends JarStoreService {
    * @param remotePath The remote file path from JarStore
    */
   override def copyToLocalFile(localFile: File, remotePath: FilePath): Unit = {
-    LOG.info(s"Copying to local file: ${localFile.getAbsolutePath} from ${remotePath}")
     val filePath = new Path(rootPath, remotePath.path)
     val fs = filePath.getFileSystem(new Configuration())
+    LOG.info(s"Copying to local file: ${localFile.getAbsolutePath} from ${filePath.toString}")
     val target = new Path(localFile.toURI().toString)
     fs.copyToLocalFile(filePath, target)
   }
@@ -67,9 +67,9 @@ class DFSJarStoreService extends JarStoreService {
    */
   override def copyFromLocal(localFile: File): FilePath = {
     val remotePath = FilePath(Math.abs(new java.util.Random().nextLong()).toString)
-    LOG.info(s"Copying from local file: ${localFile.getAbsolutePath} to ${remotePath}")
     val filePath = new Path(rootPath, remotePath.path)
     val fs = filePath.getFileSystem(new Configuration())
+    LOG.info(s"Copying from local file: ${localFile.getAbsolutePath} to ${filePath.toString}")
     fs.copyFromLocalFile(new Path(localFile.toURI.toString), filePath)
     remotePath
   }
