@@ -40,6 +40,8 @@ angular.module('dashboard')
         controller: 'ComposeAppChooseEdgeCtrl'
       });
 
+      $scope.appName = "";
+
       $scope.chooseProcessor = function (processor) {
         var args = {
           processor: processor
@@ -155,6 +157,7 @@ angular.module('dashboard')
 
       $scope.canSubmit = function () {
         return !$scope.submitted &&
+          $scope.appName.length > 0 &&
           $scope.visGraph.data.nodes.length > 0 &&
           Object.keys($scope.files).length > 0;
       };
@@ -164,7 +167,7 @@ angular.module('dashboard')
         var processors = data.nodes.get();
         var edges = data.edges.get();
         var args = {
-          appName: 'userapp',
+          appName: $scope.appName,
           processors: processors.map(function (processor) {
             return [processor.id, {
               id: processor.id,
