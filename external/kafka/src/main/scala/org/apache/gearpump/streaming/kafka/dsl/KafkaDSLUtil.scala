@@ -22,67 +22,16 @@ import java.util.Properties
 import org.apache.gearpump.streaming.dsl
 import org.apache.gearpump.streaming.dsl.StreamApp
 import org.apache.gearpump.streaming.kafka.KafkaSource
-import org.apache.gearpump.streaming.kafka.lib.{DefaultMessageDecoder, KafkaSourceConfig}
-import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, OffsetStorageFactory, TimeStampFilter}
 
 object KafkaDSLUtil {
-  def createStream[T](
-      app: StreamApp,
-      parallelism: Int,
-      description: String,
-      kafkaConfig: KafkaSourceConfig,
-      offsetStorageFactory: OffsetStorageFactory,
-      messageDecoder: MessageDecoder = new DefaultMessageDecoder): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder),
-      parallelism, description)
-  }
-
-  def createStream[T](
-      app: StreamApp,
-      parallelism: Int,
-      description: String,
-      topics: String,
-      zkConnect: String,
-      offsetStorageFactory: OffsetStorageFactory): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(topics, zkConnect, offsetStorageFactory),
-      parallelism, description)
-  }
-
-  def createStream[T](
-      app: StreamApp,
-      parallelism: Int,
-      description: String,
-      topics: String,
-      zkConnect: String,
-      offsetStorageFactory: OffsetStorageFactory,
-      messageDecoder: MessageDecoder,
-      timestampFilter: TimeStampFilter): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(topics, zkConnect, offsetStorageFactory,
-    messageDecoder, timestampFilter), parallelism, description)
-  }
-
-  def createStream[T](
-      app: StreamApp,
-      parallelism: Int,
-      description: String,
-      topics: String,
-      properties: Properties,
-      offsetStorageFactory: OffsetStorageFactory): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(topics, properties, offsetStorageFactory),
-    parallelism, description)
-  }
 
   def createStream[T](
       app: StreamApp,
       topics: String,
       parallelism: Int,
       description: String,
-      properties: Properties,
-      offsetStorageFactory: OffsetStorageFactory,
-      messageDecoder: MessageDecoder,
-      timestampFilter: TimeStampFilter): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(topics, properties, offsetStorageFactory,
-    messageDecoder, timestampFilter), parallelism, description)
+      properties: Properties): dsl.Stream[T] = {
+    app.source[T](new KafkaSource(topics, properties), parallelism, description)
   }
 }
 

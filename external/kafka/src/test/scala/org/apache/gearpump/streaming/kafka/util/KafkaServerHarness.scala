@@ -31,10 +31,10 @@ trait KafkaServerHarness extends ZookeeperHarness {
   private var brokerList: String = null
 
   def getServers: List[KafkaServer] = servers
-  def getBrokerList: Array[String] = brokerList.split(",")
+  def getBrokerList: String = brokerList
 
   override def setUp() {
-    super.setUp
+    super.setUp()
     if (configs.size <= 0) {
       throw new KafkaException("Must supply at least one server config.")
     }
@@ -43,15 +43,14 @@ trait KafkaServerHarness extends ZookeeperHarness {
   }
 
   override def tearDown() {
-    servers.map(server => server.shutdown())
-    servers.map(server => server.config.logDirs.map(Utils.rm(_)))
-    super.tearDown
+    servers.foreach(_.shutdown())
+    servers.foreach(_.config.logDirs.foreach(Utils.rm))
+    super.tearDown()
   }
 
-  def createTopicUntilLeaderIsElected(
-      topic: String, partitions: Int, replicas: Int, timeout: Long = 10000)
-    : Map[Int, Option[Int]] = {
-    val zkClient = connectZk()
+  def createTopicUntilLeaderIsElected(topic: String, partitions: Int,
+      replicas: Int, timeout: Long = 10000): Map[Int, Option[Int]] = {
+    val zkClient = getZkClient
     try {
       // Creates topic
       AdminUtils.createTopic(zkClient, topic, partitions, replicas, new Properties)
@@ -62,8 +61,6 @@ trait KafkaServerHarness extends ZookeeperHarness {
       }.toMap
     } catch {
       case e: Exception => throw e
-    } finally {
-      zkClient.close()
     }
   }
 }

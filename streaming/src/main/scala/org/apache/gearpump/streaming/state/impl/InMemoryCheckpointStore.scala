@@ -44,7 +44,7 @@ class InMemoryCheckpointStore extends CheckpointStore {
 }
 
 class InMemoryCheckpointStoreFactory extends CheckpointStoreFactory {
-  override def getCheckpointStore(conf: UserConfig, taskContext: TaskContext): CheckpointStore = {
+  override def getCheckpointStore(name: String): CheckpointStore = {
     new InMemoryCheckpointStore
   }
 }

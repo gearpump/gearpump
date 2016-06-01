@@ -18,16 +18,18 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
+import java.util.Properties
+
 import akka.actor.ActorSystem
 import kafka.api.OffsetRequest
+import org.apache.gearpump.streaming.kafka.util.KafkaConfig
 import org.slf4j.Logger
 
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
-import org.apache.gearpump.streaming.kafka.lib.KafkaSourceConfig
-import org.apache.gearpump.streaming.kafka.{KafkaSink, KafkaSource, KafkaStorageFactory}
+import org.apache.gearpump.streaming.kafka._
 import org.apache.gearpump.streaming.sink.DataSinkProcessor
 import org.apache.gearpump.streaming.source.DataSourceProcessor
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
@@ -48,25 +50,31 @@ object KafkaWordCount extends AkkaApp with ArgumentsParser {
 
   def application(config: ParseResult, system: ActorSystem): StreamApplication = {
     implicit val actorSystem = system
+    val appName = "KafkaWordCount"
     val sourceNum = config.getInt("source")
     val splitNum = config.getInt("split")
     val sumNum = config.getInt("sum")
     val sinkNum = config.getInt("sink")
-
     val appConfig = UserConfig.empty
-    val offsetStorageFactory = new KafkaStorageFactory("localhost:2181", "localhost:9092")
-    val kafkaSourceConfig = new KafkaSourceConfig()
-      .withConsumerTopics("topic1").withConsumerStartOffset(OffsetRequest.LatestTime)
-    val source = new KafkaSource(kafkaSourceConfig, offsetStorageFactory)
+    val props = new Properties
+    props.put(KafkaConfig.ZOOKEEPER_CONNECT_CONFIG, "localhost:2181")
+    props.put(KafkaConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    props.put(KafkaConfig.CONSUMER_START_OFFSET_CONFIG,
+      new java.lang.Long(OffsetRequest.LatestTime))
+    props.put(KafkaConfig.CHECKPOINT_STORE_NAME_PREFIX_CONFIG, appName)
+    val sourceTopic = "topic1"
+    val source = new KafkaSource(sourceTopic, props)
+    val checkpointStoreFactory = new KafkaStoreFactory(props)
+    source.setCheckpointStore(checkpointStoreFactory)
     val sourceProcessor = DataSourceProcessor(source, sourceNum)
     val split = Processor[Split](splitNum)
     val sum = Processor[Sum](sumNum)
-    val sink = new KafkaSink("topic2", "localhost:9092")
+    val sink = new KafkaSink("topic2", props)
     val sinkProcessor = DataSinkProcessor(sink, sinkNum)
     val partitioner = new HashPartitioner
     val computation = sourceProcessor ~ partitioner ~> split ~ partitioner ~>
       sum ~ partitioner ~> sinkProcessor
-    val app = StreamApplication("KafkaWordCount", Graph(computation), appConfig)
+    val app = StreamApplication(appName, Graph(computation), appConfig)
     app
   }
 

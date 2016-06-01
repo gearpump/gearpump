@@ -28,18 +28,11 @@ class KafkaDSLSink[T](stream: dsl.Stream[T]) {
   /** Create a Kafka DSL Sink */
   def writeToKafka(
       topic: String,
-      bootstrapServers: String,
-      parallism: Int,
-      description: String): dsl.Stream[T] = {
-    stream.sink(new KafkaSink(topic, bootstrapServers), parallism, UserConfig.empty, description)
-  }
-
-  def writeToKafka(
-      topic: String,
       properties: Properties,
-      parallism: Int,
-      description: String): dsl.Stream[T] = {
-    stream.sink(new KafkaSink(topic, properties), parallism, UserConfig.empty, description)
+      parallelism: Int = 1,
+      userConfig: UserConfig = UserConfig.empty,
+      description: String = null): dsl.Stream[T] = {
+    stream.sink(new KafkaSink(topic, properties), parallelism, userConfig, description)
   }
 }
 

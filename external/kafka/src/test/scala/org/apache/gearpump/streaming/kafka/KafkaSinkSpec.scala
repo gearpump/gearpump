@@ -18,7 +18,12 @@
 
 package org.apache.gearpump.streaming.kafka
 
+import java.util.Properties
+
 import com.twitter.bijection.Injection
+import org.apache.gearpump.streaming.kafka.lib.sink.AbstractKafkaSink.KafkaProducerFactory
+import org.apache.gearpump.streaming.kafka.util.KafkaConfig
+import org.apache.gearpump.streaming.kafka.util.KafkaConfig.KafkaConfigFactory
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -40,9 +45,17 @@ class KafkaSinkSpec extends PropSpec with PropertyChecks with Matchers with Mock
   property("KafkaSink write should send producer record") {
     forAll(dataGen) {
       (data: (String, Array[Byte], Array[Byte])) =>
+        val props = mock[Properties]
         val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
+        val producerFactory = mock[KafkaProducerFactory]
+        val configFactory = mock[KafkaConfigFactory]
+        val config = mock[KafkaConfig]
+
+        when(configFactory.getKafkaConfig(props)).thenReturn(config)
+        when(producerFactory.getKafkaProducer(config)).thenReturn(producer)
+
         val (topic, key, msg) = data
-        val kafkaSink = new KafkaSink(() => producer, topic)
+        val kafkaSink = new KafkaSink(topic, props, configFactory, producerFactory)
         kafkaSink.write(Message((key, msg)))
         verify(producer).send(MockUtil.argMatch[ProducerRecord[Array[Byte], Array[Byte]]](
           r => r.topic == topic && (r.key sameElements key) && (r.value sameElements msg)))
@@ -55,8 +68,16 @@ class KafkaSinkSpec extends PropSpec with PropertyChecks with Matchers with Mock
   }
 
   property("KafkaSink close should close kafka producer") {
+    val props = mock[Properties]
     val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
-    val kafkaSink = new KafkaSink(() => producer, "topic")
+    val producerFactory = mock[KafkaProducerFactory]
+    val configFactory = mock[KafkaConfigFactory]
+    val config = mock[KafkaConfig]
+
+    when(configFactory.getKafkaConfig(props)).thenReturn(config)
+    when(producerFactory.getKafkaProducer(config)).thenReturn(producer)
+
+    val kafkaSink = new KafkaSink("topic", props, configFactory, producerFactory)
     kafkaSink.close()
     verify(producer).close()
   }

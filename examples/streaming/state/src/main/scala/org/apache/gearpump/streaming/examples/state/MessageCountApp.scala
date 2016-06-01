@@ -18,7 +18,10 @@
 
 package org.apache.gearpump.streaming.examples.state
 
+import java.util.Properties
+
 import akka.actor.ActorSystem
+import org.apache.gearpump.streaming.kafka.util.KafkaConfig
 import org.apache.hadoop.conf.Configuration
 
 import org.apache.gearpump.cluster.UserConfig
@@ -28,7 +31,7 @@ import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.state.processor.CountProcessor
 import org.apache.gearpump.streaming.hadoop.HadoopCheckpointStoreFactory
 import org.apache.gearpump.streaming.hadoop.lib.rotation.FileSizeRotation
-import org.apache.gearpump.streaming.kafka.{KafkaSink, KafkaSource, KafkaStorageFactory}
+import org.apache.gearpump.streaming.kafka.{KafkaStoreFactory, KafkaSink, KafkaSource}
 import org.apache.gearpump.streaming.sink.DataSinkProcessor
 import org.apache.gearpump.streaming.source.DataSourceProcessor
 import org.apache.gearpump.streaming.state.impl.PersistentStateConfig
@@ -63,6 +66,7 @@ object MessageCountApp extends AkkaApp with ArgumentsParser {
   )
 
   def application(config: ParseResult)(implicit system: ActorSystem): StreamApplication = {
+    val appName = "MessageCount"
     val hadoopConfig = new Configuration
     hadoopConfig.set("fs.defaultFS", config.getString(DEFAULT_FS))
     val checkpointStoreFactory = new HadoopCheckpointStoreFactory("MessageCount", hadoopConfig,
@@ -73,19 +77,23 @@ object MessageCountApp extends AkkaApp with ArgumentsParser {
       .withLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS, 1000L)
       .withValue(PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY, checkpointStoreFactory)
 
-    val zookeeperConnect = config.getString(ZOOKEEPER_CONNECT)
+    val properties = new Properties
+    properties.put(KafkaConfig.ZOOKEEPER_CONNECT_CONFIG, config.getString(ZOOKEEPER_CONNECT))
     val brokerList = config.getString(BROKER_LIST)
-    val offsetStorageFactory = new KafkaStorageFactory(zookeeperConnect, brokerList)
+    properties.put(KafkaConfig.BOOTSTRAP_SERVERS_CONFIG, brokerList)
+    properties.put(KafkaConfig.CHECKPOINT_STORE_NAME_PREFIX_CONFIG, appName)
+    val kafkaStoreFactory = new KafkaStoreFactory(properties)
     val sourceTopic = config.getString(SOURCE_TOPIC)
-    val kafkaSource = new KafkaSource(sourceTopic, zookeeperConnect, offsetStorageFactory)
+    val kafkaSource = new KafkaSource(sourceTopic, properties)
+    kafkaSource.setCheckpointStore(kafkaStoreFactory)
     val sourceProcessor = DataSourceProcessor(kafkaSource, config.getInt(SOURCE_TASK))
     val countProcessor = Processor[CountProcessor](config.getInt(COUNT_TASK), taskConf = taskConfig)
-    val kafkaSink = new KafkaSink(config.getString(SINK_TOPIC), brokerList)
+    val kafkaSink = new KafkaSink(config.getString(SINK_TOPIC), properties)
     val sinkProcessor = DataSinkProcessor(kafkaSink, config.getInt(SINK_TASK))
     val partitioner = new HashPartitioner()
     val graph = Graph(sourceProcessor ~ partitioner
       ~> countProcessor ~ partitioner ~> sinkProcessor)
-    val app = StreamApplication("MessageCount", graph, UserConfig.empty)
+    val app = StreamApplication(appName, graph, UserConfig.empty)
     app
   }
 

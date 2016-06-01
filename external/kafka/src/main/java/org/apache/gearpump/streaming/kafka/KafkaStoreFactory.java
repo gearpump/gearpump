@@ -15,20 +15,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.streaming.kafka;
 
-package org.apache.gearpump.streaming.transaction.api
+import org.apache.gearpump.streaming.kafka.lib.store.AbstractKafkaStoreFactory;
+import org.apache.gearpump.streaming.kafka.util.KafkaConfig;
+import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory;
 
-import org.apache.gearpump.Message
+import java.util.Properties;
 
 /**
- * Decodes raw bytes to Message.
- * It is usually written by end user and passed into TimeReplayableSource
+ * USER API for kafka store factory.
+ * Please refer to {@link AbstractKafkaStoreFactory} for detailed descriptions and implementations.
  */
-trait MessageDecoder extends java.io.Serializable {
-  /**
-   * @param key key of a kafka message, can be NULL
-   * @param value value of a kafka message
-   * @return a gearpump Message
-   */
-  def fromBytes(key: Array[Byte], value: Array[Byte]): Message
+public class KafkaStoreFactory extends AbstractKafkaStoreFactory implements CheckpointStoreFactory {
+
+  public KafkaStoreFactory(Properties props) {
+    super(props);
+  }
+
+  /** constructor for tests */
+  KafkaStoreFactory(Properties props, KafkaConfig.KafkaConfigFactory factory) {
+    super(props, factory);
+  }
 }

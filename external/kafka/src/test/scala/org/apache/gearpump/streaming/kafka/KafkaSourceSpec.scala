@@ -18,10 +18,21 @@
 
 package org.apache.gearpump.streaming.kafka
 
-import scala.util.{Failure, Success}
+import java.util.Properties
 
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
+import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.kafka.lib.source.consumer.FetchThread.FetchThreadFactory
+import org.apache.gearpump.streaming.kafka.lib.source.grouper.PartitionGrouper
+import org.apache.gearpump.streaming.kafka.lib.util.KafkaClient
+import KafkaClient.KafkaClientFactory
+import org.apache.gearpump.streaming.kafka.lib.source.consumer.{KafkaMessage, FetchThread}
+import org.apache.gearpump.streaming.kafka.lib.util.KafkaClient
+import org.apache.gearpump.streaming.kafka.util.KafkaConfig
+import org.apache.gearpump.streaming.kafka.util.KafkaConfig.KafkaConfigFactory
+import org.apache.gearpump.streaming.transaction.api.{CheckpointStore, CheckpointStoreFactory, MessageDecoder, TimeStampFilter}
+import org.apache.gearpump.Message
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -29,139 +40,168 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.kafka.lib.consumer.{FetchThread, KafkaMessage}
-import org.apache.gearpump.streaming.kafka.lib.{KafkaOffsetManager, KafkaSourceConfig}
-import org.apache.gearpump.streaming.transaction.api.OffsetStorage.StorageEmpty
-import org.apache.gearpump.streaming.transaction.api.{MessageDecoder, OffsetStorageFactory, TimeStampFilter}
-
 class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
-  val startTimeGen = Gen.choose[Long](0L, 1000L)
-  val offsetGen = Gen.choose[Long](0L, 1000L)
+  val startTimeGen = Gen.choose[Long](0L, 100L)
+  val offsetGen = Gen.choose[Long](0L, 100L)
+  val topicAndPartitionGen = for {
+    topic <- Gen.alphaStr suchThat (_.nonEmpty)
+    partition <- Gen.chooseNum[Int](1, 100)
+  } yield TopicAndPartition(topic, partition)
+  val tpsGen = Gen.listOf[TopicAndPartition](topicAndPartitionGen) suchThat (_.nonEmpty)
 
-  property("KafkaSource open sets consumer to earliest offset") {
-    val topicAndPartition = mock[TopicAndPartition]
-    val fetchThread = mock[FetchThread]
-    val offsetManager = mock[KafkaOffsetManager]
-    val messageDecoder = mock[MessageDecoder]
-    val timestampFilter = mock[TimeStampFilter]
-    val offsetStorageFactory = mock[OffsetStorageFactory]
-    val kafkaConfig = mock[KafkaSourceConfig]
-    val kafkaSource = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
-      timestampFilter, Some(fetchThread), Map(topicAndPartition -> offsetManager))
-
-    kafkaSource.setStartTime(None)
-
-    verify(fetchThread).start()
-    verify(fetchThread, never()).setStartOffset(anyObject[TopicAndPartition](), anyLong())
-  }
-
-  property("KafkaSource open should not set consumer start offset if offset storage is empty") {
-    forAll(startTimeGen) { (startTime: Long) =>
-      val offsetManager = mock[KafkaOffsetManager]
-      val topicAndPartition = mock[TopicAndPartition]
+  property("KafkaSource open should not recover without checkpoint") {
+    forAll(startTimeGen, tpsGen) { (startTime: Long, tps: List[TopicAndPartition]) =>
+      val taskContext = MockUtil.mockTaskContext
       val fetchThread = mock[FetchThread]
-      val messageDecoder = mock[MessageDecoder]
-      val timestampFilter = mock[TimeStampFilter]
-      val offsetStorageFactory = mock[OffsetStorageFactory]
-      val kafkaConfig = mock[KafkaSourceConfig]
-      val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
-        timestampFilter, Some(fetchThread), Map(topicAndPartition -> offsetManager))
+      val kafkaClient = mock[KafkaClient]
+      val clientFactory = mock[KafkaClientFactory]
+      val threadFactory = mock[FetchThreadFactory]
+      val topics = tps.map(_.topic)
+      val properties = mock[Properties]
+      val kafkaConfig = mock[KafkaConfig]
+      val configFactory = mock[KafkaConfigFactory]
+      val partitionGrouper = mock[PartitionGrouper]
 
-      when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(StorageEmpty))
+      when(configFactory.getKafkaConfig(properties)).thenReturn(kafkaConfig)
+      when(clientFactory.getKafkaClient(kafkaConfig)).thenReturn(kafkaClient)
+      val tpsArray = tps.toArray
+      when(kafkaClient.getTopicAndPartitions(topics)).thenReturn(tpsArray)
+      when(kafkaConfig.getConfiguredInstance(KafkaConfig.PARTITION_GROUPER_CLASS_CONFIG,
+        classOf[PartitionGrouper])).thenReturn(partitionGrouper)
+      when(partitionGrouper.group(taskContext.parallelism, taskContext.taskId.index, tpsArray))
+        .thenReturn(tpsArray)
+      when(threadFactory.getFetchThread(kafkaConfig, kafkaClient)).thenReturn(fetchThread)
 
-      source.setStartTime(Some(startTime))
+      val source = new KafkaSource(topics.mkString(","), properties, configFactory,
+        clientFactory, threadFactory)
+
+      source.open(taskContext, startTime)
+
       verify(fetchThread, never()).setStartOffset(anyObject[TopicAndPartition](), anyLong())
-      verify(fetchThread).start()
-
-      when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(new RuntimeException))
-      intercept[RuntimeException] {
-        source.setStartTime(Some(startTime))
-      }
-      source.close()
     }
   }
 
-  property("KafkaSource open should set consumer start offset if offset storage is not empty") {
-    forAll(startTimeGen, offsetGen) {
-      (startTime: Long, offset: Long) =>
-        val offsetManager = mock[KafkaOffsetManager]
-        val topicAndPartition = mock[TopicAndPartition]
+  property("KafkaSource open should recover with checkpoint") {
+    forAll(startTimeGen, offsetGen, tpsGen) {
+      (startTime: Long, offset: Long, tps: List[TopicAndPartition]) =>
+        val taskContext = MockUtil.mockTaskContext
+        val checkpointStoreFactory = mock[CheckpointStoreFactory]
+        val checkpointStores = tps.map(_ -> mock[CheckpointStore]).toMap
+        val topics = tps.map(_.topic)
+        val properties = mock[Properties]
+        val kafkaConfig = mock[KafkaConfig]
+        val configFactory = mock[KafkaConfigFactory]
+        val kafkaClient = mock[KafkaClient]
+        val clientFactory = mock[KafkaClientFactory]
         val fetchThread = mock[FetchThread]
-        val messageDecoder = mock[MessageDecoder]
-        val timestampFilter = mock[TimeStampFilter]
-        val offsetStorageFactory = mock[OffsetStorageFactory]
-        val kafkaConfig = mock[KafkaSourceConfig]
-        val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
-          timestampFilter, Some(fetchThread), Map(topicAndPartition -> offsetManager))
+        val threadFactory = mock[FetchThreadFactory]
+        val partitionGrouper = mock[PartitionGrouper]
 
-        when(offsetManager.resolveOffset(startTime)).thenReturn(Success(offset))
+        when(configFactory.getKafkaConfig(properties)).thenReturn(kafkaConfig)
+        when(clientFactory.getKafkaClient(kafkaConfig)).thenReturn(kafkaClient)
+        when(threadFactory.getFetchThread(kafkaConfig, kafkaClient)).thenReturn(fetchThread)
+        val tpsArray = tps.toArray
+        when(kafkaClient.getTopicAndPartitions(topics)).thenReturn(tps.toArray)
+        when(kafkaConfig.getConfiguredInstance(KafkaConfig.PARTITION_GROUPER_CLASS_CONFIG,
+          classOf[PartitionGrouper])).thenReturn(partitionGrouper)
+        when(partitionGrouper.group(taskContext.parallelism, taskContext.taskId.index, tpsArray))
+          .thenReturn(tpsArray)
 
-        source.setStartTime(Some(startTime))
-        verify(fetchThread).setStartOffset(topicAndPartition, offset)
-        verify(fetchThread).start()
+        val source = new KafkaSource(topics.mkString(","), properties, configFactory,
+          clientFactory, threadFactory)
+        checkpointStores.foreach{ case (tp, store) => source.addPartitionAndStore(tp, store) }
 
-        when(offsetManager.resolveOffset(startTime)).thenReturn(Failure(new RuntimeException))
-        intercept[RuntimeException] {
-          source.setStartTime(Some(startTime))
+        checkpointStores.foreach { case (tp, store) =>
+          when(checkpointStoreFactory.getCheckpointStore(
+            KafkaConfig.getCheckpointStoreNameSuffix(tp))).thenReturn(store)
+          when(store.recover(startTime)).thenReturn(Some(Injection[Long, Array[Byte]](offset)))
         }
-        source.close()
+
+        source.setCheckpointStore(checkpointStoreFactory)
+        source.open(taskContext, startTime)
+
+        tps.foreach(tp => verify(fetchThread).setStartOffset(tp, offset))
     }
   }
 
-  property("KafkaSource read should return number of messages in best effort") {
-    val kafkaMsgGen = for {
-      topic <- Gen.alphaStr
-      partition <- Gen.choose[Int](0, 1000)
+  property("KafkaSource read checkpoints offset and returns a message or null") {
+    val msgGen = for {
+      tp <- topicAndPartitionGen
       offset <- Gen.choose[Long](0L, 1000L)
-      key = None
+      key = Some(Injection[Long, Array[Byte]](offset))
       msg <- Gen.alphaStr.map(Injection[String, Array[Byte]])
-    } yield KafkaMessage(TopicAndPartition(topic, partition), offset, key, msg)
-    val msgQueueGen = Gen.containerOf[Array, KafkaMessage](kafkaMsgGen)
-    forAll(msgQueueGen) {
-      (msgQueue: Array[KafkaMessage]) =>
-        val offsetManager = mock[KafkaOffsetManager]
-        val fetchThread = mock[FetchThread]
-        val messageDecoder = mock[MessageDecoder]
+    } yield KafkaMessage(tp, offset, key, msg)
+    val msgQueueGen = Gen.listOf[KafkaMessage](msgGen)
 
-        val timestampFilter = mock[TimeStampFilter]
-        val offsetStorageFactory = mock[OffsetStorageFactory]
-        val kafkaConfig = mock[KafkaSourceConfig]
-        val offsetManagers = msgQueue.map(_.topicAndPartition -> offsetManager).toMap
+    forAll(msgQueueGen) { (msgQueue: List[KafkaMessage]) =>
+      val properties = mock[Properties]
+      val config = mock[KafkaConfig]
+      val configFactory = mock[KafkaConfigFactory]
+      val timestampFilter = mock[TimeStampFilter]
+      val messageDecoder = mock[MessageDecoder]
+      val kafkaClient = mock[KafkaClient]
+      val clientFactory = mock[KafkaClientFactory]
+      val fetchThread = mock[FetchThread]
+      val threadFactory = mock[FetchThreadFactory]
+      val checkpointStoreFactory = mock[CheckpointStoreFactory]
 
-        val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
-          timestampFilter, Some(fetchThread), offsetManagers)
+      val checkpointStores = msgQueue.map(_.topicAndPartition -> mock[CheckpointStore]).toMap
+      val topics = checkpointStores.map(_._1.topic).mkString(",")
 
-        if (msgQueue.isEmpty) {
-          when(fetchThread.poll).thenReturn(None)
-          source.read() shouldBe null
-        } else {
-          msgQueue.indices.foreach { i =>
-            val message = Message(msgQueue(i).msg)
-            when(fetchThread.poll).thenReturn(Option(msgQueue(i)))
-            when(messageDecoder.fromBytes(anyObject[Array[Byte]])).thenReturn(message)
-            when(offsetManager.filter(anyObject[(Message, Long)])).thenReturn(Some(message))
-            when(timestampFilter.filter(anyObject[Message], anyLong())).thenReturn(Some(message))
+      checkpointStores.foreach { case (tp, store) =>
+        when(checkpointStoreFactory.getCheckpointStore(KafkaConfig
+          .getCheckpointStoreNameSuffix(tp))).thenReturn(store)
+      }
+      when(configFactory.getKafkaConfig(properties)).thenReturn(config)
+      when(config.getConfiguredInstance(KafkaConfig.TIMESTAMP_FILTER_CLASS_CONFIG,
+        classOf[TimeStampFilter])).thenReturn(timestampFilter)
+      when(config.getConfiguredInstance(KafkaConfig.MESSAGE_DECODER_CLASS_CONFIG,
+        classOf[MessageDecoder])).thenReturn(messageDecoder)
+      when(clientFactory.getKafkaClient(config)).thenReturn(kafkaClient)
+      when(threadFactory.getFetchThread(config, kafkaClient)).thenReturn(fetchThread)
 
-            source.read shouldBe message
-          }
+      val source = new KafkaSource(topics, properties, configFactory, clientFactory, threadFactory)
+      checkpointStores.foreach{ case (tp, store) => source.addPartitionAndStore(tp, store) }
+      source.setCheckpointStore(checkpointStoreFactory)
+
+      if (msgQueue.isEmpty) {
+        when(fetchThread.poll).thenReturn(None)
+        source.read() shouldBe null
+      } else {
+        msgQueue.foreach { kafkaMsg =>
+          when(fetchThread.poll).thenReturn(Option(kafkaMsg))
+          val message = Message(kafkaMsg.msg, kafkaMsg.offset)
+          when(messageDecoder.fromBytes(kafkaMsg.key.get, kafkaMsg.msg)).thenReturn(message)
+          when(timestampFilter.filter(message, 0)).thenReturn(Some(message))
+          source.read() shouldBe Message(kafkaMsg.msg, kafkaMsg.offset)
+          verify(checkpointStores(kafkaMsg.topicAndPartition)).persist(
+            kafkaMsg.offset, Injection[Long, Array[Byte]](kafkaMsg.offset))
         }
-        source.close()
+      }
     }
   }
 
-  property("KafkaSource close should close all offset managers") {
-    val offsetManager = mock[KafkaOffsetManager]
-    val topicAndPartition = mock[TopicAndPartition]
-    val fetchThread = mock[FetchThread]
-    val timestampFilter = mock[TimeStampFilter]
-    val messageDecoder = mock[MessageDecoder]
-    val offsetStorageFactory = mock[OffsetStorageFactory]
-    val kafkaConfig = mock[KafkaSourceConfig]
-    val source = new KafkaSource(kafkaConfig, offsetStorageFactory, messageDecoder,
-      timestampFilter, Some(fetchThread), Map(topicAndPartition -> offsetManager))
-    source.close()
-    verify(offsetManager).close()
+  property("KafkaSource close should close all checkpoint stores") {
+    forAll(Gen.chooseNum[Int](1, 100)) { (num: Int) =>
+      val tps = 0.until(num).map(id => TopicAndPartition("topic", id))
+      val checkpointStores = tps.map(_ -> mock[CheckpointStore]).toMap
+      val props = mock[Properties]
+      val kafkaConfig = mock[KafkaConfig]
+      val configFactory = mock[KafkaConfigFactory]
+      val threadFactory = mock[FetchThreadFactory]
+      val kafkaClient = mock[KafkaClient]
+      val clientFactory = mock[KafkaClientFactory]
+
+      when(configFactory.getKafkaConfig(props)).thenReturn(kafkaConfig)
+      when(clientFactory.getKafkaClient(kafkaConfig)).thenReturn(kafkaClient)
+
+      val source = new KafkaSource("topic", props, configFactory, clientFactory, threadFactory)
+      checkpointStores.foreach{ case (tp, store) => source.addPartitionAndStore(tp, store) }
+      source.close()
+
+      verify(kafkaClient).close()
+      checkpointStores.foreach{ case (_, store) => verify(store).close() }
+    }
   }
 }

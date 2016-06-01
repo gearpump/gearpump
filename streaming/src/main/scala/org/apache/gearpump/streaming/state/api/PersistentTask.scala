@@ -47,7 +47,8 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
 
   val checkpointStoreFactory = conf.getValue[CheckpointStoreFactory](
     PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY).get
-  val checkpointStore = checkpointStoreFactory.getCheckpointStore(conf, taskContext)
+  val checkpointStore = checkpointStoreFactory.getCheckpointStore(
+    s"app$appId-task${taskId.processorId}_${taskId.index}")
   val checkpointInterval = conf.getLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS).get
   val checkpointManager = new CheckpointManager(checkpointInterval, checkpointStore)
   // System time interval to attempt checkpoint

@@ -48,7 +48,8 @@ class HadoopCheckpointStoreIntegrationSpec
       val rootDirName = "test"
       val rootDir = new Path(rootDirName + Path.SEPARATOR +
         s"v${HadoopCheckpointStoreFactory.VERSION}")
-      val subDir = new Path(rootDir, "app0-task0_0")
+      val subDirName = "app0-task0_0"
+      val subDir = new Path(rootDir, subDirName)
 
       val fs = HadoopUtil.getFileSystemForPath(rootDir, hadoopConfig)
       fs.delete(rootDir, true)
@@ -56,7 +57,7 @@ class HadoopCheckpointStoreIntegrationSpec
 
       val checkpointStoreFactory = new HadoopCheckpointStoreFactory(
         rootDirName, hadoopConfig, new FileSizeRotation(fileSize))
-      val checkpointStore = checkpointStoreFactory.getCheckpointStore(userConfig, taskContext)
+      val checkpointStore = checkpointStoreFactory.getCheckpointStore(subDirName)
 
       checkpointStore.persist(0L, Array(0.toByte))
 

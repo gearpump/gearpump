@@ -26,5 +26,11 @@ import org.apache.gearpump.streaming.source.DataSource
  * Subclass should be able to replay messages on recovery from the time
  * when an application crashed.
  */
-trait TimeReplayableSource extends DataSource
+trait TimeReplayableSource extends DataSource {
+  /**
+   * Sets store factory which creates a checkpoint store
+   * at runtime to checkpoint (timestamp, source_offsets)
+   */
+  def setCheckpointStore(factory: CheckpointStoreFactory)
+}
 

@@ -16,19 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.kafka.lib.source.grouper
 
-import org.apache.gearpump.Message
+import kafka.common.TopicAndPartition
 
 /**
- * Decodes raw bytes to Message.
- * It is usually written by end user and passed into TimeReplayableSource
+ * default grouper groups TopicAndPartitions among StreamProducers by partitions
+ *
+ * e.g. given 2 topics (topicA with 2 partitions and topicB with 3 partitions) and
+ * 2 streamProducers (streamProducer0 and streamProducer1)
+ *
+ * streamProducer0 gets (topicA, partition1), (topicB, partition1) and (topicA, partition3)
+ * streamProducer1 gets (topicA, partition2), (topicB, partition2)
  */
-trait MessageDecoder extends java.io.Serializable {
-  /**
-   * @param key key of a kafka message, can be NULL
-   * @param value value of a kafka message
-   * @return a gearpump Message
-   */
-  def fromBytes(key: Array[Byte], value: Array[Byte]): Message
+class DefaultPartitionGrouper extends PartitionGrouper {
+  def group(taskNum: Int, taskIndex: Int, topicAndPartitions: Array[TopicAndPartition])
+    : Array[TopicAndPartition] = {
+    topicAndPartitions.indices.filter(_ % taskNum == taskIndex)
+      .map(i => topicAndPartitions(i)).toArray
+  }
 }

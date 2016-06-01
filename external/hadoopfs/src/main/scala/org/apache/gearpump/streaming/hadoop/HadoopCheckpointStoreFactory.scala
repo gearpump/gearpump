@@ -40,21 +40,27 @@ class HadoopCheckpointStoreFactory(
   extends CheckpointStoreFactory {
   import org.apache.gearpump.streaming.hadoop.HadoopCheckpointStoreFactory._
 
+  /**
+   * Overrides Java's default serialization
+   * Please do not remove this
+   */
   private def writeObject(out: ObjectOutputStream): Unit = {
     out.defaultWriteObject()
     hadoopConfig.write(out)
   }
 
+  /**
+   * Overrides Java's default deserialization
+   * Please do not remove this
+   */
   private def readObject(in: ObjectInputStream): Unit = {
     in.defaultReadObject()
     hadoopConfig = new Configuration(false)
     hadoopConfig.readFields(in)
   }
 
-  override def getCheckpointStore(conf: UserConfig, taskContext: TaskContext): CheckpointStore = {
-    import taskContext.{appId, taskId}
-    val dirPath = new Path(dir + Path.SEPARATOR + s"v$VERSION",
-      s"app$appId-task${taskId.processorId}_${taskId.index}")
+  override def getCheckpointStore(name: String): CheckpointStore = {
+    val dirPath = new Path(dir + Path.SEPARATOR + s"v$VERSION", name)
     val fs = HadoopUtil.getFileSystemForPath(dirPath, hadoopConfig)
     new HadoopCheckpointStore(dirPath, fs, hadoopConfig, rotation)
   }

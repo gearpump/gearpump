@@ -18,7 +18,10 @@
 
 package org.apache.gearpump.streaming.examples.kafka
 
+import java.util.Properties
+
 import akka.actor.ActorSystem
+import org.apache.gearpump.streaming.kafka.util.KafkaConfig
 import org.slf4j.Logger
 
 import org.apache.gearpump.cluster.UserConfig
@@ -26,7 +29,7 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.ShufflePartitioner
 import org.apache.gearpump.streaming.StreamApplication
-import org.apache.gearpump.streaming.kafka.{KafkaSink, KafkaSource, KafkaStorageFactory}
+import org.apache.gearpump.streaming.kafka._
 import org.apache.gearpump.streaming.sink.DataSinkProcessor
 import org.apache.gearpump.streaming.source.DataSourceProcessor
 import org.apache.gearpump.util.Graph._
@@ -52,6 +55,7 @@ object KafkaReadWrite extends AkkaApp with ArgumentsParser {
 
   def application(config: ParseResult, system: ActorSystem): StreamApplication = {
     implicit val actorSystem = system
+    val appName = "KafkaReadWrite"
     val sourceNum = config.getInt("source")
     val sinkNum = config.getInt("sink")
     val zookeeperConnect = config.getString("zookeeperConnect")
@@ -60,14 +64,19 @@ object KafkaReadWrite extends AkkaApp with ArgumentsParser {
     val sinkTopic = config.getString("sinkTopic")
 
     val appConfig = UserConfig.empty
-    val offsetStorageFactory = new KafkaStorageFactory(zookeeperConnect, brokerList)
-    val source = new KafkaSource(sourceTopic, zookeeperConnect, offsetStorageFactory)
+    val props = new Properties
+    props.put(KafkaConfig.ZOOKEEPER_CONNECT_CONFIG, zookeeperConnect)
+    props.put(KafkaConfig.BOOTSTRAP_SERVERS_CONFIG, brokerList)
+    props.put(KafkaConfig.CHECKPOINT_STORE_NAME_PREFIX_CONFIG, appName)
+    val source = new KafkaSource(sourceTopic, props)
+    val checkpointStoreFactory = new KafkaStoreFactory(props)
+    source.setCheckpointStore(checkpointStoreFactory)
     val sourceProcessor = DataSourceProcessor(source, sourceNum)
-    val sink = new KafkaSink(sinkTopic, brokerList)
+    val sink = new KafkaSink(sinkTopic, props)
     val sinkProcessor = DataSinkProcessor(sink, sinkNum)
     val partitioner = new ShufflePartitioner
     val computation = sourceProcessor ~ partitioner ~> sinkProcessor
-    val app = StreamApplication("KafkaReadWrite", Graph(computation), appConfig)
+    val app = StreamApplication(appName, Graph(computation), appConfig)
     app
   }
 

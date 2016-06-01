@@ -36,7 +36,14 @@ trait CheckpointStore {
   def close(): Unit
 }
 
+/**
+ * Creates CheckpointStore instance at runtime
+ */
 trait CheckpointStoreFactory extends java.io.Serializable {
-  def getCheckpointStore(conf: UserConfig, taskContext: TaskContext): CheckpointStore
+  /**
+   * @param name a unique name which maps to a unique path in checkpoint store
+   * @return a CheckpointStore instance
+   */
+  def getCheckpointStore(name: String): CheckpointStore
 }
 
