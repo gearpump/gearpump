@@ -7,10 +7,10 @@ description: Gearpump Configuration
 
 ## Master and Worker configuration
 
-Master and Worker daemons will only read configuration from conf/gear.conf. 
+Master and Worker daemons will only read configuration from conf/gear.conf.
 
 Master reads configuration from section master and gearpump:
- 
+
 ```bash
 master {
 }
@@ -18,7 +18,7 @@ gearpump{
 }
 ```
 
-Worker reads configuration from section worker and gearpump: 
+Worker reads configuration from section worker and gearpump:
 
 ```bash
 worker {
@@ -29,17 +29,17 @@ gearpump{
 
 ## Configuration for user submitted application job
 
-For user application job, it will read configuration file `gear.conf` and `application.conf` from classpath, while `application.conf` has higher priority. 
+For user application job, it will read configuration file `gear.conf` and `application.conf` from classpath, while `application.conf` has higher priority.
 The default classpath contains:
 
 1. `conf/`
-2. current working directory. 
+2. current working directory.
 
 For example, you can put a `application.conf` on your working directory, and then it will be effective when you submit a new job application.
 
 ## Logging
 
-To change the log level, you need to change both `gear.conf`, and `log4j.properties`. 
+To change the log level, you need to change both `gear.conf`, and `log4j.properties`.
 
 ### To change the log level for master and worker daemon
 
@@ -89,4 +89,4 @@ This is the default configuration for `gear.conf`.
 | gearpump.shared-thread-pool-dispatcher | default Dispatcher with "fork-join-executor" | default shared thread pool dispatcher |
 | gearpump.single-thread-dispatcher | PinnedDispatcher | default single thread dispatcher |
 | gearpump.serialization-framework | "org.apache.gearpump.serializer.FastKryoSerializationFramework" | Gearpump has built-in serialization framework using Kryo. Users are allowed to use a different serialization framework, like Protobuf. See `org.apache.gearpump.serializer.FastKryoSerializationFramework` to find how a custom serialization framework can be defined |
-| worker.executor-share-same-jvm-as-worker | false | whether the executor actor is started in the same jvm(process) from which running the worker actor |
+| worker.executor-share-same-jvm-as-worker | false | whether the executor actor is started in the same jvm(process) from which running the worker actor, the intention of this setting is for the convenience of single machine debugging, however, the app jar need to be added to the worker's classpath when you set it true and have a 'real' worker in the cluster |
