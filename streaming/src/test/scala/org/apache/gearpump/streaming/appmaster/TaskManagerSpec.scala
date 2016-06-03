@@ -33,6 +33,7 @@ import org.apache.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, Cha
 import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.{ExecutorResourceUsageSummary, SetTaskManager, StartExecutors, _}
 import org.apache.gearpump.streaming.appmaster.JarScheduler.ResourceRequestDetail
+import org.apache.gearpump.streaming.appmaster.TaskManager.ApplicationReady
 import org.apache.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
 import org.apache.gearpump.streaming.executor.Executor.RestartTasks
 import org.apache.gearpump.streaming.task.{StartTime, TaskContext, _}
@@ -101,7 +102,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     assert(returned.resources.deep == resourceRequest.deep)
     executorManager.reply(StartExecutorsTimeOut)
 
-    // TaskManager cannot handle the TimeOut error itself, escalate to appmaster.
+    // TaskManager cannot handle the TimeOut error itself, escalate to AppMaster.
     appMaster.expectMsg(AllocateResourceTimeOut)
   }
 
@@ -166,7 +167,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     dagManager.expectMsgType[WatchChange]
     executorManager.expectMsgType[SetTaskManager]
 
-    // Step1: first transition from Unitialized to ApplicationReady
+    // Step1: first transition from Uninitialized to ApplicationReady
     executorManager.expectMsgType[ExecutorResourceUsageSummary]
     dagManager.expectMsgType[NewDAGDeployed]
 
@@ -208,11 +209,11 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // Step7: Launch Task
     val launchTaskMatch: PartialFunction[Any, RegisterTask] = {
-      case UniCast(executorId, launch: LaunchTasks) =>
+      case UniCast(_, launch: LaunchTasks) =>
         RegisterTask(launch.taskId.head, executorId, HostPort("127.0.0.1:3000"))
     }
 
-    // Taskmanager should return the latest start clock to task(0,0)
+    // TaskManager should return the latest start clock to task(0,0)
     clockService.expectMsg(GetStartClock)
     clockService.reply(StartClock(0))
 
@@ -228,7 +229,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     // Step9: start broadcasting TaskLocations.
     import scala.concurrent.duration._
     assert(executorManager.expectMsgPF(5.seconds) {
-      case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[TaskLocationsReady]
+      case BroadCast(taskLocationsReady) => taskLocationsReady.isInstanceOf[TaskLocationsReady]
     })
 
     // Step10: Executor confirm it has received TaskLocationsReceived(version, executorId)
@@ -244,11 +245,15 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
       case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[StartAllTasks]
     })
 
-    // Step13, Tell executor Manager the updated usage status of executors.
+    // Step13, Tell ExecutorManager the updated usage status of executors.
     executorManager.expectMsgType[ExecutorResourceUsageSummary]
 
-    // Step14: transition from DynamicDAG to ApplicationReady
+    // Step14: Tell AppMaster application is ready.
+    appMaster.expectMsg(ApplicationReady)
+
+    // Step15: transition from DynamicDAG to ApplicationReady
     Env(executorManager, clockService, appMaster, executor, taskManager, scheduler)
+
   }
 }
 

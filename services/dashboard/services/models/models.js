@@ -138,6 +138,7 @@ angular.module('org.apache.gearpump.models', [])
           return angular.merge(obj, {
             // extra properties
             isRunning: obj.status === 'active',
+            isKilled: obj.status === 'inactive',
             akkaAddr: decoder._akkaAddr(obj.appMasterPath),
             // extra methods
             pageUrl: locator.app(obj.appId, obj.type),

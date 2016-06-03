@@ -162,7 +162,7 @@ class RestServiceSpec extends TestSpecBase {
       killAppAndVerify(appId)
     }
 
-    "should fail when attempting to kill a stopped application" in {
+    "fail when attempting to kill a stopped application" in {
       // setup
       val appId = restClient.getNextAvailableAppId()
       val submissionSucess = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length)
@@ -175,7 +175,7 @@ class RestServiceSpec extends TestSpecBase {
       success shouldBe false
     }
 
-    "should fail when attempting to kill a non-exist application" in {
+    "fail when attempting to kill a non-exist application" in {
       // setup
       val freeAppId = restClient.listApps().length + 1
 
@@ -342,6 +342,8 @@ class RestServiceSpec extends TestSpecBase {
       val killedApp = restClient.queryApp(originAppId)
       killedApp.appId shouldEqual originAppId
       killedApp.status shouldEqual MasterToAppMaster.AppMasterInActive
+      val newAppId = originAppId + 1
+      expectAppIsRunning(newAppId, wordCountName)
       val runningApps = restClient.listRunningApps()
       runningApps.length shouldEqual 1
       val newAppDetail = restClient.queryStreamingAppDetail(runningApps.head.appId)

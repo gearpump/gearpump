@@ -162,6 +162,12 @@ trait AppMasterRegisterData
 object AppMasterToMaster {
 
   /**
+   * Activate the AppMaster when an application is ready to run.
+   * @param appId application id
+   */
+  case class ActivateAppMaster(appId: Int)
+  
+  /**
    * Register an AppMaster by providing a ActorRef, and registerData
    * @param registerData The registerData is provided by Master when starting the app master.
    *                     App master should return the registerData back to master.
@@ -246,10 +252,14 @@ object MasterToAppMaster {
   /** Master confirm reception of RegisterAppMaster message */
   case class AppMasterRegistered(appId: Int)
 
+  /** Master confirm reception of ActivateAppMaster message */
+  case class AppMasterActivated(appId: Int)
+
   /** Shutdown the application job */
   case object ShutdownAppMaster
 
   type AppMasterStatus = String
+  val AppMasterPending: AppMasterStatus = "pending"
   val AppMasterActive: AppMasterStatus = "active"
   val AppMasterInActive: AppMasterStatus = "inactive"
   val AppMasterNonExist: AppMasterStatus = "nonexist"

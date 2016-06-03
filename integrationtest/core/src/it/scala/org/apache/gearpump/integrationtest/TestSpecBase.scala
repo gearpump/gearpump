@@ -63,7 +63,7 @@ trait TestSpecBase
 
     assert(cluster != null, "Configure MiniCluster properly in suite spec")
     cluster.isAlive shouldBe true
-    restClient.listRunningApps().isEmpty shouldBe true
+    restClient.listPendingOrRunningApps().isEmpty shouldBe true
     LOGGER.debug(s">### =============================================================")
     LOGGER.debug(s">###2 Start test: ${td.name}\n")
   }
@@ -77,16 +77,16 @@ trait TestSpecBase
       LOGGER.info("Will restart the cluster for next test case")
       cluster.restart()
     } else {
-      restClient.listRunningApps().foreach(app => {
+      restClient.listPendingOrRunningApps().foreach(app => {
         commandLineClient.killApp(app.appId) shouldBe true
       })
     }
   }
 
-  def expectAppIsRunning(appId: Int, expectedAppName: String): AppMasterData = {
-    val app = restClient.queryApp(appId)
-    app.status shouldEqual MasterToAppMaster.AppMasterActive
-    app.appName shouldEqual expectedAppName
-    app
+  def expectAppIsRunning(appId: Int, expectedAppName: String): Unit = {
+    Util.retryUntil(() => {
+      val app = restClient.queryApp(appId)
+      app.status == MasterToAppMaster.AppMasterActive && app.appName == expectedAppName
+    }, s"$expectedAppName is running")
   }
 }

@@ -187,8 +187,9 @@ private[cluster] class Master extends Actor with Stash {
     case request: RequestResource =>
       scheduler forward request
     case registerAppMaster: RegisterAppMaster =>
-      // Forward to appManager
       appManager forward registerAppMaster
+    case activateAppMaster: ActivateAppMaster =>
+      appManager forward activateAppMaster
     case save: SaveAppData =>
       appManager forward save
     case get: GetAppData =>

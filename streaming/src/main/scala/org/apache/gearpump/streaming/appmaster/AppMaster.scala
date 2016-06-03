@@ -22,8 +22,9 @@ import java.lang.management.ManagementFactory
 
 import akka.actor._
 import org.apache.gearpump._
-import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, GetStallingTasks, QueryHistoryMetrics, ShutdownApplication}
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.AppMasterToMaster.ActivateAppMaster
+import org.apache.gearpump.cluster.ClientToMaster._
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterActivated, AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, LastFailure}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.worker.WorkerId
@@ -35,7 +36,7 @@ import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster._
 import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, GetExecutorInfo}
-import org.apache.gearpump.streaming.appmaster.TaskManager.{FailedToRecover, GetTaskList, TaskList}
+import org.apache.gearpump.streaming.appmaster.TaskManager.{ApplicationReady, FailedToRecover, GetTaskList, TaskList}
 import org.apache.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
@@ -76,7 +77,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
 
   private val store = new InMemoryAppStoreOnMaster(appId, appContext.masterProxy)
   private val dagManager = context.actorOf(Props(new DagManager(appContext.appId, userConfig, store,
-    Some(getUpdatedDAG()))))
+    Some(getUpdatedDAG))))
 
   private var taskManager: Option[ActorRef] = None
   private var clockService: Option[ActorRef] = None
@@ -102,13 +103,13 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
     status = "Active",
     taskCount = 0,
     tasks = Map.empty[ProcessorId, List[TaskId]],
-    jvmName = ManagementFactory.getRuntimeMXBean().getName()
+    jvmName = ManagementFactory.getRuntimeMXBean.getName
   )
 
   private val historyMetricsService = if (metricsEnabled) {
     // Registers jvm metrics
     Metrics(context.system).register(new JvmMetricsSet(
-      s"app${appId}.executor${APPMASTER_DEFAULT_EXECUTOR_ID}"))
+      s"app$appId.executor$APPMASTER_DEFAULT_EXECUTOR_ID"))
 
     val historyMetricsService = context.actorOf(Props(new HistoryMetricsService(
       s"app$appId", getHistoryMetricsConfig)))
@@ -137,6 +138,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
   override def receive: Receive = {
     taskMessageHandler orElse
       executorMessageHandler orElse
+      ready orElse
       recover orElse
       appMasterService orElse
       ActorUtil.defaultMsgHandler(self)
@@ -162,7 +164,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
     case checkpoint: ReportCheckpointClock =>
       clockService.foreach(_ forward checkpoint)
     case GetDAG =>
-      val task = sender
+      val task = sender()
       getDAG.foreach {
         dag => task ! dag
       }
@@ -255,7 +257,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
     case GetLastFailure(_) =>
       sender ! lastFailure
     case get@GetExecutorSummary(executorId) =>
-      val client = sender
+      val client = sender()
       if (executorId == APPMASTER_DEFAULT_EXECUTOR_ID) {
         client ! appMasterExecutorSummary
       } else {
@@ -267,7 +269,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
           }
       }
     case query@QueryExecutorConfig(executorId) =>
-      val client = sender
+      val client = sender()
       if (executorId == -1) {
         val systemConfig = context.system.settings.config
         sender ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
@@ -279,6 +281,13 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
             }
           }
       }
+  }
+
+  def ready: Receive = {
+    case ApplicationReady =>
+      masterProxy ! ActivateAppMaster(appId)
+    case AppMasterActivated(appId) =>
+      LOG.info(s"AppMaster for app$appId is activated")
   }
 
   /** Error handling */
@@ -296,8 +305,8 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
 
   private def getMinClock: Future[TimeStamp] = {
     clockService match {
-      case Some(clockService) =>
-        (clockService ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
+      case Some(service) =>
+        (service ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)
       case None =>
         Future.failed(new ServiceNotAvailableException("clock service not ready"))
     }
@@ -317,8 +326,8 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
 
   private def getTaskList: Future[TaskList] = {
     taskManager match {
-      case Some(taskManager) =>
-        (taskManager ? GetTaskList).asInstanceOf[Future[TaskList]]
+      case Some(manager) =>
+        (manager ? GetTaskList).asInstanceOf[Future[TaskList]]
       case None =>
         Future.failed(new ServiceNotAvailableException("task manager not ready"))
     }
@@ -328,13 +337,13 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
     (dagManager ? GetLatestDAG).asInstanceOf[Future[LatestDAG]].map(_.dag)
   }
 
-  private def getUpdatedDAG(): DAG = {
+  private def getUpdatedDAG: DAG = {
     val dag = DAG(userConfig.getValue[Graph[ProcessorDescription,
       PartitionerDescription]](StreamApplication.DAG).get)
     val updated = dag.processors.map { idAndProcessor =>
       val (id, oldProcessor) = idAndProcessor
       val newProcessor = if (oldProcessor.jar == null) {
-        oldProcessor.copy(jar = appContext.appJar.getOrElse(null))
+        oldProcessor.copy(jar = appContext.appJar.orNull)
       } else {
         oldProcessor
       }

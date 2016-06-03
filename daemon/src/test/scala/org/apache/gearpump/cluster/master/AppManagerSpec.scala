@@ -52,20 +52,23 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     appManager = getActorSystem.actorOf(Props(new AppManager(kvService.ref,
       new DummyAppMasterLauncherFactory(appLauncher))))
     kvService.expectMsgType[GetKV]
-    kvService.reply(GetKVSuccess(MASTER_STATE, MasterState(0, Map.empty, Map.empty)))
+    kvService.reply(GetKVSuccess(MASTER_STATE, MasterState(0, Map.empty, Set.empty, Set.empty)))
   }
 
   override def afterEach(): Unit = {
     shutdownActorSystem()
   }
 
-  "AppManager" should "handle appmaster message correctly" in {
+  "AppManager" should "handle AppMaster message correctly" in {
     val appMaster = TestProbe()(getActorSystem)
-    val worker = TestProbe()(getActorSystem)
+    val appId = 1
 
-    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(0, "appName"))
+    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId, "appName"))
     appMaster.send(appManager, register)
     appMaster.expectMsgType[AppMasterRegistered]
+
+    appMaster.send(appManager, ActivateAppMaster(appId))
+    appMaster.expectMsgType[AppMasterActivated]
   }
 
   "DataStoreService" should "support Put and Get" in {

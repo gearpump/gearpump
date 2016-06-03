@@ -46,7 +46,6 @@ class MasterConnectionKeeper(
   import context.dispatcher
 
   private val LOG = LogUtil.getLogger(getClass)
-  private var master: ActorRef = null
 
   // Subscribe self to masterProxy,
   masterProxy ! WatchMaster(self)
@@ -72,7 +71,7 @@ class MasterConnectionKeeper(
 
   def masterLivenessListener: Receive = {
     case MasterRestarted =>
-      LOG.info("Master restarted, re-registering appmaster....")
+      LOG.info("Master restarted, re-registering AppMaster....")
       context.become(waitMasterToConfirm(registerAppMaster))
     case MasterStopped =>
       LOG.info("Master is dead, killing this AppMaster....")

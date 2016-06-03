@@ -120,6 +120,10 @@ private[appmaster] class TaskManager(
     dagManager ! GetLatestDAG
     LOG.info(s"goto state ApplicationReady(dag = ${state.dag.version})...")
 
+    if (state.dag.version >= 0) {
+      appMaster ! ApplicationReady
+    }
+
     val recoverRegistry = new TaskRegistry(expectedTasks = state.dag.tasks,
       deadTasks = state.taskRegistry.deadTasks)
 
@@ -271,7 +275,7 @@ private[appmaster] class TaskManager(
       }
 
     case RegisterTask(taskId, executorId, host) =>
-      val client = sender
+      val client = sender()
       val register = state.taskRegistry
       val status = register.registerTask(taskId, TaskLocation(executorId, host))
       if (status == Accept) {
@@ -399,6 +403,8 @@ private[appmaster] object TaskManager {
   case object GetTaskList
 
   case class TaskList(tasks: Map[TaskId, ExecutorId])
+
+  case object ApplicationReady
 
   case class FailedToRecover(errorMsg: String)
 

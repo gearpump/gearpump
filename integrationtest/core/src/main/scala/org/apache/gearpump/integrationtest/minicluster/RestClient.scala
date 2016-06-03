@@ -86,6 +86,11 @@ class RestClient(host: String, port: Int) {
     decodeAs[AppMastersData](resp).appMasters.toArray
   }
 
+  def listPendingOrRunningApps(): Array[AppMasterData] = {
+    listApps().filter(app => app.status == MasterToAppMaster.AppMasterActive
+      || app.status == MasterToAppMaster.AppMasterPending)
+  }
+
   def listRunningApps(): Array[AppMasterData] = {
     listApps().filter(_.status == MasterToAppMaster.AppMasterActive)
   }
@@ -96,7 +101,7 @@ class RestClient(host: String, port: Int) {
 
   def submitApp(jar: String, executorNum: Int, args: String = "", config: String = "")
     : Boolean = try {
-    var endpoint = "master/submitapp"
+    val endpoint = "master/submitapp"
 
     var options = Seq(s"jar=@$jar")
     if (config.length > 0) {
