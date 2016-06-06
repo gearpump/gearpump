@@ -25,7 +25,7 @@ import akka.actor._
 import org.slf4j.Logger
 
 import org.apache.gearpump.cluster.UserConfig
-import io.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
+import org.apache.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.serializer.SerializationFramework
 import org.apache.gearpump.streaming.AppMasterToExecutor._

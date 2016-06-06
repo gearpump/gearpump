@@ -22,7 +22,7 @@ import scala.collection.JavaConverters._
 
 import akka.actor.{ActorRef, ActorSystem}
 
-import io.gearpump.codahale.metrics.{Gauge => CodaGauge, MetricRegistry}
+import org.apache.gearpump.codahale.metrics.{Gauge => CodaGauge, MetricRegistry}
 import org.apache.gearpump.metrics.Metrics.{Counter => CounterData, Gauge => GaugeData, Histogram => HistogramData, Meter => MeterData}
 import org.apache.gearpump.metrics.MetricsReporterService.ReportTo
 import org.apache.gearpump.util.LogUtil

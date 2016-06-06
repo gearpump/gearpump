@@ -28,8 +28,8 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
 
 import org.apache.gearpump.cluster.TestUtil
-import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
-import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
+import org.apache.gearpump.esotericsoftware.kryo.io.{Input, Output}
+import org.apache.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
 import org.apache.gearpump.serializer.SerializerSpec._
 
 class SerializerSpec extends FlatSpec with Matchers with MockitoSugar {

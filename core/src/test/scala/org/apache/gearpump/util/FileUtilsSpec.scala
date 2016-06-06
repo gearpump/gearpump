@@ -23,7 +23,7 @@ import java.util
 
 import org.scalatest.FlatSpec
 
-import io.gearpump.google.common.io.Files
+import org.apache.gearpump.google.common.io.Files
 
 class FileUtilsSpec extends FlatSpec {
   val TXT =

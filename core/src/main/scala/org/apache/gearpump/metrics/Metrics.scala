@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
 import akka.actor._
 import org.slf4j.Logger
 
-import io.gearpump.codahale.metrics._
+import org.apache.gearpump.codahale.metrics._
 import org.apache.gearpump.metrics
 import org.apache.gearpump.util.LogUtil
 

@@ -21,7 +21,7 @@ package org.apache.gearpump.serializer
 import com.typesafe.config.Config
 import org.slf4j.Logger
 
-import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
+import org.apache.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
 import org.apache.gearpump.util.{Constants, LogUtil}
 
 class GearpumpSerialization(config: Config) {

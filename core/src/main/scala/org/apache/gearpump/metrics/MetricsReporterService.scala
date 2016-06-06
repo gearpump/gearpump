@@ -24,8 +24,8 @@ import scala.concurrent.duration._
 
 import akka.actor.{Actor, ActorRef}
 
-import io.gearpump.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import io.gearpump.codahale.metrics.{MetricFilter, Slf4jReporter}
+import org.apache.gearpump.codahale.metrics.graphite.{Graphite, GraphiteReporter}
+import org.apache.gearpump.codahale.metrics.{MetricFilter, Slf4jReporter}
 import org.apache.gearpump.metrics.Metrics.{DemandMoreMetrics, ReportMetrics}
 import org.apache.gearpump.metrics.MetricsReporterService.ReportTo
 import org.apache.gearpump.util.Constants._

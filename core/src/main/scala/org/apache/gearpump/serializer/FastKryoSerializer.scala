@@ -20,9 +20,9 @@ package org.apache.gearpump.serializer
 
 import akka.actor.ExtendedActorSystem
 
-import io.gearpump.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
-import io.gearpump.objenesis.strategy.StdInstantiatorStrategy
-import io.gearpump.romix.serialization.kryo.KryoSerializerWrapper
+import org.apache.gearpump.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
+import org.apache.gearpump.objenesis.strategy.StdInstantiatorStrategy
+import org.apache.gearpump.romix.serialization.kryo.KryoSerializerWrapper
 import org.apache.gearpump.serializer.FastKryoSerializer.KryoSerializationException
 import org.apache.gearpump.util.LogUtil
 

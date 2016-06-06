@@ -27,7 +27,7 @@ import akka.actor.ActorSystem
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import org.apache.gearpump.cluster.TestUtil
-import io.gearpump.google.common.io.Files
+import org.apache.gearpump.google.common.io.Files
 import org.apache.gearpump.jarstore.FilePath
 import org.apache.gearpump.util.FileServer._
 

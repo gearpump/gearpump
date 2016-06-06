@@ -23,7 +23,7 @@ import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, Cancellable, Stash}
-import io.gearpump.google.common.primitives.Longs
+import org.apache.gearpump.google.common.primitives.Longs
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.ClientToMaster.GetStallingTasks
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks

@@ -18,10 +18,10 @@
 
 package org.apache.gearpump.metrics
 
-import io.gearpump.codahale.metrics.{Histogram => CodaHaleHistogram}
+import org.apache.gearpump.codahale.metrics.{Histogram => CodaHaleHistogram}
 
 /**
- * @see io.gearpump.codahale.metrics.Histogram
+ * @see org.apache.gearpump.codahale.metrics.Histogram
  */
 class Histogram(val name: String, histogram: CodaHaleHistogram, sampleRate: Int = 1) {
   private var sampleCount = 0L

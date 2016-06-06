@@ -160,16 +160,16 @@ object Build extends sbt.Build {
 
   val streamingDependencies = Seq(
     libraryDependencies ++= Seq(
-      "com.github.intel-hadoop" % "gearpump-shaded-gs-collections" % gsCollectionsVersion
+      "org.apache.gearpump" % "gearpump-shaded-gs-collections" % gsCollectionsVersion
     )
   )
 
   val coreDependencies = Seq(
     libraryDependencies ++= Seq(
-      "com.github.intel-hadoop" % "gearpump-shaded-metrics-graphite" % codahaleVersion,
+      "org.apache.gearpump" % "gearpump-shaded-metrics-graphite" % codahaleVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-      "com.github.intel-hadoop" % "gearpump-shaded-guava" % guavaVersion,
+      "org.apache.gearpump" % "gearpump-shaded-guava" % guavaVersion,
       "commons-lang" % "commons-lang" % commonsLangVersion,
       "com.google.code.findbugs" % "jsr305" % "1.3.9" % "compile",
 
@@ -192,7 +192,7 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-agent" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
       "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
-      "com.github.intel-hadoop" %% "gearpump-shaded-akka-kryo" % kryoVersion,
+      "org.apache.gearpump" %% "gearpump-shaded-akka-kryo" % kryoVersion,
       "org.scala-lang" % "scala-reflect" % scalaVersionNumber,
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
       "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
