@@ -45,7 +45,7 @@ class ExampleSpec extends TestSpecBase {
         "-command", "hostname"
       )
 
-      val expectedHostNames = cluster.getWorkerHosts.map(Docker.getHostName(_))
+      val expectedHostNames = cluster.getWorkerHosts.map(Docker.getHostName)
 
       def verify(): Boolean = {
         val workerNum = cluster.getWorkerHosts.length

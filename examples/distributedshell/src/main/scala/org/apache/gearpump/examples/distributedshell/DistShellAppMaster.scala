@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.examples.distributedshell
 
+import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
+
 import scala.concurrent.Future
 
 import akka.actor.{Deploy, Props}
@@ -27,7 +29,7 @@ import org.slf4j.Logger
 
 import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout}
-import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, ApplicationMaster, ExecutorContext}
+import org.apache.gearpump.cluster._
 import org.apache.gearpump.examples.distributedshell.DistShellAppMaster._
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 
@@ -39,6 +41,7 @@ class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
   implicit val timeout = Constants.FUTURE_TIMEOUT
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   protected var currentExecutorId = 0
+  private var workerNum: Option[Int] = None
 
   override def preStart(): Unit = {
     LOG.info(s"Distributed Shell AppMaster started")
@@ -55,6 +58,10 @@ class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
         .withDeploy(Deploy(scope = RemoteScope(address))), currentExecutorId.toString)
       executorSystem.bindLifeCycleWith(executor)
       currentExecutorId += 1
+      ActorUtil.tellMasterIfApplicationReady(workerNum, currentExecutorId, appContext)
+    case WorkerList(workers) =>
+      workerNum = Some(workers.length)
+      ActorUtil.tellMasterIfApplicationReady(workerNum, currentExecutorId, appContext)
     case StartExecutorSystemTimeout =>
       LOG.error(s"Failed to allocate resource in time")
       masterProxy ! ShutdownApplication(appId)
@@ -90,6 +97,6 @@ object DistShellAppMaster {
       this
     }
 
-    override def toString(): String = result.toString()
+    override def toString: String = result.toString()
   }
 }

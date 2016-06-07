@@ -116,7 +116,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     executorManager.expectMsg(BroadCast(RestartTasks(dagVersion)))
   }
 
-  import org.apache.gearpump.streaming.appmaster.TaskManager.TaskChangeRegistry
+  import TaskManager.TaskChangeRegistry
   "TaskChangeRegistry" should "track all modified task registration" in {
     val tasks = List(TaskId(0, 0), TaskId(0, 1))
     val registry = new TaskChangeRegistry(tasks)

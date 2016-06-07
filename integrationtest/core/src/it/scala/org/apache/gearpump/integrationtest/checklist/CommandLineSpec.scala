@@ -18,7 +18,7 @@
 package org.apache.gearpump.integrationtest.checklist
 
 import org.apache.gearpump.cluster.MasterToAppMaster
-import org.apache.gearpump.integrationtest.TestSpecBase
+import org.apache.gearpump.integrationtest.{Util, TestSpecBase}
 
 /**
  * The test spec checks the command-line usage
@@ -86,7 +86,7 @@ class CommandLineSpec extends TestSpecBase {
       success shouldBe false
     }
 
-    "the EmbededCluster can be used as embedded cluster in process" in {
+    "the EmbeddedCluster can be used as embedded cluster in process" in {
       // setup
       val args = "-debug true -sleep 10"
       val appId = expectSubmitAppSuccess(wordCountJar, args)
@@ -125,9 +125,11 @@ class CommandLineSpec extends TestSpecBase {
   }
 
   private def expectAppIsRunningByParsingOutput(appId: Int, expectedName: String): Unit = {
-    val actual = commandLineClient.queryApp(appId)
-    actual should include(s"application: $appId, ")
-    actual should include(s"name: $expectedName, ")
-    actual should include(s"status: ${MasterToAppMaster.AppMasterActive}")
+    Util.retryUntil(() => {
+      val actual = commandLineClient.queryApp(appId)
+      actual.contains(s"application: $appId, ") &&
+        actual.contains(s"name: $expectedName, ") &&
+        actual.contains(s"status: ${MasterToAppMaster.AppMasterActive}")
+    }, "application is running")
   }
 }

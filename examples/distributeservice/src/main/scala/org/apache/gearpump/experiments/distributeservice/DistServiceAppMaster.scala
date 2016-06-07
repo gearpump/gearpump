@@ -18,6 +18,8 @@
 package org.apache.gearpump.experiments.distributeservice
 
 import java.io.File
+import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
+
 import scala.concurrent.Future
 
 import akka.actor.{Deploy, Props}
@@ -39,6 +41,7 @@ class DistServiceAppMaster(appContext: AppMasterContext, app: AppDescription)
   implicit val timeout = Constants.FUTURE_TIMEOUT
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   private var currentExecutorId = 0
+  private var workerNum: Option[Int] = None
   private var fileServerPort = -1
 
   val rootDirectory = new File("/")
@@ -63,6 +66,10 @@ class DistServiceAppMaster(appContext: AppMasterContext, app: AppDescription)
         Deploy(scope = RemoteScope(address))), currentExecutorId.toString)
       executorSystem.bindLifeCycleWith(executor)
       currentExecutorId += 1
+      ActorUtil.tellMasterIfApplicationReady(workerNum, currentExecutorId, appContext)
+    case WorkerList(workers) =>
+      workerNum = Some(workers.length)
+      ActorUtil.tellMasterIfApplicationReady(workerNum, currentExecutorId, appContext)
     case StartExecutorSystemTimeout =>
       LOG.error(s"Failed to allocate resource in time")
       masterProxy ! ShutdownApplication(appId)

@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.util
 
+import org.apache.gearpump.cluster.AppMasterContext
 import org.apache.gearpump.cluster.worker.WorkerId
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,7 +28,7 @@ import akka.actor._
 import akka.pattern.ask
 import org.slf4j.Logger
 
-import org.apache.gearpump.cluster.AppMasterToMaster.GetAllWorkers
+import org.apache.gearpump.cluster.AppMasterToMaster.{ActivateAppMaster, GetAllWorkers}
 import org.apache.gearpump.cluster.ClientToMaster.{ResolveAppId, ResolveWorkerId}
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
 import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ResolveWorkerIdResult}
@@ -93,7 +94,15 @@ object ActorUtil {
         workerId => ResourceRequest(Resource(1), workerId, relaxation = Relaxation.SPECIFICWORKER)
       }.toArray
 
+      sender ! list
       master.tell(StartExecutorSystems(resources, executorJvmConfig), sender)
+    }
+  }
+
+  def tellMasterIfApplicationReady(workerNum: Option[Int], executorSystemNum: Int,
+      appContext: AppMasterContext): Unit = {
+    if (workerNum.contains(executorSystemNum)) {
+      appContext.masterProxy ! ActivateAppMaster(appContext.appId)
     }
   }
 

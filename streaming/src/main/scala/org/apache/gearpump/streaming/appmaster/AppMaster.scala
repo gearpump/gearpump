@@ -36,7 +36,7 @@ import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster._
 import org.apache.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
 import org.apache.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, GetExecutorInfo}
-import org.apache.gearpump.streaming.appmaster.TaskManager.{ApplicationReady, FailedToRecover, GetTaskList, TaskList}
+import org.apache.gearpump.streaming.appmaster.TaskManager.{ApplicationReady, GetTaskList, TaskList, FailedToRecover}
 import org.apache.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import org.apache.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import org.apache.gearpump.streaming.task._
@@ -286,8 +286,8 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
   def ready: Receive = {
     case ApplicationReady =>
       masterProxy ! ActivateAppMaster(appId)
-    case AppMasterActivated(appId) =>
-      LOG.info(s"AppMaster for app$appId is activated")
+    case AppMasterActivated(id) =>
+      LOG.info(s"AppMaster for app$id is activated")
   }
 
   /** Error handling */
