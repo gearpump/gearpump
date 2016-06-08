@@ -101,16 +101,16 @@ This section shows how to run an existing Storm jar in a local Gearpump cluster.
   
      Users are able to configure their applications through following options
    
-       * `jar` - set the path of a Storm application jar
-       * `config` - submit the custom configuration file generated when launching Nimbus
+     * `jar` - set the path of a Storm application jar
+     * `config` - submit the custom configuration file generated when launching Nimbus
   
    b. submit Storm application through UI
    
-      1. Click on the "Create" button on the applications page on UI. 
-      2. Click on the "Submit Storm Application" item in the pull down menu.
-      3. In the popup console, upload the Storm application jar and the configuration file generated when launching Nimbus,
+     1. Click on the "Create" button on the applications page on UI. 
+     2. Click on the "Submit Storm Application" item in the pull down menu.
+     3. In the popup console, upload the Storm application jar and the configuration file generated when launching Nimbus,
          and fill in `storm.starter.ExclamationTopology exclamation` as arguments.
-      4. Click on the "Submit" button   
+     4. Click on the "Submit" button   
 
    Either way, check the dashboard and you should see data flowing through your topology. 
   
