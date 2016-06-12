@@ -42,7 +42,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
   val task2 = ProcessorDescription(id = 1, taskClass = classOf[TaskActor].getName, parallelism = 1)
   val dag = DAG(Graph(task1 ~ hash ~> task2))
 
-  override def afterAll {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 
@@ -102,8 +102,8 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       clockService.tell(ChangeToNewDAG(dagAddMiddleNode), user.ref)
 
       val clocks = user.expectMsgPF() {
-        case ChangeToNewDAGSuccess(clocks) =>
-          clocks
+        case ChangeToNewDAGSuccess(newDagClocks) =>
+          newDagClocks
       }
 
       // For intermediate task, pick its upstream as initial clock
@@ -129,7 +129,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       clockService ! GetStartClock
       expectMsg(StartClock(200L))
 
-      val conf = UserConfig.empty.withBoolean("state.checkpoint.enable", true)
+      val conf = UserConfig.empty.withBoolean("state.checkpoint.enable", value = true)
       val task3 = ProcessorDescription(id = 3, taskClass = classOf[TaskActor].getName,
         parallelism = 1, taskConf = conf)
       val task4 = ProcessorDescription(id = 4, taskClass = classOf[TaskActor].getName,
@@ -234,7 +234,7 @@ object ClockServiceSpec {
     }
 
     def get(key: String): Future[Any] = {
-      Promise.successful(map.get(key).getOrElse(null)).future
+      Promise.successful(map.getOrElse(key, null)).future
     }
   }
 }

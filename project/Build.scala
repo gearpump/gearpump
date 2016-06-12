@@ -416,6 +416,7 @@ object Build extends sbt.Build {
             exclude("org.mortbay.jetty", "jetty")
             exclude("org.ow2.asm", "asm")
             exclude("org.slf4j", "log4j-over-slf4j")
+            exclude("org.apache.logging.log4j", "log4j-slf4j-impl")
             exclude("ring", "ring-core")
             exclude("ring", "ring-devel")
             exclude("ring", "ring-jetty-adapter")

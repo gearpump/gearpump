@@ -18,21 +18,26 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.{ActorSystem, Props}
+import java.util.concurrent.TimeUnit
+
+import akka.actor.{ExtendedActorSystem, ActorSystem, Props}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
+import org.apache.gearpump.romix.serialization.kryo.KryoSerializerWrapper
 import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperationFailed, DAGOperationSuccess, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}
 import org.apache.gearpump.streaming.task.{Subscriber, TaskActor}
-import org.apache.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, StreamApplication}
+import org.apache.gearpump.streaming._
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
+import org.mockito.Mockito._
+import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+import scala.concurrent.{Promise, Future, Await}
+import scala.concurrent.duration.{FiniteDuration, Duration}
 
-class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
+class DagManagerSpec extends WordSpecLike with Matchers with MockitoSugar with BeforeAndAfterAll {
 
   val hash = Partitioner[HashPartitioner]
   val task1 = ProcessorDescription(id = 1, taskClass = classOf[TaskActor].getName, parallelism = 1)
@@ -65,43 +70,43 @@ class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
       client.send(dagManager, WatchChange(watcher.ref))
       val task3 = task2.copy(id = 3, life = LifeTime(100, Long.MaxValue))
 
-      client.send(dagManager, ReplaceProcessor(task2.id, task3, false))
+      client.send(dagManager, ReplaceProcessor(task2.id, task3, inheritConf = false))
       client.expectMsg(DAGOperationSuccess)
 
       client.send(dagManager, GetLatestDAG)
       val newDag = client.expectMsgPF() {
-        case LatestDAG(dag) => dag
+        case LatestDAG(latestDag) => latestDag
       }
       assert(newDag.processors.contains(task3.id))
       watcher.expectMsgType[LatestDAG]
 
       val task4 = task3.copy(id = 4)
-      client.send(dagManager, ReplaceProcessor(task3.id, task4, false))
+      client.send(dagManager, ReplaceProcessor(task3.id, task4, inheritConf = false))
       client.expectMsgType[DAGOperationFailed]
 
       client.send(dagManager, NewDAGDeployed(newDag.version))
-      client.send(dagManager, ReplaceProcessor(task3.id, task4, false))
+      client.send(dagManager, ReplaceProcessor(task3.id, task4, inheritConf = false))
       client.expectMsg(DAGOperationSuccess)
     }
 
     "retrieve last stored dag properly" in {
       val store = new Store
-      val newGraph = Graph(task1 ~ hash ~> task2 ~> task2)
+      val newGraph = Graph(task1 ~ hash ~> task2)
       val newDag = DAG(newGraph)
-      store.put(StreamApplication.DAG, newDag)
-      val dagManager = system.actorOf(Props(new DagManager(appId, userConfig, store, Some(dag))))
+      val dagManager = system.actorOf(Props(new DagManager(appId, userConfig, store, Some(newDag))))
+      dagManager ! NewDAGDeployed(0)
       val client = TestProbe()
       client.send(dagManager, GetLatestDAG)
-      client.expectMsg(LatestDAG(newDag))
+      client.expectMsgType[LatestDAG].dag shouldBe newDag
     }
   }
 
-  override def afterAll {
+  override def afterAll(): Unit = {
     system.terminate()
     Await.result(system.whenTerminated, Duration.Inf)
   }
 
-  override def beforeAll {
+  override def beforeAll(): Unit = {
     this.system = ActorSystem("DagManagerSpec", TestUtil.DEFAULT_CONFIG)
   }
 }

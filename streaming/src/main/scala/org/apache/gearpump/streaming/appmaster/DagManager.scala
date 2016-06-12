@@ -18,9 +18,10 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.{Actor, ActorRef, Stash}
+import akka.actor.{ExtendedActorSystem, Actor, ActorRef, Stash}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.partitioner.PartitionerDescription
+import org.apache.gearpump.romix.serialization.kryo.KryoSerializerWrapper
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.DagManager._
 import org.apache.gearpump.streaming.storage.AppDataStore
@@ -48,13 +49,15 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
   private implicit val system = context.system
 
   private var watchers = List.empty[ActorRef]
+  private val serializer = new KryoSerializerWrapper(system.asInstanceOf[ExtendedActorSystem])
 
   override def receive: Receive = null
 
   override def preStart(): Unit = {
     LOG.info("Initializing Dag Service, get stored Dag ....")
-    store.get(StreamApplication.DAG).asInstanceOf[Future[DAG]].map { storedDag =>
-      if (storedDag != null) {
+    store.get(StreamApplication.DAG).asInstanceOf[Future[Array[Byte]]].map { bytes =>
+      if (bytes != null) {
+        val storedDag = serializer.fromBinary(bytes).asInstanceOf[DAG]
         dags :+= storedDag
       } else {
         dags :+= dag.getOrElse(DAG(userConfig.getValue[Graph[ProcessorDescription,
@@ -62,7 +65,7 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
       }
       maxProcessorId = {
         val keys = dags.head.processors.keys
-        if (keys.size == 0) {
+        if (keys.isEmpty) {
           0
         } else {
           keys.max
@@ -96,11 +99,11 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
     case GetLatestDAG =>
       // Get the latest version of DAG.
       sender ! LatestDAG(dags.last)
-    case GetTaskLaunchData(version, processorId, context) =>
+    case GetTaskLaunchData(version, processorId, launchContext) =>
       // Task information like Processor class, downstream subscriber processors and etc.
       dags.find(_.version == version).foreach { dag =>
         LOG.info(s"Get task launcher data for processor: $processorId, dagVersion: $version")
-        sender ! taskLaunchData(dag, processorId, context)
+        sender ! taskLaunchData(dag, processorId, launchContext)
       }
     case ReplaceProcessor(oldProcessorId, inputNewProcessor, inheritConfig) =>
       // Replace a processor with new implementation. The upstream processors and downstream
@@ -142,7 +145,7 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
       // deployed. The obsolete dag versions will be removed.
       if (dagVersion != NOT_INITIALIZED) {
         dags = dags.filter(_.version == dagVersion)
-        store.put(StreamApplication.DAG, dags.last)
+        store.put(StreamApplication.DAG, serializer.toBinary(dags.last))
       }
   }
 
