@@ -1,9 +1,9 @@
 
-## Gearpump  [![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://www.gearpump.io/download.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](https://github.com/apache/incubator-gearpump/blob/master/LICENSE) [![Build Status](https://travis-ci.org/apache/incubator-gearpump.svg?branch=master)](https://travis-ci.org/apache/incubator-gearpump?branch=master) [![codecov.io](https://codecov.io/github/apache/incubator-gearpump/coverage.svg?branch=master)](https://codecov.io/github/apache/incubator-gearpump?branch=master)
+## Gearpump  [![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://gearpump.apache.org/downloads.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](https://github.com/apache/incubator-gearpump/blob/master/LICENSE) [![Build Status](https://travis-ci.org/apache/incubator-gearpump.svg?branch=master)](https://travis-ci.org/apache/incubator-gearpump?branch=master) [![codecov.io](https://codecov.io/github/apache/incubator-gearpump/coverage.svg?branch=master)](https://codecov.io/github/apache/incubator-gearpump?branch=master)
 
 Online Demo Site: http://demo.gearpump.io/
 
-[![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](http://www.gearpump.io/download.html)
+[![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](http://gearpump.apache.org/downloads.html)
 
 Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
@@ -11,7 +11,7 @@ Gearpump is a lightweight real-time big data streaming engine. It is inspired by
 
 The name Gearpump is a reference to the engineering term "gear pump", which is a super simple pump that consists of only two gears, but is very powerful at streaming water.
 
-![](http://www.gearpump.io/img/dashboard.gif)
+![](http://gearpump.apache.org/img/dashboard.gif)
 
 We model streaming within the Akka actor hierarchy.
 
@@ -21,15 +21,15 @@ Per initial benchmarks we are able to process near 18 million messages/second (1
 
 ![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/img/dashboard.png)
 
-For steps to reproduce the performance test, please check [Performance benchmark](http://www.gearpump.io/releases/latest/performance-report.html).
+For steps to reproduce the performance test, please check [Performance benchmark](http://gearpump.apache.org/releases/latest/performance-report.html).
 
 ## Useful Resources
 
 * Read the [Introduction on TypeSafe's Blog](https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka)
-* Learn the [Basic Concepts](http://www.gearpump.io/releases/latest/basic-concepts.html)
-* How to [Develop your first application](http://www.gearpump.io/releases/latest/dev-write-1st-app.html)
-* How to [Submit your first application](http://www.gearpump.io/releases/latest/submit-your-1st-application.html)
-* Explore the [Maven dependencies](http://www.gearpump.io/releases/latest/maven-setting.html)
+* Learn the [Basic Concepts](http://gearpump.apache.org/releases/latest/basic-concepts.html)
+* How to [Develop your first application](http://gearpump.apache.org/releases/latest/dev-write-1st-app.html)
+* How to [Submit your first application](http://gearpump.apache.org/releases/latest/submit-your-1st-application.html)
+* Explore the [Maven dependencies](http://gearpump.apache.org/releases/latest/maven-setting.html)
 * Explore the [Document site](http://gearpump.io)
 * Explore the [User List](https://groups.google.com/forum/#!forum/gearpump-user)
 * Report an [issue](https://issues.apache.org/jira/browse/GEARPUMP)

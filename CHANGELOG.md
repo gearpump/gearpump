@@ -321,7 +321,7 @@ Change log:
 - #1194 add graph cycle detection
 - #491, add a rest api to acquire Gearpump's built-in partitioners
 - #1405: now the number of executors is back
-- #1371: a right way to show historical metrics (2) added committedâ€? 
+- #1371: a right way to show historical metrics (2) added committed? 
 - #1402, fix NoneGroupingPartitioner
 - #1399: in application overview page the task count of executor wa...
 - #1397, allow KafkaSink to receive Message of bytes
@@ -341,8 +341,8 @@ Change log:
 - #1369: object path and metrics name are divided by ':' now
 - #1369: fixed data initialization issue of echart
 - #1364, add default value for BYTES_PER_MESSAGE of SOLStreamProducer
-- #1361: able to show multiple tasks in chart (better not select moâ€?
-- #1358: properties will be updated (2) moved roboto font and echartâ€?  
+- #1361: able to show multiple tasks in chart (better not select mo?
+- #1358: properties will be updated (2) moved roboto font and echart?  
 
 Gearpump 0.6
 ==========================
