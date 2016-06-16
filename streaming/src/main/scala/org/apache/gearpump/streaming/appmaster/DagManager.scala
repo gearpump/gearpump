@@ -19,9 +19,9 @@
 package org.apache.gearpump.streaming.appmaster
 
 import akka.actor.{ExtendedActorSystem, Actor, ActorRef, Stash}
+import akka.serialization.JavaSerializer
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.partitioner.PartitionerDescription
-import org.apache.gearpump.romix.serialization.kryo.KryoSerializerWrapper
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.DagManager._
 import org.apache.gearpump.streaming.storage.AppDataStore
@@ -49,13 +49,13 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
   private implicit val system = context.system
 
   private var watchers = List.empty[ActorRef]
-  private val serializer = new KryoSerializerWrapper(system.asInstanceOf[ExtendedActorSystem])
+  private val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
 
   override def receive: Receive = null
 
   override def preStart(): Unit = {
     LOG.info("Initializing Dag Service, get stored Dag ....")
-    store.get(StreamApplication.DAG).asInstanceOf[Future[Array[Byte]]].map { bytes =>
+    store.get(StreamApplication.DAG).asInstanceOf[Future[Array[Byte]]].foreach{ bytes =>
       if (bytes != null) {
         val storedDag = serializer.fromBinary(bytes).asInstanceOf[DAG]
         dags :+= storedDag

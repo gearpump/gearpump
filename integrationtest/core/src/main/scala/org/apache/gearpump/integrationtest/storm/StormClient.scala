@@ -68,9 +68,9 @@ class StormClient(cluster: MiniCluster, restClient: RestClient) {
   }
 
   def submitStormApp(jar: String, mainClass: String, args: String, appName: String): Int = {
+    Docker.executeSilently(NIMBUS_HOST, s"$STORM_APP -config $CONFIG_FILE " +
+      s"-jar $jar $mainClass $args")
     Util.retryUntil(() => {
-      Docker.executeSilently(NIMBUS_HOST, s"$STORM_APP -config $CONFIG_FILE " +
-        s"-jar $jar $mainClass $args")
       restClient.listRunningApps().exists(_.appName == appName)
     }, "app running")
     restClient.listRunningApps().filter(_.appName == appName).head.appId

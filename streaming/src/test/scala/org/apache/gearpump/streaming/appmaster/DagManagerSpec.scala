@@ -18,26 +18,23 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-import java.util.concurrent.TimeUnit
 
-import akka.actor.{ExtendedActorSystem, ActorSystem, Props}
+import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
-import org.apache.gearpump.romix.serialization.kryo.KryoSerializerWrapper
 import org.apache.gearpump.streaming.appmaster.DagManager.{DAGOperationFailed, DAGOperationSuccess, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}
 import org.apache.gearpump.streaming.task.{Subscriber, TaskActor}
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
-import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
-import scala.concurrent.{Promise, Future, Await}
-import scala.concurrent.duration.{FiniteDuration, Duration}
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
-class DagManagerSpec extends WordSpecLike with Matchers with MockitoSugar with BeforeAndAfterAll {
+class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   val hash = Partitioner[HashPartitioner]
   val task1 = ProcessorDescription(id = 1, taskClass = classOf[TaskActor].getName, parallelism = 1)
