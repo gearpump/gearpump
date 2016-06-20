@@ -23,10 +23,8 @@ import kafka.common.TopicAndPartition;
 import kafka.consumer.ConsumerConfig;
 import org.apache.gearpump.streaming.kafka.lib.source.DefaultMessageDecoder;
 import org.apache.gearpump.streaming.kafka.lib.util.KafkaClient;
-import org.apache.gearpump.streaming.kafka.lib.source.consumer.FetchThread;
 import org.apache.gearpump.streaming.kafka.lib.source.grouper.DefaultPartitionGrouper;
 import org.apache.gearpump.streaming.source.DefaultTimeStampFilter;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 
@@ -64,7 +62,7 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
 
   public static final String GROUP_ID_CONFIG = "group.id";
   public static final String GROUP_ID_DOC =
-      "a string that uniquely identifies a set of consumers within the same consumer group";
+      "A string that uniquely identifies a set of consumers within the same consumer group";
 
   public static final String ENABLE_AUTO_COMMIT_CONFIG = "auto.commit.enable";
   public static final String ENABLE_AUTO_COMMIT_DOC =
@@ -72,11 +70,11 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
 
   /** KafkaSource specific configs */
   public static final String CONSUMER_START_OFFSET_CONFIG = "consumer.start.offset";
-  private static final String CONSUMER_START_OFFSET_DOC = "kafka offset to start consume from. "
+  private static final String CONSUMER_START_OFFSET_DOC = "Kafka offset to start consume from. "
       + "This will be overwritten when checkpoint recover takes effect.";
 
   public static final String FETCH_THRESHOLD_CONFIG = "fetch.threshold";
-  private static final String FETCH_THRESHOLD_DOC = "kafka messages are fetched asynchronously "
+  private static final String FETCH_THRESHOLD_DOC = "Kafka messages are fetched asynchronously "
       + "and put onto a internal queue. When the number of messages in the queue hit the threshold,"
       + "the fetch thread stops fetching, and goes to sleep. It starts fetching again when the"
       + "number falls below the threshold";
@@ -102,7 +100,7 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
       "The replication factor for checkpoint store topic.";
 
   public static final String CHECKPOINT_STORE_NAME_PREFIX_CONFIG = "checkpoint.store.name.prefix";
-  public static final String CHECKPOINT_STORE_NAME_PREFIX_DOC = "name prefix for checkpoint "
+  public static final String CHECKPOINT_STORE_NAME_PREFIX_DOC = "Name prefix for checkpoint "
       + "store whose name will be of the form, namePrefix-sourceTopic-partitionId";
 
   static {
@@ -184,12 +182,6 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
     return tp.topic() + "-" + tp.partition();
   }
 
-  public ConsumerConfig getConsumerConfig() {
-    Properties props = getBaseConsumerConfigs();
-
-    return new ConsumerConfig(props);
-  }
-
   public Properties getProducerConfig() {
     Properties props = new Properties();
     props.putAll(this.originals());
@@ -211,12 +203,8 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
     return KafkaClient.factory();
   }
 
-  public FetchThread.FetchThreadFactory getFetchThreadFactory() {
-    return FetchThread.factory();
-  }
 
-
-  private Properties getBaseConsumerConfigs() {
+  public ConsumerConfig getConsumerConfig() {
     Properties props = new Properties();
     props.putAll(this.originals());
 
@@ -232,7 +220,7 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
     }
     props.put(ENABLE_AUTO_COMMIT_CONFIG, "false");
 
-    return props;
+    return new ConsumerConfig(props);
   }
 
   private void removeSourceSpecificConfigs(Properties props) {

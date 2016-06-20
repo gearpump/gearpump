@@ -38,15 +38,19 @@ function codeTabs() {
       $(this).addClass("tab-pane");
       var lang = $(this).data("lang");
       var image = $(this).data("image");
+      var label = $(this).data("label");
       var notabs = $(this).data("notabs");
-      var capitalizedLang = lang.substr(0, 1).toUpperCase() + lang.substr(1);
+      if (label == null) {
+        var capitalizedLang = lang.substr(0, 1).toUpperCase() + lang.substr(1);
+        label = capitalizedLang;
+      }
       lang = lang.replace(/ /g, '');
-      var id = "tab_" + lang + "_" + counter;
+      var id = "tab_" + label.replace(/ /g, '_') + "_" + counter;
       $(this).attr("id", id);
       if (image != null && langImages[lang]) {
-        var buttonLabel = "<img src='" + langImages[lang] + "' alt='" + capitalizedLang + "' />";
+        var buttonLabel = "<img src='" + langImages[lang] + "' alt='" + label + "' />";
       } else if (notabs == null) {
-        var buttonLabel = "<b>" + capitalizedLang + "</b>";
+        var buttonLabel = "<b>" + label + "</b>";
       } else {
         var buttonLabel = ""
       }

@@ -7,14 +7,11 @@ title: Gearpump Connectors
 `DataSource` and `DataSink` are the two main concepts Gearpump use to connect with the outside world.
 
 ### DataSource
-`DataSource` is the concept in Gearpump that without input and will output messages. So, basically, `DataSource` is the start point of a streaming processing flow.
+`DataSource` is the start point of a streaming processing flow. 
 
-As Gearpump depends on `DataSource` to be replay-able to ensure at-least-once message delivery and exactly-once message delivery, for some data sources, we will need a `org.apache.gearpump.streaming.transaction.api.OffsetStorageFactory` to store the offset (progress) of current `DataSource`. So that, when a replay is needed, Gearpump can guide `DataSource` to replay from certain offset.
-
-Currently Gearpump `DataSource` only support infinite stream. Finite stream support will be added in a near future release.
 
 ### DataSink
-`DataSink` is the concept that without output but will consume messages. So, `Sink` is the end point of a streaming processing flow.
+`DataSink` is the end point of a streaming processing flow.
 
 ## Implemented Connectors
 
@@ -36,72 +33,125 @@ Name | Description
 
 ## Use of Connectors
 
-### Use of `KafkaSource`
-To use `kafkaSource` in your application, you first need to add the `gearpump-external-Kafka` library dependency in your application:
+### Use of Kafka connectors
 
-```
-"com.github.intel-hadoop" %% "gearpump-external-kafka" % {{ site.GEARPUMP_VERSION }}
-```
+To use Kafka connectors in your application, you first need to add the `gearpump-external-kafka` library dependency in your application:
 
+<div class="codetabs">
+<div data-lang="sbt" data-label="sbt" markdown="1" >
+```
+"org.apache.gearpump" %% "gearpump-external-kafka" % {{ site.GEARPUMP_VERSION }}
+```
+</div>
+
+<div data-lang="xml" data-label="xml" markdown="1">
 ```xml
 <dependency>
-  <groupId>com.github.intel-hadoop</groupId>
+  <groupId>org.apache.gearpump</groupId>
   <artifactId>gearpump-external-kafka</artifactId>
   <version>{{ site.GEARPUMP_VERSION }}</version>
 </dependency>
 ```
+</div>
+</div>
 
-To connect to Kafka, you need to provide following info:
- - the Zookeeper address
- - the Kafka topic
+This is a simple example to read from Kafka and write it back using `KafkaSource` and `KafkaSink`. Users can optionally set a `CheckpointStoreFactory` such that Kafka offsets are checkpointed and at-least-once message delivery is guaranteed. 
 
-Then, you can use `KafkaSource` in your application:
-
+<div class="codetabs">
+<div data-lang="scala" data-label="Processor API" markdown="1">
 ```scala
-
-   //Specify the offset storage.
-   //Here we use the same zookeeper as the offset storage.
-   //A set of corresponding topics will be created to store the offsets.
-   //You are free to specify your own offset storage
-   val offsetStorageFactory = new KafkaStorageFactory(zookeepers, brokers)
-
-   //create the kafka data source
-   val source = new KafkaSource(topic, zookeepers, offsetStorageFactory)
-
-   //create Gearpump Processor
-   val reader = DataSourceProcessor(source, parallelism)
+    val appConfig = UserConfig.empty
+    val props = new Properties
+    props.put(KafkaConfig.ZOOKEEPER_CONNECT_CONFIG, zookeeperConnect)
+    props.put(KafkaConfig.BOOTSTRAP_SERVERS_CONFIG, brokerList)
+    props.put(KafkaConfig.CHECKPOINT_STORE_NAME_PREFIX_CONFIG, appName)
+    val source = new KafkaSource(sourceTopic, props)
+    val checkpointStoreFactory = new KafkaStoreFactory(props)
+    source.setCheckpointStore(checkpointStoreFactory)
+    val sourceProcessor = DataSourceProcessor(source, sourceNum)
+    val sink = new KafkaSink(sinkTopic, props)
+    val sinkProcessor = DataSinkProcessor(sink, sinkNum)
+    val partitioner = new ShufflePartitioner
+    val computation = sourceProcessor ~ partitioner ~> sinkProcessor
+    val app = StreamApplication(appName, Graph(computation), appConfig)
 ```
+</div>
 
+<div data-lang="scala" data-label="Stream DSL" markdown="1">
 ```scala
+    val props = new Properties
+    val appName = "KafkaDSL"
+    props.put(KafkaConfig.ZOOKEEPER_CONNECT_CONFIG, zookeeperConnect)
+    props.put(KafkaConfig.BOOTSTRAP_SERVERS_CONFIG, brokerList)
+    props.put(KafkaConfig.CHECKPOINT_STORE_NAME_PREFIX_CONFIG, appName)
 
-  //specify the offset storage
-  //here we use the same zookeeper as the offset storage (a set of corresponding topics will be created to store the offsets)
-  //you are free to specify your own offset storage
-  val offsetStorageFactory = new KafkaStorageFactory(zookeepers, brokers)
+    val app = StreamApp(appName, context)
 
-  val source = KafkaDSLUtil.createStream(app, parallelism, "Kafka Source", topics, zookeepers, offsetStorageFactory)
-  ...
+    if (atLeastOnce) {
+      val checkpointStoreFactory = new KafkaStoreFactory(props)
+      KafkaDSL.createAtLeastOnceStream(app, sourceTopic, checkpointStoreFactory, props, sourceNum)
+          .writeToKafka(sinkTopic, props, sinkNum)
+    } else {
+      KafkaDSL.createAtMostOnceStream(app, sourceTopic, props, sourceNum)
+          .writeToKafka(sinkTopic, props, sinkNum)
+    }
 ```
+</div>
+</div>
+
+In the above example, configurations are set through Java properties and shared by `KafkaSource`, `KafkaSink` and `KafkaCheckpointStoreFactory`.
+Their configurations can be defined differently as below. 
+
+#### `KafkaSource` configurations
+
+Name | Descriptions | Type | Default 
+---- | ------------ | ---- | -------
+`KafkaConfig.ZOOKEEPER_CONNECT_CONFIG` | Zookeeper connect string for Kafka topics management | String 
+`KafkaConfig.CLIENT_ID_CONFIG` | An id string to pass to the server when making requests | String | ""  
+`KafkaConfig.GROUP_ID_CONFIG` | A string that uniquely identifies a set of consumers within the same consumer group | "" 
+`KafkaConfig.FETCH_SLEEP_MS_CONFIG` | The amount of time(ms) to sleep when hitting fetch.threshold | Int | 100 
+`KafkaConfig.FETCH_THRESHOLD_CONFIG` | Size of internal queue to keep Kafka messages. Stop fetching and go to sleep when hitting the threshold | Int | 10000 
+`KafkaConfig.PARTITION_GROUPER_CLASS_CONFIG` | Partition grouper class to group partitions amoung source tasks |  Class | DefaultPartitionGrouper 
+`KafkaConfig.MESSAGE_DECODER_CLASS_CONFIG` | Message decoder class to decode raw bytes from Kafka | Class | DefaultMessageDecoder 
+`KafkaConfig.TIMESTAMP_FILTER_CLASS_CONFIG` | Timestamp filter class to filter out late messages | Class | DefaultTimeStampFilter 
+
+
+#### `KafkaSink` configurations
+
+Name | Descriptions | Type | Default 
+---- | ------------ | ---- | ------- 
+`KafkaConfig.BOOTSTRAP_SERVERS_CONFIG` | A list of host/port pairs to use for establishing the initial connection to the Kafka cluster | String |  
+`KafkaConfig.CLIENT_ID_CONFIG` | An id string to pass to the server when making requests | String | ""  
+
+#### `KafkaCheckpointStoreFactory` configurations
+
+Name | Descriptions | Type | Default 
+---- | ------------ | ---- | ------- 
+`KafkaConfig.ZOOKEEPER_CONNECT_CONFIG` | Zookeeper connect string for Kafka topics management | String | 
+`KafkaConfig.BOOTSTRAP_SERVERS_CONFIG` | A list of host/port pairs to use for establishing the initial connection to the Kafka cluster | String | 
+`KafkaConfig.CHECKPOINT_STORE_NAME_PREFIX` | Name prefix for checkpoint store | String | "" 
+`KafkaConfig.REPLICATION_FACTOR` | Replication factor for checkpoint store topic | Int | 1 
 
 ### Use of `HBaseSink`
 
 To use `HBaseSink` in your application, you first need to add the `gearpump-external-hbase` library dependency in your application:
 
 ```
-"com.github.intel-hadoop" %% "gearpump-external-hbase" % {{ site.GEARPUMP_VERSION }}
+"org.apache.gearpump" %% "gearpump-external-hbase" % {{ site.GEARPUMP_VERSION }}
 ```
 
 ```xml
 <dependency>
-  <groupId>com.github.intel-hadoop</groupId>
+  <groupId>org.apache.gearpump</groupId>
   <artifactId>gearpump-external-hbase</artifactId>
   <version>{{ site.GEARPUMP_VERSION }}</version>
 </dependency>
 ```
 
 To connect to HBase, you need to provide following info:
- - the HBase configuration to tell which HBase service to connect
- - the table name (you must create the table yourself, see the [HBase documentation](https://hbase.apache.org/book.html))
+  
+  * the HBase configuration to tell which HBase service to connect
+  * the table name (you must create the table yourself, see the [HBase documentation](https://hbase.apache.org/book.html))
 
 Then, you can use `HBaseSink` in your application:
 
@@ -153,16 +203,14 @@ Below is some code snippet from `KafkaDSLUtil`:
 
 ```scala
 object KafkaDSLUtil {
-  //T is the message type
-  def createStream[T: ClassTag](
+
+  def createStream[T](
       app: StreamApp,
+      topics: String,
       parallelism: Int,
       description: String,
-      topics: String,
-      zkConnect: String,
-      offsetStorageFactory: OffsetStorageFactory): dsl.Stream[T] = {
-    app.source[T](new KafkaSource(topics, zkConnect, offsetStorageFactory)
-        with TypedDataSource[T], parallelism, description)
+      properties: Properties): dsl.Stream[T] = {
+    app.source[T](new KafkaSource(topics, properties), parallelism, description)
   }
 }
 ```
