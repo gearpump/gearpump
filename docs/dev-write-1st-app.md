@@ -5,7 +5,7 @@ title: Write Your 1st Gearpump App
 description: Write Your 1st Gearpump App
 ---
 
-We'll use [wordcount](https://github.com/gearpump/gearpump/blob/master/examples/streaming/wordcount/src/main/scala/org.apache.gearpump/streaming/examples/wordcount/) as an example to illustrate how to write Gearpump applications.
+We'll use [wordcount](https://github.com/apache/incubator-gearpump/tree/master/examples/streaming/wordcount/src/main/scala/org/apache/gearpump/streaming/examples/wordcount) as an example to illustrate how to write Gearpump applications.
 
 ### Maven/Sbt Settings
 

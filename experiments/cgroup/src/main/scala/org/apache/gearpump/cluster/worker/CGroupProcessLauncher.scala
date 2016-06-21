@@ -28,7 +28,8 @@ import org.apache.gearpump.util.{ProcessLogRedirector, RichProcess}
 
 /**
  * CGroupProcessLauncher is used to launch a process for Executor with CGroup.
- * For more details, please refer http://gearpump.io
+ * For more details, please refer to
+ * http://gearpump.apache.org/releases/latest/deployment-resource-isolation.html
  */
 class CGroupProcessLauncher(val config: Config) extends ExecutorProcessLauncher {
   private val APP_MASTER = -1

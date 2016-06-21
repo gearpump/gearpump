@@ -202,12 +202,12 @@ Figure: Dynamic Graph, Attach, Replace, and Remove
 ## At least once message delivery and Kafka
 
 The Kafka source example project and tutorials can be found at:
-- [Kafka connector example project](https://github.com/gearpump/gearpump/tree/master/examples/streaming/kafka)
+- [Kafka connector example project](https://github.com/apache/incubator-gearpump/tree/master/examples/streaming/kafka)
 - [Connect with Kafka source](dev-connectors.html)
 
 In this doc, we will talk about how the at least once message delivery works.
 
-We will use the WordCount example of [source tree](https://github.com/gearpump/gearpump/tree/master/examples/streaming/kafka)  to illustrate.
+We will use the WordCount example of [source tree](https://github.com/apache/incubator-gearpump/tree/master/examples/streaming/kafka)  to illustrate.
 
 ### How the kafka WordCount DAG looks like:
 

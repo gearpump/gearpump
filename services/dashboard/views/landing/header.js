@@ -23,8 +23,8 @@ angular.module('dashboard')
         $scope.userMenuItems = [
           {text: 'Sign Out', href: conf.loginUrl, icon: 'glyphicon glyphicon-off'},
           {isDivider: true},
-          {text: 'Documents', href: '//gearpump.io', icon: 'fa fa-book'},
-          {text: 'GitHub', href: '//github.com/gearpump/gearpump', icon: 'fa fa-github'}
+          {text: 'Documents', href: '//gearpump.apache.org', icon: 'fa fa-book'},
+          {text: 'GitHub', href: '//github.com/apache/incubator-gearpump', icon: 'fa fa-github'}
         ];
 
         $scope.version = 'beta';

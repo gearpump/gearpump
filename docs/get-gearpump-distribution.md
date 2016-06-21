@@ -21,7 +21,7 @@ If you choose to build the package from source code yourself, you can follow the
 1). Clone the Gearpump repository
 
 ```bash
-  git clone https://github.com/gearpump/gearpump.git
+  git clone https://github.com/apache/incubator-gearpump.git
   cd gearpump
 ```
 

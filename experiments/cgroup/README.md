@@ -1,1 +1,1 @@
-Please see http://gearpump.io for documentation on Cgroup.
+Please see http://gearpump.apache.org/releases/latest/deployment-resource-isolation.html for documentation on Cgroup.

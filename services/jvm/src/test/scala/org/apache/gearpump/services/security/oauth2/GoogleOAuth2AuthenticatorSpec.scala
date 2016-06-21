@@ -72,7 +72,7 @@ class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
     val code = Map("code" -> "4/PME0pfxjiBA42SukR-OTGl7fpFzTWzvZPf1TbkpXL4M#")
     val accessToken = "e2922002-0218-4513-a62d-1da2ba64ee4c"
     val refreshToken = "eyJhbGciOiJSUzI1NiJ9.eyJqdGkiOiI2Nm"
-    val mail = "test@gearpump.io"
+    val mail = "test@gearpump.apache.org"
 
     def accessTokenEndpoint(request: HttpRequest): HttpResponse = {
 
