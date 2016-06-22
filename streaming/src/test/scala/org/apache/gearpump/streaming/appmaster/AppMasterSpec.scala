@@ -17,13 +17,16 @@
  */
 package org.apache.gearpump.streaming.appmaster
 
-import akka.actor.{ActorRef, Props}
+
+import akka.actor.{ActorSystem, ActorRef, Props}
 import akka.testkit.{TestActorRef, TestProbe}
+import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
-import org.apache.gearpump.cluster.ClientToMaster.ShutdownApplication
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated}
+import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, ShutdownApplication}
+import org.apache.gearpump.cluster.MasterToAppMaster._
+import org.apache.gearpump.cluster.MasterToClient.LastFailure
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
@@ -32,20 +35,28 @@ import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, Reso
 import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.jarstore.FilePath
 import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.AppMasterToExecutor.StopTask
+import org.apache.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, UnRegisterTask}
+import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef}
 import org.apache.gearpump.streaming.task.{StartTime, TaskContext, _}
-import org.apache.gearpump.streaming.{Processor, StreamApplication}
-import org.apache.gearpump.util.Graph
+import org.apache.gearpump.streaming.{Constants, DAG, Processor, StreamApplication}
+import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
+import org.apache.gearpump.util.{ActorUtil, Graph}
 import org.apache.gearpump.util.Graph._
 import org.scalatest._
 
 import scala.concurrent.duration._
 
 class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
-  protected override def config = TestUtil.DEFAULT_CONFIG
+  protected override def config = {
+    ConfigFactory.parseString(s"${Constants.GEARPUMP_STREAMING_EXECUTOR_RESTART_TIME_WINDOW} = 60")
+      .withFallback(TestUtil.DEFAULT_CONFIG)
+  }
 
   var appMaster: ActorRef = null
 
   val appId = 0
+  val invalidAppId = -1
   val workerId = WorkerId(1, 0L)
   val resource = Resource(1)
   val taskDescription1 = Processor[TaskA](2)
@@ -89,7 +100,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
         appMasterContext))(getActorSystem)
 
     val registerAppMaster = mockMaster.receiveOne(15.seconds)
-    assert(registerAppMaster.isInstanceOf[RegisterAppMaster])
+    registerAppMaster shouldBe a [RegisterAppMaster]
     appMaster = registerAppMaster.asInstanceOf[RegisterAppMaster].appMaster
 
     mockMaster.reply(AppMasterRegistered(appId))
@@ -108,7 +119,9 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   }
 
   "AppMaster" should {
-    "kill it self when allocate resource time out" in {
+    "kill itself when allocate resource time out" in {
+      // not enough resource allocated
+      // triggers ResourceAllocationTimeout in ExecutorSystemScheduler
       mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(Resource(2),
         mockWorker.ref, workerId))))
       mockMaster.expectMsg(60.seconds, ShutdownApplication(appId))
@@ -139,73 +152,143 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       mockMaster.expectMsgClass(15.seconds, classOf[RegisterAppMaster])
     }
 
-    //    // TODO: This test is failing on Travis randomly
-    //    // We have not identifed the root cause.
-    //    // Check: https://travis-ci.org/intel-hadoop/gearpump/builds/56826843
-    //    // Issue tracker: https://github.com/intel-hadoop/gearpump/issues/733
-    //
-    //    "launch executor and task properly" in {
-    //      mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(Resource(4), mockWorker.ref,
-    //       workerId))))
-    //      mockWorker.expectMsgClass(classOf[LaunchExecutor])
-    //
-    //      val workerSystem = ActorSystem("worker", TestUtil.DEFAULT_CONFIG)
-    //      mockWorker.reply(RegisterActorSystem(ActorUtil.getSystemAddress(workerSystem).toString))
-    //      for (i <- 1 to 4) {
-    //        mockMaster.expectMsg(10 seconds, AppMasterSpec.TaskStarted)
-    //      }
-    //
-    //      // clock status: task(0,0) -> 1, task(0,1)->0, task(1, 0)->0, task(1,1)->0
-    //      appMaster.tell(UpdateClock(TaskId(0, 0), 1), mockTask.ref)
-    //
-    //      // there is no further upstream, so the upstreamMinClock is Long.MaxValue
-    //      mockTask.expectMsg(UpstreamMinClock(Long.MaxValue))
-    //
-    //      // check min clock
-    //      appMaster.tell(GetLatestMinClock, mockTask.ref)
-    //      mockTask.expectMsg(LatestMinClock(0))
-    //
-    //
-    //      // clock status: task(0,0) -> 1, task(0,1)->1, task(1, 0)->0, task(1,1)->0
-    //      appMaster.tell(UpdateClock(TaskId(0, 1), 1), mockTask.ref)
-    //
-    //      // there is no further upstream, so the upstreamMinClock is Long.MaxValue
-    //      mockTask.expectMsg(UpstreamMinClock(Long.MaxValue))
-    //
-    //      // check min clock
-    //      appMaster.tell(GetLatestMinClock, mockTask.ref)
-    //      mockTask.expectMsg(LatestMinClock(0))
-    //
-    //      // Clock status: task(0,0) -> 1, task(0,1)->1, task(1, 1)->0, task(1,1)->0
-    //      appMaster.tell(UpdateClock(TaskId(1, 0), 1), mockTask.ref)
-    //
-    //      // Min clock of processor 0 (Task(0, 0) and Task(0, 1))
-    //      mockTask.expectMsg(UpstreamMinClock(1))
-    //
-    //      // check min clock
-    //      appMaster.tell(GetLatestMinClock, mockTask.ref)
-    //      mockTask.expectMsg(LatestMinClock(0))
-    //
-    //      // clock status: task(0,0) -> 1, task(0,1)->1, task(1, 1)->0, task(1,1)->1
-    //      appMaster.tell(UpdateClock(TaskId(1, 1), 1), mockTask.ref)
-    //
-    //      // min clock of processor 0 (Task(0, 0) and Task(0, 1))
-    //      mockTask.expectMsg(UpstreamMinClock(1))
-    //
-    //      // check min clock
-    //      appMaster.tell(GetLatestMinClock, mockTask.ref)
-    //      mockTask.expectMsg(LatestMinClock(1))
-    //
-    //      // shutdown worker and all executor on this work, expect appmaster to ask
-    //      // for new resources
-    //      workerSystem.shutdown()
-    //      mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(4), relaxation =
-    //        Relaxation.ONEWORKER)))
-    //    }
+    "launch executor and task properly" in {
+      val workerSystem = startApp()
+      expectAppStarted()
+
+      // clock status: task(0,0) -> 1, task(0,1)->0, task(1,0)->0, task(1,1)->0
+      appMaster.tell(UpdateClock(TaskId(0, 0), 1), mockTask.ref)
+
+      // there is no further upstream, so the upstreamMinClock is Long.MaxValue
+      mockTask.expectMsg(UpstreamMinClock(Long.MaxValue))
+
+      // check min clock
+      appMaster.tell(GetLatestMinClock, mockTask.ref)
+      mockTask.expectMsg(LatestMinClock(0))
+
+      // clock status: task(0,0) -> 1, task(0,1)->1, task(1, 0)->0, task(1,1)->0
+      appMaster.tell(UpdateClock(TaskId(0, 1), 1), mockTask.ref)
+
+      // there is no further upstream, so the upstreamMinClock is Long.MaxValue
+      mockTask.expectMsg(UpstreamMinClock(Long.MaxValue))
+
+      // check min clock
+      appMaster.tell(GetLatestMinClock, mockTask.ref)
+      mockTask.expectMsg(LatestMinClock(0))
+
+      // Clock status: task(0,0) -> 1, task(0,1)->1, task(1, 1)->0, task(1,1)->0
+      appMaster.tell(UpdateClock(TaskId(1, 0), 1), mockTask.ref)
+
+      // Min clock of processor 0 (Task(0, 0) and Task(0, 1))
+      mockTask.expectMsg(UpstreamMinClock(1))
+
+      // check min clock
+      appMaster.tell(GetLatestMinClock, mockTask.ref)
+      mockTask.expectMsg(LatestMinClock(0))
+
+      // clock status: task(0,0) -> 1, task(0,1)->1, task(1, 1)->0, task(1,1)->1
+      appMaster.tell(UpdateClock(TaskId(1, 1), 1), mockTask.ref)
+
+      // min clock of processor 0 (Task(0, 0) and Task(0, 1))
+      mockTask.expectMsg(UpstreamMinClock(1))
+
+      // check min clock
+      appMaster.tell(GetLatestMinClock, mockTask.ref)
+      mockTask.expectMsg(LatestMinClock(1))
+
+      // unregister task
+      for (i <- 0 to 1) {
+        appMaster.tell(UnRegisterTask(TaskId(i, 1), 0), mockTask.ref)
+        mockTask.expectMsg(StopTask(TaskId(i, 1)))
+      }
+
+      workerSystem.terminate()
+    }
+
+    "serve AppMaster data request" in {
+      val workerSystem = startApp()
+      expectAppStarted()
+
+      // get DAG
+      appMaster.tell(GetDAG, mockTask.ref)
+      mockTask.expectMsgType[DAG]
+
+      // get appmaster data
+      appMaster.tell(AppMasterDataDetailRequest(appId), mockTask.ref)
+      mockTask.expectMsgType[StreamAppMasterSummary](30.seconds)
+      appMaster.tell(AppMasterDataDetailRequest(invalidAppId), mockTask.ref)
+      mockTask.expectNoMsg()
+
+      for {
+        i <- 0 to 1
+        j <- 0 to 1
+      } {
+        // lookup task ActorRef
+        appMaster.tell(LookupTaskActorRef(TaskId(i, j)), mockTask.ref)
+        mockTask.expectMsgType[TaskActorRef]
+      }
+
+      workerSystem.terminate()
+    }
+
+    "replay on message loss" in {
+      val workerSystem = startApp()
+      expectAppStarted()
+
+      for (i <- 1 to 5) {
+        val taskId = TaskId(0, 0)
+        appMaster.tell(UpdateClock(taskId, i), mockTask.ref)
+        mockTask.expectMsg(UpstreamMinClock(Long.MaxValue))
+        val cause = s"message loss $i from $taskId"
+        appMaster.tell(MessageLoss(0, taskId, cause), mockTask.ref)
+        // appmaster restarted
+        expectAppStarted()
+
+        appMaster.tell(GetLastFailure(appId), mockTask.ref)
+        val failure = mockTask.expectMsgType[LastFailure]
+        failure.error shouldBe cause
+
+        appMaster.tell(GetLastFailure(invalidAppId), mockTask.ref)
+        mockTask.expectNoMsg()
+      }
+
+      // fail to recover after restarting a tasks for 5 times
+      appMaster.tell(MessageLoss(0, TaskId(0, 0), "message loss"), mockTask.ref)
+      mockMaster.expectMsg(60.seconds, ShutdownApplication(appId))
+
+      workerSystem.terminate()
+    }
+
+    "replay on client request" in {
+      startApp()
+      expectAppStarted()
+
+      appMaster.tell(ReplayFromTimestampWindowTrailingEdge(appId), mockTask.ref)
+      expectAppStarted()
+
+      appMaster.tell(ReplayFromTimestampWindowTrailingEdge(invalidAppId), mockTask.ref)
+      mockMaster.expectNoMsg()
+    }
   }
 
   def ignoreSaveAppData: PartialFunction[Any, Boolean] = {
     case msg: SaveAppData => true
+  }
+
+  def startApp(): ActorSystem = {
+    mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(Resource(4), mockWorker.ref,
+      workerId))))
+    mockWorker.expectMsgClass(classOf[LaunchExecutor])
+
+    val workerSystem = ActorSystem("worker", TestUtil.DEFAULT_CONFIG)
+    mockWorker.reply(RegisterActorSystem(ActorUtil.getSystemAddress(workerSystem).toString))
+    workerSystem
+  }
+
+  def expectAppStarted(): Unit = {
+    // wait for app to get started
+    mockMaster.expectMsg(ActivateAppMaster(appId))
+    mockMaster.reply(AppMasterActivated(appId))
   }
 }
 
@@ -218,9 +301,7 @@ object AppMasterSpec {
 
 class TaskA(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
-  val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = {
-    master ! AppMasterSpec.TaskStarted
   }
 
   override def onNext(msg: Message): Unit = {}
@@ -228,9 +309,7 @@ class TaskA(taskContext: TaskContext, userConf: UserConfig) extends Task(taskCon
 
 class TaskB(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
-  val master = userConf.getValue[ActorRef](AppMasterSpec.MASTER).get
   override def onStart(startTime: StartTime): Unit = {
-    master ! AppMasterSpec.TaskStarted
   }
 
   override def onNext(msg: Message): Unit = {}

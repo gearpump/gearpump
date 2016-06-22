@@ -358,9 +358,6 @@ object HistoryMetricsService {
 
   class GaugeMetricsStore(config: HistoryMetricsConfig) extends HistoryMetricsStore {
 
-    private val compartor = (left: HistoryMetricsItem, right: HistoryMetricsItem) =>
-      left.value.asInstanceOf[Gauge].value > right.value.asInstanceOf[Gauge].value
-
     private val history = new SingleValueMetricsStore(
       config.retainHistoryDataHours * 3600 * 1000 / config.retainHistoryDataIntervalMs,
       config.retainHistoryDataIntervalMs)

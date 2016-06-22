@@ -228,9 +228,10 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // Step9: start broadcasting TaskLocations.
     import scala.concurrent.duration._
-    assert(executorManager.expectMsgPF(5.seconds) {
-      case BroadCast(taskLocationsReady) => taskLocationsReady.isInstanceOf[TaskLocationsReady]
-    })
+    executorManager.expectMsgType[BroadCast](5.seconds) match {
+      case BroadCast(taskLocationsReady) =>
+        taskLocationsReady shouldBe a [TaskLocationsReady]
+    }
 
     // Step10: Executor confirm it has received TaskLocationsReceived(version, executorId)
     taskManager.tell(TaskLocationsReceived(dag.version, executorId), executor.ref)
@@ -241,9 +242,10 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // Step12: start all tasks
     import scala.concurrent.duration._
-    assert(executorManager.expectMsgPF(5.seconds) {
-      case BroadCast(startAllTasks) => startAllTasks.isInstanceOf[StartAllTasks]
-    })
+    executorManager.expectMsgType[BroadCast](5.seconds) match {
+      case BroadCast(startAllTasks) =>
+        startAllTasks shouldBe a [StartAllTasks]
+    }
 
     // Step13, Tell ExecutorManager the updated usage status of executors.
     executorManager.expectMsgType[ExecutorResourceUsageSummary]

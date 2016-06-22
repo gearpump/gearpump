@@ -48,15 +48,15 @@ object GetLatestMinClock extends ClockEvent
 
 case class GetUpstreamMinClock(taskId: TaskId) extends ClockEvent
 
+case class UpdateCheckpointClock(taskId: TaskId, clock: TimeStamp) extends ClockEvent
+
+case object GetCheckpointClock extends ClockEvent
+
+case class CheckpointClock(clock: Option[TimeStamp])
+
 case class UpstreamMinClock(latestMinClock: TimeStamp)
 
 case class LatestMinClock(clock: TimeStamp)
-
-case class ReportCheckpointClock(taskId: TaskId, clock: TimeStamp)
-
-case object GetCheckpointClock
-
-case class CheckpointClock(clock: Option[TimeStamp])
 
 case object GetStartClock
 

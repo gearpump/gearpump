@@ -70,10 +70,11 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   private val taskDispatcher = systemConfig.getString(Constants.GEARPUMP_TASK_DISPATCHER)
 
   private var state = State.ACTIVE
-  private var transitionStart = 0L
+
   // States transition start, in unix time
-  private var transitionEnd = 0L
+  private var transitionStart = 0L
   // States transition end, in unix time
+  private var transitionEnd = 0L
   private val transitWarningThreshold = 5000 // ms,
 
   // Starts health check Ticks
@@ -225,7 +226,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           registered :+ confirm.taskId))
 
       case rejected: TaskRejected =>
-        // Means this task shoud not exists...
+        // Means this task should not exist...
         tasks.get(rejected.taskId).foreach(_ ! PoisonPill)
         tasks -= rejected.taskId
         LOG.error(s"Task ${rejected.taskId} is rejected by AppMaster, shutting down it...")
@@ -344,6 +345,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
   def onRestartTasks: Receive = {
     case RestartTasks(dagVersion) =>
+      transitionStart = System.currentTimeMillis()
       LOG.info(s"Executor received restart tasks")
       val tasksToRestart = tasks.keys.count(taskArgumentStore.get(dagVersion, _).nonEmpty)
       express.remoteAddressMap.send(Map.empty[Long, HostPort])

@@ -33,4 +33,7 @@ object Constants {
 
   val GEARPUMP_STREAMING_ACK_ONCE_EVERY_MESSAGE_COUNT =
     "gearpump.streaming.ack-once-every-message-count"
+
+  val GEARPUMP_STREAMING_EXECUTOR_RESTART_TIME_WINDOW =
+    "gearpump.streaming.executor-restart-time-window"
 }

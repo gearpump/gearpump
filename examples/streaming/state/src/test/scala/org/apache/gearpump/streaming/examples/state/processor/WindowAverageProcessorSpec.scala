@@ -34,7 +34,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.state.api.PersistentTask
 import org.apache.gearpump.streaming.state.impl.{InMemoryCheckpointStoreFactory, PersistentStateConfig, WindowConfig}
-import org.apache.gearpump.streaming.task.{ReportCheckpointClock, StartTime}
+import org.apache.gearpump.streaming.task.{UpdateCheckpointClock, StartTime}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 
 class WindowAverageProcessorSpec extends PropSpec with PropertyChecks with Matchers {
@@ -62,7 +62,7 @@ class WindowAverageProcessorSpec extends PropSpec with PropertyChecks with Match
         when(taskContext.appMaster).thenReturn(appMaster.ref)
 
         windowAverage.onStart(StartTime(0L))
-        appMaster.expectMsg(ReportCheckpointClock(taskContext.taskId, 0L))
+        appMaster.expectMsg(UpdateCheckpointClock(taskContext.taskId, 0L))
 
         for (i <- 0L until num) {
           windowAverage.onNext(Message("" + data, i))
@@ -77,7 +77,7 @@ class WindowAverageProcessorSpec extends PropSpec with PropertyChecks with Match
         // Time to checkpoint
         when(taskContext.upstreamMinClock).thenReturn(num)
         windowAverage.onNext(PersistentTask.CHECKPOINT)
-        appMaster.expectMsg(ReportCheckpointClock(taskContext.taskId, num))
+        appMaster.expectMsg(UpdateCheckpointClock(taskContext.taskId, num))
     }
 
     system.terminate()

@@ -36,29 +36,18 @@ import org.apache.gearpump.util.RestartPolicy
  */
 class ExecutorRestartPolicy(maxNrOfRetries: Int, withinTimeRange: Duration) {
   private var executorToTaskIds = Map.empty[Int, Set[TaskId]]
-  private var taskRestartPolocies = new immutable.HashMap[TaskId, RestartPolicy]
+  private var taskRestartPolicies = new immutable.HashMap[TaskId, RestartPolicy]
 
   def addTaskToExecutor(executorId: Int, taskId: TaskId): Unit = {
     var taskSetForExecutorId = executorToTaskIds.getOrElse(executorId, Set.empty[TaskId])
     taskSetForExecutorId += taskId
     executorToTaskIds += executorId -> taskSetForExecutorId
-    if (!taskRestartPolocies.contains(taskId)) {
-      taskRestartPolocies += taskId -> new RestartPolicy(maxNrOfRetries, withinTimeRange)
+    if (!taskRestartPolicies.contains(taskId)) {
+      taskRestartPolicies += taskId -> new RestartPolicy(maxNrOfRetries, withinTimeRange)
     }
   }
 
   def allowRestartExecutor(executorId: Int): Boolean = {
-    executorToTaskIds.get(executorId).map { taskIds =>
-      taskIds.foreach { taskId =>
-        taskRestartPolocies.get(taskId).map { policy =>
-          if (!policy.allowRestart) {
-            // scalastyle:off return
-            return false
-            // scalastyle:on return
-          }
-        }
-      }
-    }
-    true
+    executorToTaskIds(executorId).forall(taskId => taskRestartPolicies(taskId).allowRestart)
   }
 }

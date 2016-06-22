@@ -23,7 +23,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.state.impl.{CheckpointManager, PersistentStateConfig}
-import org.apache.gearpump.streaming.task.{ReportCheckpointClock, StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{UpdateCheckpointClock, StartTime, Task, TaskContext}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import org.apache.gearpump.util.LogUtil
 import org.apache.gearpump.{Message, TimeStamp}
@@ -110,6 +110,6 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
   }
 
   private def reportCheckpointClock(timestamp: TimeStamp): Unit = {
-    appMaster ! ReportCheckpointClock(taskContext.taskId, timestamp)
+    appMaster ! UpdateCheckpointClock(taskContext.taskId, timestamp)
   }
 }

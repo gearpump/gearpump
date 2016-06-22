@@ -43,7 +43,7 @@ trait MasterHarness {
   private var systemAddress: Address = null
   private var host: String = null
   private var port: Int = 0
-  private var masterProperties = new Properties()
+  private val masterProperties = new Properties()
   val PROCESS_BOOT_TIME = Duration(25, TimeUnit.SECONDS)
 
   def getActorSystem: ActorSystem = system

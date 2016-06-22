@@ -97,7 +97,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
         task3 ~ hash ~> task2,
         task2 ~ hash ~> task4,
         task5 ~ hash ~> task1
-      ))
+      ), version = 1)
       val user = TestProbe()
       clockService.tell(ChangeToNewDAG(dagAddMiddleNode), user.ref)
 
@@ -147,17 +147,17 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       clockService ! ChangeToNewDAG(dagWithStateTasks)
       expectMsgType[ChangeToNewDAGSuccess]
 
-      clockService ! ReportCheckpointClock(taskId3, startClock)
-      clockService ! ReportCheckpointClock(taskId4, startClock)
+      clockService ! UpdateCheckpointClock(taskId3, startClock)
+      clockService ! UpdateCheckpointClock(taskId4, startClock)
       clockService ! GetStartClock
       expectMsg(StartClock(startClock))
 
-      clockService ! ReportCheckpointClock(taskId3, 200L)
-      clockService ! ReportCheckpointClock(taskId4, 300L)
+      clockService ! UpdateCheckpointClock(taskId3, 200L)
+      clockService ! UpdateCheckpointClock(taskId4, 300L)
       clockService ! GetStartClock
       expectMsg(StartClock(startClock))
 
-      clockService ! ReportCheckpointClock(taskId3, 300L)
+      clockService ! UpdateCheckpointClock(taskId3, 300L)
       clockService ! GetStartClock
       expectMsg(StartClock(300L))
     }

@@ -33,7 +33,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.state.api.PersistentTask
 import org.apache.gearpump.streaming.state.impl.{InMemoryCheckpointStoreFactory, PersistentStateConfig}
-import org.apache.gearpump.streaming.task.{ReportCheckpointClock, StartTime}
+import org.apache.gearpump.streaming.task.{UpdateCheckpointClock, StartTime}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 
 class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
@@ -60,7 +60,7 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
         when(taskContext.appMaster).thenReturn(appMaster.ref)
 
         count.onStart(StartTime(0L))
-        appMaster.expectMsg(ReportCheckpointClock(taskContext.taskId, 0L))
+        appMaster.expectMsg(UpdateCheckpointClock(taskContext.taskId, 0L))
 
         for (i <- 0L to num) {
           count.onNext(Message("", i))
@@ -75,7 +75,7 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
         when(taskContext.upstreamMinClock).thenReturn(num)
         count.onNext(PersistentTask.CHECKPOINT)
         // Only the state before checkpoint time is checkpointed
-        appMaster.expectMsg(ReportCheckpointClock(taskContext.taskId, num))
+        appMaster.expectMsg(UpdateCheckpointClock(taskContext.taskId, num))
     }
 
     system.terminate()

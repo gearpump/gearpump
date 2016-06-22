@@ -25,7 +25,7 @@ import backtype.storm.tuple.Tuple
 import org.apache.gearpump.experiments.storm.topology.TimedTuple
 import org.apache.gearpump.experiments.storm.util.StormConstants._
 import org.apache.gearpump.experiments.storm.util.StormOutputCollector
-import org.apache.gearpump.streaming.task.ReportCheckpointClock
+import org.apache.gearpump.streaming.task.UpdateCheckpointClock
 
 /**
  * this is used by Storm bolt to emit messages
@@ -60,7 +60,7 @@ private[storm] class StormBoltOutputCollector(collector: StormOutputCollector,
           val upstreamMinClock = taskContext.upstreamMinClock
           if (reportTime <= upstreamMinClock && upstreamMinClock <= maxAckTime) {
             reportTime = upstreamMinClock / CHECKPOINT_INTERVAL_MILLIS * CHECKPOINT_INTERVAL_MILLIS
-            taskContext.appMaster ! ReportCheckpointClock(taskContext.taskId, reportTime)
+            taskContext.appMaster ! UpdateCheckpointClock(taskContext.taskId, reportTime)
             reportTime += CHECKPOINT_INTERVAL_MILLIS
           }
         case _ =>

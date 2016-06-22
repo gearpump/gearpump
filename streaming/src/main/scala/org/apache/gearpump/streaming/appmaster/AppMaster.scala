@@ -155,21 +155,21 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       // Checks whether this processor dead, if it is, then we should remove it from clockService.
       clockService.foreach(_ forward CheckProcessorDeath(unRegister.taskId.processorId))
     case replay: ReplayFromTimestampWindowTrailingEdge =>
-      taskManager.foreach(_ forward replay)
+      if (replay.appId == appId) {
+        taskManager.foreach(_ forward replay)
+      } else {
+        LOG.error(s"replay for invalid appId ${replay.appId}")
+      }
     case messageLoss: MessageLoss =>
       lastFailure = LastFailure(System.currentTimeMillis(), messageLoss.cause)
       taskManager.foreach(_ forward messageLoss)
     case lookupTask: LookupTaskActorRef =>
       taskManager.foreach(_ forward lookupTask)
-    case checkpoint: ReportCheckpointClock =>
-      clockService.foreach(_ forward checkpoint)
     case GetDAG =>
       val task = sender()
       getDAG.foreach {
         dag => task ! dag
       }
-    case GetCheckpointClock =>
-      clockService.foreach(_ forward GetCheckpointClock)
   }
 
   /** Handles messages from Executors */
@@ -182,62 +182,65 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
 
   /** Handles messages from AppMaster */
   def appMasterService: Receive = {
-    case appMasterDataDetailRequest: AppMasterDataDetailRequest =>
-      LOG.debug(s"AppMaster got AppMasterDataDetailRequest for $appId ")
+    case AppMasterDataDetailRequest(rid) =>
+      if (rid == appId) {
+        LOG.info(s"AppMaster got AppMasterDataDetailRequest for $appId ")
 
-      val executorsFuture = executorBrief
-      val clockFuture = getMinClock
-      val taskFuture = getTaskList
-      val dagFuture = getDAG
+        val executorsFuture = executorBrief
+        val clockFuture = getMinClock
+        val taskFuture = getTaskList
+        val dagFuture = getDAG
 
-      val appMasterDataDetail = for {
-        executors <- executorsFuture
-        clock <- clockFuture
-        tasks <- taskFuture
-        dag <- dagFuture
-      } yield {
-        val graph = dag.graph
+        val appMasterDataDetail = for {
+          executors <- executorsFuture
+          clock <- clockFuture
+          tasks <- taskFuture
+          dag <- dagFuture
+        } yield {
+          val graph = dag.graph
 
-        val executorToTasks = tasks.tasks.groupBy(_._2).mapValues {
-          _.keys.toList
-        }
+          val executorToTasks = tasks.tasks.groupBy(_._2).mapValues {
+            _.keys.toList
+          }
 
-        val processors = dag.processors.map { kv =>
-          val processor = kv._2
-          import processor._
-          val tasks = executorToTasks.map { kv =>
-            (kv._1, TaskCount(kv._2.count(_.processorId == id)))
-          }.filter(_._2.count != 0)
-          (id,
-            ProcessorSummary(id, taskClass, parallelism, description, taskConf, life,
+          val processors = dag.processors.map { kv =>
+            val processor = kv._2
+            import processor._
+            val tasks = executorToTasks.map { kv =>
+              (kv._1, TaskCount(kv._2.count(_.processorId == id)))
+            }.filter(_._2.count != 0)
+            (id, ProcessorSummary(id, taskClass, parallelism, description, taskConf, life,
               tasks.keys.toList, tasks))
+          }
+
+          StreamAppMasterSummary(
+            appId = appId,
+            appName = app.name,
+            actorPath = address,
+            clock = clock,
+            status = MasterToAppMaster.AppMasterActive,
+            startTime = startTime,
+            uptime = System.currentTimeMillis() - startTime,
+            user = username,
+            homeDirectory = userDir,
+            logFile = logFile.getAbsolutePath,
+            processors = processors,
+            processorLevels = graph.vertexHierarchyLevelMap(),
+            dag = graph.mapEdge { (node1, edge, node2) =>
+              edge.partitionerFactory.name
+            },
+            executors = executors,
+            historyMetricsConfig = getHistoryMetricsConfig
+          )
         }
 
-        StreamAppMasterSummary(
-          appId = appId,
-          appName = app.name,
-          actorPath = address,
-          clock = clock,
-          status = MasterToAppMaster.AppMasterActive,
-          startTime = startTime,
-          uptime = System.currentTimeMillis() - startTime,
-          user = username,
-          homeDirectory = userDir,
-          logFile = logFile.getAbsolutePath,
-          processors = processors,
-          processorLevels = graph.vertexHierarchyLevelMap(),
-          dag = graph.mapEdge { (node1, edge, node2) =>
-            edge.partitionerFactory.name
-          },
-          executors = executors,
-          historyMetricsConfig = getHistoryMetricsConfig
-        )
-      }
+        val client = sender()
 
-      val client = sender()
-
-      appMasterDataDetail.map { appData =>
-        client ! appData
+        appMasterDataDetail.map { appData =>
+          client ! appData
+        }
+      } else {
+        LOG.error(s"AppMasterDataDetailRequest for invalid appId $rid")
       }
     // TODO: WebSocket is buggy and disabled.
     //    case appMasterMetricsRequest: AppMasterMetricsRequest =>
@@ -254,8 +257,12 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       clockService.foreach(_ forward getStalling)
     case replaceDAG: ReplaceProcessor =>
       dagManager forward replaceDAG
-    case GetLastFailure(_) =>
-      sender ! lastFailure
+    case GetLastFailure(id) =>
+      if (id == appId) {
+        sender ! lastFailure
+      } else {
+        LOG.error(s"GetLastFailure for invalid appId $id")
+      }
     case get@GetExecutorSummary(executorId) =>
       val client = sender()
       if (executorId == APPMASTER_DEFAULT_EXECUTOR_ID) {

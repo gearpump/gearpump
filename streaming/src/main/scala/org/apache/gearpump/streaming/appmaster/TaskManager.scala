@@ -76,8 +76,15 @@ private[appmaster] class TaskManager(
 
   private val ids = new SessionIdFactory()
 
+  import org.apache.gearpump.streaming.Constants.GEARPUMP_STREAMING_EXECUTOR_RESTART_TIME_WINDOW
+  // the default 20 seconds is too small for tests
+  // so that executor will be restarted infinitely
   private val executorRestartPolicy = new ExecutorRestartPolicy(maxNrOfRetries = 5,
-    withinTimeRange = 20.seconds)
+    withinTimeRange = if (systemConfig.hasPath(GEARPUMP_STREAMING_EXECUTOR_RESTART_TIME_WINDOW)) {
+      systemConfig.getInt(GEARPUMP_STREAMING_EXECUTOR_RESTART_TIME_WINDOW).seconds
+    } else {
+      20.seconds
+    })
 
   private implicit val timeout = Constants.FUTURE_TIMEOUT
   private implicit val actorSystem = context.system
@@ -102,7 +109,7 @@ private[appmaster] class TaskManager(
       sender ! TaskList(taskRegistry.getTaskExecutorMap)
     case LookupTaskActorRef(taskId) =>
       val executorId = taskRegistry.getExecutorId(taskId)
-      val requestor = sender
+      val requestor = sender()
       executorId.map { executorId =>
         val taskPath = ActorPathUtil.taskActorPath(appMaster, executorId, taskId)
         context.actorSelection(taskPath).resolveOne(3.seconds).map { taskActorRef =>

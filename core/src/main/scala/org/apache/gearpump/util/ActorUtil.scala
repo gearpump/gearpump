@@ -54,11 +54,10 @@ object ActorUtil {
 
   def defaultMsgHandler(actor: ActorRef): Receive = {
     case msg: Any =>
-      LOG.error(s"Cannot find a matching message, ${msg.getClass.toString}, forwarded from $actor")
+      LOG.error(s"Cannot find a matching message, $msg, forwarded from $actor")
   }
 
   def printActorSystemTree(system: ActorSystem): Unit = {
-    val extendedSystem = system.asInstanceOf[ExtendedActorSystem]
     val clazz = system.getClass
     val m = clazz.getDeclaredMethod("printTree")
     m.setAccessible(true)
