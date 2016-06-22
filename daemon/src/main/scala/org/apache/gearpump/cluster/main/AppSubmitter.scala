@@ -20,7 +20,6 @@ package org.apache.gearpump.cluster.main
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
-import scala.util.Try
 
 import org.slf4j.Logger
 
@@ -79,10 +78,10 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
       }
 
       val classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:" +
-        jarFile.getAbsolutePath)), Thread.currentThread().getContextClassLoader())
+        jarFile.getAbsolutePath)), Thread.currentThread().getContextClassLoader)
       val (main, arguments) = parseMain(jarFile, config.remainArgs, classLoader)
 
-      // Set to context classloader. ActorSystem pick context classloader in preference
+      // Set to context classLoader. ActorSystem pick context classLoader in preference
       Thread.currentThread().setContextClassLoader(classLoader)
       val clazz = classLoader.loadClass(main)
       val mainMethod = clazz.getMethod("main", classOf[Array[String]])
@@ -95,7 +94,8 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
     val mainInManifest = Option(new JarFile(jar).getManifest.getMainAttributes.
       getValue("Main-Class")).getOrElse("")
 
-    if (remainArgs.length > 0 && Try(classLoader.loadClass(remainArgs(0))).isSuccess) {
+    if (remainArgs.length > 0) {
+      classLoader.loadClass(remainArgs(0))
       (remainArgs(0), remainArgs.drop(1))
     } else if (mainInManifest.nonEmpty) {
       (mainInManifest, remainArgs)
