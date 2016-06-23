@@ -26,8 +26,16 @@ The HBase cluster should run on where Gearpump is deployed.
 Suppose HBase is installed at ```/usr/lib/hbase``` on every node and you already have your application built into a jar file. 
 Then before submitting the application, you need to add HBase lib folder and conf folder into ```gearpump.executor.extraClasspath``` in ```conf/gear.conf```, for example ```/usr/lib/hbase/lib/*:/usr/lib/hbase/conf```. 
 Please note only client side's configuration change is needed. After that, you are able to submit the application.
+
+
+## If you need to supply the HBase user for the connection
+There are HBase configurations that have authorization configured (some users are allowed to read/write to selected namespaces/tables, some are not).
+
+In this cases you may need to configure the user that connects to HBase.
+
+When creating HBase Sink you can pass UserConfig object. If the object contains "hbase.user" property, the value will be used as the user name for HBase connection.
  
-## Working with Secured HBASE
+## Working with Kerberized HBase
 
 When the remote HBase is security enabled, a kerberos keytab and the corresponding principal name need to be
 provided for the gearpump-hbase connector. Specifically, the UserConfig object passed into the HBaseSink should contain

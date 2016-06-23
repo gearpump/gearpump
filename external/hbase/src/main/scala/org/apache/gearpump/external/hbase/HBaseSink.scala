@@ -23,6 +23,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
+import org.apache.hadoop.hbase.security.{User, UserProvider}
 import org.apache.hadoop.security.UserGroupInformation
 
 import org.apache.gearpump.Message
@@ -82,8 +83,8 @@ class HBaseSink(
   }
 
   def close(): Unit = {
-    connection.close()
     table.close()
+    connection.close()
   }
 
   /**
@@ -112,6 +113,7 @@ object HBaseSink {
   val TABLE_NAME = "hbase.table.name"
   val COLUMN_FAMILY = "hbase.table.column.family"
   val COLUMN_NAME = "hbase.table.column.name"
+  val HBASE_USER = "hbase.user"
 
   def apply[T](userconfig: UserConfig, tableName: String): HBaseSink = {
     new HBaseSink(userconfig, tableName)
@@ -142,6 +144,15 @@ object HBaseSink {
       UserGroupInformation.loginUserFromKeytab(principal.get, keytabFile.getAbsolutePath)
       keytabFile.delete()
     }
-    ConnectionFactory.createConnection(configuration)
+
+    val userName = userConfig.getString(HBASE_USER)
+    if (userName.isEmpty) {
+      ConnectionFactory.createConnection(configuration)
+    } else {
+      val user = UserProvider.instantiate(configuration)
+        .create(UserGroupInformation.createRemoteUser(userName.get))
+      ConnectionFactory.createConnection(configuration, user)
+    }
+
   }
 }
