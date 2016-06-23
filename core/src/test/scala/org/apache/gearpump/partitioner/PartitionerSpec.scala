@@ -52,4 +52,30 @@ class PartitionerSpec extends FlatSpec with Matchers {
     assert(partition != partitioner.getPartition(msg, NUM), "multiple run should return" +
       "consistent result")
   }
+
+  "BroadcastPartitioner" should "return all partitions" in {
+    val partitioner = new BroadcastPartitioner
+
+    val data = new Array[Byte](1000)
+    (new java.util.Random()).nextBytes(data)
+    val msg = Message(data)
+    val partitions = partitioner.getPartitions(msg, NUM)
+
+    partitions should contain theSameElementsAs 0.until(NUM)
+  }
+
+
+  "ShuffleGroupingPartitioner" should "hash same key randomly" in {
+    val partitioner = new ShuffleGroupingPartitioner
+
+    val data = new Array[Byte](1000)
+    (new java.util.Random()).nextBytes(data)
+    val msg = Message(data)
+
+    val partition = partitioner.getPartition(msg, NUM)
+    assert(partition >= 0 && partition < NUM, "Partition Id should be >= 0")
+
+    assert(partition != partitioner.getPartition(msg, NUM), "multiple run should return" +
+      "consistent result")
+  }
 }

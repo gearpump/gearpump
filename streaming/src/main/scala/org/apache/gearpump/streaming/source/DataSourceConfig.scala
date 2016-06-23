@@ -19,7 +19,5 @@
 package org.apache.gearpump.streaming.source
 
 object DataSourceConfig {
-
   val SOURCE_READ_BATCH_SIZE = "gearpump.source.read.batch.size"
-  val SOURCE_TIMESTAMP_FILTER = "gearpump.source.timestamp.filter.class"
 }

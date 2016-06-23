@@ -38,10 +38,12 @@ object DataSourceTask {
  *  - `DataSource.read()` in each `onNext`, which reads a batch of messages
  *  - `DataSource.close()` in `onStop`
  */
-class DataSourceTask(context: TaskContext, conf: UserConfig) extends Task(context, conf) {
-  import org.apache.gearpump.streaming.source.DataSourceTask._
+class DataSourceTask private[source](context: TaskContext, conf: UserConfig, source: DataSource)
+  extends Task(context, conf) {
 
-  private val source = conf.getValue[DataSource](DATA_SOURCE).get
+  def this(context: TaskContext, conf: UserConfig) = {
+    this(context, conf, conf.getValue[DataSource](DataSourceTask.DATA_SOURCE)(context.system).get)
+  }
   private val batchSize = conf.getInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE).getOrElse(1000)
   private var startTime = 0L
 

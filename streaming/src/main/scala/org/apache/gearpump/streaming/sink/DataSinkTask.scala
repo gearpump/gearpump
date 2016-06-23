@@ -29,10 +29,12 @@ object DataSinkTask {
 /**
  * General task that runs any [[DataSink]]
  */
-class DataSinkTask(context: TaskContext, conf: UserConfig) extends Task(context, conf) {
-  import org.apache.gearpump.streaming.sink.DataSinkTask._
+class DataSinkTask private[sink](context: TaskContext, conf: UserConfig, sink: DataSink)
+  extends Task(context, conf) {
 
-  private val sink = conf.getValue[DataSink](DATA_SINK).get
+  def this(context: TaskContext, conf: UserConfig) = {
+    this(context, conf, conf.getValue[DataSink](DataSinkTask.DATA_SINK)(context.system).get)
+  }
 
   override def onStart(startTime: StartTime): Unit = {
     LOG.info("opening data sink...")
