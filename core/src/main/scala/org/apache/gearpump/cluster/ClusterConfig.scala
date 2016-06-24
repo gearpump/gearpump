@@ -66,7 +66,7 @@ object ClusterConfig {
     load(configFile).master
   }
 
-  /*
+  /**
    * configuration for worker node
    */
   def worker(configFile: String = null): Config = {
@@ -90,7 +90,7 @@ object ClusterConfig {
         LOG.info("loading config file " + path + "..........")
         load(ClusterConfigSource(path))
       case None =>
-        LOG.info("loading config file application.conf...")
+        LOG.info(s"loading config file $configFile...")
         load(ClusterConfigSource(configFile))
     }
   }

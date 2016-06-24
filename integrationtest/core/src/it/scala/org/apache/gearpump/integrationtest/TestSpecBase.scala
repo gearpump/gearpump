@@ -53,6 +53,7 @@ trait TestSpecBase
 
   lazy val wordCountJar = cluster.queryBuiltInExampleJars("wordcount-").head
   lazy val wordCountName = "wordCount"
+  lazy val wordCountClass = "org.apache.gearpump.streaming.examples.wordcount.WordCount"
 
   var restartClusterRequired: Boolean = false
 

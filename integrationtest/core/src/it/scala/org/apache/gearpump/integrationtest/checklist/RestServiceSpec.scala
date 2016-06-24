@@ -87,7 +87,7 @@ class RestServiceSpec extends TestSpecBase {
 
       // exercise
       val success = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length,
-        s"-split $splitNum -sum $sumNum")
+        s"$wordCountClass -split $splitNum -sum $sumNum")
       success shouldBe true
       expectAppIsRunning(appId, wordCountName)
       val processors = restClient.queryStreamingAppDetail(appId).processors
@@ -332,7 +332,7 @@ class RestServiceSpec extends TestSpecBase {
       val originSumNum = 3
       val originAppId = restClient.getNextAvailableAppId()
       val success = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length,
-        s"-split $originSplitNum -sum $originSumNum")
+        s"$wordCountClass -split $originSplitNum -sum $originSumNum")
       success shouldBe true
       expectAppIsRunning(originAppId, wordCountName)
       val originAppDetail = restClient.queryStreamingAppDetail(originAppId)
