@@ -172,7 +172,7 @@ class KVStream[K, V](stream: Stream[Tuple2[K, V]]) {
    * @return  the sum stream
    */
   def sum(implicit numeric: Numeric[V]): Stream[(K, V)] = {
-    stream.reduce(Stream.sumByValue[K, V](numeric), "sum")
+    stream.reduce(Stream.sumByKey[K, V](numeric), "sum")
   }
 }
 
@@ -184,7 +184,7 @@ object Stream {
 
   def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
 
-  def sumByValue[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V]
+  def sumByKey[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V]
   = (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
 
   implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = {

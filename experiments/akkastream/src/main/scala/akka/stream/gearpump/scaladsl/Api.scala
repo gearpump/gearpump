@@ -243,7 +243,7 @@ object Implicits {
      * , otherwise, it will do the sum no matter what current key is.
      */
     def sumOnValue(implicit numeric: Numeric[V]): Source[(K, V), Mat] = {
-      val stage = Reduce.apply(sumByValue[K, V](numeric))
+      val stage = Reduce.apply(sumByKey[K, V](numeric))
       source.via(stage)
     }
   }
@@ -270,13 +270,13 @@ object Implicits {
      *
      */
     def sumOnValue(implicit numeric: Numeric[V]): Flow[(K, V), (K, V), Mat] = {
-      val stage = Reduce.apply(sumByValue[K, V](numeric))
+      val stage = Reduce.apply(sumByKey[K, V](numeric))
       flow.via(stage)
     }
   }
 
   private def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
 
-  private def sumByValue[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V] =
+  private def sumByKey[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V] =
     (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
 }
