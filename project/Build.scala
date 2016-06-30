@@ -19,14 +19,14 @@
 import com.typesafe.sbt.SbtPgp.autoImport._
 import BuildExample.examples
 import BuildIntegrationTest.integration_test
+import BuildShaded._
 import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 import Pack.packProject
 import org.scalajs.sbtplugin.cross.CrossProject
-import sbtassembly.Plugin.AssemblyKeys._
-import sbtassembly.Plugin._
+import sbtassembly.AssemblyPlugin.autoImport._
 import sbtunidoc.Plugin.UnidocKeys._
 import sbtunidoc.Plugin._
 import xerial.sbt.Sonatype._
@@ -36,22 +36,18 @@ object Build extends sbt.Build {
   val copySharedSourceFiles = TaskKey[Unit]("copied shared services source code")
 
   val akkaVersion = "2.4.3"
-  val kryoVersion = "0.3.2"
-  val clouderaVersion = "2.6.0-cdh5.4.2"
-  val clouderaHBaseVersion = "1.0.0-cdh5.4.2"
-  val codahaleVersion = "3.0.2"
+  val hadoopVersion = "2.6.0"
+  val hbaseVersion = "1.0.0"
   val commonsHttpVersion = "3.1"
   val commonsLoggingVersion = "1.1.3"
   val commonsLangVersion = "2.6"
   val commonsIOVersion = "2.4"
-  val guavaVersion = "16.0.1"
   val dataReplicationVersion = "0.7"
   val upickleVersion = "0.3.4"
   val junitVersion = "4.12"
   val kafkaVersion = "0.8.2.1"
   val stormVersion = "0.10.0"
   val slf4jVersion = "1.7.7"
-  val gsCollectionsVersion = "6.2.0"
 
   val crossScalaVersionNumbers = Seq("2.11.8")
   val scalaVersionNumber = crossScalaVersionNumbers.last
@@ -81,7 +77,6 @@ object Build extends sbt.Build {
         "bintray/non" at "http://dl.bintray.com/non/maven",
         "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
         "clockfly" at "http://dl.bintray.com/clockfly/maven",
-        "vincent" at "http://dl.bintray.com/fvunicorn/maven",
         "clojars" at "http://clojars.org/repo"
       )
       // ,addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0-M5" cross CrossVersion.full)
@@ -154,22 +149,20 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaVersion,
       "commons-logging" % "commons-logging" % commonsLoggingVersion,
       "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
-      "org.apache.hadoop" % "hadoop-common" % clouderaVersion % "provided"
+      "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided"
     )
   )
 
   val streamingDependencies = Seq(
-    libraryDependencies ++= Seq(
-      "org.apache.gearpump" % "gearpump-shaded-gs-collections" % gsCollectionsVersion
+    unmanagedJars in Compile ++= Seq(
+      getShadedJarFile("gs-collections", version.value)
     )
   )
 
   val coreDependencies = Seq(
     libraryDependencies ++= Seq(
-      "org.apache.gearpump" % "gearpump-shaded-metrics-graphite" % codahaleVersion,
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-      "org.apache.gearpump" % "gearpump-shaded-guava" % guavaVersion,
       "commons-lang" % "commons-lang" % commonsLangVersion,
       "com.google.code.findbugs" % "jsr305" % "1.3.9" % "compile",
 
@@ -192,7 +185,6 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-agent" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
       "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
-      "org.apache.gearpump" %% "gearpump-shaded-akka-kryo" % kryoVersion,
       "org.scala-lang" % "scala-reflect" % scalaVersionNumber,
       "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
       "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
@@ -200,6 +192,12 @@ object Build extends sbt.Build {
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
       "org.mockito" % "mockito-core" % mockitoVersion % "test",
       "junit" % "junit" % junitVersion % "test"
+    ),
+
+    unmanagedJars in Compile ++= Seq(
+      getShadedJarFile("metrics-graphite", version.value),
+      getShadedJarFile("guava", version.value),
+      getShadedJarFile("akka-kryo", version.value)
     )
   )
 
@@ -209,12 +207,12 @@ object Build extends sbt.Build {
     scalacOptions += s"-P:genjavadoc:out=${target.value}/java"
   )
 
-  val myAssemblySettings = assemblySettings ++ Seq(
+  val myAssemblySettings = Seq(
     test in assembly := {},
     assemblyOption in assembly ~= {
       _.copy(includeScala = false)
     },
-    jarName in assembly := {
+    assemblyJarName in assembly := {
       s"${name.value.split("-").last}-${scalaBinaryVersion.value}-${version.value}-assembly.jar"
     }
   )
@@ -252,33 +250,37 @@ object Build extends sbt.Build {
     id = "gearpump",
     base = file("."),
     settings = commonSettings ++ noPublish ++ gearpumpUnidocSetting)
-    .aggregate(core, daemon, streaming, services, external_kafka, external_monoid,
+      .aggregate(shaded, core, daemon, streaming, services, external_kafka, external_monoid,
       external_serializer, examples, storm, yarn, external_hbase, packProject,
       external_hadoopfs, integration_test).settings(Defaults.itSettings: _*)
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val core = Project(
     id = "gearpump-core",
     base = file("core"),
-    settings = commonSettings ++ javadocSettings ++ coreDependencies
-  )
+    settings = commonSettings ++ javadocSettings ++ coreDependencies)
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val daemon = Project(
     id = "gearpump-daemon",
     base = file("daemon"),
-    settings = commonSettings ++ daemonDependencies
-  ) dependsOn(core % "test->test; compile->compile", cgroup % "test->test; compile->compile")
+    settings = commonSettings ++ daemonDependencies)
+      .dependsOn(core % "test->test; compile->compile", cgroup % "test->test; compile->compile")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val cgroup = Project(
     id = "gearpump-experimental-cgroup",
     base = file("experiments/cgroup"),
-    settings = commonSettings ++ noPublish ++ daemonDependencies
-  ) dependsOn (core % "test->test; compile->compile")
+    settings = commonSettings ++ noPublish ++ daemonDependencies)
+      .dependsOn (core % "test->test; compile->compile")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
-    settings = commonSettings ++ javadocSettings ++ streamingDependencies
-  ) dependsOn(core % "test->test; compile->compile", daemon % "test->test")
+    settings = commonSettings ++ javadocSettings ++ streamingDependencies)
+      .dependsOn(core % "test->test; compile->compile", daemon % "test->test")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val external_kafka = Project(
     id = "gearpump-external-kafka",
@@ -290,14 +292,15 @@ object Build extends sbt.Build {
           "com.twitter" %% "bijection-core" % bijectionVersion,
           ("org.apache.kafka" %% "kafka" % kafkaVersion classifier ("test")) % "test"
         )
-      )
-  ) dependsOn (streaming % "test->test; provided")
+      ))
+      .dependsOn (streaming % "test->test; provided")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val services_full = CrossProject("gearpump-services", file("services"), CrossType.Full).
     settings(
       publish := {},
       publishLocal := {}
-    )
+    ).disablePlugins(sbtassembly.AssemblyPlugin)
 
   val distDashboardDirectory = s"${distDirectory}/target/pack/dashboard/views/scalajs"
 
@@ -387,8 +390,8 @@ object Build extends sbt.Build {
           "org.json4s" %% "json4s-jackson" % "3.2.11"
         ),
         mainClass in(Compile, packageBin) := Some("akka.stream.gearpump.example.Test")
-      )
-  ) dependsOn(streaming % "test->test; provided", daemon % "test->test; provided")
+      ))
+      .dependsOn(streaming % "test->test; provided", daemon % "test->test; provided")
 
   lazy val storm = Project(
     id = "gearpump-experiments-storm",
@@ -422,8 +425,9 @@ object Build extends sbt.Build {
             exclude("ring", "ring-jetty-adapter")
             exclude("ring", "ring-servlet")
         )
-      )
-  ) dependsOn (streaming % "test->test; compile->compile")
+      ))
+      .dependsOn (streaming % "test->test; compile->compile")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val yarn = Project(
     id = "gearpump-experiments-yarn",
@@ -431,18 +435,19 @@ object Build extends sbt.Build {
     settings = commonSettings ++ noPublish ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion,
-          "org.apache.hadoop" % "hadoop-common" % clouderaVersion,
-          "org.apache.hadoop" % "hadoop-yarn-api" % clouderaVersion,
-          "org.apache.hadoop" % "hadoop-yarn-client" % clouderaVersion,
-          "org.apache.hadoop" % "hadoop-yarn-common" % clouderaVersion,
+          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
+          "org.apache.hadoop" % "hadoop-yarn-api" % hadoopVersion,
+          "org.apache.hadoop" % "hadoop-yarn-client" % hadoopVersion,
+          "org.apache.hadoop" % "hadoop-yarn-common" % hadoopVersion,
           "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
-          "org.apache.hadoop" % "hadoop-mapreduce-client-core" % clouderaVersion,
-          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % clouderaVersion % "provided",
-          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % clouderaVersion % "provided"
+          "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion,
+          "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % hadoopVersion % "provided",
+          "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % hadoopVersion % "provided"
         )
-      )
-  ) dependsOn(services % "test->test;compile->compile", core % "provided")
+      ))
+      .dependsOn(services % "test->test;compile->compile", core % "provided")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val external_hbase = Project(
     id = "gearpump-external-hbase",
@@ -455,12 +460,12 @@ object Build extends sbt.Build {
       ) ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % clouderaVersion % "provided",
-          "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion % "provided",
-          "org.apache.hadoop" % "hadoop-mapreduce-client-core" % clouderaVersion % "provided",
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion % "provided",
+          "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion % "provided",
           "org.codehaus.jackson" % "jackson-core-asl" % "1.9.13" % "provided",
           "org.codehaus.jackson" % "jackson-mapper-asl" % "1.9.13" % "provided",
-          "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion
+          "org.apache.hbase" % "hbase-client" % hbaseVersion
             exclude("com.github.stephenc.findbugs", "findbugs-annotations")
             exclude("com.google.guava", "guava")
             exclude("commons-codec", "commons-codec")
@@ -472,8 +477,8 @@ object Build extends sbt.Build {
             exclude("log4j", "log4j")
             exclude("org.apache.zookeeper", "zookeeper")
             exclude("org.codehaus.jackson", "jackson-mapper-asl"),
-          "org.apache.hbase" % "hbase-client" % clouderaHBaseVersion,
-          "org.apache.hbase" % "hbase-common" % clouderaHBaseVersion
+          "org.apache.hbase" % "hbase-client" % hbaseVersion,
+          "org.apache.hbase" % "hbase-common" % hbaseVersion
             exclude("com.github.stephenc.findbugs", "findbugs-annotations")
             exclude("com.google.guava", "guava")
             exclude("commons-codec", "commons-codec")
@@ -484,8 +489,9 @@ object Build extends sbt.Build {
             exclude("junit", "junit")
             exclude("log4j", "log4j")
         )
-      )
-  ) dependsOn (streaming % "test->test; provided")
+      ))
+      .dependsOn (streaming % "test->test; provided")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val external_monoid = Project(
     id = "gearpump-external-monoid",
@@ -495,8 +501,9 @@ object Build extends sbt.Build {
         libraryDependencies ++= Seq(
           "com.twitter" %% "algebird-core" % algebirdVersion
         )
-      )
-  ) dependsOn (streaming % "provided")
+      ))
+      .dependsOn (streaming % "provided")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val external_serializer = Project(
     id = "gearpump-external-serializer",
@@ -508,8 +515,9 @@ object Build extends sbt.Build {
             exclude("com.esotericsoftware.kryo", "kyro")
             exclude("com.esotericsoftware.minlog", "minlog")
         )
-      )
-  ) dependsOn (streaming % "provided")
+      ))
+      .dependsOn (streaming % "provided")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val external_hadoopfs = Project(
     id = "gearpump-external-hadoopfs",
@@ -517,9 +525,10 @@ object Build extends sbt.Build {
     settings = commonSettings ++ javadocSettings ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % clouderaVersion % "provided",
-          "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion % "provided"
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion % "provided"
         )
-      )
-  ) dependsOn (streaming % "test->test; provided")
+      ))
+      .dependsOn (streaming % "test->test; provided")
+      .disablePlugins(sbtassembly.AssemblyPlugin)
 }

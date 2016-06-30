@@ -19,7 +19,7 @@
 import sbt.Keys._
 import sbt._
 import Build._
-import sbtassembly.Plugin.AssemblyKeys._
+import sbtassembly.AssemblyPlugin.autoImport._
 
 object BuildExample extends sbt.Build {
 
@@ -27,8 +27,9 @@ object BuildExample extends sbt.Build {
     id = "gearpump-examples",
     base = file("examples"),
     settings = commonSettings ++ noPublish
-  ) aggregate(wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka,
-    distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice)
+  ).aggregate(wordcount, wordcountJava, complexdag, sol, fsio, examples_kafka,
+    distributedshell, stockcrawler, transport, examples_state, pagerank, distributeservice).
+    disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val wordcountJava = Project(
     id = "gearpump-examples-wordcountjava",
@@ -139,7 +140,7 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ noPublish ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % clouderaVersion
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
             exclude("org.mortbay.jetty", "jetty-util")
             exclude("org.mortbay.jetty", "jetty")
             exclude("org.fusesource.leveldbjni", "leveldbjni-all")
@@ -198,7 +199,7 @@ object BuildExample extends sbt.Build {
     base = file("examples/streaming/state"),
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       libraryDependencies ++= Seq(
-        "org.apache.hadoop" % "hadoop-common" % clouderaVersion
+        "org.apache.hadoop" % "hadoop-common" % hadoopVersion
           exclude("org.mortbay.jetty", "jetty-util")
           exclude("org.mortbay.jetty", "jetty")
           exclude("org.fusesource.leveldbjni", "leveldbjni-all")
@@ -207,7 +208,7 @@ object BuildExample extends sbt.Build {
           exclude("commons-beanutils", "commons-beanutils")
           exclude("asm", "asm")
           exclude("org.ow2.asm", "asm"),
-        "org.apache.hadoop" % "hadoop-hdfs" % clouderaVersion
+        "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
       ),
       mainClass in(Compile, packageBin) :=
         Some("org.apache.gearpump.streaming.examples.state.MessageCountApp"),

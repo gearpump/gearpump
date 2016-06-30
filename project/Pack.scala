@@ -122,8 +122,8 @@ object Pack extends sbt.Build {
         packResourceDir += (baseDirectory.value / ".." / "bin" -> "bin"),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "yarnconf" -> "conf/yarnconf"),
-        packResourceDir += (baseDirectory.value / ".." / "unmanagedlibs" /
-          scalaBinaryVersion.value -> "lib"),
+        packResourceDir += (baseDirectory.value / ".." / "shaded" / "target" /
+          CrossVersion.binaryScalaVersion(scalaVersion.value) -> "lib"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value) -> "examples"),
@@ -147,5 +147,6 @@ object Pack extends sbt.Build {
         packArchiveExcludes := Seq("integrationtest")
 
       )
-  ).dependsOn(core, streaming, services, yarn, storm)
+  ).dependsOn(core, streaming, services, yarn, storm).
+    disablePlugins(sbtassembly.AssemblyPlugin)
 }

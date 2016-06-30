@@ -19,7 +19,7 @@
 import sbt.Keys._
 import sbt._
 import Build._
-import sbtassembly.Plugin.AssemblyKeys._
+import sbtassembly.AssemblyPlugin.autoImport._
 
 object BuildIntegrationTest extends sbt.Build {
 
@@ -30,7 +30,8 @@ object BuildIntegrationTest extends sbt.Build {
     id = "gearpump-integrationtest",
     base = file("integrationtest"),
     settings = commonSettings ++ noPublish
-  ) aggregate(it_core, it_storm09, it_storm010)
+  ).aggregate(it_core, it_storm09, it_storm010).
+    disablePlugins(sbtassembly.AssemblyPlugin)
 
   val itTestFilter: String => Boolean = { name => name endsWith "Suite" }
   lazy val it_core = Project(
@@ -55,7 +56,7 @@ object BuildIntegrationTest extends sbt.Build {
       external_kafka,
       storm,
       external_serializer
-    )
+    ).disablePlugins(sbtassembly.AssemblyPlugin)
 
   // Integration test for Storm 0.9.x
   lazy val it_storm09 = Project(
