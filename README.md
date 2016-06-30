@@ -86,6 +86,16 @@ Before submitting a PR, you should always run style check first:
   sbt scalastyle test:scalastyle it:scalastyle
 ```
 
+## How to generate the license report to generate a list of all dependencies 
+```
+  sbt dumpLicenseReport
+```
+
+## How to generate dependencies by declared license
+```
+  sbt dependencyLicenseInfo
+```
+
 ## Contributors (time order)
 
 * [Sean Zhong](https://github.com/clockfly)

@@ -11,7 +11,7 @@ Step0: Function verification Checklist
 
 Step1: Pre-release
 ===================
-1. Modify CHANGELOG.md
+1. Modify CHANGELOG.md to add JIRA's
 2. Update version in docs/_config.yml
 3. Bump the gearpump version in version.sbt 
 
@@ -19,23 +19,24 @@ Step1: Pre-release
    version in ThisBuild := "RELEASE_VERSION"
    ```
   
-4. Follow https://github.com/gearpump/gearpump/blob/master/doc/CommitGuideline.md to submit a PR
+4. Run dev-tools/create_apache_source_release.sh $GPG_KEY $GPG_PASSPHRASE
+5. svn add gearpump-* to https://dist.apache.org/repos/dist/dev/incubator/gearpump/RELEASE_VERSION-incubating/RC[0-9]
+6. svn add KEYS to https://dist.apache.org/repos/dist/dev/incubator/gearpump/
 
 Step2: Release
 ==================
 1. Create a tag by ```git tag RELEASE_VERSION```
 2. ```git remote add upstream https://github.com/gearpump/gearpump.git```
 3. ```git push upstream RELEASE_VERSION```
-4. Change the release notes under https://github.com/gearpump/gearpump/releases
 
 Step3: Post-Release
 ==================
 1. Bump the gearpump version in version.sbt
     
    ```scala
-   version in ThisBuild := "NEXT_SNPASHOT_VERSION"
+   version in ThisBuild := "NEXT_SNAPSHOT_VERSION"
    ```
-   where NEXT_SNPASHOT_VERSION must end with "-SNAPSHOT". For example, 0.2.3-SNPASHOT is a good snapshot version, 0.2.3 is NOT
-2. Make PR by following https://github.com/gearpump/gearpump/blob/master/doc/CommitGuideline.md 
+   where NEXT_SNAPSHOT_VERSION must end with "-SNAPSHOT". For example, 0.2.3-SNAPSHOT is a good snapshot version, 0.2.3 is NOT
+2. Create JIRA for new release
+3. Make PR with new release
 
-Done!!!

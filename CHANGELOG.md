@@ -1,3 +1,54 @@
+Apache Gearpump 0.8.1
+==================
+Change log:
+------------------
+- GEARPUMP-166 Rename sumByValue to sumByKey
+- GEARPUMP-165 RestServiceSpec failed
+- GEARPUMP-164 Let the user that connects to HBase (HBaseSink) be configurable
+- GEARPUMP-160 add KafkaDSL examples and fix docs
+- GEARPUMP-159 Prep for first release
+- GEARPUMP-156 Replace logo in site, GitHub, Travis, etc
+- GEARPUMP-155 integration test failure
+- GEARPUMP-153 throw exception on main class load failure
+- GEARPUMP-150 the file structure of integration test is wrong
+- GEARPUMP-148 Document how to use HDFS HA for JarStore
+- GEARPUMP-143 Document `worker.executor-share-same-jvm-as-worker` config parameter
+- GEARPUMP-141 Remove useless method
+- GEARPUMP-139 Change package name to org.apache.gearpump of shaded libraries
+- GEARPUMP-124 SinkTask fails to start after change parallelism
+- GEARPUMP-123 Metrics about workers is not accurate in UI
+- GEARPUMP-122 KafkaSource Stuck
+- GEARPUMP-121 DataSourceProcessor and DataSinkProcessor default parallelism
+- GEARPUMP-120 gearpump.apache.org -> fork me on github goes to "old" github repo
+- GEARPUMP-118 Change package name to org.apache.gearpump
+- GEARPUMP-117 Script for managing cluster
+- GEARPUMP-114 Dead loop in graph with cycles
+- GEARPUMP-113 Default admin user removal
+- GEARPUMP-109 Add Java example for WordCount in document.
+- GEARPUMP-108 Setup travis CI for Gearpump's apache repository
+- GEARPUMP-102 Randomly see AskTimeoutException while querying app status
+- GEARPUMP-83 show application pending on worker down
+- GEARPUMP-82 Rename package from io.gearpump to org.apache.gearpump
+- GEARPUMP-64 Fail to launch Dashboard when setting HDFS as jarStore
+- GEARPUMP-61 Impove code coverage to >70%
+- GEARPUMP-57 Couldn't load conf/gear.conf
+- GERAPUMP-55 Add kmeans example
+- GERAPUMP-54 Composing dag from dashboard, user can not specify the application name
+- GEARPUMP-41 property akka.scheduler.tick-duration will be override and potentially go wrong on Windows
+- GEARPUMP-36 docs/build_doc.sh failed to execute on Mac 10.11 El Capitan
+- GEARPUMP-35 Worker's JVM metrics is not shown in the dashboard
+- GEARPUMP-34 Improve CONTRIBUTING guide for contributors and committers
+- GEARPUMP-30 Track call for papers submissions, talks and upcoming CFP's somewhere
+- GEARPUMP-29 Testing App with GearPump Dependencies
+- GEARPUMP-28 Transit the website to Apache
+- GEARPUMP-26 Doc: 0.8.0 Release does not include scala 2.10 build
+- GEARPUMP-25 Integration test failed: MessageDeliverySpec message count mismatch
+- GEARPUMP-24 refactor DataSource API
+- GEARPUMP-18 Enable publishing gearpump artifacts to repository.apache.org
+- GEARPUMP-17 KafkaStorage looks for the wrong offset on replay
+- GEARPUMP-11 Fix code styles by following practice of other projects
+- GEARPUMP-7 Master members are not updated if a master is shutdown
+
 Apache Gearpump 0.8.0
 ==================
 

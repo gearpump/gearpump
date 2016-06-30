@@ -1,0 +1,332 @@
+This file contains the GPG keys of Apache Gearpump developers.
+
+Users:    gpg --import KEYS
+
+Developers:
+  Create a key:
+    gpg --gen-key
+
+  Adding you key to this file:
+    (gpg --list-sigs <key id> && gpg --armor --export <key id>) >> this file.
+
+  Publish the key:
+    gpg --keyserver pgp.mit.edu --send-keys <key id>
+
+  Signing another developers key:
+    gpg --keyserver pgp.mit.edu --search-keys <name or email>
+    gpg --keyserver pgp.mit.edu --recv-keys <key id>
+    gpg --sign-key <key id>
+    gpg --keyserver pgp.mit.edu --send-keys <key id>
+
+  Additional Information:
+    http://www.apache.org/dev/openpgp.html#generate-key
+
+********************************* PLEASE NOTE **********************************
+
+  Releases will be signed using one of these keys in this file. This file will
+  be available with the distributed Apache Gearpump releases at:
+
+      https://dist.apache.org/repos/dist/release/incubator/gearpump/KEYS
+
+********************************************************************************
+
+pub   4096R/E7DE27E3 2016-06-08
+uid       [ultimate] Kam Kasravi (CODE SIGNING KEY) <kamkasravi@apache.org>
+sig 3        E7DE27E3 2016-06-08  Kam Kasravi (CODE SIGNING KEY) <kamkasravi@apache.org>
+sub   4096R/E7A6E5CC 2016-06-08
+sig          E7DE27E3 2016-06-08  Kam Kasravi (CODE SIGNING KEY) <kamkasravi@apache.org>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Comment: GPGTools - https://gpgtools.org
+
+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
+Xa9ta5MHPW61Ey4gtxzJIfXo0Jo=
+=+V41
+-----END PGP PUBLIC KEY BLOCK-----
+
+pub   2048R/B7374B75 2016-03-13
+uid       [ultimate] Kam Kasravi <kamkasravi@apache.org>
+sig 3        B7374B75 2016-03-13  Kam Kasravi <kamkasravi@apache.org>
+sub   2048R/D0909B5A 2016-03-13
+sig          B7374B75 2016-03-13  Kam Kasravi <kamkasravi@apache.org>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Comment: GPGTools - https://gpgtools.org
+
+mQENBFblo5ABCADuTflCMAJaqwrINB2eI3YpBAOeFuz1t/gf9fvwYsJ5YmDlTqd0
+vEIjM6Quvai84tLOPKQMOHg69KPNazYn15j2Ql5JNEfocTSJWxj2uvH1mZkDs5sX
++4PHxqLfO2iyIUzpupWDWu0t7khdudsqbkC+AP0r0WAeyeVBLGCtGA/70TlJL9Il
+6az6X+1m+NBoszjFtzXDZ1ESHgfHEpQvexakVPyzukAtPcAKj4B8AIrLvC/VyCh4
+DIY0w2tChLzH6jx654RdzL43UwYbKEyp72A5n/ODb6Kr5TntwLE2PZfbdzBG4QW/
+n9PpdfTYtFd7wAl0ItFpiWOjriqdhIwlAJw5ABEBAAG0I0thbSBLYXNyYXZpIDxr
+YW1rYXNyYXZpQGFwYWNoZS5vcmc+iQE3BBMBCgAhBQJW5aOQAhsDBQsJCAcDBRUK
+CQgLBRYCAwEAAh4BAheAAAoJEFgw0lC3N0t1EzEIANepQZbfmykCpgOhfeSSModQ
+J7AswSm7aeNzlqtCXD9UFcxiGf3nkQCuL3V9D7StrSyeg1RtUr3hpWlSkANa/6yc
+Yj+ODuMt0akVHCtxdGMXdQ+kQO0m5sdElzgXPvS7odK27dlazLueyxTqxAMCdl3v
+NTVMdv+6xqoNht7M3Km/w9aE5mPXLG9GejduBypBJwEjoFJRvsRRdLKwFJoidYfr
+JLZQz787Cfhv9WSmqIfIjt4OZfpA7TserjTJs1NFur5vKAQ9crR0aTUKVCCUNnW3
+VDL4xUQWx7P62PlNzwS/cjNU5een9sobxhzY80ygtQRlk+At8FDgqnIgw4RMUeu5
+AQ0EVuWjkAEIALfTQNK6rku+G++7GoIeKVumgEd/yz8rYHv3iZmulfkiqAIhyQug
+eSvOMhObxb8hrRi9atFZiGhEiKt8EYRfYqlqgb7x3hyyxMD8DvH7OudgXi1/Qp4g
+PCjhoJkIKrlscjnlztQXShGM6EvULdO/oixPuqLl2tL1h+ybOmelDbt0/+Di0nbR
+fp5QFXbhq2ZB+1qi1nyh8LtybMWm4zEDPoZoJadvCte1Q1/uQBdKJoq90ElCat3O
+lBkjUVUmiNfYL/vH4wBC+zJ3Lqi+st/e3hy6K4gAEnAcRib5ddaF7+xa2JvGNG6Z
+HXrafHmeHMbv/LB1OxVvq1Pw5m4lt173VscAEQEAAYkBHwQYAQoACQUCVuWjkAIb
+DAAKCRBYMNJQtzdLdQ/1B/44oIrUsepVPGnX3E9aihCaZsHwUj8YR5AAr2jYDgP8
+LGkwIMBpT3VaqwoUV+/acHLp7+ZLMpcfy0jVNHxmMrXrjsWdrePU3+OZpUxRpWfS
+yL7+/HGq17l0zFNJKb+luxMbH3rFuF+Mnh84aYS3F1j0GVZA93/CNT6a2JxZtzr9
+pmjT98ib/ABz4ncDDHddh2mdfbA17zOgMyO4EJSAMAHwJAyEHbbRLaqfDvm3mULl
+nSIY8HzdR8mxlqNsGYbR/IZ+HcZPROex910HHpXEoNme6uVrV/12Ho1abVqLJKX3
+uv/xIuecp6qOs4gOXw3P/uAyC9FQLrhVySBAqoaK0NXi
+=J49u
+-----END PGP PUBLIC KEY BLOCK-----
+
+pub   2048R/9348FB4C 2016-06-22
+uid                  Weihua Jiang <whjiang@outlook.com>
+sig 3        9348FB4C 2016-06-22  Weihua Jiang <whjiang@outlook.com>
+sub   2048R/B5AF5E91 2016-06-22
+sig          9348FB4C 2016-06-22  Weihua Jiang <whjiang@outlook.com>
+ 
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+ 
+mQENBFdp8roBCADPZJsMkleuOQMk7a62jIG7xIr0m+QNjxBu9+9cpw7m0sEz0y4C
+px2U3RR2vK6i2SYe5Bk81AaziQhpdC/dDM9QMvzX/aMsBYBmIUAdBn7o9PgfRjdP
+kBhMP0V/8FhWLJn7B3HTkgk1SbrRpMbmpHCjT1PAPv3xcTjmG9tmqk8psFEikROe
+PBVMfmelcJnbMeteCbOuSHY9jsIdULrFe+rYoYbA6K4K90pnsZZincbLszUwIxIH
+luFO+8sVEuc1zDazuKj1JlZnPP3lAR4qgNmI9pzHwE4AqnXMhoyNFsd5rGPGSUG1
+7ZoZ5DfmlCExDCKg/ji1sysXnYzG1WXZa0PjABEBAAG0IldlaWh1YSBKaWFuZyA8
+d2hqaWFuZ0BvdXRsb29rLmNvbT6JATgEEwECACIFAldp8roCGwMGCwkIBwMCBhUI
+AgkKCwQWAgMBAh4BAheAAAoJEDwN6L+TSPtMQlwIAJ3OxXxV6+v2QlIQnD39OaPd
+/Mnz9S/tHGo2BXZI+kBDW5YnunhECilDXY8kBrx4uO83NYlQgZvG9TTwHn/ua5jd
+rvcbBRUluEKbchPuhqmcpWaFjLqj6TQ90u3LcZR+j9nCw12nZDfE/t2X0nkG9w0s
+22ePDvgVqLE4vzklpN7jqBnnzpwOzgZHoCW0WFjjWwwo6vaz84rv9etVHx7K3BVC
+FiUyj7DQVo3uIG1s2wvVLEVpwFqLCeopwQsuSQZSfO2LsFQ2tujDz2azT3H2h290
+r/IKkPyRs+uvfksoGJNNZrG3DFOxLcKIewCX8iCSVXlIch5421aq8q2/R9aa8iS5
+AQ0EV2nyugEIAKHZlkjStqslUJZp78S+QJpqYMeepF+p9uzlAU2rVQragWSg2blW
+INi/5xgnjcP9fb7/+992fJcvGvEt3LCExk2McuzOk0sjlANei2vbUrM42BsPvbs6
+SDcGYEZW0YXMwnCN5zzZxCkmc2y3RnBCg5mKz2ZptX5CPNGY83Or+s1cGQSCQSEK
+76egwjgOauaV686Sx6UH9Fle4KPPbjkhXZi4VXaW6TS48r5no/Lx1tch1JPY76MI
+Bck+Pk8zo50vuZCX90RbgT2Ror1EsxY031zfd8BuJqxSrwEeis+L7oGYcHNoghk0
+y5e6gnWZVTX67ZX4OS4RkG/ZT1FwIKEZ1ukAEQEAAYkBHwQYAQIACQUCV2nyugIb
+DAAKCRA8Dei/k0j7TAK+B/97QMIyE7DUQIV3Ob5uoh6YI2hc4oLGD4MWNcTxBFx4
+4fpkndZNfsP3++KGUbrtsfQsgtgXxevjHls9Q/KcmjhJOQXUEkLS9afWzrkT/ct8
+GYPMbwQXGCEWTuHKLVdb2DujnvwviJypKZGplqpg/N4JdxxJHNuIx0xOFA+RLLAp
+xbBpmrGzEeKTxuMMyUh1O9JWZq23Q2JTyRlewMDIyNV0aiukd9akDvwdzWS4fxcH
+raXntlXs28LcDL5vGh4KdLOflvKL8Ic4t0zSnRZ7uI5j/dSnp5gXrRN/3B9WDAmU
+Y30wKkSgG03dXZjQinqjrwN4QcxtcScvVzxrjNOhDPkv
+=KKDI
+-----END PGP PUBLIC KEY BLOCK-----
+
+pub   2048R/588BAAA4 2016-06-13
+uid                  manuzhang (my key ring) <owenzhang1990@gmail.com>
+sub   2048R/CAFA4652 2016-06-13
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+
+mQENBFdeb/8BCADFF0L+m1cCAe1u2KEsn4PGofaZnHgLgHv8+VhGLWJPDV19SnDF
+f16ry4yqoueGX59/K2WN1h5vZmgFLR0seElfFl6H1/szVMwoSy/8e7adj3A2Jeu1
+dPLuaIhnzp7pnPAIJ/vYcfBrwoyNh2KOyEbiWczaqmBVKX6AQZmUQ2N9q8n1wqYC
++tRKTASJ7QeQI+GlRbI0ZKcFGSiXn6n5hbyKvpyIzWrzHmw8iYCjTj+LelZopAjU
+WapiFMZzWk9WD5v49V4PEnp3yrRJi0HdWT+nWc9z7rbPJR5csVJw7W80xpad9tTi
+tPPwiGLyCoxj0lHSPoAfabKC3MGxH6kk7qIVABEBAAG0MW1hbnV6aGFuZyAobXkg
+a2V5IHJpbmcpIDxvd2VuemhhbmcxOTkwQGdtYWlsLmNvbT6JATgEEwECACIFAlde
+b/8CGwMGCwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAAoJEL3FDGtYi6qkB8kH/1bW
+7/2G5lTAwNXW7QZAITwx/Vg6ysjEOdruY0/leJDg/vZPnh2KbxDg9XejJLcjgK7O
+dmkFfdD7YlueOMGZdrwTIrzSitP/rM0NA/Cwkix8Xi/15xjm5f6zsD9BLwd2v2Uu
+f4Ys1ZA60H8njPov8gtuj+oN2zFIpQfZB+jQz7y5h0NcrYuh7XbMA56ExbFFGUUP
+ekduv1aL0gm0sdvS0UN4zJ24a/YsKevF5ntx4O34ISpT5q/wYO1p0nX0xpgCcuGC
+vXnyWenIXIH7qHkF0PSfO8OgLmRpgd7FmXJdvUTAaMdwQXvmSJ9Gr1uLL/OF2iAe
+VTvBEh3NK0EVs5vsvJm5AQ0EV15v/wEIAK0rNVXvKGsWWcm/CsRrWeEtFlYeoZ+P
+JocPPQ4+oMhODX+Pebc1Md/EUVi5DdUZcSIbGRkYuxesaFdBLD4Z3rf8If9NTASO
+61xAplczMl/qQhcSfVbaa+yLRSrD2zvm9pC0wKiZSKiVf8l4NJX59M1g6Oz2uaN6
+f1ru51jOJiIdAHJ++umm2t651U6Nn1bAnheFJpCBcTIAhwSH5nhPM9QbQI3pvFAO
+/oD/b9euUBMIcC6q2A+PJouvpMtjYTwCDHtqOOvMHYrMO1vkeAEY87plgzw4C4PB
+zZ73dIiAZC7sT69yMzFtwAcydnqN7MMmDqoM67Y5XRIVBVyE+MfSpj0AEQEAAYkB
+HwQYAQIACQUCV15v/wIbDAAKCRC9xQxrWIuqpJRXB/0WGT1CxNpBusQtkvoRpMWg
+BrEd6mYxAjmsjbGk3F59GdhoZG9htYNCn3VAvXYY8+blZu7LNLXVAyS3WCK59aIi
+TYY6rlXc2LtmnaIwLxZBHOBH7MKwWvdlYwDmaoa//fA/rxuqAxmSswI7eR+pYENj
+GXcQBJ/EN9MOq3XCi7tF2xEK2NVECyTEuyhw48QRSv4bZX+YHEjJqXVSFsd8sLit
+NnptH0FFk02iUkxnqUrgg7mfbVlvm5mg34DGC959s5eSPEM2ta4pwXLDtyCQXYlj
+6TEZbnC0obFTw7cSJqebGqFcdesls7Bz5o1fnMVbD6xAyEa3HLPQ3K36VwXBzCez
+=N+YO
+-----END PGP PUBLIC KEY BLOCK-----
+
+pub   2048R/4F0B00D2 2016-06-22
+uid                  huafengw <fvunicorn@gmail.com>
+sig 3        4F0B00D2 2016-06-22  huafengw <fvunicorn@gmail.com>
+sub   2048R/32AFDF2B 2016-06-22
+sig          4F0B00D2 2016-06-22  huafengw <fvunicorn@gmail.com>
+ 
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+ 
+mQENBFdqRVIBCADAUmIy5Bo+71dPPw5BDN5hiMJ+4p6lRfW03+AmwG/iL6Gy1TjQ
+dIO07Bj/4kPnVdYSTEOr9FIqItorFvTMhX/NOO5laHb0kVM59zgzuGgsuv6XV3Wq
+acPiyziTd1so6wY4TRZ+I8eVvCxD5dUOKVdYDcDBLLFCPLfYLptknk62FDB4Ca5w
+8tzuvMqRtKtFnaQTvlfSx2quDNKx3lMG/5c3wIw9rmakSlVixrtAZLYwXxzHFsix
+xdw+I7/KMNe0u728yUPMDo0s0BfoqcbKCNhL6cekpf3hpVn6mSsd89Gv6apzFO+N
+hSDejIdL53BK6jPUscg6ICSzJxwn9I1UcmoZABEBAAG0Hmh1YWZlbmd3IDxmdnVu
+aWNvcm5AZ21haWwuY29tPokBOQQTAQIAIwUCV2pFUgIbAwcLCQgHAwIBBhUIAgkK
+CwQWAgMBAh4BAheAAAoJECROX51PCwDSAL4IALvfJPXgysCMDUQvX1p7HpPoZWKJ
+cWGJeLxg/PxILQnuiQwnngMAGeehpx3mbTmWFfjAFiNETeU6PdLfCY/1RZ0bGssY
+uUDDeFYB3Qi34kwOjiXAJXHvUKdVk4CBPCVyOkUdzL1FHgm/ThttfHFRL9KvRo6S
+LX73GrYwxEgyUIZCHOtOVdhPOpJ1iLy+d4fzMuEAT52s/By01hJJz/Ouf6AYnXut
+sWr5mQBhbNUaRZTUPqD9+pIS85QDwVws535mmYGtOMnisrHI2HO/MDCK+dwFF78J
+wZ53605uPHVeczCIRdcQNF4CcP7/+6eJMjUcDOAudtp54wDE8rE+SQ3tN8S5AQ0E
+V2pFUgEIAKTLFfc7zaButMbA9S/yuCfqtGUoyzDwLV3TC6JD2OjPAqCxvnjGDAgN
+0/9zv0MN5tqcMpGhYOzKi7r8WbBtgYTj2pvbLFcoET9/AcI3db2Is1dQsoDefoTH
+hp08Fm45KGmDR1uWzkz6m/7Ds8ZNQH0Os+52/hftVkrP2vv8GztALHhXDj/q8gao
+JKkGO/7K28p7wKIOe/4mMuTf2iYsddVKC0Xnj31ffqI51hfod/gjace0yYzJoQf5
+Rnv6u1tIIO7W04yjO/neZ1MM4D/WQlwzo4Hgk08Ul21X94dAQKj1mG+rkrR7TPbv
+FoL5C3lj1E20aoAU7/t9cv+SvDtVDncAEQEAAYkBHwQYAQIACQUCV2pFUgIbDAAK
+CRAkTl+dTwsA0siJCACsLyvaplWLDZHyoRn269vESgK/hF2tCBrUwuXn4xCWUO+F
+WjDQxPiULI1HylhX4f4SQD5pOm9hM5YOZpAK7ACxdnc1ibezia34lI06fJ3rGa0s
+NtdnpsG5fkFMfcOHZaL+9Ri7aGHQ5WooZgdTH1gnTHg4aPvowv/r/4aFMT1VhgGH
+nW62cfQT8PG8Q7nY4rNFgAr5Sy7sMQ+imI+a8bzNMVtUUdV3zIzkHxQ/Vx5/Vg/V
+5TUJhEQvQ6eh7cMAb7+V4/xggX7uuLCUs/cX1shjpV901/LpqQvaquZqrlTYjIkt
+EljyePvmOmxBpOJ/VwsV6EsoGifyAwY6QxASvj6o
+=13A8
+-----END PGP PUBLIC KEY BLOCK-----
+
+pub   4096R/53D5E0AE 2016-06-23
+uid                  Tomasz Targonski (Pancho) <tomaszpancho@gmail.com>
+sig 3        53D5E0AE 2016-06-23  Tomasz Targonski (Pancho) <tomaszpancho@gmail.com>
+sub   4096R/8159DD4D 2016-06-23
+sig          53D5E0AE 2016-06-23  Tomasz Targonski (Pancho) <tomaszpancho@gmail.com>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+
+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
+wvOdDbJarbiig9Datt2kCIU=
+=wBzg
+-----END PGP PUBLIC KEY BLOCK-----
+
+pub  2048R/0A83B291 2016-06-23
+uid                  Karol Brejna (gruby) <karol.brejna@gmail.com>
+sig 3        0A83B291 2016-06-23  Karol Brejna (gruby) <karol.brejna@gmail.com>
+sub  2048R/6864EA89 2016-06-23
+sig          0A83B291 2016-06-23  Karol Brejna (gruby) <karol.brejna@gmail.com>
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+
+mQENBFdrxnUBCAC8bLBxegGvoXhuPeBfQxaGqkpcAypr/WmYRZJlbS3A8E85qxio
+VJH+6qFOOwGfqiXj9GHSJTpyehrmwoidEyK4XVdV64E6GdUoIfUVVN38cDCcmfp4
+YVC1npJeKPdbwYqlL6ioYHCCNUX4XLhPl2AFKWov3xBq9z5m3sOtkOqmAREtlLES
+yPmNXBMf0aPv0cDYzGsuBHl82QCNSRTtW9L7vS72+DVPShhxRitPgIgRmJkZR3Px
+wjmOsyRO9/0zNY/m4SzhuD8x50sNLwlnDkt2To7L+93if8iTr/yfk014ChjdZxTK
+ptSkMzQDCD1xAgeeT884B/79ZDEy5s/ZZuV9ABEBAAG0LUthcm9sIEJyZWpuYSAo
+Z3J1YnkpIDxrYXJvbC5icmVqbmFAZ21haWwuY29tPokBOAQTAQIAIgUCV2vGdQIb
+AwYLCQgHAwIGFQgCCQoLBBYCAwECHgECF4AACgkQ2KhPvAqDspFSFwgAgXyuAOFw
+w9vdGEZ/HOhvvP4jSi4sLf5QUiNOaQ76MFFphwV/hdh/rq/YIyYXre7xnqRVPfKd
+pdZlKbN74ejum68UgdYMo4rhWutPu9jIc5L/EHiZyzdoRZs3kqXtCItxV7p7xuDl
+HG4iq5X3EaLjaksmuhJx/poX9HtdDi6P5XZm+4nkWGTmQvz4JbqxdzcWUU0gUaI3
+8ppeSB1vtwZqB+UD4RRftrEd6eo0cHaTCdgtiLrjiYK42zsfNnrMJ3Ml+qRDg4fo
+eK7DaT1gfw8CmSSd5Yn8KzhIbg0OSPHXzr6ApM8URjpTokvlq/cIqnUi0LXtgvWp
+y79Z2SGSEgupkLkBDQRXa8Z1AQgAs6BQwwXF3Dsv8lgRizCCaMBqVbkzs/BAOmmA
+R+Q+K2d0JSYtTrUuhoKwbXpHUNE4j0ZETIxGaeJMe1vaVgQF+vhg+Ou5HweFvfGo
+4RUFJfKCTBRlvMZtFJHbaNdhMNHZKSZ2yhTtE8vXo553cacEqPoWwFiXbiHY0Lsv
+7DrVdcVzkbqZuLSS0m+YC+BRafNau3nWcdy6OfS7/cszaSDlnrQkkBuTSZDBTg4n
+R61KcWCDvdjuog/z9QkdH8pxWGTv18lQfPVSyOJEtZbEy++eNmnGJG/8Rwx8iOAL
+svRPFycMHZlrG0Q+iBKpX7BXVCwiBXxA3pWDGDu1syKL7UNg/wARAQABiQEfBBgB
+AgAJBQJXa8Z1AhsMAAoJENioT7wKg7KRWWQH/RkXHV1iGosnrccm++z5iw/4fkKq
+rVmywnyNkYRbOn9/1XoJ4qnfYb8E6Krirl3+ij9sT/HHyA3I0GV/c+b4x80q8PK4
+lMqmR1Ck813S7cGF2KXiN7HwWtEsUG2kxtZMyoDsVfwHwZdWexmg+NSmPwtQOXxs
+Bk/j97GCf6jRp1grSHM7XvVR+Wp4GKXk3b8grUW1XsYQYc5/Xeq4WbcKtscer8+l
+InYBPphcCbTVD1rUbCzXoRVtN0Tl+NNX3t/6EF2kuonnVOuUK4BA+ox4eX3doegQ
+o0HporarrNy85eEgTfTlP8AXiHH9NLX6ob+vUyBoOv8bV98g93ALSLkq1yQ=
+=rw0m
+-----END PGP PUBLIC KEY BLOCK-----
