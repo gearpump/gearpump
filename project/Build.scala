@@ -70,12 +70,11 @@ object Build extends sbt.Build {
     Seq(
       resolvers ++= Seq(
         "patriknw at bintray" at "http://dl.bintray.com/patriknw/maven",
-        "maven-repo" at "http://repo.maven.apache.org/maven2",
+        "apache-repo" at "https://repository.apache.org/content/repositories",
         "maven1-repo" at "http://repo1.maven.org/maven2",
         "maven2-repo" at "http://mvnrepository.com/artifact",
         "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
         "bintray/non" at "http://dl.bintray.com/non/maven",
-        "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos",
         "clockfly" at "http://dl.bintray.com/clockfly/maven",
         "clojars" at "http://clojars.org/repo"
       )
@@ -453,11 +452,6 @@ object Build extends sbt.Build {
     id = "gearpump-external-hbase",
     base = file("external/hbase"),
     settings = commonSettings ++ javadocSettings  ++
-      Seq(
-        resolvers ++= Seq(
-          "cloudera" at "https://repository.cloudera.com/artifactory/cloudera-repos"
-        )
-      ) ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",

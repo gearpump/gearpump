@@ -2,6 +2,7 @@ Apache Gearpump 0.8.1
 ==================
 Change log:
 ------------------
+- GEARPUMP-169, upgrade sbt-assembly and shade
 - GEARPUMP-166 Rename sumByValue to sumByKey
 - GEARPUMP-165 RestServiceSpec failed
 - GEARPUMP-164 Let the user that connects to HBase (HBaseSink) be configurable
