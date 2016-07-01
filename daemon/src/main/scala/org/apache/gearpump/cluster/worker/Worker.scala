@@ -362,6 +362,7 @@ private[cluster] object Worker {
         .withoutPath(GEARPUMP_CLUSTER_MASTERS)
         .withoutPath(GEARPUMP_HOME)
         .withoutPath(GEARPUMP_LOG_DAEMON_DIR)
+        .withoutPath(GEARPUMP_LOG_APPLICATION_DIR)
         .withoutPath(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS)
         // Falls back to workerConfig
         .withFallback(workerConfig)
