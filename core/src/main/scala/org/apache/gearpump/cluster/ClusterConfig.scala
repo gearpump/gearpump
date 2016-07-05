@@ -90,7 +90,9 @@ object ClusterConfig {
         LOG.info("loading config file " + path + "..........")
         load(ClusterConfigSource(path))
       case None =>
-        LOG.info(s"loading config file $configFile...")
+        if (configFile != null) {
+          LOG.info(s"loading config file $configFile...")
+        }
         load(ClusterConfigSource(configFile))
     }
   }

@@ -1,3 +1,7 @@
+<ui-select
+  theme="select2" class="form-control"
+  style="width: 100%; margin-bottom: 20px; cursor: pointer"
+  ng-model="names.selected" search-enabled="false">
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -16,11 +20,6 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-
-<ui-select
-  theme="select2" class="form-control"
-  style="width: 100%; margin-bottom: 20px; cursor: pointer"
-  ng-model="names.selected" search-enabled="false">
   <ui-select-match>{{$select.selected}}</ui-select-match>
   <ui-select-choices repeat="name in names.available">
     <div ng-class="{bold: $select.selected === name}"

@@ -63,6 +63,7 @@ object BuildExample extends sbt.Build {
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         mainClass in(Compile, packageBin) := Some("org.apache.gearpump.streaming.examples.sol.SOL"),
+
         target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
 
@@ -85,7 +86,7 @@ object BuildExample extends sbt.Build {
   lazy val transport = Project(
     id = "gearpump-examples-transport",
     base = file("examples/streaming/transport"),
-    settings = commonSettings ++ noPublish ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "io.spray" %% "spray-can" % sprayVersion,
@@ -117,7 +118,7 @@ object BuildExample extends sbt.Build {
   lazy val distributeservice = Project(
     id = "gearpump-examples-distributeservice",
     base = file("examples/distributeservice"),
-    settings = commonSettings ++ noPublish ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
@@ -137,7 +138,7 @@ object BuildExample extends sbt.Build {
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
     base = file("examples/streaming/fsio"),
-    settings = commonSettings ++ noPublish ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion
@@ -174,7 +175,7 @@ object BuildExample extends sbt.Build {
   lazy val stockcrawler = Project(
     id = "gearpump-examples-stockcrawler",
     base = file("examples/streaming/stockcrawler"),
-    settings = commonSettings ++ noPublish ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "io.spray" %% "spray-can" % sprayVersion,
@@ -197,37 +198,39 @@ object BuildExample extends sbt.Build {
   lazy val examples_state = Project(
     id = "gearpump-examples-state",
     base = file("examples/streaming/state"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
-      libraryDependencies ++= Seq(
-        "org.apache.hadoop" % "hadoop-common" % hadoopVersion
-          exclude("org.mortbay.jetty", "jetty-util")
-          exclude("org.mortbay.jetty", "jetty")
-          exclude("org.fusesource.leveldbjni", "leveldbjni-all")
-          exclude("tomcat", "jasper-runtime")
-          exclude("commons-beanutils", "commons-beanutils-core")
-          exclude("commons-beanutils", "commons-beanutils")
-          exclude("asm", "asm")
-          exclude("org.ow2.asm", "asm"),
-        "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
-      ),
-      mainClass in(Compile, packageBin) :=
-        Some("org.apache.gearpump.streaming.examples.state.MessageCountApp"),
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
+              exclude("org.mortbay.jetty", "jetty-util")
+              exclude("org.mortbay.jetty", "jetty")
+              exclude("org.fusesource.leveldbjni", "leveldbjni-all")
+              exclude("tomcat", "jasper-runtime")
+              exclude("commons-beanutils", "commons-beanutils-core")
+              exclude("commons-beanutils", "commons-beanutils")
+              exclude("asm", "asm")
+              exclude("org.ow2.asm", "asm"),
+          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
+        ),
+        mainClass in(Compile, packageBin) :=
+            Some("org.apache.gearpump.streaming.examples.state.MessageCountApp"),
 
-      target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
-        CrossVersion.binaryScalaVersion(scalaVersion.value)
-    )
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+            CrossVersion.binaryScalaVersion(scalaVersion.value)
+      )
   ).dependsOn(streaming % "test->test; provided",
     external_hadoopfs, external_monoid, external_serializer, external_kafka)
 
   lazy val pagerank = Project(
     id = "gearpump-examples-pagerank",
     base = file("examples/pagerank"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
-      mainClass in(Compile, packageBin) :=
-        Some("org.apache.gearpump.experiments.pagerank.example.PageRankExample"),
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+      Seq(
+        mainClass in(Compile, packageBin) :=
+            Some("org.apache.gearpump.experiments.pagerank.example.PageRankExample"),
 
-      target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
-        CrossVersion.binaryScalaVersion(scalaVersion.value)
-    )
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+            CrossVersion.binaryScalaVersion(scalaVersion.value)
+      )
   ) dependsOn (streaming % "test->test; provided")
 }

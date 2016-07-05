@@ -2,10 +2,13 @@ Apache Gearpump 0.8.1
 ==================
 Change log:
 ------------------
-- GEARPUMP-169, upgrade sbt-assembly and shade
+- GEARPUMP-173 Create 0.8.1-RC1 release
+- GEARPUMP-170 Create 0.8.1 release
+- GEARPUMP-169 upgrade sbt-assembly and shade
 - GEARPUMP-166 Rename sumByValue to sumByKey
 - GEARPUMP-165 RestServiceSpec failed
 - GEARPUMP-164 Let the user that connects to HBase (HBaseSink) be configurable
+- GEARPUMP-161 application logs are located in wrong place on Yarn
 - GEARPUMP-160 add KafkaDSL examples and fix docs
 - GEARPUMP-159 Prep for first release
 - GEARPUMP-156 Replace logo in site, GitHub, Travis, etc

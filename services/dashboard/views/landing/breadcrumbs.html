@@ -1,3 +1,4 @@
+<ol class="breadcrumb breadcrumb-alt">
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -16,8 +17,6 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-
-<ol class="breadcrumb breadcrumb-alt">
   <li ng-repeat="breadcrumb in breadcrumbs track by $index">
     <a ng-if="!$last" ng-href="#{{breadcrumb.path}}" ng-bind="breadcrumb.text"></a>
     <span ng-if="$last" class="active" ng-bind="breadcrumb.text"></span>
