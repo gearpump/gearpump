@@ -24,19 +24,20 @@ object BuildShaded extends sbt.Build {
 
   val guavaVersion = "16.0.1"
   val codahaleVersion = "3.0.2"
-  val kryoVersion = "0.3.2"
+  val kryoVersion = "0.4.1"
   val gsCollectionsVersion = "6.2.0"
-  private val scalaVersionNumber = "2.11"
+  private val scalaVersionMajor = "2.11"
 
-  val myAssemblySettings = Seq(
+  val shadeAssemblySettings = Seq(
+    scalaVersion := Build.scalaVersionNumber,
     test in assembly := {},
     assemblyOption in assembly ~= {
       _.copy(includeScala = false)
     },
     assemblyJarName in assembly := {
-      s"${name.value}-$scalaVersionNumber-${version.value}-assembly.jar"
+      s"${name.value}-$scalaVersionMajor-${version.value}-assembly.jar"
     },
-    target in assembly := baseDirectory.value.getParentFile / "target" / scalaVersionNumber
+    target in assembly := baseDirectory.value.getParentFile / "target" / scalaVersionMajor
   )
 
   val shaded = Project(
@@ -49,7 +50,7 @@ object BuildShaded extends sbt.Build {
   lazy val shaded_akka_kryo = Project(
     id = "gearpump-shaded-akka-kryo",
     base = file("shaded/akka-kryo"),
-    settings = myAssemblySettings ++
+    settings = shadeAssemblySettings ++
         Seq(
           assemblyShadeRules in assembly := Seq(
             ShadeRule.zap("com.google.protobuf.**").inAll,
@@ -74,7 +75,7 @@ object BuildShaded extends sbt.Build {
   lazy val shaded_gs_collections = Project(
     id = "gearpump-shaded-gs-collections",
     base = file("shaded/gs-collections"),
-    settings = myAssemblySettings ++
+    settings = shadeAssemblySettings ++
         Seq(
           assemblyShadeRules in assembly := Seq(
             ShadeRule.rename("com.gs.collections.**" ->
@@ -91,7 +92,7 @@ object BuildShaded extends sbt.Build {
   lazy val shaded_guava = Project(
     id = "gearpump-shaded-guava",
     base = file("shaded/guava"),
-    settings = myAssemblySettings ++
+    settings = shadeAssemblySettings ++
         Seq(
           assemblyShadeRules in assembly := Seq(
             ShadeRule.rename("com.google.**" -> "org.apache.gearpump.google.@1").inAll
@@ -107,7 +108,7 @@ object BuildShaded extends sbt.Build {
   lazy val shaded_metrics_graphite = Project(
     id = "gearpump-shaded-metrics-graphite",
     base = file("shaded/metrics-graphite"),
-    settings = myAssemblySettings ++
+    settings = shadeAssemblySettings ++
         Seq(
           assemblyShadeRules in assembly := Seq(
             ShadeRule.rename("com.codahale.metrics.**" ->
@@ -122,10 +123,9 @@ object BuildShaded extends sbt.Build {
         )
   )
 
-
   def getShadedJarFile(name: String, gearpumpVersion: String): File = {
-    shaded.base / "target" / scalaVersionNumber /
-      s"gearpump-shaded-$name-$scalaVersionNumber-$gearpumpVersion-assembly.jar"
+    shaded.base / "target" / scalaVersionMajor /
+      s"gearpump-shaded-$name-$scalaVersionMajor-$gearpumpVersion-assembly.jar"
   }
 
 }

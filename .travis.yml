@@ -3,6 +3,8 @@ language:
 - scala
 sudo: false
 before_script:
+- rm -rf $HOME/.m2
+- rm -rf $HOME/.ivy2
 - mkdir -p $HOME/.sbt/launchers/0.13.11/
 - curl -L -o $HOME/.sbt/launchers/0.13.11/sbt-launch.jar http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.11/sbt-launch.jar
 script:
