@@ -2,6 +2,8 @@ Apache Gearpump 0.8.1
 ==================
 Change log:
 ------------------
+- GEARPUMP-176 Create 0.8.1-RC2 release
+- GEARPUMP-174 update shaded akka-kryo version to 0.4.1
 - GEARPUMP-173 Create 0.8.1-RC1 release
 - GEARPUMP-170 Create 0.8.1 release
 - GEARPUMP-169 upgrade sbt-assembly and shade
