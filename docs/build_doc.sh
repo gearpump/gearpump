@@ -52,9 +52,9 @@ $HTMLPROOF _site \
 if [ "$BUILD_API" = 1 ]; then
   # Build Scaladoc for Java/Scala
   echo "Moving to project root and building API docs."
-  echo "Running 'sbt clean unidoc'; this may take a few minutes..."
+  echo "Running 'sbt clean assembly unidoc'; this may take a few minutes..."
   cd $CURDIR/..
-  sbt clean unidoc
+  sbt clean assembly unidoc
   echo "Moving back into docs dir."
   cd $CURDIR
 
