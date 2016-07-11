@@ -2,6 +2,8 @@ Apache Gearpump 0.8.1
 ==================
 Change log:
 ------------------
+- GEARPUMP-178 Create 0.8.1-RC3 release
+- GEARPUMP-177 Documentation build errors when trying to generate documentation
 - GEARPUMP-176 Create 0.8.1-RC2 release
 - GEARPUMP-174 update shaded akka-kryo version to 0.4.1
 - GEARPUMP-173 Create 0.8.1-RC1 release
