@@ -26,7 +26,7 @@ Step1: Pre-release
 Step2: Release
 ==================
 1. Create a tag by ```git tag RELEASE_VERSION```
-2. ```git remote add upstream https://github.com/gearpump/gearpump.git```
+2. ```git remote add upstream https://github.com/apache/incubator-gearpump```
 3. ```git push upstream RELEASE_VERSION```
 
 Step3: Post-Release
