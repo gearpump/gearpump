@@ -17,9 +17,7 @@
  */
 
 /**
- *
- * Part of the code is from akka project,
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * This code is similar to MaterializerSession and will be deprecated in the next release.
  */
 
 package akka.stream
