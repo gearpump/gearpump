@@ -16,11 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-/*
- * Licensed under the Apache License, Version 2.0
- * See accompanying LICENSE file.
- */
 'use strict';
 
 angular.module('dashboard.streamingservice', [])

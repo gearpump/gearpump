@@ -210,23 +210,34 @@ Apache Gearpump subcomponents:
    conditions of the following licenses. 
 
 
-   This product bundles AnchorJS 1.1.1 
-   which is available under a MIT license. (https://github.com/bryanbraun/anchorjs)
+   This product bundles AnchorJS 1.1.1, copyright Bryan Braun,
+   which is available under a MIT license.
    For details see licenses/LICENSE-AnchorJS.txt
 
-   This product bundles Bootstrap 3.3.5, copyright Twitter Inc.
-   which is available under a MIT license. (https://github.com/twbs/bootstrap/blob/master/LICENSE)
+   This product bundles Bootstrap 3.3.5, copyright Twitter Inc.,
+   which is available under a MIT license.
    For details see licenses/LICENSE-bootstrap.txt
 
-   This product bundles jquery 2.1.4
+   This product bundles jquery 2.1.4, copyright jQuery Foundation, Inc.,
    which is available under a MIT license. 
    For details see licenses/LICENSE-jquery.txt
    
-   This product bundles modernizr 2.6.1
-   which is available under a MIT license. (https://github.com/Modernizr/Modernizr/blob/master/LICENSE)
+   This product bundles modernizr 2.6.1, copyright Faruk Ates, Paul Irish,
+   Alex Sexton, Ryan Seddon, Patrick Kettner, Stu Cox and Richard Herrera,
+   which is available under a MIT license.
    For details see licenses/LICENSE-modernizr.txt
 
-   This product bundles Glyphicons Halflings Regular, copyright Jan Kovarik
-   which is available under a MIT license. 
-   For details see licenses/LICENSE-glyphicons.txt
+   This product bundles normalize 3.0.3, copyright Nicolas Gallagher and
+   Jonathan Neal, which is available under a MIT license.
+   For details, see licenses/normalize.MIT.
+
+   This product bundles Glyphicons Halflings Regular, copyright
+   Jan Kovarik, which is available under a MIT license.
+   For details, see licenses/glyphicons.MIT.
+
+   This product bundles polyfill, copyright Scott Jehl, Paul Irish and
+   Nicholas Zakas, which is available under a MIT license.
+   For details, see licenses/glyphicons.MIT.
+
+
 

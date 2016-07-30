@@ -16,12 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-/*
- * Licensed under the Apache License, Version 2.0
- * See accompanying LICENSE file.
- */
-
 /**
  * call rest service /login to setup login session tokens.
  * If login succeeds, it will redirect to dashboard home page.

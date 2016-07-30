@@ -16,12 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-/*
- * Licensed under the Apache License, Version 2.0
- * See accompanying LICENSE file.
- */
-
 angular.module('dashboard')
 // Authentication Angular interceptor for http methods.
 // If server respond 401 (unauthenticated), will redirect to login page.

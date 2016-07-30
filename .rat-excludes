@@ -8,7 +8,7 @@ notes
 integrationtest
 pubring.asc
 geardefault.conf
-README.md
+.*md
 jvmopts
 CHANGELOG.md
 CONTRIBUTING.md
@@ -21,3 +21,5 @@ test.conf
 reference.conf
 state.conf
 license.sbt
+dashboard
+robots.txt

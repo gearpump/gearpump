@@ -16,12 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-/*
- * Licensed under the Apache License, Version 2.0
- * See accompanying LICENSE file.
- */
-
 /* .navbar-fixed-top will occupy50px (regarding current font size) */
 body {
   padding-top: 50px; /*equals navbar height*/
