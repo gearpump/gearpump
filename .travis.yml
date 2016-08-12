@@ -16,7 +16,7 @@ script:
   if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "apache/incubator-gearpump" ]];
     then sbt -jvm-opts project/travis/jvmopts clean +assembly scalastyle test:scalastyle it:scalastyle unidoc coverage +test | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_BRANCH == "master" ]];
-    then sbt -jvm-opts project/travis/jvmopts clean +publish | grep -v -E "$skipLogs"; sbt -jvm-opts project/travis/jvmopts scalastyle test:scalastyle it:scalastyle unidoc coverage  +test  | grep -v -E "$skipLogs";
+    then sbt -jvm-opts project/travis/jvmopts clean +assembly +publish | grep -v -E "$skipLogs"; sbt -jvm-opts project/travis/jvmopts scalastyle test:scalastyle it:scalastyle unidoc coverage  +test  | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_TAG != "" ]];
     then sbt -jvm-opts project/travis/jvmopts clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
   fi  
