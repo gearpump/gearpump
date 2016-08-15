@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.experiments.storm.producer
 
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Actor.Receive
@@ -48,7 +49,7 @@ private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
 
   private val timeoutMillis = gearpumpSpout.getMessageTimeout
 
-  override def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: Instant): Unit = {
     gearpumpSpout.start(startTime)
     if (gearpumpSpout.ackEnabled) {
       getCheckpointClock

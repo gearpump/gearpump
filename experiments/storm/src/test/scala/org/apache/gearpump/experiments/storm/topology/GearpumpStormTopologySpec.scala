@@ -79,7 +79,6 @@ class GearpumpStormTopologySpec extends WordSpec with Matchers with MockitoSugar
     "get target processors from source id" in {
       val stormTopology = TopologyUtil.getTestTopology
       implicit val system = MockUtil.system
-      val sysConfig = new JHashMap[AnyRef, AnyRef]
       val gearpumpStormTopology =
         GearpumpStormTopology("app", stormTopology, null)
       val targets0 = gearpumpStormTopology.getTargets("1")

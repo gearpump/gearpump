@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.streaming.examples.sol
 
+import java.time.Instant
+
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
@@ -24,7 +26,6 @@ import org.scalatest.{Matchers, WordSpec}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.task.StartTime
 
 class SOLStreamProducerSpec extends WordSpec with Matchers {
 
@@ -35,7 +36,7 @@ class SOLStreamProducerSpec extends WordSpec with Matchers {
       val context = MockUtil.mockTaskContext
 
       val producer = new SOLStreamProducer(context, conf)
-      producer.onStart(StartTime(0))
+      producer.onStart(Instant.EPOCH)
       producer.onNext(Message("msg"))
       verify(context).output(any[Message])
     }

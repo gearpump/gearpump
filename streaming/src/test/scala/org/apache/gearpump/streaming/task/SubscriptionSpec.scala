@@ -31,6 +31,7 @@ import org.apache.gearpump.streaming.task.SubscriptionSpec.NextTask
 import org.apache.gearpump.streaming.{LifeTime, ProcessorDescription}
 
 class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
+
   val appId = 0
   val executorId = 0
   val taskId = TaskId(0, 0)
@@ -132,11 +133,5 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 object SubscriptionSpec {
 
   class NextTask(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
-
-    override def onStart(startTime: StartTime): Unit = {
-    }
-
-    override def onNext(msg: Message): Unit = {
-    }
   }
 }

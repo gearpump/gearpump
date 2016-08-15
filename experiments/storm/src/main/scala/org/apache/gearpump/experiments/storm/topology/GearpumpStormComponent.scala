@@ -19,6 +19,7 @@
 package org.apache.gearpump.experiments.storm.topology
 
 import java.io.{File, FileOutputStream, IOException}
+import java.time.Instant
 import java.util
 import java.util.jar.JarFile
 import java.util.{HashMap => JHashMap, List => JList, Map => JMap}
@@ -40,7 +41,7 @@ import org.apache.gearpump.experiments.storm.util.StormConstants._
 import org.apache.gearpump.experiments.storm.util.StormUtil._
 import org.apache.gearpump.experiments.storm.util.{StormOutputCollector, StormUtil}
 import org.apache.gearpump.streaming.DAG
-import org.apache.gearpump.streaming.task.{GetDAG, TaskId, TaskContext, StartTime}
+import org.apache.gearpump.streaming.task.{GetDAG, TaskId, TaskContext}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
@@ -57,7 +58,7 @@ trait GearpumpStormComponent {
    * invoked at Task.onStart
    * @param startTime task start time
    */
-  def start(startTime: StartTime): Unit
+  def start(startTime: Instant): Unit
 
   /**
    * invoked at Task.onNext
@@ -123,7 +124,7 @@ object GearpumpStormComponent {
 
     private var collector: StormSpoutOutputCollector = null
 
-    override def start(startTime: StartTime): Unit = {
+    override def start(startTime: Instant): Unit = {
       val dag = getDAG(taskContext.appMaster)
       val topologyContext = getTopologyContext(dag, taskContext.taskId)
       collector = getOutputCollector(taskContext, topologyContext)
@@ -206,7 +207,7 @@ object GearpumpStormComponent {
     private var generalTopologyContext: GeneralTopologyContext = null
     private var tickTuple: Tuple = null
 
-    override def start(startTime: StartTime): Unit = {
+    override def start(startTime: Instant): Unit = {
       val dag = getDAG(taskContext.appMaster)
       topologyContext = getTopologyContext(dag, taskContext.taskId)
       generalTopologyContext = getGeneralTopologyContext(dag)

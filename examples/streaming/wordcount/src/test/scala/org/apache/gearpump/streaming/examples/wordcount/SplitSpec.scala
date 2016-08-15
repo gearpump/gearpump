@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.streaming.examples.wordcount
 
+import java.time.Instant
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -29,7 +31,6 @@ import org.scalatest.{Matchers, WordSpec}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.task.StartTime
 
 class SplitSpec extends WordSpec with Matchers {
 
@@ -47,10 +48,10 @@ class SplitSpec extends WordSpec with Matchers {
 
       val conf = UserConfig.empty
       val split = new Split(taskContext, conf)
-      split.onStart(StartTime(0))
+      split.onStart(Instant.EPOCH)
       mockTaskActor.expectMsgType[Message]
 
-      val expectedWordCount = Split.TEXT_TO_SPLIT.split( """[\s\n]+""").filter(_.nonEmpty).length
+      val expectedWordCount = Split.TEXT_TO_SPLIT.split( """[\s\n]+""").count(_.nonEmpty)
 
       split.onNext(Message("next"))
       verify(taskContext, times(expectedWordCount)).output(anyObject())

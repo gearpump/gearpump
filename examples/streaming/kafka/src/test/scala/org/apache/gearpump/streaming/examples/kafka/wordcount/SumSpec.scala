@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
+import java.time.Instant
+
 import scala.collection.mutable
 
 import org.mockito.Matchers._
@@ -27,7 +29,6 @@ import org.scalatest.{FlatSpec, Matchers}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.task.StartTime
 
 class SumSpec extends FlatSpec with Matchers {
 
@@ -39,7 +40,7 @@ class SumSpec extends FlatSpec with Matchers {
     val taskContext = MockUtil.mockTaskContext
 
     val sum = new Sum(taskContext, UserConfig.empty)
-    sum.onStart(StartTime(0))
+    sum.onStart(Instant.EPOCH)
     val str = "once two two three three three"
 
     var totalWordCount = 0

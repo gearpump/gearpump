@@ -18,19 +18,19 @@
 package org.apache.gearpump.streaming.examples.fsio
 
 import java.io.File
+import java.time.Instant
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.FiniteDuration
 
+import scala.concurrent.duration.FiniteDuration
 import akka.actor.Cancellable
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.fsio.HadoopConfig._
 import org.apache.gearpump.streaming.examples.fsio.SeqFileStreamProcessor._
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 class SeqFileStreamProcessor(taskContext: TaskContext, config: UserConfig)
   extends Task(taskContext, config) {
@@ -49,7 +49,7 @@ class SeqFileStreamProcessor(taskContext: TaskContext, config: UserConfig)
   private var snapShotTime: Long = 0
   private var scheduler: Cancellable = null
 
-  override def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: Instant): Unit = {
 
     val fs = FileSystem.get(hadoopConf)
     fs.deleteOnExit(outputPath)

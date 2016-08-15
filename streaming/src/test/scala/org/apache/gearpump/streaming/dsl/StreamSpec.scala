@@ -26,7 +26,7 @@ import org.apache.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner}
 import org.apache.gearpump.streaming.dsl.StreamSpec.Join
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 import org.mockito.Mockito.when
@@ -38,6 +38,7 @@ import scala.concurrent.duration.Duration
 import scala.util.{Either, Left, Right}
 
 class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with MockitoSugar {
+
 
   implicit var system: ActorSystem = null
 
@@ -108,7 +109,6 @@ object StreamSpec {
   class Join(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
     var query: String = null
-    override def onStart(startTime: StartTime): Unit = {}
 
     override def onNext(msg: Message): Unit = {
       msg.msg match {

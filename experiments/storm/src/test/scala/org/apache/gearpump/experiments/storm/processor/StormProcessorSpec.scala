@@ -18,11 +18,12 @@
 
 package org.apache.gearpump.experiments.storm.processor
 
+import java.time.Instant
+
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpBolt
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.task.StartTime
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
@@ -31,7 +32,7 @@ class StormProcessorSpec extends WordSpec with Matchers with MockitoSugar {
 
   "StormProcessor" should {
     "start GearpumpSpout onStart" in {
-      val startTime = mock[StartTime]
+      val startTime = Instant.EPOCH
       val gearpumpBolt = mock[GearpumpBolt]
       when(gearpumpBolt.getTickFrequency).thenReturn(None)
       val taskContext = MockUtil.mockTaskContext

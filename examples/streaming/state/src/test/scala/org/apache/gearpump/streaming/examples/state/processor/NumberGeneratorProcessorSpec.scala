@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.examples.state.processor
 
+import java.time.Instant
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -30,7 +32,6 @@ import org.scalatest.{Matchers, WordSpec}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.task.StartTime
 
 class NumberGeneratorProcessorSpec extends WordSpec with Matchers {
   "NumberGeneratorProcessor" should {
@@ -47,7 +48,7 @@ class NumberGeneratorProcessorSpec extends WordSpec with Matchers {
 
       val conf = UserConfig.empty
       val genNum = new NumberGeneratorProcessor(taskContext, conf)
-      genNum.onStart(StartTime(0))
+      genNum.onStart(Instant.EPOCH)
       mockTaskActor.expectMsgType[Message]
 
       genNum.onNext(Message("next"))

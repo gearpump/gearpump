@@ -18,16 +18,17 @@
 
 package org.apache.gearpump.streaming.examples.kafka.wordcount
 
-import com.twitter.bijection.Injection
+import java.time.Instant
 
+import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 class Split(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.output
 
-  override def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: Instant): Unit = {
   }
 
   override def onNext(msg: Message): Unit = {

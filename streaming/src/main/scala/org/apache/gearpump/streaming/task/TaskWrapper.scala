@@ -18,15 +18,15 @@
 
 package org.apache.gearpump.streaming.task
 
-import scala.concurrent.duration.FiniteDuration
+import java.time.Instant
 
+import scala.concurrent.duration.FiniteDuration
 import akka.actor.Actor._
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import org.slf4j.Logger
-
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.util.LogUtil
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.{TimeStamp, Message}
 
 /**
  * This provides TaskContext for user defined tasks
@@ -41,7 +41,7 @@ class TaskWrapper(
 
   private val LOG = LogUtil.getLogger(taskClass, task = taskId)
 
-  private var actor: TaskActor = null
+  private var actor: TaskActor = _
 
   private var task: Option[Task] = None
 
@@ -87,8 +87,8 @@ class TaskWrapper(
 
   override def actorOf(props: Props, name: String): ActorRef = actor.context.actorOf(props, name)
 
-  override def onStart(startTime: StartTime): Unit = {
-    if (None != task) {
+  override def onStart(startTime: Instant): Unit = {
+    if (task.isDefined) {
       LOG.error(s"Task.onStart should not be called multiple times... ${task.getClass}")
     }
     val constructor = taskClass.getConstructor(classOf[TaskContext], classOf[UserConfig])

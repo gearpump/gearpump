@@ -21,10 +21,10 @@ package org.apache.gearpump.streaming.examples.wordcountjava;
 import org.apache.gearpump.Message;
 import org.apache.gearpump.cluster.UserConfig;
 import org.apache.gearpump.streaming.javaapi.Task;
-import org.apache.gearpump.streaming.task.StartTime;
 import org.apache.gearpump.streaming.task.TaskContext;
 import org.slf4j.Logger;
 
+import java.time.Instant;
 import java.util.HashMap;
 
 public class Sum extends Task {
@@ -37,7 +37,7 @@ public class Sum extends Task {
   }
 
   @Override
-  public void onStart(StartTime startTime) {
+  public void onStart(Instant startTime) {
     //skip
   }
 

@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.task
 
+import java.time.Instant
+
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.Actor.Receive
@@ -133,7 +135,7 @@ trait TaskInterface {
    *                  replay the data source, or from when a processor task should recover its
    *                  checkpoint data in to in-memory state.
    */
-  def onStart(startTime: StartTime): Unit
+  def onStart(startTime: Instant): Unit
 
   /**
    * Method called for each message received.
@@ -176,7 +178,7 @@ abstract class Task(taskContext: TaskContext, userConf: UserConfig) extends Task
    */
   protected def sender: ActorRef = taskContext.sender
 
-  def onStart(startTime: StartTime): Unit = {}
+  def onStart(startTime: Instant): Unit = {}
 
   def onNext(msg: Message): Unit = {}
 

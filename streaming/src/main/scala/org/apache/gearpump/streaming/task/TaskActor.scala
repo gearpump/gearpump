@@ -18,12 +18,12 @@
 
 package org.apache.gearpump.streaming.task
 
+import java.time.Instant
 import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import org.slf4j.Logger
-
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import org.apache.gearpump.metrics.Metrics
@@ -101,7 +101,7 @@ class TaskActor(
 
   task.setTaskActor(this)
 
-  def onStart(startTime: StartTime): Unit = {
+  def onStart(startTime: Instant): Unit = {
     task.onStart(startTime)
   }
 
@@ -110,6 +110,7 @@ class TaskActor(
   def onUnManagedMessage(msg: Any): Unit = task.receiveUnManagedMessage.apply(msg)
 
   def onStop(): Unit = task.onStop()
+
 
   /**
    * output to a downstream by specifying a arrayIndex
@@ -193,7 +194,7 @@ class TaskActor(
     // Put this as the last step so that the subscription is already initialized.
     // Message sending in current Task before onStart will not be delivered to
     // target
-    onStart(new StartTime(upstreamMinClock))
+    onStart(Instant.ofEpochMilli(upstreamMinClock))
 
     appMaster ! GetUpstreamMinClock(taskId)
     context.become(handleMessages(sender))

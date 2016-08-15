@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.streaming.examples.wordcount
 
+import java.time.Instant
+
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
@@ -24,7 +26,6 @@ import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.task.StartTime
 
 class SumSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
   val stringGenerator = Gen.alphaStr
@@ -39,7 +40,7 @@ class SumSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndA
 
     val sum = new Sum(taskContext, conf)
 
-    sum.onStart(StartTime(0))
+    sum.onStart(Instant.EPOCH)
 
     forAll(stringGenerator) { txt =>
       wordcount += 1

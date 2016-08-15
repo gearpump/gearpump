@@ -36,7 +36,7 @@ import org.apache.gearpump.streaming.appmaster.JarScheduler.ResourceRequestDetai
 import org.apache.gearpump.streaming.appmaster.TaskManager.ApplicationReady
 import org.apache.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
 import org.apache.gearpump.streaming.executor.Executor.RestartTasks
-import org.apache.gearpump.streaming.task.{StartTime, TaskContext, _}
+import org.apache.gearpump.streaming.task.{TaskContext, _}
 import org.apache.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, ProcessorId}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Graph
@@ -270,13 +270,11 @@ object TaskManagerSpec {
 
   class Task1(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onStart(startTime: StartTime): Unit = {}
     override def onNext(msg: Message): Unit = {}
   }
 
   class Task2(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onStart(startTime: StartTime): Unit = {}
     override def onNext(msg: Message): Unit = {}
   }
 }

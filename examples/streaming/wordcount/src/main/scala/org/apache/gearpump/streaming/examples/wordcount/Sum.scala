@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
@@ -26,7 +27,7 @@ import akka.actor.Cancellable
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 class Sum(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   private[wordcount] val map: mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()
@@ -37,7 +38,7 @@ class Sum(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, 
 
   private var scheduler: Cancellable = null
 
-  override def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: Instant): Unit = {
     scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
       new FiniteDuration(30, TimeUnit.SECONDS))(reportWordCount)
   }

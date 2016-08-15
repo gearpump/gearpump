@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.streaming.examples.fsio
 
+import java.time.Instant
+
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.hadoop.conf.Configuration
@@ -32,7 +34,6 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.MockUtil._
-import org.apache.gearpump.streaming.task.StartTime
 
 class SeqFileStreamProducerSpec
   extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
@@ -73,7 +74,7 @@ class SeqFileStreamProducerSpec
     val context = MockUtil.mockTaskContext
 
     val producer = new SeqFileStreamProducer(context, conf)
-    producer.onStart(StartTime(0))
+    producer.onStart(Instant.EPOCH)
     producer.onNext(Message("start"))
 
     val expected = kvPairs.map(kv => kv._1 + "++" + kv._2).toSet

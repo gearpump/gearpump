@@ -18,14 +18,13 @@
 package org.apache.gearpump.streaming.appmaster
 
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.appmaster.TaskLocator.Localities
 import org.apache.gearpump.streaming.appmaster.TaskSchedulerSpec.{TestTask1, TestTask2}
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext, TaskId}
+import org.apache.gearpump.streaming.task.{Task, TaskContext, TaskId}
 import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
@@ -108,8 +107,8 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
 
       taskScheduler.setDAG(dag)
       val tasks = taskScheduler.schedule(WorkerId(1, 0L), executorId = 0, Resource(4))
-      assert(tasks.filter(_.processorId == 0).length == 2)
-      assert(tasks.filter(_.processorId == 1).length == 2)
+      assert(tasks.count(_.processorId == 0) == 2)
+      assert(tasks.count(_.processorId == 1) == 2)
     }
   }
 }
@@ -117,13 +116,9 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
 object TaskSchedulerSpec {
   class TestTask1(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onStart(startTime: StartTime): Unit = Unit
-    override def onNext(msg: Message): Unit = Unit
   }
 
   class TestTask2(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onStart(startTime: StartTime): Unit = Unit
-    override def onNext(msg: Message): Unit = Unit
   }
 }

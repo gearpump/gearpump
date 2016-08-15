@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.dsl.plan
 
+import java.time.Instant
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -33,9 +35,9 @@ import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.dsl.CollectionDataSource
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
-import org.apache.gearpump.streaming.task.StartTime
 
 class OpTranslatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+
 
   "andThen" should "chain multiple single input function" in {
     val dummy = new DummyInputFunction[String]
@@ -74,7 +76,7 @@ class OpTranslatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     // Source with no transformer
     val source = new SourceTask[String, String](new CollectionDataSource[String](data), None,
       taskContext, conf)
-    source.onStart(StartTime(0))
+    source.onStart(Instant.EPOCH)
     source.onNext(Message("next"))
     verify(taskContext, times(1)).output(anyObject())
 
@@ -83,7 +85,7 @@ class OpTranslatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val double = new FlatMapFunction[String, String](word => List(word, word), "double")
     val another = new SourceTask(new CollectionDataSource[String](data), Some(double),
       anotherTaskContext, conf)
-    another.onStart(StartTime(0))
+    another.onStart(Instant.EPOCH)
     another.onNext(Message("next"))
     verify(anotherTaskContext, times(2)).output(anyObject())
   }
@@ -106,7 +108,7 @@ class OpTranslatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val taskContext = MockUtil.mockTaskContext
 
     val task = new GroupByTask[String, String, String](input => input, taskContext, config)
-    task.onStart(StartTime(0))
+    task.onStart(Instant.EPOCH)
 
     val peopleCaptor = ArgumentCaptor.forClass(classOf[Message])
 
@@ -130,7 +132,7 @@ class OpTranslatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val conf = UserConfig.empty
     val double = new FlatMapFunction[String, String](word => List(word, word), "double")
     val task = new TransformTask[String, String](Some(double), taskContext, conf)
-    task.onStart(StartTime(0))
+    task.onStart(Instant.EPOCH)
 
     val data = "1 2  2  3 3  3".split("\\s+")
 

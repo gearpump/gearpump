@@ -38,7 +38,7 @@ import org.apache.gearpump.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.StopTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, UnRegisterTask}
 import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef}
-import org.apache.gearpump.streaming.task.{StartTime, TaskContext, _}
+import org.apache.gearpump.streaming.task.{TaskContext, _}
 import org.apache.gearpump.streaming.{Constants, DAG, Processor, StreamApplication}
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import org.apache.gearpump.util.{ActorUtil, Graph}
@@ -300,17 +300,9 @@ object AppMasterSpec {
 }
 
 class TaskA(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
-
-  override def onStart(startTime: StartTime): Unit = {
-  }
-
   override def onNext(msg: Message): Unit = {}
 }
 
 class TaskB(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
-
-  override def onStart(startTime: StartTime): Unit = {
-  }
-
   override def onNext(msg: Message): Unit = {}
 }

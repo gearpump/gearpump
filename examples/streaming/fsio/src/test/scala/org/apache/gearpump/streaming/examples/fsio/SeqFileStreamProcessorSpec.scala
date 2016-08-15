@@ -18,6 +18,7 @@
 package org.apache.gearpump.streaming.examples.fsio
 
 import java.io.File
+import java.time.Instant
 import scala.collection.mutable.ArrayBuffer
 
 import akka.actor.ActorSystem
@@ -33,7 +34,7 @@ import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.task.{StartTime, TaskId}
+import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.streaming.{MockUtil, Processor}
 class SeqFileStreamProcessorSpec
   extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
@@ -67,7 +68,7 @@ class SeqFileStreamProcessorSpec
     when(context.taskId).thenReturn(taskId)
 
     val processor = new SeqFileStreamProcessor(context, conf)
-    processor.onStart(StartTime(0))
+    processor.onStart(Instant.EPOCH)
 
     forAll(kvGenerator) { kv =>
       val (key, value) = kv

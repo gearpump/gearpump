@@ -17,6 +17,7 @@
  */
 package org.apache.gearpump.experiments.storm.topology
 
+import java.time.Instant
 import java.util.{Map => JMap}
 
 import akka.actor.ActorRef
@@ -26,7 +27,7 @@ import backtype.storm.tuple.Tuple
 import org.apache.gearpump.experiments.storm.producer.StormSpoutOutputCollector
 import org.apache.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
 import org.apache.gearpump.experiments.storm.util.StormOutputCollector
-import org.apache.gearpump.streaming.task.{StartTime, TaskContext, TaskId}
+import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
 import org.apache.gearpump.streaming.{DAG, MockUtil}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.mockito.Matchers.{anyObject, eq => mockitoEq}
@@ -59,8 +60,7 @@ class GearpumpStormComponentSpec
       getOutputCollector, ackEnabled = false, taskContext)
 
     // Start
-    val startTime = mock[StartTime]
-    gearpumpSpout.start(startTime)
+    gearpumpSpout.start(Instant.EPOCH)
 
     verify(spout).open(mockitoEq(config), mockitoEq(topologyContext),
       anyObject[SpoutOutputCollector])
@@ -100,8 +100,7 @@ class GearpumpStormComponentSpec
         getGeneralTopologyContext, getOutputCollector, getTickTuple, taskContext)
 
       // Start
-      val startTime = mock[StartTime]
-      gearpumpBolt.start(startTime)
+      gearpumpBolt.start(Instant.EPOCH)
 
       verify(bolt).prepare(mockitoEq(config), mockitoEq(topologyContext),
         anyObject[OutputCollector])

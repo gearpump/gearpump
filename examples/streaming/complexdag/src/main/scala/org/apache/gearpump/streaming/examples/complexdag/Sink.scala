@@ -18,9 +18,11 @@
 
 package org.apache.gearpump.streaming.examples.complexdag
 
+import java.time.Instant
+
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 import scala.collection.mutable
 
@@ -28,7 +30,7 @@ class Sink(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext,
 
   var list = mutable.MutableList[String]()
 
-  override def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: Instant): Unit = {
     list += getClass.getCanonicalName
   }
 

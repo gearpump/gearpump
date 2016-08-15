@@ -18,12 +18,13 @@
 
 package org.apache.gearpump.streaming.examples.sol
 
+import java.time.Instant
 import java.util.Random
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.sol.SOLStreamProducer._
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
@@ -36,7 +37,7 @@ class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
   private var rand: Random = null
   private var messageCount: Long = 0
 
-  override def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: Instant): Unit = {
     prepareRandomMessage
     self ! Start
   }

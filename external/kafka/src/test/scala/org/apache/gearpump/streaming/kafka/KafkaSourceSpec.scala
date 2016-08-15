@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.kafka
 
+import java.time.Instant
 import java.util.Properties
 
 import com.twitter.bijection.Injection
@@ -42,7 +43,7 @@ import org.scalatest.{Matchers, PropSpec}
 
 class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
-  val startTimeGen = Gen.choose[Long](0L, 100L)
+  val startTimeGen = Gen.choose[Long](0L, 100L).map(Instant.ofEpochMilli)
   val offsetGen = Gen.choose[Long](0L, 100L)
   val topicAndPartitionGen = for {
     topic <- Gen.alphaStr suchThat (_.nonEmpty)
@@ -51,7 +52,7 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
   val tpsGen = Gen.listOf[TopicAndPartition](topicAndPartitionGen) suchThat (_.nonEmpty)
 
   property("KafkaSource open should not recover without checkpoint") {
-    forAll(startTimeGen, tpsGen) { (startTime: Long, tps: List[TopicAndPartition]) =>
+    forAll(startTimeGen, tpsGen) { (startTime: Instant, tps: List[TopicAndPartition]) =>
       val taskContext = MockUtil.mockTaskContext
       val fetchThread = mock[FetchThread]
       val kafkaClient = mock[KafkaClient]
@@ -84,7 +85,7 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
 
   property("KafkaSource open should recover with checkpoint") {
     forAll(startTimeGen, offsetGen, tpsGen) {
-      (startTime: Long, offset: Long, tps: List[TopicAndPartition]) =>
+      (startTime: Instant, offset: Long, tps: List[TopicAndPartition]) =>
         val taskContext = MockUtil.mockTaskContext
         val checkpointStoreFactory = mock[CheckpointStoreFactory]
         val checkpointStores = tps.map(_ -> mock[CheckpointStore]).toMap
@@ -115,7 +116,8 @@ class KafkaSourceSpec extends PropSpec with PropertyChecks with Matchers with Mo
         checkpointStores.foreach { case (tp, store) =>
           when(checkpointStoreFactory.getCheckpointStore(
             KafkaConfig.getCheckpointStoreNameSuffix(tp))).thenReturn(store)
-          when(store.recover(startTime)).thenReturn(Some(Injection[Long, Array[Byte]](offset)))
+          when(store.recover(startTime.toEpochMilli))
+            .thenReturn(Some(Injection[Long, Array[Byte]](offset)))
         }
 
         source.setCheckpointStore(checkpointStoreFactory)

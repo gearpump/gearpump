@@ -18,12 +18,13 @@
 
 package org.apache.gearpump.streaming.state.api
 
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.state.impl.{CheckpointManager, PersistentStateConfig}
-import org.apache.gearpump.streaming.task.{UpdateCheckpointClock, StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{UpdateCheckpointClock, Task, TaskContext}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import org.apache.gearpump.util.LogUtil
 import org.apache.gearpump.{Message, TimeStamp}
@@ -70,8 +71,8 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
   /** Persistent state that will be stored (by checkpointing) automatically to storage like HDFS */
   val state = persistentState
 
-  final override def onStart(startTime: StartTime): Unit = {
-    val timestamp = startTime.startTime
+  final override def onStart(startTime: Instant): Unit = {
+    val timestamp = startTime.toEpochMilli
     checkpointManager
       .recover(timestamp)
       .foreach(state.recover(timestamp, _))
@@ -100,6 +101,7 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
         processMessage(state, message)
     }
   }
+
 
   final override def onStop(): Unit = {
     checkpointManager.close()

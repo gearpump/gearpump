@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.dsl
 
+import java.time.Instant
+
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
@@ -27,7 +29,7 @@ import org.apache.gearpump.streaming.dsl.plan.Planner
 import org.apache.gearpump.streaming.source.DataSource
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.Message
 
 import scala.language.implicitConversions
 
@@ -69,36 +71,36 @@ object StreamApp {
   }
 
   implicit def streamAppToApplication(streamApp: StreamApp): StreamApplication = {
-    streamApp.plan
+    streamApp.plan()
   }
 
   implicit class Source(app: StreamApp) extends java.io.Serializable {
 
-    def source[T](dataSource: DataSource, parallism: Int): Stream[T] = {
-      source(dataSource, parallism, UserConfig.empty)
+    def source[T](dataSource: DataSource, parallelism: Int): Stream[T] = {
+      source(dataSource, parallelism, UserConfig.empty)
     }
 
-    def source[T](dataSource: DataSource, parallism: Int, description: String): Stream[T] = {
-      source(dataSource, parallism, UserConfig.empty, description)
+    def source[T](dataSource: DataSource, parallelism: Int, description: String): Stream[T] = {
+      source(dataSource, parallelism, UserConfig.empty, description)
     }
 
-    def source[T](dataSource: DataSource, parallism: Int, conf: UserConfig): Stream[T] = {
-      source(dataSource, parallism, conf, description = null)
+    def source[T](dataSource: DataSource, parallelism: Int, conf: UserConfig): Stream[T] = {
+      source(dataSource, parallelism, conf, description = null)
     }
 
-    def source[T](dataSource: DataSource, parallism: Int, conf: UserConfig, description: String)
+    def source[T](dataSource: DataSource, parallelism: Int, conf: UserConfig, description: String)
       : Stream[T] = {
-      implicit val sourceOp = DataSourceOp(dataSource, parallism, conf, description)
+      implicit val sourceOp = DataSourceOp(dataSource, parallelism, conf, description)
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)
     }
-    def source[T](seq: Seq[T], parallism: Int, description: String): Stream[T] = {
-      this.source(new CollectionDataSource[T](seq), parallism, UserConfig.empty, description)
+    def source[T](seq: Seq[T], parallelism: Int, description: String): Stream[T] = {
+      this.source(new CollectionDataSource[T](seq), parallelism, UserConfig.empty, description)
     }
 
-    def source[T](source: Class[_ <: Task], parallism: Int, conf: UserConfig, description: String)
+    def source[T](source: Class[_ <: Task], parallelism: Int, conf: UserConfig, description: String)
       : Stream[T] = {
-      val sourceOp = ProcessorOp(source, parallism, conf, Option(description).getOrElse("source"))
+      val sourceOp = ProcessorOp(source, parallelism, conf, Option(description).getOrElse("source"))
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)
     }
@@ -119,5 +121,5 @@ class CollectionDataSource[T](seq: Seq[T]) extends DataSource {
 
   override def close(): Unit = {}
 
-  override def open(context: TaskContext, startTime: TimeStamp): Unit = {}
+  override def open(context: TaskContext, startTime: Instant): Unit = {}
 }

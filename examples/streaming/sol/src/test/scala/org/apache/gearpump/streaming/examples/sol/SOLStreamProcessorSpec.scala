@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.streaming.examples.sol
 
+import java.time.Instant
+
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{FlatSpec, Matchers}
@@ -24,7 +26,6 @@ import org.scalatest.{FlatSpec, Matchers}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.task.StartTime
 
 class SOLStreamProcessorSpec extends FlatSpec with Matchers {
 
@@ -33,7 +34,7 @@ class SOLStreamProcessorSpec extends FlatSpec with Matchers {
     val context = MockUtil.mockTaskContext
 
     val sol = new SOLStreamProcessor(context, UserConfig.empty)
-    sol.onStart(StartTime(0))
+    sol.onStart(Instant.EPOCH)
     val msg = Message("msg")
     sol.onNext(msg)
     verify(context, times(1)).output(msg)

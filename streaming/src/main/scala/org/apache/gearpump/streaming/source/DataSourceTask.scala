@@ -18,9 +18,11 @@
 
 package org.apache.gearpump.streaming.source
 
+import java.time.Instant
+
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 object DataSourceTask {
   val DATA_SOURCE = "data_source"
@@ -45,10 +47,8 @@ class DataSourceTask private[source](context: TaskContext, conf: UserConfig, sou
     this(context, conf, conf.getValue[DataSource](DataSourceTask.DATA_SOURCE)(context.system).get)
   }
   private val batchSize = conf.getInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE).getOrElse(1000)
-  private var startTime = 0L
 
-  override def onStart(newStartTime: StartTime): Unit = {
-    startTime = newStartTime.startTime
+  override def onStart(startTime: Instant): Unit = {
     LOG.info(s"opening data source at $startTime")
     source.open(context, startTime)
     self ! Message("start", System.currentTimeMillis())

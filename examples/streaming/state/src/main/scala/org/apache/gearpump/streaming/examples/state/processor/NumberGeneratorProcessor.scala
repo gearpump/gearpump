@@ -18,17 +18,19 @@
 
 package org.apache.gearpump.streaming.examples.state.processor
 
+import java.time.Instant
+
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 class NumberGeneratorProcessor(taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
   import taskContext.output
 
   private var num = 0L
-  override def onStart(startTime: StartTime): Unit = {
-    num = startTime.startTime
+  override def onStart(startTime: Instant): Unit = {
+    num = startTime.toEpochMilli
     self ! Message("start")
   }
 

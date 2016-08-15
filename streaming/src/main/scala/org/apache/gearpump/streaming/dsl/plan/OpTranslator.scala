@@ -18,11 +18,11 @@
 
 package org.apache.gearpump.streaming.dsl.plan
 
-import scala.collection.TraversableOnce
+import java.time.Instant
 
+import scala.collection.TraversableOnce
 import akka.actor.ActorSystem
 import org.slf4j.Logger
-
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
@@ -32,7 +32,7 @@ import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.source.DataSource
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.LogUtil
 
 /**
@@ -116,7 +116,7 @@ object OpTranslator {
 
   class DummyInputFunction[T] extends SingleInputFunction[T, T] {
     override def andThen[OUTER](other: SingleInputFunction[T, OUTER])
-      : SingleInputFunction[T, OUTER] = {
+    : SingleInputFunction[T, OUTER] = {
       other
     }
 
@@ -131,13 +131,13 @@ object OpTranslator {
     extends SingleInputFunction[IN, OUT] {
 
     override def process(value: IN): TraversableOnce[OUT] = {
-      first.process(value).flatMap(second.process(_))
+      first.process(value).flatMap(second.process)
     }
 
     override def description: String = {
       Option(first.description).flatMap { description =>
         Option(second.description).map(description + "." + _)
-      }.getOrElse(null)
+      }.orNull
     }
   }
 
@@ -182,9 +182,6 @@ object OpTranslator {
 
     private var groups = Map.empty[GROUP, SingleInputFunction[IN, OUT]]
 
-    override def onStart(startTime: StartTime): Unit = {
-    }
-
     override def onNext(msg: Message): Unit = {
       val time = msg.timestamp
 
@@ -216,8 +213,8 @@ object OpTranslator {
         taskContext, userConf)
     }
 
-    override def onStart(startTime: StartTime): Unit = {
-      source.open(taskContext, startTime.startTime)
+    override def onStart(startTime: Instant): Unit = {
+      source.open(taskContext, startTime)
       self ! Message("start", System.currentTimeMillis())
     }
 
@@ -256,9 +253,6 @@ object OpTranslator {
         GEARPUMP_STREAMING_OPERATOR)(taskContext.system), taskContext, userConf)
     }
 
-    override def onStart(startTime: StartTime): Unit = {
-    }
-
     override def onNext(msg: Message): Unit = {
       val time = msg.timestamp
 
@@ -281,7 +275,7 @@ object OpTranslator {
         taskContext, userConf)
     }
 
-    override def onStart(startTime: StartTime): Unit = {
+    override def onStart(startTime: Instant): Unit = {
       dataSink.open(taskContext)
     }
 

@@ -18,9 +18,11 @@
 
 package org.apache.gearpump.streaming.sink
 
+import java.time.Instant
+
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 object DataSinkTask {
   val DATA_SINK = "data_sink"
@@ -32,11 +34,12 @@ object DataSinkTask {
 class DataSinkTask private[sink](context: TaskContext, conf: UserConfig, sink: DataSink)
   extends Task(context, conf) {
 
+
   def this(context: TaskContext, conf: UserConfig) = {
     this(context, conf, conf.getValue[DataSink](DataSinkTask.DATA_SINK)(context.system).get)
   }
 
-  override def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: Instant): Unit = {
     LOG.info("opening data sink...")
     sink.open(context)
   }

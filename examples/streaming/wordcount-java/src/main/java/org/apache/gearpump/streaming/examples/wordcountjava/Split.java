@@ -21,8 +21,9 @@ package org.apache.gearpump.streaming.examples.wordcountjava;
 import org.apache.gearpump.Message;
 import org.apache.gearpump.cluster.UserConfig;
 import org.apache.gearpump.streaming.javaapi.Task;
-import org.apache.gearpump.streaming.task.StartTime;
 import org.apache.gearpump.streaming.task.TaskContext;
+
+import java.time.Instant;
 
 public class Split extends Task {
 
@@ -37,7 +38,7 @@ public class Split extends Task {
   }
 
   @Override
-  public void onStart(StartTime startTime) {
+  public void onStart(Instant startTime) {
     self().tell(new Message("start", now()), self());
   }
 

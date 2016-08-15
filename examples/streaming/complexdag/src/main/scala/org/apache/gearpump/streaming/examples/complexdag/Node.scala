@@ -18,14 +18,16 @@
 
 package org.apache.gearpump.streaming.examples.complexdag
 
+import java.time.Instant
+
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{StartTime, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 class Node(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.output
 
-  override def onStart(startTime: StartTime): Unit = {}
+  override def onStart(startTime: Instant): Unit = {}
 
   override def onNext(msg: Message): Unit = {
     val list = msg.msg.asInstanceOf[Vector[String]]

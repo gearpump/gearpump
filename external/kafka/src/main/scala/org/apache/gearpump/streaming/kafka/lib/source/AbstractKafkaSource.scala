@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.kafka.lib.source
 
+import java.time.Instant
 import java.util.Properties
 
 import com.twitter.bijection.Injection
@@ -87,11 +88,11 @@ abstract class AbstractKafkaSource(
     this.checkpointStoreFactory = Some(checkpointStoreFactory)
   }
 
-  override def open(context: TaskContext, startTime: TimeStamp): Unit = {
+  override def open(context: TaskContext, startTime: Instant): Unit = {
     import context.{parallelism, taskId}
 
     LOG.info("KafkaSource opened at start time {}", startTime)
-    this.startTime = startTime
+    this.startTime = startTime.toEpochMilli
     val topicList = topic.split(",", -1).toList
     val grouper = config.getConfiguredInstance(KafkaConfig.PARTITION_GROUPER_CLASS_CONFIG,
       classOf[PartitionGrouper])

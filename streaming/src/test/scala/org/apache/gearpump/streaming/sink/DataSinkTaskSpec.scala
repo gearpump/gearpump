@@ -18,10 +18,11 @@
 
 package org.apache.gearpump.streaming.sink
 
+import java.time.Instant
+
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.task.StartTime
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
@@ -30,13 +31,14 @@ import org.scalatest.{PropSpec, Matchers}
 
 class DataSinkTaskSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
+
   property("DataSinkTask.onStart should call DataSink.open" ) {
-    forAll(Gen.chooseNum[Long](0L, 1000L)) { (startTime: Long) =>
+    forAll(Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) { (startTime: Instant) =>
       val taskContext = MockUtil.mockTaskContext
       val config = UserConfig.empty
       val dataSink = mock[DataSink]
       val sinkTask = new DataSinkTask(taskContext, config, dataSink)
-      sinkTask.onStart(StartTime(startTime))
+      sinkTask.onStart(startTime)
       verify(dataSink).open(taskContext)
     }
   }

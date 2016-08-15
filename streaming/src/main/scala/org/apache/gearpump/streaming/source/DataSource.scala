@@ -18,10 +18,10 @@
 
 package org.apache.gearpump.streaming.source
 
+import java.time.Instant
+
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.Message
-
-import scala.util.Random
 
 /**
  * Interface to implement custom source where data is read into the system.
@@ -52,7 +52,7 @@ trait DataSource extends java.io.Serializable {
    * @param context is the task context at runtime
    * @param startTime is the start time of system
    */
-  def open(context: TaskContext, startTime: Long): Unit
+  def open(context: TaskContext, startTime: Instant): Unit
 
   /**
    * Reads next message from data source and

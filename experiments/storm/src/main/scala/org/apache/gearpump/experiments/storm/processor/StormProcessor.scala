@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.experiments.storm.processor
 
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 
@@ -46,7 +47,7 @@ private[storm] class StormProcessor(gearpumpBolt: GearpumpBolt,
 
   private val freqOpt = gearpumpBolt.getTickFrequency
 
-  override def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: Instant): Unit = {
     gearpumpBolt.start(startTime)
     freqOpt.foreach(scheduleTick)
   }

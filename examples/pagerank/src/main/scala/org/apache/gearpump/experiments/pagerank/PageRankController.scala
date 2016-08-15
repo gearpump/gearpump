@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.experiments.pagerank
 
+import java.time.Instant
+
 import akka.actor.Actor.Receive
 
 import org.apache.gearpump.cluster.UserConfig
@@ -39,7 +41,7 @@ class PageRankController(taskContext: TaskContext, conf: UserConfig)
   var weights = Map.empty[TaskId, Double]
   var deltas = Map.empty[TaskId, Double]
 
-  override def onStart(startTime: StartTime): Unit = {
+  override def onStart(startTime: Instant): Unit = {
     output(Tick(tick), tasks: _*)
   }
 

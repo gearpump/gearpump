@@ -21,8 +21,9 @@ package org.apache.gearpump.streaming.javaapi;
 import akka.actor.ActorRef;
 import org.apache.gearpump.Message;
 import org.apache.gearpump.cluster.UserConfig;
-import org.apache.gearpump.streaming.task.StartTime;
 import org.apache.gearpump.streaming.task.TaskContext;
+
+import java.time.Instant;
 
 /**
  * Java version of Task.
@@ -45,7 +46,7 @@ public class Task extends org.apache.gearpump.streaming.task.Task {
   }
 
   @Override
-  public void onStart(StartTime startTime) {
+  public void onStart(Instant startTime) {
   }
 
   @Override
