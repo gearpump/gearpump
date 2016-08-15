@@ -48,7 +48,7 @@ deploy:
   file_glob: true
   file: output/target/gearpump-*.zip  
   on:
-    repo: apache/incubator-gearpump
+    #repo: apache/incubator-gearpump
     tags: true
     all_branches: true
 install:
