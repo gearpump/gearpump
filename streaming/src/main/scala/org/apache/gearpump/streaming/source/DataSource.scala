@@ -45,6 +45,7 @@ import org.apache.gearpump.Message
  */
 trait DataSource extends java.io.Serializable {
 
+
   /**
    * Opens connection to data source
    * invoked in onStart() method of [[org.apache.gearpump.streaming.source.DataSourceTask]]
@@ -67,4 +68,11 @@ trait DataSource extends java.io.Serializable {
    * invoked in onStop() method of [[org.apache.gearpump.streaming.source.DataSourceTask]]
    */
   def close(): Unit
+
+  /**
+   * Returns a watermark
+   * no timestamp earlier than the watermark
+   * should enter the system
+   */
+  def getWatermark: Instant
 }

@@ -24,6 +24,7 @@ import java.util.Properties
 import com.twitter.bijection.Injection
 import kafka.common.TopicAndPartition
 import org.apache.gearpump.streaming.kafka.KafkaSource
+import org.apache.gearpump.streaming.kafka.lib.KafkaMessageDecoder
 import org.apache.gearpump.streaming.kafka.lib.source.consumer.FetchThread.FetchThreadFactory
 import org.apache.gearpump.streaming.kafka.lib.util.KafkaClient
 import KafkaClient.KafkaClientFactory
@@ -46,17 +47,7 @@ object AbstractKafkaSource {
  * Contains implementation for Kafka source connectors, users should use
  * [[org.apache.gearpump.streaming.kafka.KafkaSource]].
  *
- * This is a TimeReplayableSource which is able to replay messages given a start time.
- * Each kafka message is tagged with a timestamp by
- * [[org.apache.gearpump.streaming.transaction.api.MessageDecoder]] and the (timestamp, offset)
- * mapping is stored to a [[org.apache.gearpump.streaming.transaction.api.CheckpointStore]].
- * On recovery, we could retrieve the previously stored offset from the
- * [[org.apache.gearpump.streaming.transaction.api.CheckpointStore]] by timestamp and start to read
- * from there.
- *
- * kafka message is wrapped into gearpump [[org.apache.gearpump.Message]] and further filtered by a
- * [[org.apache.gearpump.streaming.transaction.api.TimeStampFilter]]
- * such that obsolete messages are dropped.
+ * This is a TimeReplayableSource which is able to replay messages from kafka given a start time.
  */
 abstract class AbstractKafkaSource(
     topic: String,
@@ -75,11 +66,9 @@ abstract class AbstractKafkaSource(
   private lazy val kafkaClient: KafkaClient = kafkaClientFactory.getKafkaClient(config)
   private lazy val fetchThread: FetchThread = fetchThreadFactory.getFetchThread(config, kafkaClient)
   private lazy val messageDecoder = config.getConfiguredInstance(
-    KafkaConfig.MESSAGE_DECODER_CLASS_CONFIG, classOf[MessageDecoder])
-  private lazy val timestampFilter = config.getConfiguredInstance(
-    KafkaConfig.TIMESTAMP_FILTER_CLASS_CONFIG, classOf[TimeStampFilter])
+    KafkaConfig.MESSAGE_DECODER_CLASS_CONFIG, classOf[KafkaMessageDecoder])
 
-  private var startTime: Long = 0L
+  private var watermark: Instant = Instant.EPOCH
   private var checkpointStoreFactory: Option[CheckpointStoreFactory] = None
   private var checkpointStores: Map[TopicAndPartition, CheckpointStore] =
     Map.empty[TopicAndPartition, CheckpointStore]
@@ -92,7 +81,7 @@ abstract class AbstractKafkaSource(
     import context.{parallelism, taskId}
 
     LOG.info("KafkaSource opened at start time {}", startTime)
-    this.startTime = startTime.toEpochMilli
+    this.watermark = startTime
     val topicList = topic.split(",", -1).toList
     val grouper = config.getConfiguredInstance(KafkaConfig.PARTITION_GROUPER_CLASS_CONFIG,
       classOf[PartitionGrouper])
@@ -102,7 +91,7 @@ abstract class AbstractKafkaSource(
 
     fetchThread.setTopicAndPartitions(topicAndPartitions)
     maybeSetupCheckpointStores(topicAndPartitions)
-    maybeRecover()
+    maybeRecover(startTime.toEpochMilli)
   }
 
   /**
@@ -111,7 +100,7 @@ abstract class AbstractKafkaSource(
    * @return a [[org.apache.gearpump.Message]] or null
    */
   override def read(): Message = {
-    fetchThread.poll.flatMap(filterAndCheckpointMessage).orNull
+    fetchThread.poll.map(decodeMessageAndCheckpointOffset).orNull
   }
 
   override def close(): Unit = {
@@ -120,22 +109,25 @@ abstract class AbstractKafkaSource(
     LOG.info("KafkaSource closed")
   }
 
+  override def getWatermark: Instant = watermark
+
   /**
    * 1. Decodes raw bytes into Message with timestamp
    * 2. Filters message against start time
    * 3. Checkpoints (timestamp, kafka_offset)
    */
-  private def filterAndCheckpointMessage(kafkaMsg: KafkaMessage): Option[Message] = {
-    val msg = messageDecoder.fromBytes(kafkaMsg.key.orNull, kafkaMsg.msg)
-    LOG.debug("read message {}", msg)
-    val filtered = timestampFilter.filter(msg, startTime)
-    filtered.foreach { m =>
-      val time = m.timestamp
-      val offset = kafkaMsg.offset
-      LOG.debug("checkpoint message state ({}, {})", time, offset)
-      checkpointOffsets(kafkaMsg.topicAndPartition, time, offset)
-    }
-    filtered
+  private def decodeMessageAndCheckpointOffset(kafkaMsg: KafkaMessage): Message = {
+    val msgAndWmk = messageDecoder.fromBytes(kafkaMsg.key.orNull, kafkaMsg.msg)
+    LOG.debug("read message and watermark {}", msgAndWmk)
+
+    val msg = msgAndWmk.message
+    this.watermark = msgAndWmk.watermark
+    val time = msg.timestamp
+    val offset = kafkaMsg.offset
+    checkpointOffsets(kafkaMsg.topicAndPartition, time, offset)
+    LOG.debug("checkpoint message state ({}, {})", time, offset)
+
+    msg
   }
 
   private def checkpointOffsets(tp: TopicAndPartition, time: TimeStamp, offset: Long): Unit = {
@@ -153,7 +145,7 @@ abstract class AbstractKafkaSource(
     }
   }
 
-  private def maybeRecover(): Unit = {
+  private def maybeRecover(startTime: TimeStamp): Unit = {
     checkpointStores.foreach { case (tp, store) =>
       for {
         bytes <- store.recover(startTime)

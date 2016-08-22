@@ -25,6 +25,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpSpout
 import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.source.Watermark
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{Matchers, WordSpec}
@@ -46,7 +47,7 @@ class StormProducerSpec extends WordSpec with Matchers with MockitoSugar {
       stormProducer.onStart(startTime)
 
       verify(gearpumpSpout).start(startTime)
-      taskActor.expectMsg(Message("start"))
+      taskActor.expectMsgType[Watermark]
     }
 
     "pass message to GearpumpBolt onNext" in {
@@ -64,7 +65,7 @@ class StormProducerSpec extends WordSpec with Matchers with MockitoSugar {
       stormProducer.onNext(message)
 
       verify(gearpumpSpout).next(message)
-      taskActor.expectMsg(Message("continue"))
+      taskActor.expectMsgType[Watermark]
 
       stormProducer.onNext(StormProducer.TIMEOUT)
       verify(gearpumpSpout).timeout(timeout)

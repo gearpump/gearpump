@@ -61,7 +61,7 @@ class ClockService(private var dag: DAG, store: AppDataStore) extends Actor with
       minCheckpointClock = Some(startClock)
 
       // Recover the application by restarting from last persisted startClock.
-      // Only messge after startClock will be replayed.
+      // Only message after startClock will be replayed.
       self ! StoredStartClock(startClock)
       LOG.info(s"Start Clock Retrieved, starting ClockService, startClock: $startClock")
     }
@@ -70,8 +70,8 @@ class ClockService(private var dag: DAG, store: AppDataStore) extends Actor with
   }
 
   override def postStop(): Unit = {
-    Option(healthCheckScheduler).map(_.cancel())
-    Option(snapshotScheduler).map(_.cancel())
+    Option(healthCheckScheduler).foreach(_.cancel())
+    Option(snapshotScheduler).foreach(_.cancel())
   }
 
   // Keep track of clock value of all processors.
@@ -118,13 +118,7 @@ class ClockService(private var dag: DAG, store: AppDataStore) extends Actor with
         (processorId, clock)
       }
 
-    this.upstreamClocks = clocks.map { pair =>
-      val (processorId, _) = pair
-
-      val upstreams = dag.graph.incomingEdgesOf(processorId).map(_._1)
-      val upstreamClocks = upstreams.flatMap(clocks.get)
-      (processorId, upstreamClocks.toArray)
-    }
+    this.upstreamClocks = getUpstreamClocks(clocks)
 
     this.processorClocks = clocks.toArray.map(_._2)
 
@@ -147,24 +141,19 @@ class ClockService(private var dag: DAG, store: AppDataStore) extends Actor with
 
     this.clocks = newClocks
 
-    this.upstreamClocks = newClocks.map { pair =>
-      val (processorId, _) = pair
-
-      val upstreams = dag.graph.incomingEdgesOf(processorId).map(_._1)
-      val upstreamClocks = upstreams.flatMap(newClocks.get)
-      (processorId, upstreamClocks.toArray)
-    }
+    this.upstreamClocks = getUpstreamClocks(clocks)
 
     // Inits the clock of all processors.
-    newClocks.foreach { pair =>
+    clocks.foreach { pair =>
       val (processorId, processorClock) = pair
       val upstreamClock = getUpStreamMinClock(processorId)
       val birth = processorClock.life.birth
 
-      if (dag.graph.inDegreeOf(processorId) == 0) {
-        processorClock.init(Longs.max(birth, startClock))
-      } else {
-        processorClock.init(upstreamClock)
+      upstreamClock match {
+        case Some(clock) =>
+          processorClock.init(clock)
+        case None =>
+          processorClock.init(Longs.max(birth, startClock))
       }
     }
 
@@ -195,33 +184,40 @@ class ClockService(private var dag: DAG, store: AppDataStore) extends Actor with
       stash()
   }
 
-  private def getUpStreamMinClock(processorId: ProcessorId): TimeStamp = {
-    val clocks = upstreamClocks.get(processorId)
-    if (clocks.isDefined) {
-      if (clocks.get == null || clocks.get.length == 0) {
-        Long.MaxValue
-      } else {
-        ProcessorClocks.minClock(clocks.get)
-      }
-    } else {
-      Long.MaxValue
+  private def getUpstreamClocks(
+      clocks: Map[ProcessorId, ProcessorClock]): Map[ProcessorId, Array[ProcessorClock]] = {
+    clocks.foldLeft(Map.empty[ProcessorId, Array[ProcessorClock]]) {
+      case (accum, (processorId, clock)) =>
+        val upstreams = dag.graph.incomingEdgesOf(processorId).map(_._1)
+        if (upstreams.nonEmpty) {
+          val upstreamClocks = upstreams.collect(clocks)
+          if (upstreamClocks.nonEmpty) {
+            accum + (processorId -> upstreamClocks.toArray)
+          } else {
+            accum
+          }
+        } else {
+          accum
+        }
     }
+  }
+
+  private def getUpStreamMinClock(processorId: ProcessorId): Option[TimeStamp] = {
+    upstreamClocks.get(processorId).map(ProcessorClocks.minClock)
   }
 
   def clockService: Receive = {
     case GetUpstreamMinClock(task) =>
-      sender ! UpstreamMinClock(getUpStreamMinClock(task.processorId))
+      getUpStreamMinClock(task.processorId).foreach(sender ! UpstreamMinClock(_))
 
     case update@UpdateClock(task, clock) =>
-      val upstreamMinClock = getUpStreamMinClock(task.processorId)
-
       val processorClock = clocks.get(task.processorId)
       if (processorClock.isDefined) {
         processorClock.get.updateMinClock(task.index, clock)
       } else {
         LOG.error(s"Cannot updateClock for task $task")
       }
-      sender ! UpstreamMinClock(upstreamMinClock)
+      getUpStreamMinClock(task.processorId).foreach(sender ! UpstreamMinClock(_))
 
     case GetLatestMinClock =>
       sender ! LatestMinClock(minClock)
@@ -265,9 +261,9 @@ class ClockService(private var dag: DAG, store: AppDataStore) extends Actor with
         dynamicDAG(dag, getStartClock)
       } else {
         // Restarts current dag.
-        recoverDag(dag, getStartClock)
+        recoverDag(newDag, getStartClock)
       }
-      LOG.info(s"Change to new DAG(dag = ${dag.version}), send back ChangeToNewDAGSuccess")
+      LOG.info(s"Change to new DAG(dag = ${newDag.version}), send back ChangeToNewDAGSuccess")
       sender ! ChangeToNewDAGSuccess(clocks.map { pair =>
         val (id, clock) = pair
         (id, clock.min)
@@ -287,6 +283,7 @@ class ClockService(private var dag: DAG, store: AppDataStore) extends Actor with
     upstreamClocks = upstreamClocks - processorId
 
     // Removes dead processor from checkpoints.
+    checkpointClocks = checkpointClocks.filter(_._1.processorId != processorId)
     checkpointClocks = checkpointClocks.filter { kv =>
       val (taskId, _) = kv
       taskId.processorId != processorId
@@ -329,11 +326,11 @@ object ClockService {
 
   case object HealthCheck
 
-  class ProcessorClock(val processorId: ProcessorId, val life: LifeTime, val parallism: Int,
+  class ProcessorClock(val processorId: ProcessorId, val life: LifeTime, val parallelism: Int,
       private var _min: TimeStamp = 0L, private var _taskClocks: Array[TimeStamp] = null) {
 
     def copy(life: LifeTime): ProcessorClock = {
-      new ProcessorClock(processorId, life, parallism, _min, _taskClocks)
+      new ProcessorClock(processorId, life, parallelism, _min, _taskClocks)
     }
 
     def min: TimeStamp = _min
@@ -342,7 +339,7 @@ object ClockService {
     def init(startClock: TimeStamp): Unit = {
       if (taskClocks == null) {
         this._min = startClock
-        this._taskClocks = new Array(parallism)
+        this._taskClocks = new Array(parallelism)
         util.Arrays.fill(taskClocks, startClock)
       }
     }

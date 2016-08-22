@@ -24,6 +24,7 @@ import java.util.Random
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.examples.sol.SOLStreamProducer._
+import org.apache.gearpump.streaming.source.Watermark
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
@@ -39,7 +40,7 @@ class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
 
   override def onStart(startTime: Instant): Unit = {
     prepareRandomMessage
-    self ! Start
+    self ! Watermark(Instant.now)
   }
 
   private def prepareRandomMessage = {
@@ -62,18 +63,13 @@ class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
     val message = messages(rand.nextInt(messages.length))
     output(new Message(message, System.currentTimeMillis()))
     messageCount = messageCount + 1L
-    self ! messageSourceMinClock
+    self ! Watermark(Instant.now)
   }
 
-  // messageSourceMinClock represent the min clock of the message source
-  private def messageSourceMinClock: Message = {
-    Message("tick", System.currentTimeMillis())
-  }
 }
 
 object SOLStreamProducer {
   val DEFAULT_MESSAGE_SIZE = 100
   // Bytes
   val BYTES_PER_MESSAGE = "bytesPerMessage"
-  val Start = Message("start")
 }

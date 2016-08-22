@@ -15,24 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.streaming.source
 
-package org.apache.gearpump.streaming.kafka.lib.source
+import java.time.Instant
 
-import com.twitter.bijection.Injection
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.transaction.api.MessageDecoder
 
-import scala.util.{Failure, Success}
-
-class DefaultMessageDecoder extends MessageDecoder {
-  override def fromBytes(key: Array[Byte], value: Array[Byte]): Message = {
-    Message(value, System.currentTimeMillis())
-  }
-}
-
-class StringMessageDecoder extends MessageDecoder {
-  override def fromBytes(key: Array[Byte], value: Array[Byte]): Message = {
-    Message(Injection.invert[String, Array[Byte]](value).get,
-      System.currentTimeMillis())
-  }
+/**
+ * message used by source task to report source watermark.
+ */
+case class Watermark(instant: Instant) {
+  def toMessage: Message = Message("watermark", instant.toEpochMilli)
 }

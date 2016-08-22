@@ -58,9 +58,6 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       // task(0,0): clock(101); task(1,0): clock(100)
       clockService ! UpdateClock(TaskId(0, 0), 101)
 
-      // There is no upstream, so pick Long.MaxValue
-      expectMsg(UpstreamMinClock(Long.MaxValue))
-
       // Min clock is updated
       clockService ! GetLatestMinClock
       expectMsg(LatestMinClock(100))
@@ -83,7 +80,6 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val clockService = system.actorOf(Props(new ClockService(dag, store)))
       val task = TestProbe()
       clockService.tell(UpdateClock(TaskId(0, 0), 200), task.ref)
-      task.expectMsgType[UpstreamMinClock]
 
       val task3 = ProcessorDescription(id = 3, taskClass = classOf[TaskActor].getName,
         parallelism = 1)
@@ -122,7 +118,6 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       store.put(ClockService.START_CLOCK, startClock)
       val clockService = system.actorOf(Props(new ClockService(dag, store)))
       clockService ! UpdateClock(TaskId(0, 0), 200L)
-      expectMsgType[UpstreamMinClock]
       clockService ! UpdateClock(TaskId(1, 0), 200L)
       expectMsgType[UpstreamMinClock]
 

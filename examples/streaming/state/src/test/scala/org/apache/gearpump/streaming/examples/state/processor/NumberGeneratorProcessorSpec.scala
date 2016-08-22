@@ -20,6 +20,8 @@ package org.apache.gearpump.streaming.examples.state.processor
 
 import java.time.Instant
 
+import org.apache.gearpump.streaming.source.Watermark
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -49,11 +51,10 @@ class NumberGeneratorProcessorSpec extends WordSpec with Matchers {
       val conf = UserConfig.empty
       val genNum = new NumberGeneratorProcessor(taskContext, conf)
       genNum.onStart(Instant.EPOCH)
-      mockTaskActor.expectMsgType[Message]
+      mockTaskActor.expectMsgType[Watermark]
 
       genNum.onNext(Message("next"))
       verify(taskContext).output(MockitoMatchers.any[Message])
-      // mockTaskActor.expectMsgType[Message]
 
       system.terminate()
       Await.result(system.whenTerminated, Duration.Inf)

@@ -103,8 +103,6 @@ private[appmaster] class TaskManager(
   def receive: Receive = applicationReady(DagReadyState.empty)
 
   private def onClientQuery(taskRegistry: TaskRegistry): Receive = {
-    case clock: ClockEvent =>
-      clockService forward clock
     case GetTaskList =>
       sender ! TaskList(taskRegistry.getTaskExecutorMap)
     case LookupTaskActorRef(taskId) =>

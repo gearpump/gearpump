@@ -19,6 +19,8 @@ package org.apache.gearpump.streaming.examples.wordcount
 
 import java.time.Instant
 
+import org.apache.gearpump.streaming.source.Watermark
+
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -49,7 +51,7 @@ class SplitSpec extends WordSpec with Matchers {
       val conf = UserConfig.empty
       val split = new Split(taskContext, conf)
       split.onStart(Instant.EPOCH)
-      mockTaskActor.expectMsgType[Message]
+      mockTaskActor.expectMsgType[Watermark]
 
       val expectedWordCount = Split.TEXT_TO_SPLIT.split( """[\s\n]+""").count(_.nonEmpty)
 

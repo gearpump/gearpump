@@ -21,10 +21,9 @@ package org.apache.gearpump.streaming.kafka.util;
 import kafka.api.OffsetRequest;
 import kafka.common.TopicAndPartition;
 import kafka.consumer.ConsumerConfig;
-import org.apache.gearpump.streaming.kafka.lib.source.DefaultMessageDecoder;
+import org.apache.gearpump.streaming.kafka.lib.source.DefaultKafkaMessageDecoder;
 import org.apache.gearpump.streaming.kafka.lib.util.KafkaClient;
 import org.apache.gearpump.streaming.kafka.lib.source.grouper.DefaultPartitionGrouper;
-import org.apache.gearpump.streaming.source.DefaultTimeStampFilter;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 
@@ -87,10 +86,6 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
   private static final String MESSAGE_DECODER_CLASS_DOC =
       "Message decoder class that implements the <code>MessageDecoder</code> interface.";
 
-  public static final String TIMESTAMP_FILTER_CLASS_CONFIG = "timestamp.filter.class";
-  private static final String TIMESTAMP_FILTER_CLASS_DOC =
-      "Timestamp filter class that implements the <code>TimeStampFilter</code> interface";
-
   public static final String PARTITION_GROUPER_CLASS_CONFIG = "partition.grouper";
   private static final String PARTITION_GROUPER_CLASS_DOC =
       "Partition grouper class that implements the <code>KafkaGrouper</code> interface.";
@@ -119,8 +114,9 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
             "",
             ConfigDef.Importance.HIGH,
             GROUP_ID_DOC)
-        .define(ZOOKEEPER_CONNECT_CONFIG, // required with no default value
+        .define(ZOOKEEPER_CONNECT_CONFIG,
             ConfigDef.Type.STRING,
+            "",
             ConfigDef.Importance.HIGH,
             ZOOKEEPER_CONNECT_DOC)
         .define(REPLICATION_FACTOR_CONFIG,
@@ -131,14 +127,9 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
             REPLICATION_FACTOR_DOC)
         .define(MESSAGE_DECODER_CLASS_CONFIG,
             ConfigDef.Type.CLASS,
-            DefaultMessageDecoder.class.getName(),
+            DefaultKafkaMessageDecoder.class.getName(),
             ConfigDef.Importance.MEDIUM,
             MESSAGE_DECODER_CLASS_DOC)
-        .define(TIMESTAMP_FILTER_CLASS_CONFIG,
-            ConfigDef.Type.CLASS,
-            DefaultTimeStampFilter.class.getName(),
-            ConfigDef.Importance.MEDIUM,
-            TIMESTAMP_FILTER_CLASS_DOC)
         .define(PARTITION_GROUPER_CLASS_CONFIG,
             ConfigDef.Type.CLASS,
             DefaultPartitionGrouper.class.getName(),
@@ -228,7 +219,6 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
     props.remove(FETCH_THRESHOLD_CONFIG);
     props.remove(PARTITION_GROUPER_CLASS_CONFIG);
     props.remove(MESSAGE_DECODER_CLASS_CONFIG);
-    props.remove(TIMESTAMP_FILTER_CLASS_CONFIG);
     props.remove(REPLICATION_FACTOR_CONFIG);
     props.remove(CHECKPOINT_STORE_NAME_PREFIX_CONFIG);
   }

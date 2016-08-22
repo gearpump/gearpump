@@ -159,18 +159,12 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       // clock status: task(0,0) -> 1, task(0,1)->0, task(1,0)->0, task(1,1)->0
       appMaster.tell(UpdateClock(TaskId(0, 0), 1), mockTask.ref)
 
-      // there is no further upstream, so the upstreamMinClock is Long.MaxValue
-      mockTask.expectMsg(UpstreamMinClock(Long.MaxValue))
-
       // check min clock
       appMaster.tell(GetLatestMinClock, mockTask.ref)
       mockTask.expectMsg(LatestMinClock(0))
 
       // clock status: task(0,0) -> 1, task(0,1)->1, task(1, 0)->0, task(1,1)->0
       appMaster.tell(UpdateClock(TaskId(0, 1), 1), mockTask.ref)
-
-      // there is no further upstream, so the upstreamMinClock is Long.MaxValue
-      mockTask.expectMsg(UpstreamMinClock(Long.MaxValue))
 
       // check min clock
       appMaster.tell(GetLatestMinClock, mockTask.ref)
@@ -238,7 +232,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       for (i <- 1 to 5) {
         val taskId = TaskId(0, 0)
         appMaster.tell(UpdateClock(taskId, i), mockTask.ref)
-        mockTask.expectMsg(UpstreamMinClock(Long.MaxValue))
+
         val cause = s"message loss $i from $taskId"
         appMaster.tell(MessageLoss(0, taskId, cause), mockTask.ref)
         // appmaster restarted
@@ -300,9 +294,7 @@ object AppMasterSpec {
 }
 
 class TaskA(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
-  override def onNext(msg: Message): Unit = {}
 }
 
 class TaskB(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
-  override def onNext(msg: Message): Unit = {}
 }

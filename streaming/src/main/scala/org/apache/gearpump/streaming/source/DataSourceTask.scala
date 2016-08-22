@@ -19,10 +19,13 @@
 package org.apache.gearpump.streaming.source
 
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{Task, TaskContext}
+import org.apache.gearpump.streaming.task.{UpstreamMinClock, Task, TaskContext}
+
+import scala.concurrent.duration._
 
 object DataSourceTask {
   val DATA_SOURCE = "data_source"
@@ -51,18 +54,23 @@ class DataSourceTask private[source](context: TaskContext, conf: UserConfig, sou
   override def onStart(startTime: Instant): Unit = {
     LOG.info(s"opening data source at $startTime")
     source.open(context, startTime)
-    self ! Message("start", System.currentTimeMillis())
+
+    self ! Watermark(source.getWatermark)
   }
 
   override def onNext(message: Message): Unit = {
     0.until(batchSize).foreach { _ =>
-      Option(source.read()).foreach(context.output)
+      Option(source.read()).foreach { msg =>
+        context.output(msg)
+      }
     }
-    self ! Message("continue", System.currentTimeMillis())
+
+    self ! Watermark(source.getWatermark)
   }
 
   override def onStop(): Unit = {
     LOG.info("closing data source...")
     source.close()
   }
+
 }

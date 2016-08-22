@@ -21,6 +21,7 @@ package org.apache.gearpump.streaming.examples.wordcountjava;
 import org.apache.gearpump.Message;
 import org.apache.gearpump.cluster.UserConfig;
 import org.apache.gearpump.streaming.javaapi.Task;
+import org.apache.gearpump.streaming.source.Watermark;
 import org.apache.gearpump.streaming.task.TaskContext;
 
 import java.time.Instant;
@@ -33,13 +34,9 @@ public class Split extends Task {
     super(taskContext, userConf);
   }
 
-  private Long now() {
-    return System.currentTimeMillis();
-  }
-
   @Override
   public void onStart(Instant startTime) {
-    self().tell(new Message("start", now()), self());
+    self().tell(new Watermark(Instant.now()), self());
   }
 
   @Override
@@ -48,8 +45,8 @@ public class Split extends Task {
     // Split the TEXT to words
     String[] words = TEXT.split(" ");
     for (int i = 0; i < words.length; i++) {
-      context.output(new Message(words[i], now()));
+      context.output(new Message(words[i], Instant.now().toEpochMilli()));
     }
-    self().tell(new Message("next", now()), self());
+    self().tell(new Watermark(Instant.now()), self());
   }
 }

@@ -52,14 +52,14 @@ object MessageCountApp extends AkkaApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     SOURCE_TASK -> CLIOption[Int]("<how many kafka source tasks>", required = false,
-    defaultValue = Some(1)),
+      defaultValue = Some(1)),
     COUNT_TASK -> CLIOption("<how many count tasks>", required = false, defaultValue = Some(1)),
     SINK_TASK -> CLIOption[Int]("<how many kafka sink tasks>", required = false,
-    defaultValue = Some(1)),
+      defaultValue = Some(1)),
     SOURCE_TOPIC -> CLIOption[String]("<kafka source topic>", required = true),
     SINK_TOPIC -> CLIOption[String]("<kafka sink topic>", required = true),
     ZOOKEEPER_CONNECT -> CLIOption[String]("<Zookeeper connect string, e.g. localhost:2181/kafka>",
-    required = true),
+      required = true),
     BROKER_LIST -> CLIOption[String]("<Kafka broker list, e.g. localhost:9092>", required = true),
     DEFAULT_FS -> CLIOption[String]("<name of the default file system, e.g. hdfs://localhost:9000>",
       required = true)

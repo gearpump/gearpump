@@ -23,13 +23,14 @@ import java.util.concurrent.TimeUnit
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.source.Watermark
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 class Split(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.output
 
   override def onStart(startTime: Instant): Unit = {
-    self ! Message("start")
+    self ! Watermark(Instant.now)
   }
 
   override def onNext(msg: Message): Unit = {
@@ -41,7 +42,7 @@ class Split(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext
 
     import scala.concurrent.duration._
     taskContext.scheduleOnce(Duration(100, TimeUnit.MILLISECONDS))(self !
-      Message("continue", System.currentTimeMillis()))
+      Watermark(Instant.now))
   }
 }
 

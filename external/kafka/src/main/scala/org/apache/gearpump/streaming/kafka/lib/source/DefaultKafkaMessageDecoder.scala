@@ -16,19 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.transaction.api
+package org.apache.gearpump.streaming.kafka.lib.source
+
+import java.time.Instant
 
 import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.kafka.lib.{MessageAndWatermark, KafkaMessageDecoder}
 
-/**
- * Decodes raw bytes to Message.
- * It is usually written by end user and passed into TimeReplayableSource
- */
-trait MessageDecoder extends java.io.Serializable {
-  /**
-   * @param key key of a kafka message, can be NULL
-   * @param value value of a kafka message
-   * @return a gearpump Message
-   */
-  def fromBytes(key: Array[Byte], value: Array[Byte]): Message
+class DefaultKafkaMessageDecoder extends KafkaMessageDecoder {
+
+  override def fromBytes(key: Array[Byte], value: Array[Byte]): MessageAndWatermark = {
+    val time = Instant.now()
+    MessageAndWatermark(Message(value, time.toEpochMilli), time)
+  }
+
 }
+

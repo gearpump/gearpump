@@ -23,6 +23,7 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import org.apache.gearpump.streaming.source.{Watermark, DataSourceTask}
 import org.slf4j.Logger
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
@@ -30,7 +31,7 @@ import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.serializer.SerializationFramework
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
-import org.apache.gearpump.streaming.{Constants, ProcessorId}
+import org.apache.gearpump.streaming.ProcessorId
 import org.apache.gearpump.util.{LogUtil, TimeOutScheduler}
 import org.apache.gearpump.{Message, TimeStamp}
 
@@ -47,6 +48,7 @@ class TaskActor(
     extends Actor with ExpressTransport with TimeOutScheduler {
   var upstreamMinClock: TimeStamp = 0L
   private var _minClock: TimeStamp = 0L
+  private var minClockReported: Boolean = true
 
   def serializerPool: SerializationFramework = inputSerializerPool
 
@@ -194,7 +196,7 @@ class TaskActor(
     // Put this as the last step so that the subscription is already initialized.
     // Message sending in current Task before onStart will not be delivered to
     // target
-    onStart(Instant.ofEpochMilli(upstreamMinClock))
+    onStart(Instant.ofEpochMilli(_minClock))
 
     appMaster ! GetUpstreamMinClock(taskId)
     context.become(handleMessages(sender))
@@ -203,7 +205,7 @@ class TaskActor(
   def waitForTaskRegistered: Receive = {
     case start@TaskRegistered(_, sessionId, startClock) =>
       this.sessionId = sessionId
-      this.upstreamMinClock = startClock
+      this._minClock = startClock
       context.become(waitForStartClock)
   }
 
@@ -240,34 +242,15 @@ class TaskActor(
       receiveMessage(message, sender)
     case inputMessage: Message =>
       receiveMessage(inputMessage, sender)
+    case watermark@Watermark(instant) =>
+      if (self.eq(sender) && minClockReported) {
+        updateUpstreamMinClock(instant.toEpochMilli)
+        minClockReported = false
+      }
+      receiveMessage(watermark.toMessage, sender)
+
     case upstream@UpstreamMinClock(upstreamClock) =>
-      this.upstreamMinClock = upstreamClock
-
-      val subMinClock = subscriptions.foldLeft(Long.MaxValue) { (min, sub) =>
-        val subMin = sub._2.minClock
-        // A subscription is holding back the _minClock;
-        // we send AckRequest to its tasks to push _minClock forward
-        if (subMin == _minClock) {
-          sub._2.sendAckRequestOnStallingTime(_minClock)
-        }
-        Math.min(min, subMin)
-      }
-
-      _minClock = Math.max(life.birth, Math.min(upstreamMinClock, subMinClock))
-
-      val update = UpdateClock(taskId, _minClock)
-      context.system.scheduler.scheduleOnce(CLOCK_REPORT_INTERVAL) {
-        appMaster ! update
-      }
-
-      // Checks whether current task is dead.
-      if (_minClock > life.death) {
-        // There will be no more message received...
-        val unRegister = UnRegisterTask(taskId, executorId)
-        executor ! unRegister
-
-        LOG.info(s"Sending $unRegister, current minclock: ${_minClock}, life: $life")
-      }
+      updateUpstreamMinClock(upstreamClock)
 
     case ChangeTask(_, dagVersion, life, subscribers) =>
       this.life = life
@@ -310,8 +293,8 @@ class TaskActor(
   private def receiveMessage(msg: Message, sender: ActorRef): Unit = {
     val messageAfterCheck = securityChecker.checkMessage(msg, sender)
     messageAfterCheck match {
-      case Some(msg) =>
-        queue.add(msg)
+      case Some(m) =>
+        queue.add(m)
         doHandleMessage()
       case None =>
       // TODO: Indicate the error and avoid the LOG flood
@@ -322,11 +305,44 @@ class TaskActor(
   private def getSubscription(processorId: ProcessorId): Option[Subscription] = {
     subscriptions.find(_._1 == processorId).map(_._2)
   }
+
+  private def updateUpstreamMinClock(upstreamClock: TimeStamp): Unit = {
+    if (upstreamClock > this.upstreamMinClock) {
+      task.onWatermarkProgress(Instant.ofEpochMilli(this.upstreamMinClock))
+    }
+    this.upstreamMinClock = upstreamClock
+
+    val subMinClock = subscriptions.foldLeft(Long.MaxValue) { (min, sub) =>
+      val subMin = sub._2.minClock
+      // A subscription is holding back the _minClock;
+      // we send AckRequest to its tasks to push _minClock forward
+      if (subMin == _minClock) {
+        sub._2.sendAckRequestOnStallingTime(_minClock)
+      }
+      Math.min(min, subMin)
+    }
+
+    _minClock = Math.max(life.birth, Math.min(upstreamMinClock, subMinClock))
+
+    val update = UpdateClock(taskId, _minClock)
+    context.system.scheduler.scheduleOnce(CLOCK_REPORT_INTERVAL) {
+      appMaster ! update
+      minClockReported = true
+    }
+
+
+    // Checks whether current task is dead.
+    if (_minClock > life.death) {
+      // There will be no more message received...
+      val unRegister = UnRegisterTask(taskId, executorId)
+      executor ! unRegister
+
+      LOG.info(s"Sending $unRegister, current minclock: ${_minClock}, life: $life")
+    }
+  }
 }
 
 object TaskActor {
-  // 3 seconds
-  val CLOCK_SYNC_TIMEOUT_INTERVAL = 3 * 1000
 
   // If the message comes from an unknown source, securityChecker will drop it
   class SecurityChecker(task_id: TaskId, self: ActorRef) {

@@ -29,13 +29,16 @@ import org.apache.gearpump.streaming.task.TaskContext
 class CountProcessor(taskContext: TaskContext, conf: UserConfig)
   extends PersistentTask[Int](taskContext, conf) {
 
+  private val serializer = new ChillSerializer[Int]
+
   override def persistentState: PersistentState[Int] = {
     import com.twitter.algebird.Monoid.intMonoid
-    new NonWindowState[Int](new AlgebirdMonoid(intMonoid), new ChillSerializer[Int])
+    new NonWindowState[Int](new AlgebirdMonoid(intMonoid), serializer)
   }
 
   override def processMessage(state: PersistentState[Int], message: Message): Unit = {
     state.update(message.timestamp, 1)
+    state.get.foreach(s => taskContext.output(Message(serializer.serialize(s), message.timestamp)))
   }
 }
 

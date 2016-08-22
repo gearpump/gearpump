@@ -21,7 +21,6 @@ package org.apache.gearpump.streaming.task
 import java.time.Instant
 
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.Actor.Receive
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import org.slf4j.Logger
@@ -157,6 +156,14 @@ trait TaskInterface {
    * @return the handler
    */
   def receiveUnManagedMessage: Receive = null
+
+  /**
+   * Method called on watermark update.
+   * Usually safe to output or checkpoint states earlier than watermark.
+   *
+   * @param watermark represents event time progress.
+   */
+  def onWatermarkProgress(watermark: Instant): Unit
 }
 
 abstract class Task(taskContext: TaskContext, userConf: UserConfig) extends TaskInterface {
@@ -188,4 +195,7 @@ abstract class Task(taskContext: TaskContext, userConf: UserConfig) extends Task
     case msg =>
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + msg.toString)
   }
+
+  override def onWatermarkProgress(watermark: Instant): Unit = {}
+
 }

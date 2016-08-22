@@ -147,7 +147,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
   /** Handles messages from Tasks */
   def taskMessageHandler: Receive = {
     case clock: ClockEvent =>
-      taskManager.foreach(_ forward clock)
+      clockService.foreach(_ forward clock)
     case register: RegisterTask =>
       taskManager.foreach(_ forward register)
     case unRegister: UnRegisterTask =>

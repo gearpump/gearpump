@@ -42,7 +42,7 @@ class DynamicDagSpec extends TestSpecBase {
       // todo: blocked by #1450
     }
 
-    "can replace down stream with wordcount's sum processor (new processor will have metrics)" in {
+    "can replace downstream with wordcount's sum processor (new processor will have metrics)" in {
       // setup
       val appId = expectSolJarSubmittedWithAppId()
 
@@ -57,7 +57,7 @@ class DynamicDagSpec extends TestSpecBase {
       processorHasThroughput(appId, laterProcessors.keySet.max, "receiveThroughput")
     }
 
-    "can replace up stream with wordcount's split processor (new processor will have metrics)" in {
+    "can replace upstream with wordcount's split processor (new processor will have metrics)" in {
       // setup
       val appId = expectSolJarSubmittedWithAppId()
 

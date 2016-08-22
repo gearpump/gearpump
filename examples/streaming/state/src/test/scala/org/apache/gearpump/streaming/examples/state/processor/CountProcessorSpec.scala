@@ -66,16 +66,11 @@ class CountProcessorSpec extends PropSpec with PropertyChecks with Matchers {
 
         for (i <- 0L to num) {
           count.onNext(Message("", i))
-          count.state.get shouldBe Some(i + 1)
+          count.getState.get shouldBe Some(i + 1)
         }
-        // Next checkpoint time is not arrived yet
-        when(taskContext.upstreamMinClock).thenReturn(0L)
-        count.onNext(PersistentTask.CHECKPOINT)
-        appMaster.expectNoMsg(10.milliseconds)
 
         // Time to checkpoint
-        when(taskContext.upstreamMinClock).thenReturn(num)
-        count.onNext(PersistentTask.CHECKPOINT)
+        count.onWatermarkProgress(Instant.ofEpochMilli(num))
         // Only the state before checkpoint time is checkpointed
         appMaster.expectMsg(UpdateCheckpointClock(taskContext.taskId, num))
     }

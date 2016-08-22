@@ -15,17 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.streaming.kafka.lib
 
-package org.apache.gearpump.streaming.source
+import java.time.Instant
 
-import org.apache.gearpump.streaming.transaction.api.TimeStampFilter
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump._
 
 /**
- * TimeStampFilter filters out messages which have obsolete (smaller) timestamp.
+ * Decodes Kafka raw message of (key, value) bytes
  */
-class DefaultTimeStampFilter extends TimeStampFilter {
-  override def filter(msg: Message, predicate: TimeStamp): Option[Message] = {
-    Option(msg).find(_.timestamp >= predicate)
-  }
+trait KafkaMessageDecoder extends java.io.Serializable {
+  /**
+   * @param key key of a kafka message, can be NULL
+   * @param value value of a kafka message
+   * @return a gearpump Message and watermark (i.e. event time progress)
+   */
+  def fromBytes(key: Array[Byte], value: Array[Byte]): MessageAndWatermark
 }
+
+case class MessageAndWatermark(message: Message, watermark: Instant)

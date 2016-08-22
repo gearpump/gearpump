@@ -19,6 +19,7 @@ package org.apache.gearpump.streaming.examples.fsio
 
 import java.time.Instant
 
+import org.apache.gearpump.streaming.source.Watermark
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.io.SequenceFile._
 import org.apache.hadoop.io.{SequenceFile, Text}
@@ -64,6 +65,6 @@ class SeqFileStreamProducer(taskContext: TaskContext, config: UserConfig)
 object SeqFileStreamProducer {
   def INPUT_PATH: String = "inputpath"
 
-  val Start = Message("start")
-  val Continue = Message("continue")
+  val Start = Watermark(Instant.now)
+  val Continue = Watermark(Instant.now)
 }

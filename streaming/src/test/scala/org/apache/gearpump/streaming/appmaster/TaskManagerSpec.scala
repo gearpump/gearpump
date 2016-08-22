@@ -270,11 +270,9 @@ object TaskManagerSpec {
 
   class Task1(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onNext(msg: Message): Unit = {}
   }
 
   class Task2(taskContext: TaskContext, userConf: UserConfig)
     extends Task(taskContext, userConf) {
-    override def onNext(msg: Message): Unit = {}
   }
 }

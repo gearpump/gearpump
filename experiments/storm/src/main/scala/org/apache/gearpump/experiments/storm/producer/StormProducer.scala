@@ -26,6 +26,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpSpout
 import org.apache.gearpump.experiments.storm.util._
+import org.apache.gearpump.streaming.source.Watermark
 import org.apache.gearpump.streaming.task._
 
 import scala.concurrent.duration.Duration
@@ -55,7 +56,7 @@ private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
       getCheckpointClock
     }
     timeoutMillis.foreach(scheduleTimeout)
-    self ! Message("start")
+    self ! Watermark(Instant.now)
   }
 
   override def onNext(msg: Message): Unit = {
@@ -68,7 +69,7 @@ private[storm] class StormProducer(gearpumpSpout: GearpumpSpout,
       case _ =>
         gearpumpSpout.next(msg)
     }
-    self ! Message("continue")
+    self ! Watermark(Instant.now)
   }
 
   override def receiveUnManagedMessage: Receive = {

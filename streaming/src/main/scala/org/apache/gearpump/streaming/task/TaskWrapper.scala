@@ -36,7 +36,7 @@ import org.apache.gearpump.{TimeStamp, Message}
  * @param userConf user config
  */
 class TaskWrapper(
-    val taskId: TaskId, taskClass: Class[_ <: Task], context: TaskContextData,
+    val taskId: TaskId, val taskClass: Class[_ <: Task], context: TaskContextData,
     userConf: UserConfig) extends TaskContext with TaskInterface {
 
   private val LOG = LogUtil.getLogger(taskClass, task = taskId)
@@ -131,4 +131,8 @@ class TaskWrapper(
    * containing environment.
    */
   override def logger: Logger = LOG
+
+  override def onWatermarkProgress(watermark: Instant): Unit = {
+    task.foreach(_.onWatermarkProgress(watermark))
+  }
 }

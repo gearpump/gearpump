@@ -23,30 +23,21 @@ import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-class DefaultMessageDecoderSpec extends PropSpec with PropertyChecks with Matchers {
+class DefaultKafkaMessageDecoderSpec extends PropSpec with PropertyChecks with Matchers {
   property("DefaultMessageDecoder should keep the original bytes data in Message") {
-    val decoder = new DefaultMessageDecoder()
+    val decoder = new DefaultKafkaMessageDecoder()
     forAll(Gen.chooseNum[Int](0, 100), Gen.alphaStr) { (k: Int, v: String) =>
       val kbytes = Injection[Int, Array[Byte]](k)
       val vbytes = Injection[String, Array[Byte]](v)
       val timestamp = System.currentTimeMillis()
-      val message = decoder.fromBytes(kbytes, vbytes)
+      val msgAndWmk = decoder.fromBytes(kbytes, vbytes)
+      val message = msgAndWmk.message
+      val watermark = msgAndWmk.watermark
       message.msg shouldBe vbytes
+      // processing time as message timestamp and watermark
+      message.timestamp shouldBe watermark.toEpochMilli
       message.timestamp should be >= timestamp
     }
   }
 }
 
-class StringMessageDecoderSpec extends PropSpec with PropertyChecks with Matchers {
-  property("StringMessageDecoder should decode original bytes data into string") {
-    val decoder = new StringMessageDecoder()
-    forAll(Gen.alphaStr, Gen.alphaStr) { (k: String, v: String) =>
-      val kbytes = Injection[String, Array[Byte]](k)
-      val vbytes = Injection[String, Array[Byte]](v)
-      val timestamp = System.currentTimeMillis()
-      val message = decoder.fromBytes(kbytes, vbytes)
-      message.msg shouldBe v
-      message.timestamp should be >= timestamp
-    }
-  }
-}

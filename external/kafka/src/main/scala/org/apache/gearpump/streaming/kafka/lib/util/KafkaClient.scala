@@ -18,8 +18,6 @@
 
 package org.apache.gearpump.streaming.kafka.lib.util
 
-import java.util.Properties
-
 import kafka.admin.AdminUtils
 import kafka.cluster.Broker
 import kafka.common.TopicAndPartition
