@@ -155,7 +155,7 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
             CONSUMER_START_OFFSET_DOC)
         .define(ENABLE_AUTO_COMMIT_CONFIG,
             ConfigDef.Type.BOOLEAN,
-            true,
+            false,
             ConfigDef.Importance.MEDIUM,
             ENABLE_AUTO_COMMIT_DOC)
         .define(CHECKPOINT_STORE_NAME_PREFIX_CONFIG,
@@ -209,7 +209,6 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
     if (!props.containsKey(GROUP_ID_CONFIG)) {
       props.put(GROUP_ID_CONFIG, getString(GROUP_ID_CONFIG));
     }
-    props.put(ENABLE_AUTO_COMMIT_CONFIG, "false");
 
     return new ConsumerConfig(props);
   }

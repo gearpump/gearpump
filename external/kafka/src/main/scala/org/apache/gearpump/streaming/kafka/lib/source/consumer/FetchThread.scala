@@ -116,9 +116,9 @@ private[kafka] class FetchThread(
         resetConsumers(nextOffsets)
         reset = false
       }
-      val hasMoreMessages = fetchMessage
+      val fetchMore: Boolean = fetchMessage
       sleeper.reset()
-      if (!hasMoreMessages) {
+      if (!fetchMore) {
         // sleep for given duration
         sleeper.sleep(fetchSleepMS)
       }
@@ -133,19 +133,21 @@ private[kafka] class FetchThread(
 
   /**
    * fetch message from each TopicAndPartition in a round-robin way
+   *
+   * @return whether to fetch more messages
    */
   private def fetchMessage: Boolean = {
-    consumers.foldLeft(false) { (hasNext, tpAndConsumer) =>
-      val (_, consumer) = tpAndConsumer
-      if (incomingQueue.size < fetchThreshold) {
+    if (incomingQueue.size >= fetchThreshold) {
+      false
+    } else {
+      consumers.foldLeft(false) { (hasNext, tpAndConsumer) =>
+        val (_, consumer) = tpAndConsumer
         if (consumer.hasNext) {
           incomingQueue.put(consumer.next())
           true
         } else {
           hasNext
         }
-      } else {
-        true
       }
     }
   }
