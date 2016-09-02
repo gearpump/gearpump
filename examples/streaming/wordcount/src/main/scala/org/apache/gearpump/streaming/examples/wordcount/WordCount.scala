@@ -18,16 +18,17 @@
 
 package org.apache.gearpump.streaming.examples.wordcount
 
-import org.slf4j.Logger
-
+import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.embedded.EmbeddedCluster
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.source.DataSourceProcessor
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph.Node
 import org.apache.gearpump.util.{AkkaApp, Graph, LogUtil}
+import org.slf4j.Logger
 
 /** Same WordCount with low level Processor Graph syntax */
 object WordCount extends AkkaApp with ArgumentsParser {
@@ -35,21 +36,27 @@ object WordCount extends AkkaApp with ArgumentsParser {
   val RUN_FOR_EVER = -1
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "split" -> CLIOption[Int]("<how many split tasks>", required = false, defaultValue = Some(1)),
+    "source" -> CLIOption[Int]("<how many source tasks>", required = false,
+      defaultValue = Some(1)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1)),
     "debug" -> CLIOption[Boolean]("<true|false>", required = false, defaultValue = Some(false)),
     "sleep" -> CLIOption[Int]("how many seconds to sleep for debug mode", required = false,
       defaultValue = Some(30))
   )
 
-  def application(config: ParseResult): StreamApplication = {
-    val splitNum = config.getInt("split")
+  def application(config: ParseResult, system: ActorSystem): StreamApplication = {
+    implicit val actorSystem = system
+
     val sumNum = config.getInt("sum")
-    val split = Processor[Split](splitNum)
+    val sourceNum = config.getInt("source")
+    val source = new Split
+    val sourceProcessor = DataSourceProcessor(source, sourceNum)
     val sum = Processor[Sum](sumNum)
     val partitioner = new HashPartitioner
+    val computation = sourceProcessor ~ partitioner ~>
+      sum
 
-    val app = StreamApplication("wordCount", Graph(split ~ partitioner ~> sum), UserConfig.empty)
+    val app = StreamApplication("wordCount", Graph(computation), UserConfig.empty)
     app
   }
 
@@ -72,7 +79,7 @@ object WordCount extends AkkaApp with ArgumentsParser {
       case None => ClientContext(akkaConf)
     }
 
-    val app = application(config)
+    val app = application(config, context.system)
     context.submit(app)
 
     if (debugMode) {
