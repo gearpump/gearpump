@@ -36,7 +36,7 @@ object WordCount extends AkkaApp with ArgumentsParser {
   val RUN_FOR_EVER = -1
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "source" -> CLIOption[Int]("<how many source tasks>", required = false,
+    "split" -> CLIOption[Int]("<how many source tasks>", required = false,
       defaultValue = Some(1)),
     "sum" -> CLIOption[Int]("<how many sum tasks>", required = false, defaultValue = Some(1)),
     "debug" -> CLIOption[Boolean]("<true|false>", required = false, defaultValue = Some(false)),
@@ -48,14 +48,12 @@ object WordCount extends AkkaApp with ArgumentsParser {
     implicit val actorSystem = system
 
     val sumNum = config.getInt("sum")
-    val sourceNum = config.getInt("source")
-    val source = new Split
-    val sourceProcessor = DataSourceProcessor(source, sourceNum)
+    val splitNum = config.getInt("split")
+    val split = new Split
+    val sourceProcessor = DataSourceProcessor(split, splitNum, "Split")
     val sum = Processor[Sum](sumNum)
     val partitioner = new HashPartitioner
-    val computation = sourceProcessor ~ partitioner ~>
-      sum
-
+    val computation = sourceProcessor ~ partitioner ~> sum
     val app = StreamApplication("wordCount", Graph(computation), UserConfig.empty)
     app
   }

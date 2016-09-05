@@ -24,10 +24,9 @@ import org.apache.gearpump.streaming.appmaster.ProcessorSummary
 
 class DynamicDagSpec extends TestSpecBase {
 
+  val sourceTaskClass = "org.apache.gearpump.streaming.examples.sol.SOLStreamProducer"
+  val sinkTaskClass = "org.apache.gearpump.streaming.examples.sol.SOLStreamProcessor"
   lazy val solJar = cluster.queryBuiltInExampleJars("sol-").head
-  val splitTaskClass = "org.apache.gearpump.streaming.examples.wordcount.Split"
-  val sumTaskClass = "org.apache.gearpump.streaming.examples.wordcount.Sum"
-  val solName = "sol"
 
   "dynamic dag" should {
     "can retrieve a list of built-in partitioner classes" in {
@@ -42,13 +41,13 @@ class DynamicDagSpec extends TestSpecBase {
       // todo: blocked by #1450
     }
 
-    "can replace downstream with wordcount's sum processor (new processor will have metrics)" in {
+    "can replace downstream with SOLStreamProcessor (new processor will have metrics)" in {
       // setup
-      val appId = expectSolJarSubmittedWithAppId()
+      val appId = expectWordCountJarSubmittedWithAppId()
 
       // exercise
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
-      replaceProcessor(appId, 1, sumTaskClass)
+      replaceProcessor(appId, 1, sinkTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
       Util.retryUntil(() => {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
@@ -57,13 +56,13 @@ class DynamicDagSpec extends TestSpecBase {
       processorHasThroughput(appId, laterProcessors.keySet.max, "receiveThroughput")
     }
 
-    "can replace upstream with wordcount's split processor (new processor will have metrics)" in {
+    "can replace upstream with SOLStreamProducer (new processor will have metrics)" in {
       // setup
-      val appId = expectSolJarSubmittedWithAppId()
+      val appId = expectWordCountJarSubmittedWithAppId()
 
       // exercise
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
-      replaceProcessor(appId, 0, splitTaskClass)
+      replaceProcessor(appId, 0, sourceTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
       Util.retryUntil(() => {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
@@ -74,11 +73,11 @@ class DynamicDagSpec extends TestSpecBase {
 
     "fall back to last dag version when replacing a processor failid" in {
       // setup
-      val appId = expectSolJarSubmittedWithAppId()
+      val appId = expectWordCountJarSubmittedWithAppId()
 
       // exercise
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
-      replaceProcessor(appId, 1, sumTaskClass)
+      replaceProcessor(appId, 1, sinkTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
       Util.retryUntil(() => {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
@@ -99,12 +98,12 @@ class DynamicDagSpec extends TestSpecBase {
 
     "fall back to last dag version when AppMaster HA triggered" in {
       // setup
-      val appId = expectSolJarSubmittedWithAppId()
+      val appId = expectWordCountJarSubmittedWithAppId()
 
       // exercise
       val formerAppMaster = restClient.queryApp(appId).appMasterPath
       val formerProcessors = restClient.queryStreamingAppDetail(appId).processors
-      replaceProcessor(appId, 1, sumTaskClass)
+      replaceProcessor(appId, 1, sinkTaskClass)
       var laterProcessors: Map[ProcessorId, ProcessorSummary] = null
       Util.retryUntil(() => {
         laterProcessors = restClient.queryStreamingAppDetail(appId).processors
@@ -120,11 +119,11 @@ class DynamicDagSpec extends TestSpecBase {
     }
   }
 
-  private def expectSolJarSubmittedWithAppId(): Int = {
+  private def expectWordCountJarSubmittedWithAppId(): Int = {
     val appId = restClient.getNextAvailableAppId()
-    val success = restClient.submitApp(solJar, cluster.getWorkerHosts.length)
+    val success = restClient.submitApp(wordCountJar, cluster.getWorkerHosts.length)
     success shouldBe true
-    expectAppIsRunning(appId, solName)
+    expectAppIsRunning(appId, wordCountName)
     Util.retryUntil(() => restClient.queryStreamingAppDetail(appId).clock > 0, "app running")
     appId
   }
@@ -135,7 +134,7 @@ class DynamicDagSpec extends TestSpecBase {
       newTaskClass: String,
       newProcessorDescription: String = "",
       newParallelism: Int = 1): Unit = {
-    val uploadedJar = restClient.uploadJar(wordCountJar)
+    val uploadedJar = restClient.uploadJar(solJar)
     val replaceMe = new ProcessorDescription(formerProcessorId, newTaskClass,
       newParallelism, newProcessorDescription,
       jar = uploadedJar)

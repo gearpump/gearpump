@@ -29,14 +29,12 @@ import scala.collection.mutable.ArrayBuffer
 
 class Split extends DataSource {
 
-  val result = ArrayBuffer[Message]()
-  var item = -1
+  private val result = ArrayBuffer[String]()
+  private var item = -1
   Split.TEXT_TO_SPLIT.lines.foreach { line =>
     line.split("[\\s]+").filter(_.nonEmpty).foreach { msg =>
-      result.append(new Message(msg, System.currentTimeMillis()))
-
+      result.append(msg)
     }
-
   }
 
   override def open(context: TaskContext, startTime: Instant): Unit = {}
@@ -45,10 +43,10 @@ class Split extends DataSource {
 
     if (item < result.size - 1) {
       item += 1
-      result(item)
+      Message(result(item), System.currentTimeMillis())
     } else {
       item = 0
-      result(item)
+      Message(result(item), System.currentTimeMillis())
     }
 
   }
@@ -57,9 +55,7 @@ class Split extends DataSource {
 
   override def getWatermark: Instant = Instant.now()
 
-
 }
-
 
 object Split {
   val TEXT_TO_SPLIT =

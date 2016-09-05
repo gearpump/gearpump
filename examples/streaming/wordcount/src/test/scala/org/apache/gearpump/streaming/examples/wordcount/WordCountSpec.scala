@@ -44,7 +44,7 @@ class WordCountSpec
   property("WordCount should succeed to submit application with required arguments") {
     val requiredArgs = Array.empty[String]
     val optionalArgs = Array(
-      "-source", "1",
+      "-split", "1",
       "-sum", "1")
 
     val args = {
