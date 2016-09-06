@@ -127,8 +127,8 @@ object Services extends AkkaApp with ArgumentsParser {
     val length = 64 // Required
     val bytes = new Array[Byte](length)
     random.nextBytes(bytes)
-    val endecoder = new BASE64Encoder()
-    endecoder.encode(bytes)
+    val encoder = new BASE64Encoder()
+    encoder.encode(bytes)
   }
 
   private def parseHostPort(config: Config): (String, Int) = {

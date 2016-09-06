@@ -46,11 +46,11 @@ public class MessageDecoder extends FrameDecoder {
       ChannelBuffer buf) {
     this.dataInput.setChannelBuffer(buf);
 
-    final int SESION_LENGTH = 4; //int
+    final int SESSION_LENGTH = 4; //int
     final int SOURCE_TASK_LENGTH = 8; //long
     final int TARGET_TASK_LENGTH = 8; //long
     final int MESSAGE_LENGTH = 4; //int
-    final int HEADER_LENGTH = SESION_LENGTH + SOURCE_TASK_LENGTH + TARGET_TASK_LENGTH + MESSAGE_LENGTH;
+    final int HEADER_LENGTH = SESSION_LENGTH + SOURCE_TASK_LENGTH + TARGET_TASK_LENGTH + MESSAGE_LENGTH;
 
     // Make sure that we have received at least a short message
     long available = buf.readableBytes();

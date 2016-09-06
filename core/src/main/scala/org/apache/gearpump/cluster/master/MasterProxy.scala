@@ -85,7 +85,7 @@ class MasterProxy(masters: Iterable[ActorPath], timeout: FiniteDuration)
 
   def active(receptionist: ActorRef): Actor.Receive = {
     case Terminated(receptionist) =>
-      LOG.info("Lost contact with [{}], restablishing connection", receptionist)
+      LOG.info("Lost contact with [{}], reestablishing connection", receptionist)
       context.become(establishing(findMaster))
     case _: ActorIdentity => // ok, from previous establish, already handled
     case WatchMaster(watcher) =>
