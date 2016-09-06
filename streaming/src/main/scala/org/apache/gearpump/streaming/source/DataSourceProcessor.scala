@@ -19,9 +19,8 @@
 package org.apache.gearpump.streaming.source
 
 import akka.actor.ActorSystem
-
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.Processor
+import org.apache.gearpump.streaming.{Constants, Processor}
 
 /**
  * Utility that helps user to create a DAG starting with [[DataSourceTask]]
@@ -42,8 +41,8 @@ object DataSourceProcessor {
       parallelism: Int = 1,
       description: String = "",
       taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem)
-    : Processor[DataSourceTask] = {
-    Processor[DataSourceTask](parallelism, description = description,
-      taskConf.withValue[DataSource](DataSourceTask.DATA_SOURCE, dataSource))
+    : Processor[DataSourceTask[Any, Any]] = {
+    Processor[DataSourceTask[Any, Any]](parallelism, description,
+      taskConf.withValue[DataSource](Constants.GEARPUMP_STREAMING_SOURCE, dataSource))
   }
 }

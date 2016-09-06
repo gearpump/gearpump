@@ -39,7 +39,7 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
       val config = UserConfig.empty
         .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
 
-      val sourceTask = new DataSourceTask(taskContext, config, dataSource)
+      val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, None)
 
       sourceTask.onStart(startTime)
       verify(dataSource).open(taskContext, startTime)
@@ -54,7 +54,7 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
       val config = UserConfig.empty
         .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
 
-      val sourceTask = new DataSourceTask(taskContext, config, dataSource)
+      val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, None)
       val msg = Message(str)
       when(dataSource.read()).thenReturn(msg)
 
@@ -69,7 +69,7 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
     val dataSource = mock[DataSource]
     val config = UserConfig.empty
       .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
-    val sourceTask = new DataSourceTask(taskContext, config, dataSource)
+    val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, None)
 
     sourceTask.onStop()
     verify(dataSource).close()

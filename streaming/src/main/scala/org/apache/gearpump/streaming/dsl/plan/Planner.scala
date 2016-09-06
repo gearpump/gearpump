@@ -29,7 +29,7 @@ import org.apache.gearpump.util.Graph
 
 class Planner {
 
-  /*
+  /**
    * Converts Dag of Op to Dag of TaskDescription. TaskDescription is part of the low
    * level Graph API.
    */
@@ -74,7 +74,7 @@ class Planner {
       dag.inDegreeOf(node2) == 1 &&
       // For processor node, we don't allow it to merge with downstream operators
       !node1.head.isInstanceOf[ProcessorOp[_ <: Task]]) {
-      val (_, edge, _) = dag.outgoingEdgesOf(node1)(0)
+      val (_, edge, _) = dag.outgoingEdgesOf(node1).head
       if (edge == Direct) {
         val opList = OpChain(node1.ops ++ node2.ops)
         dag.addVertex(opList)

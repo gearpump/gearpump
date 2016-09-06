@@ -19,17 +19,12 @@
 package org.apache.gearpump.streaming.source
 
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.{UpstreamMinClock, Task, TaskContext}
-
-import scala.concurrent.duration._
-
-object DataSourceTask {
-  val DATA_SOURCE = "data_source"
-}
+import org.apache.gearpump.streaming.Constants._
+import org.apache.gearpump.streaming.dsl.plan.OpTranslator.{DummyInputFunction, SingleInputFunction}
+import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 /**
  * Default Task container for [[org.apache.gearpump.streaming.source.DataSource]] that
@@ -43,13 +38,38 @@ object DataSourceTask {
  *  - `DataSource.read()` in each `onNext`, which reads a batch of messages
  *  - `DataSource.close()` in `onStop`
  */
-class DataSourceTask private[source](context: TaskContext, conf: UserConfig, source: DataSource)
+class DataSourceTask[IN, OUT] private[source](
+    context: TaskContext,
+    conf: UserConfig,
+    source: DataSource,
+    operator: Option[SingleInputFunction[IN, OUT]])
   extends Task(context, conf) {
 
   def this(context: TaskContext, conf: UserConfig) = {
-    this(context, conf, conf.getValue[DataSource](DataSourceTask.DATA_SOURCE)(context.system).get)
+    this(context, conf,
+      conf.getValue[DataSource](GEARPUMP_STREAMING_SOURCE)(context.system).get,
+      conf.getValue[SingleInputFunction[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system)
+    )
   }
+
   private val batchSize = conf.getInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE).getOrElse(1000)
+
+  private val processMessage: Message => Unit =
+    operator match {
+      case Some(op) =>
+        op match {
+          case bad: DummyInputFunction[IN] =>
+            (message: Message) => context.output(message)
+          case _ =>
+            (message: Message) => {
+              op.process(message.msg.asInstanceOf[IN]).foreach { m: OUT =>
+                context.output(Message(m, message.timestamp))
+              }
+            }
+        }
+      case None =>
+        (message: Message) => context.output(message)
+    }
 
   override def onStart(startTime: Instant): Unit = {
     LOG.info(s"opening data source at $startTime")
@@ -58,11 +78,9 @@ class DataSourceTask private[source](context: TaskContext, conf: UserConfig, sou
     self ! Watermark(source.getWatermark)
   }
 
-  override def onNext(message: Message): Unit = {
+  override def onNext(m: Message): Unit = {
     0.until(batchSize).foreach { _ =>
-      Option(source.read()).foreach { msg =>
-        context.output(msg)
-      }
+      Option(source.read()).foreach(processMessage)
     }
 
     self ! Watermark(source.getWatermark)

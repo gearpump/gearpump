@@ -26,6 +26,7 @@ import org.apache.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner}
 import org.apache.gearpump.streaming.dsl.StreamSpec.Join
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
+import org.apache.gearpump.streaming.source.DataSourceTask
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
@@ -40,7 +41,7 @@ import scala.util.{Either, Left, Right}
 class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with MockitoSugar {
 
 
-  implicit var system: ActorSystem = null
+  implicit var system: ActorSystem = _
 
   override def beforeAll(): Unit = {
     system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
@@ -75,7 +76,7 @@ class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Mock
     val query = app.source(List("two"), 1, "").map[Either[(String, Int), String]](Right(_))
     stream.merge(query).process[(String, Int)](classOf[Join], 1)
 
-    val appDescription = app.plan
+    val appDescription = app.plan()
 
     val dagTopology = appDescription.dag.mapVertex(_.taskClass).mapEdge { (node1, edge, node2) =>
       edge.partitionerFactory.partitioner.getClass.getName
@@ -87,7 +88,7 @@ class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Mock
   }
 
   private def getExpectedDagTopology: Graph[String, String] = {
-    val source = classOf[SourceTask[_, _]].getName
+    val source = classOf[DataSourceTask[_, _]].getName
     val group = classOf[GroupByTask[_, _, _]].getName
     val merge = classOf[TransformTask[_, _]].getName
     val join = classOf[Join].getName
@@ -108,7 +109,7 @@ object StreamSpec {
 
   class Join(taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
-    var query: String = null
+    var query: String = _
 
     override def onNext(msg: Message): Unit = {
       msg.msg match {

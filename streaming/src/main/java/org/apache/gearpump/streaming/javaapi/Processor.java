@@ -73,7 +73,8 @@ public class Processor<T extends org.apache.gearpump.streaming.task.Task> implem
    * @return the new created source processor
    */
   public static Processor<DataSourceTask> source(DataSource source, int parallelism, String description, UserConfig taskConf, ActorSystem system) {
-    org.apache.gearpump.streaming.Processor<DataSourceTask> p = DataSourceProcessor.apply(source, parallelism, description, taskConf, system);
+    org.apache.gearpump.streaming.Processor<DataSourceTask<Object, Object>> p =
+        DataSourceProcessor.apply(source, parallelism, description, taskConf, system);
     return new Processor(p);
   }
 
