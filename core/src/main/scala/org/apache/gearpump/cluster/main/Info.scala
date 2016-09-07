@@ -15,15 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.gearpump.cluster.main
 
+import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
+import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
-import org.apache.gearpump.util.{AkkaApp, LogUtil}
+/** Tool to query master info */
+object Info extends AkkaApp with ArgumentsParser {
 
-/** Tool to run any main class by providing a jar */
-object MainRunner extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
@@ -32,12 +33,20 @@ object MainRunner extends AkkaApp with ArgumentsParser {
     Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false,
       defaultValue = None))
 
-  def main(akkaConf: Config, args: Array[String]): Unit = {
-    val mainClazz = args(0)
-    val commandArgs = args.drop(1)
+  override val description = "Query the Application list"
 
-    val clazz = Thread.currentThread().getContextClassLoader().loadClass(mainClazz)
-    val mainMethod = clazz.getMethod("main", classOf[Array[String]])
-    mainMethod.invoke(null, commandArgs)
+  // scalastyle:off println
+  def main(akkaConf: Config, args: Array[String]): Unit = {
+    val client = ClientContext(akkaConf)
+
+    val AppMastersData(appMasters) = client.listApps
+    Console.println("== Application Information ==")
+    Console.println("====================================")
+    appMasters.foreach { appData =>
+      Console.println(s"application: ${appData.appId}, name: ${appData.appName}, " +
+        s"status: ${appData.status}, worker: ${appData.workerPath}")
+    }
+    client.close()
   }
+  // scalastyle:on println
 }

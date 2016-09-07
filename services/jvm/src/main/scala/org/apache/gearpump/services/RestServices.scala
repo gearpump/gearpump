@@ -18,8 +18,6 @@
 
 package org.apache.gearpump.services
 
-import org.apache.gearpump.jarstore.local.LocalJarStoreService
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -31,7 +29,7 @@ import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import org.apache.commons.lang.exception.ExceptionUtils
 
-import org.apache.gearpump.jarstore.JarStoreService
+import org.apache.gearpump.jarstore.JarStoreClient
 import org.apache.gearpump.util.{Constants, LogUtil}
 // NOTE: This cannot be removed!!!
 import org.apache.gearpump.services.util.UpickleUtil._
@@ -46,16 +44,7 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
 
   private val config = system.settings.config
 
-  // only LocalJarStoreService is supported now for "Compose DAG"
-  // since DFSJarStoreService requires HDFS to be on the classpath.
-  // Note this won't affect users  "Submit Gearpump Application" through
-  // dashboard with "jarstore.rootpath" set to HDFS.
-  if (!JarStoreService.get(config).isInstanceOf[LocalJarStoreService]) {
-    LOG.warn("only local jar store is supported for Compose DAG")
-  }
-  private val jarStoreService = new LocalJarStoreService
-  jarStoreService.init(config, system)
-
+  private val jarStoreClient = new JarStoreClient(config, system)
 
   private val securityEnabled = config.getBoolean(
     Constants.GEARPUMP_UI_SECURITY_AUTHENTICATION_ENABLED)
@@ -101,9 +90,9 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
   private def services: RouteService = {
 
     val admin = new AdminService(system)
-    val masterService = new MasterService(master, jarStoreService, system)
+    val masterService = new MasterService(master, jarStoreClient, system)
     val worker = new WorkerService(master, system)
-    val app = new AppMasterService(master, jarStoreService, system)
+    val app = new AppMasterService(master, jarStoreClient, system)
     val sup = new SupervisorService(master, supervisor, system)
 
     new RouteService {

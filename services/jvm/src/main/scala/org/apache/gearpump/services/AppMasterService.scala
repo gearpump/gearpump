@@ -33,7 +33,7 @@ import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.cluster.MasterToClient._
-import org.apache.gearpump.jarstore.JarStoreService
+import org.apache.gearpump.jarstore.{JarStoreClient, FileDirective}
 import org.apache.gearpump.services.AppMasterService.Status
 // NOTE: This cannot be removed!!!
 import org.apache.gearpump.services.util.UpickleUtil._
@@ -42,14 +42,14 @@ import org.apache.gearpump.streaming.appmaster.DagManager._
 import org.apache.gearpump.streaming.appmaster.StreamAppMasterSummary
 import org.apache.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import org.apache.gearpump.util.ActorUtil.{askActor, askAppMaster}
-import org.apache.gearpump.util.FileDirective._
+import FileDirective._
 import org.apache.gearpump.util.{Constants, Util}
 
 /**
  * Management service for AppMaster
  */
 class AppMasterService(val master: ActorRef,
-    val jarStore: JarStoreService, override val system: ActorSystem)
+    val jarStoreClient: JarStoreClient, override val system: ActorSystem)
   extends BasicService {
 
   private val systemConfig = system.settings.config
@@ -71,24 +71,24 @@ class AppMasterService(val master: ActorRef,
           val msg = java.net.URLDecoder.decode(args, "UTF-8")
           val dagOperation = read[DAGOperation](msg)
           (post & entity(as[Multipart.FormData])) { _ =>
-          uploadFile { form =>
-            val jar = form.getFile("jar").map(_.file)
+            uploadFile { form =>
+              val jar = form.getFileInfo("jar").map(_.file)
 
-            if (jar.nonEmpty) {
-              dagOperation match {
-                case replace: ReplaceProcessor =>
-                  val description = replace.newProcessorDescription.copy(jar =
-                    Util.uploadJar(jar.get, jarStore))
-                  val dagOperationWithJar = replace.copy(newProcessorDescription = description)
-                  replaceProcessor(dagOperationWithJar)
+              if (jar.nonEmpty) {
+                dagOperation match {
+                  case replace: ReplaceProcessor =>
+                    val description = replace.newProcessorDescription.copy(jar =
+                      Util.uploadJar(jar.get, jarStoreClient))
+                    val dagOperationWithJar = replace.copy(newProcessorDescription = description)
+                    replaceProcessor(dagOperationWithJar)
+                }
+              } else {
+                replaceProcessor(dagOperation)
               }
-            } else {
-              replaceProcessor(dagOperation)
             }
+          } ~ (post & entity(as[FormData])) { _ =>
+            replaceProcessor(dagOperation)
           }
-        } ~ (post & entity(as[FormData])) { _ =>
-          replaceProcessor(dagOperation)
-        }
         }
       } ~
       path("stallingtasks") {

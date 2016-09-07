@@ -43,7 +43,7 @@ import org.apache.gearpump.cluster.WorkerToMaster._
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{ClusterConfig, ExecutorJVMConfig}
-import org.apache.gearpump.jarstore.JarStoreService
+import org.apache.gearpump.jarstore.{JarStoreClient, JarStoreServer}
 import org.apache.gearpump.metrics.Metrics.ReportMetrics
 import org.apache.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import org.apache.gearpump.util.ActorSystemBooter.Daemon
@@ -69,8 +69,7 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
   private var masterInfo: MasterInfo = null
   private var executorNameToActor = Map.empty[String, ActorRef]
   private val executorProcLauncher: ExecutorProcessLauncher = getExecutorProcLauncher()
-  private val jarStoreService = JarStoreService.get(systemConfig)
-  jarStoreService.init(systemConfig, context.system)
+  private val jarStoreClient = new JarStoreClient(systemConfig, context.system)
 
   private val ioPool = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
   private val resourceUpdateTimeoutMs = 30000 // Milliseconds
@@ -171,7 +170,7 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
         val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo, ioPool,
-          jarStoreService, executorProcLauncher))
+          jarStoreClient, executorProcLauncher))
         executorNameToActor += actorName -> executor
 
         resource = resource - launch.resource
@@ -339,7 +338,7 @@ private[cluster] object Worker {
       launch: LaunchExecutor,
       masterInfo: MasterInfo,
       ioPool: ExecutionContext,
-      jarStoreService: JarStoreService,
+      jarStoreClient: JarStoreClient,
       procLauncher: ExecutorProcessLauncher) extends Actor {
     import launch.{appId, executorId, resource}
 
@@ -407,7 +406,7 @@ private[cluster] object Worker {
       val process = Future {
         val jarPath = ctx.jar.map { appJar =>
           val tempFile = File.createTempFile(appJar.name, ".jar")
-          jarStoreService.copyToLocalFile(tempFile, appJar.filePath)
+          jarStoreClient.copyToLocalFile(tempFile, appJar.filePath)
           val file = new URL("file:" + tempFile)
           file.getFile
         }

@@ -16,17 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.util
+package org.apache.gearpump.jarstore
 
 import java.io.File
+import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 import akka.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.stream.Materializer
-import akka.stream.scaladsl.FileIO
+import akka.stream.scaladsl.{StreamConverters, FileIO}
 import akka.util.ByteString
+
 
 /**
  * FileDirective is a set of Akka-http directive to upload/download
@@ -49,7 +51,7 @@ object FileDirective {
   case class FileInfo(originFileName: String, file: File, length: Long)
 
   class Form(val fields: Map[Name, FormField]) {
-    def getFile(fieldName: String): Option[FileInfo] = {
+    def getFileInfo(fieldName: String): Option[FileInfo] = {
       fields.get(fieldName).flatMap {
         case Left(file) => Option(file)
         case Right(_) => None
@@ -67,25 +69,32 @@ object FileDirective {
   type FormField = Either[FileInfo, String]
 
   /**
-   * directive to uploadFile, it store the uploaded files
-   * to temporary directory, and return a Map from form field name
+   * Store the uploaded files to temporary directory, and return a Map from form field name
    * to FileInfo.
    */
   def uploadFile: Directive1[Form] = {
-    uploadFileTo(null)
-  }
-
-  /**
-   * Store the uploaded files to specific rootDirectory.
-   *
-   * @param rootDirectory directory to store the files.
-   * @return
-   */
-  def uploadFileTo(rootDirectory: File): Directive1[Form] = {
     Directive[Tuple1[Form]] { inner =>
       extractMaterializer {implicit mat =>
         extractExecutionContext {implicit ec =>
-          uploadFileImpl(rootDirectory)(mat, ec) { filesFuture =>
+          uploadFileImpl(mat, ec) { formFuture =>
+            ctx => {
+              formFuture.map(form => inner(Tuple1(form))).flatMap(route => route(ctx))
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Store the uploaded files to JarStore, and return a Map from form field name
+   * to FilePath in JatStore.
+   */
+  def uploadFileTo(jarStore: JarStore): Directive1[Map[Name, FilePath]] = {
+    Directive[Tuple1[Map[Name, FilePath]]] { inner =>
+      extractMaterializer {implicit mat =>
+        extractExecutionContext {implicit ec =>
+          uploadFileImpl(jarStore)(mat, ec) { filesFuture =>
             ctx => {
               filesFuture.map(map => inner(Tuple1(map))).flatMap(route => route(ctx))
             }
@@ -96,26 +105,49 @@ object FileDirective {
   }
 
   // Downloads file from server
-  def downloadFile(file: File): Route = {
+  def downloadFileFrom(jarStore: JarStore, filePath: String): Route = {
     val responseEntity = HttpEntity(
       MediaTypes.`application/octet-stream`,
-      file.length,
-      FileIO.fromFile(file, CHUNK_SIZE))
+      StreamConverters.fromInputStream(
+        () => jarStore.getFile(filePath), CHUNK_SIZE
+      ))
     complete(responseEntity)
   }
 
-  private def uploadFileImpl(rootDirectory: File)(implicit mat: Materializer, ec: ExecutionContext)
+  private def uploadFileImpl(jarStore: JarStore)
+    (implicit mat: Materializer, ec: ExecutionContext): Directive1[Future[Map[Name, FilePath]]] = {
+    Directive[Tuple1[Future[Map[Name, FilePath]]]] { inner =>
+      entity(as[Multipart.FormData]) { (formdata: Multipart.FormData) =>
+        val fileNameMap = formdata.parts.mapAsync(1) { p =>
+          if (p.filename.isDefined) {
+            val path = Instant.now().toEpochMilli + p.filename.get
+            val sink = StreamConverters.fromOutputStream(() => jarStore.createFile(path),
+              autoFlush = true)
+            p.entity.dataBytes.runWith(sink).map(written =>
+              if (written.count > 0) {
+                Map(p.name -> FilePath(path))
+              } else {
+                Map.empty[Name, FilePath]
+              })
+          } else {
+            Future(Map.empty[Name, FilePath])
+          }
+        }.runFold(Map.empty[Name, FilePath])((set, value) => set ++ value)
+        inner(Tuple1(fileNameMap))
+      }
+    }
+  }
+
+  private def uploadFileImpl(implicit mat: Materializer, ec: ExecutionContext)
     : Directive1[Future[Form]] = {
     Directive[Tuple1[Future[Form]]] { inner =>
       entity(as[Multipart.FormData]) { (formdata: Multipart.FormData) =>
         val form = formdata.parts.mapAsync(1) { p =>
           if (p.filename.isDefined) {
-
-            // Reserve the suffix
             val targetPath = File.createTempFile(s"userfile_${p.name}_",
-              s"${p.filename.getOrElse("")}", rootDirectory)
-            val written = p.entity.dataBytes.runWith(FileIO.toFile(targetPath))
-            written.map(written =>
+              s"${p.filename.getOrElse("")}")
+            val writtenFuture = p.entity.dataBytes.runWith(FileIO.toFile(targetPath))
+            writtenFuture.map(written =>
               if (written.count > 0) {
                 Map(p.name -> Left(FileInfo(p.filename.get, targetPath, written.count)))
               } else {

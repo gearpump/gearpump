@@ -15,31 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.gearpump.jarstore.local
-
-import java.io.File
+package org.apache.gearpump.jarstore
 
 import akka.actor.{Actor, Stash}
 import akka.pattern.pipe
-import org.slf4j.Logger
 
 import org.apache.gearpump.cluster.ClientToMaster.{GetJarStoreServer, JarStoreServerAddress}
 import org.apache.gearpump.util._
 
-/**
- * LocalJarStore store the uploaded jar on local disk.
- */
-class LocalJarStore(rootDirPath: String) extends Actor with Stash {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
-
-  val host = context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)
-  val rootDirectory = new File(rootDirPath)
-
-  FileUtils.forceMkdir(rootDirectory)
-
-  val server = new FileServer(context.system, host, 0, rootDirectory)
-
+class JarStoreServer(jarStoreRootPath: String) extends Actor with Stash {
+  private val host = context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)
+  private val jarStore = JarStore.get(jarStoreRootPath)
+  jarStore.init(context.system.settings.config)
+  private val server = new FileServer(context.system, host, 0, jarStore)
   implicit val timeout = Constants.FUTURE_TIMEOUT
   implicit val executionContext = context.dispatcher
 

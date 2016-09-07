@@ -16,20 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.util
+package org.apache.gearpump.jarstore
 
 import java.io.File
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 import akka.actor.ActorSystem
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
+import com.typesafe.config.{ConfigValueFactory, ConfigValue}
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.google.common.io.Files
-import org.apache.gearpump.jarstore.FilePath
-import org.apache.gearpump.util.FileServer._
+import org.apache.gearpump.jarstore.local.LocalJarStore
+import org.apache.gearpump.util.{FileUtils, LogUtil}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.apache.gearpump.jarstore.FileServer._
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
@@ -47,8 +49,7 @@ class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   }
 
   override def beforeAll {
-    val config = TestUtil.DEFAULT_CONFIG
-    system = ActorSystem("FileServerSpec", config)
+    system = ActorSystem("FileServerSpec", TestUtil.DEFAULT_CONFIG)
   }
 
   private def save(client: Client, data: Array[Byte]): FilePath = {
@@ -76,9 +77,13 @@ class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     "serve the data previously stored" in {
 
       val rootDir = Files.createTempDir()
+      val localJarStore: JarStore = new LocalJarStore
+      val conf = TestUtil.DEFAULT_CONFIG.withValue("gearpump.jarstore.rootpath",
+        ConfigValueFactory.fromAnyRef(rootDir.getAbsolutePath))
+      localJarStore.init(conf)
 
-      val server = new FileServer(system, host, 0, rootDir)
-      val port = Await.result((server.start), Duration(25, TimeUnit.SECONDS))
+      val server = new FileServer(system, host, 0, localJarStore)
+      val port = Await.result(server.start, Duration(25, TimeUnit.SECONDS))
 
       LOG.info("start test web server on port " + port)
 
@@ -101,9 +106,13 @@ class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     "handle missed file" in {
 
       val rootDir = Files.createTempDir()
+      val localJarStore: JarStore = new LocalJarStore
+      val conf = TestUtil.DEFAULT_CONFIG.withValue("gearpump.jarstore.rootpath",
+        ConfigValueFactory.fromAnyRef(rootDir.getAbsolutePath))
+      localJarStore.init(conf)
 
-      val server = new FileServer(system, host, 0, rootDir)
-      val port = Await.result((server.start), Duration(25, TimeUnit.SECONDS))
+      val server = new FileServer(system, host, 0, localJarStore)
+      val port = Await.result(server.start, Duration(25, TimeUnit.SECONDS))
 
       val client = new Client(system, host, port.port)
       val fetchedBytes = get(client, FilePath("noexist"))
@@ -114,7 +123,7 @@ class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   private def randomBytes(size: Int): Array[Byte] = {
     val bytes = new Array[Byte](size)
-    (new java.util.Random()).nextBytes(bytes)
+    new java.util.Random().nextBytes(bytes)
     bytes
   }
 }

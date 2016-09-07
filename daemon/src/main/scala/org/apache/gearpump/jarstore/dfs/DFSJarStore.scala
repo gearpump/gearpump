@@ -17,28 +17,23 @@
  */
 package org.apache.gearpump.jarstore.dfs
 
-import java.io.File
+import java.io.{InputStream, OutputStream}
 
-import akka.actor.ActorSystem
 import com.typesafe.config.Config
+import org.apache.gearpump.jarstore.JarStore
+import org.apache.gearpump.util.Constants
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
-import org.slf4j.Logger
-
-import org.apache.gearpump.jarstore.{FilePath, JarStoreService}
-import org.apache.gearpump.util.{Constants, LogUtil}
 
 /**
- * DFSJarStoreService store the uploaded jar on HDFS
+ * DFSJarStore store the uploaded jar on HDFS
  */
-class DFSJarStoreService extends JarStoreService {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
+class DFSJarStore extends JarStore {
   private var rootPath: Path = null
-
   override val scheme: String = "hdfs"
 
-  override def init(config: Config, actorRefFactory: ActorSystem): Unit = {
+  override def init(config: Config): Unit = {
     rootPath = new Path(config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH))
     val fs = rootPath.getFileSystem(new Configuration())
     if (!fs.exists(rootPath)) {
@@ -47,30 +42,26 @@ class DFSJarStoreService extends JarStoreService {
   }
 
   /**
-   * This function will copy the remote file to local file system, called from client side.
+   * Creates the file on JarStore.
    *
-   * @param localFile The destination of file path
-   * @param remotePath The remote file path from JarStore
+   * @param fileName  name of the file to be created on JarStore.
+   * @return OutputStream returns a stream into which the data can be written.
    */
-  override def copyToLocalFile(localFile: File, remotePath: FilePath): Unit = {
-    val filePath = new Path(rootPath, remotePath.path)
+  override def createFile(fileName: String): OutputStream = {
+    val filePath = new Path(rootPath, fileName)
     val fs = filePath.getFileSystem(new Configuration())
-    LOG.info(s"Copying to local file: ${localFile.getAbsolutePath} from ${filePath.toString}")
-    val target = new Path(localFile.toURI().toString)
-    fs.copyToLocalFile(filePath, target)
+    fs.create(filePath)
   }
 
   /**
-   * This function will copy the local file to the remote JarStore, called from client side.
+   * Gets the InputStream to read the file
    *
-   * @param localFile The local file
+   * @param fileName name of the file to be read on JarStore.
+   * @return InputStream returns a stream from which the data can be read.
    */
-  override def copyFromLocal(localFile: File): FilePath = {
-    val remotePath = FilePath(Math.abs(new java.util.Random().nextLong()).toString)
-    val filePath = new Path(rootPath, remotePath.path)
+  override def getFile(fileName: String): InputStream = {
+    val filePath = new Path(rootPath, fileName)
     val fs = filePath.getFileSystem(new Configuration())
-    LOG.info(s"Copying from local file: ${localFile.getAbsolutePath} to ${filePath.toString}")
-    fs.copyFromLocalFile(new Path(localFile.toURI.toString), filePath)
-    remotePath
+    fs.open(filePath)
   }
 }

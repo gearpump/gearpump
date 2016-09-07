@@ -29,9 +29,10 @@ object Pack extends sbt.Build {
     "${PROG_HOME}/lib/yarn/*"
   )
 
-  val applicationClassPath = daemonClassPath ++ Seq(
+  val applicationClassPath = Seq(
     // Current working directory
-    "."
+    ".",
+    "${PROG_HOME}/conf"
   )
 
   val serviceClassPath = Seq(

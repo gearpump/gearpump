@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.util
+package org.apache.gearpump.jarstore
 
 import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,15 +34,14 @@ import akka.stream.scaladsl.{FileIO, Sink, Source}
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsonFormat
 
-import org.apache.gearpump.jarstore.FilePath
-import org.apache.gearpump.util.FileDirective._
-import org.apache.gearpump.util.FileServer.Port
+import org.apache.gearpump.jarstore.FileDirective._
+import org.apache.gearpump.jarstore.FileServer.Port
 
 /**
  * A simple file server implemented with akka-http to store/fetch large
  * binary files.
  */
-class FileServer(system: ActorSystem, host: String, port: Int = 0, rootDirectory: File) {
+class FileServer(system: ActorSystem, host: String, port: Int = 0, jarStore: JarStore) {
   import system.dispatcher
   implicit val actorSystem = system
   implicit val materializer = ActorMaterializer()
@@ -50,17 +49,11 @@ class FileServer(system: ActorSystem, host: String, port: Int = 0, rootDirectory
 
   val route: Route = {
     path("upload") {
-      uploadFileTo(rootDirectory) { form =>
-        val fileName = form.fields.headOption.flatMap { pair =>
-          val (_, fileInfo) = pair
-          fileInfo match {
-            case Left(file) => Option(file.file).map(_.getName)
-            case Right(_) => None
-          }
-        }
+      uploadFileTo(jarStore) { form =>
+        val uploadedFilePath = form.headOption.map(_._2)
 
-        if (fileName.isDefined) {
-          complete(fileName.get)
+        if (uploadedFilePath.isDefined) {
+          complete(uploadedFilePath.get.path)
         } else {
           failWith(new Exception("File not found in the uploaded form"))
         }
@@ -68,7 +61,7 @@ class FileServer(system: ActorSystem, host: String, port: Int = 0, rootDirectory
     } ~
       path("download") {
         parameters("file") { file: String =>
-          downloadFile(new File(rootDirectory, file))
+          downloadFileFrom(jarStore, file)
         }
       } ~
       pathEndOrSingleSlash {
@@ -110,7 +103,7 @@ object FileServer {
   case class Port(port: Int)
 
   /**
-   * Client of [[org.apache.gearpump.util.FileServer]]
+   * Client of [[org.apache.gearpump.jarstore.FileServer]]
    */
   class Client(system: ActorSystem, host: String, port: Int) {
 

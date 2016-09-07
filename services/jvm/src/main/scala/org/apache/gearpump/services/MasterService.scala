@@ -40,19 +40,19 @@ import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig,
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.worker.WorkerSummary
 import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
-import org.apache.gearpump.jarstore.JarStoreService
+import org.apache.gearpump.jarstore.{JarStoreClient, FileDirective, JarStoreServer}
 import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
 import org.apache.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
 // NOTE: This cannot be removed!!!
 import org.apache.gearpump.services.util.UpickleUtil._
 import org.apache.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplication}
 import org.apache.gearpump.util.ActorUtil._
-import org.apache.gearpump.util.FileDirective._
+import FileDirective._
 import org.apache.gearpump.util.{Constants, Graph, Util}
 
 /** Manages service for master node */
 class MasterService(val master: ActorRef,
-    val jarStore: JarStoreService, override val system: ActorSystem)
+    val jarStoreClient: JarStoreClient, override val system: ActorSystem)
   extends BasicService {
 
   import upickle.default.{read, write}
@@ -116,8 +116,8 @@ class MasterService(val master: ActorRef,
     path("submitapp") {
       post {
         uploadFile { form =>
-          val jar = form.getFile("jar").map(_.file)
-          val configFile = form.getFile("configfile").map(_.file)
+          val jar = form.getFileInfo("jar").map(_.file)
+          val configFile = form.getFileInfo("configfile").map(_.file)
           val configString = form.getValue("configstring").getOrElse("")
           val executorCount = form.getValue("executorcount").getOrElse("1").toInt
           val args = form.getValue("args").getOrElse("")
@@ -139,8 +139,8 @@ class MasterService(val master: ActorRef,
     path("submitstormapp") {
       post {
         uploadFile { form =>
-          val jar = form.getFile("jar").map(_.file)
-          val configFile = form.getFile("configfile").map(_.file)
+          val jar = form.getFileInfo("jar").map(_.file)
+          val configFile = form.getFileInfo("configfile").map(_.file)
           val args = form.getValue("args").getOrElse("")
           onComplete(Future(
             MasterService.submitStormApp(jar, configFile, args, systemConfig)
@@ -180,12 +180,12 @@ class MasterService(val master: ActorRef,
     } ~
     path("uploadjar") {
       uploadFile { form =>
-        val jar = form.getFile("jar").map(_.file)
+        val jar = form.getFileInfo("jar").map(_.file)
         if (jar.isEmpty) {
           complete(write(
             MasterService.Status(success = false, reason = "Jar file not found")))
         } else {
-          val jarFile = Util.uploadJar(jar.get, jarStore)
+          val jarFile = Util.uploadJar(jar.get, jarStoreClient)
           complete(write(jarFile))
         }
       }

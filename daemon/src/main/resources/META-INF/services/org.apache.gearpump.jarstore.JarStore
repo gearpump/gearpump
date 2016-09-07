@@ -16,5 +16,5 @@
 # limitations under the License.
 #
 
-org.apache.gearpump.jarstore.local.LocalJarStoreService
-org.apache.gearpump.jarstore.dfs.DFSJarStoreService
+org.apache.gearpump.jarstore.local.LocalJarStore
+org.apache.gearpump.jarstore.dfs.DFSJarStore

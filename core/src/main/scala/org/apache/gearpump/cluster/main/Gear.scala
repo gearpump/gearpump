@@ -17,9 +17,8 @@
  */
 package org.apache.gearpump.cluster.main
 
-import org.slf4j.Logger
-
 import org.apache.gearpump.util.{Constants, LogUtil}
+import org.slf4j.Logger
 
 object Gear {
 

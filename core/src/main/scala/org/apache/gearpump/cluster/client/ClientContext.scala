@@ -33,7 +33,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, ReplayFrom
 import org.apache.gearpump.cluster.MasterToClient.ReplayApplicationResult
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.jarstore.JarStoreService
+import org.apache.gearpump.jarstore.{JarStoreClient, JarStoreServer}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 
@@ -59,8 +59,7 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   LOG.info(s"Starting system ${system.name}")
   val shouldCleanupSystem = Option(sys).isEmpty
 
-  private val jarStoreService = JarStoreService.get(config)
-  jarStoreService.init(config, system)
+  private val jarStoreClient = new JarStoreClient(config, system)
 
   private lazy val master: ActorRef = {
     val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
@@ -140,8 +139,7 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
 
   private def loadFile(jarPath: String): AppJar = {
     val jarFile = new java.io.File(jarPath)
-    val path = jarStoreService.copyFromLocal(jarFile)
-    AppJar(jarFile.getName, path)
+    Util.uploadJar(jarFile, jarStoreClient)
   }
 
   private def checkAndAddNamePrefix(appName: String, namePrefix: String): String = {

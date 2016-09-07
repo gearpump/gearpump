@@ -18,33 +18,25 @@
 
 package org.apache.gearpump.cluster.main
 
+import org.apache.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
 
-import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.util.{AkkaApp, LogUtil}
-
-/** Tool to kill an App */
-object Kill extends AkkaApp with ArgumentsParser {
-
+/** Tool to run any main class by providing a jar */
+object MainRunner extends AkkaApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
-    "appid" -> CLIOption("<application id>", required = true),
     // For document purpose only, OPTION_CONFIG option is not used here.
     // OPTION_CONFIG is parsed by parent shell command "Gear" transparently.
     Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false,
       defaultValue = None))
 
-  override val description = "Kill an application with application Id"
-
   def main(akkaConf: Config, args: Array[String]): Unit = {
-    val config = parse(args)
+    val mainClazz = args(0)
+    val commandArgs = args.drop(1)
 
-    if (null != config) {
-      val client = ClientContext(akkaConf)
-      LOG.info("Client ")
-      client.shutdown(config.getInt("appid"))
-      client.close()
-    }
+    val clazz = Thread.currentThread().getContextClassLoader().loadClass(mainClazz)
+    val mainMethod = clazz.getMethod("main", classOf[Array[String]])
+    mainMethod.invoke(null, commandArgs)
   }
 }

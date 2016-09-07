@@ -27,7 +27,7 @@ import scala.util.{Failure, Success, Try}
 import com.typesafe.config.{Config, ConfigFactory}
 
 import org.apache.gearpump.cluster.AppJar
-import org.apache.gearpump.jarstore.JarStoreService
+import org.apache.gearpump.jarstore.{JarStoreClient, JarStoreServer}
 import org.apache.gearpump.transport.HostPort
 
 object Util {
@@ -123,8 +123,8 @@ object Util {
     }
   }
 
-  def uploadJar(jarFile: File, jarStoreService: JarStoreService): AppJar = {
-    val remotePath = jarStoreService.copyFromLocal(jarFile)
+  def uploadJar(jarFile: File, jarStoreClient: JarStoreClient): AppJar = {
+    val remotePath = jarStoreClient.copyFromLocal(jarFile)
     AppJar(jarFile.getName, remotePath)
   }
 
