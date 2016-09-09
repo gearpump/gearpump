@@ -330,8 +330,6 @@ object MasterService {
   private def getUserApplicationClassPath: Array[String] = {
     Array(
       homeDir + "conf",
-      libHomeDir + "daemon/*",
-      libHomeDir + "yarn/*",
       libHomeDir + "*"
     )
   }
