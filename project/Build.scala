@@ -36,6 +36,7 @@ object Build extends sbt.Build {
   val copySharedSourceFiles = TaskKey[Unit]("copied shared services source code")
 
   val akkaVersion = "2.4.3"
+  val apacheRepo = "https://repository.apache.org/"
   val hadoopVersion = "2.6.0"
   val hbaseVersion = "1.0.0"
   val commonsHttpVersion = "3.1"
@@ -100,11 +101,10 @@ object Build extends sbt.Build {
       pomIncludeRepository := { _ => false },
 
       publishTo := {
-        val nexus = "https://repository.apache.org/"
         if (isSnapshot.value) {
-          Some("snapshots" at nexus + "content/repositories/snapshots")
+          Some("snapshots" at apacheRepo + "content/repositories/snapshots")
         } else {
-          Some("releases" at nexus + "service/local/staging/deploy/maven2")
+          Some("releases" at apacheRepo + "content/repositories/releases")
         }
       },
 
