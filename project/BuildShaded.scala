@@ -28,7 +28,7 @@ object BuildShaded extends sbt.Build {
   val gsCollectionsVersion = "6.2.0"
   private val scalaVersionMajor = "2.11"
 
-  val shadeAssemblySettings = Seq(
+  val shadeAssemblySettings = Build.commonSettings ++ Seq(
     scalaVersion := Build.scalaVersionNumber,
     test in assembly := {},
     assemblyOption in assembly ~= {
@@ -50,7 +50,8 @@ object BuildShaded extends sbt.Build {
   lazy val shaded_akka_kryo = Project(
     id = "gearpump-shaded-akka-kryo",
     base = file("shaded/akka-kryo"),
-    settings = shadeAssemblySettings ++
+    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-akka-kryo",
+      "assembly"), sbtassembly.AssemblyKeys.assembly) ++
         Seq(
           assemblyShadeRules in assembly := Seq(
             ShadeRule.zap("com.google.protobuf.**").inAll,
@@ -75,7 +76,8 @@ object BuildShaded extends sbt.Build {
   lazy val shaded_gs_collections = Project(
     id = "gearpump-shaded-gs-collections",
     base = file("shaded/gs-collections"),
-    settings = shadeAssemblySettings ++
+    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-gs-collections",
+      "assembly"), sbtassembly.AssemblyKeys.assembly) ++
         Seq(
           assemblyShadeRules in assembly := Seq(
             ShadeRule.rename("com.gs.collections.**" ->
@@ -92,7 +94,8 @@ object BuildShaded extends sbt.Build {
   lazy val shaded_guava = Project(
     id = "gearpump-shaded-guava",
     base = file("shaded/guava"),
-    settings = shadeAssemblySettings ++
+    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-guava",
+      "assembly"), sbtassembly.AssemblyKeys.assembly) ++
         Seq(
           assemblyShadeRules in assembly := Seq(
             ShadeRule.rename("com.google.**" -> "org.apache.gearpump.google.@1").inAll
@@ -108,7 +111,8 @@ object BuildShaded extends sbt.Build {
   lazy val shaded_metrics_graphite = Project(
     id = "gearpump-shaded-metrics-graphite",
     base = file("shaded/metrics-graphite"),
-    settings = shadeAssemblySettings ++
+    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-metrics-graphite",
+      "assembly"), sbtassembly.AssemblyKeys.assembly) ++
         Seq(
           assemblyShadeRules in assembly := Seq(
             ShadeRule.rename("com.codahale.metrics.**" ->
