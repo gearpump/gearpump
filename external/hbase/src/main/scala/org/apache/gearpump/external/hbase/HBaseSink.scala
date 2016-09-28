@@ -19,26 +19,31 @@ package org.apache.gearpump.external.hbase
 
 import java.io.{File, ObjectInputStream, ObjectOutputStream}
 
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put}
-import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
-import org.apache.hadoop.hbase.security.{User, UserProvider}
-import org.apache.hadoop.security.UserGroupInformation
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.{Constants, FileUtils}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hbase.client.{Connection, ConnectionFactory, Put}
+import org.apache.hadoop.hbase.security.UserProvider
+import org.apache.hadoop.hbase.util.Bytes
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
+import org.apache.hadoop.security.UserGroupInformation
 
-class HBaseSink(
-    userconfig: UserConfig, tableName: String, @transient var configuration: Configuration)
-  extends DataSink{
-  lazy val connection = HBaseSink.getConnection(userconfig, configuration)
+class HBaseSink(userconfig: UserConfig, tableName: String,
+    val conn: (UserConfig, Configuration)
+    => Connection, @transient var configuration: Configuration)
+  extends DataSink {
+
+  lazy val connection = conn(userconfig, configuration)
   lazy val table = connection.getTable(TableName.valueOf(tableName))
 
   override def open(context: TaskContext): Unit = {}
+
+  def this(userconfig: UserConfig, tableName: String, configuration: Configuration) = {
+    this(userconfig, tableName, HBaseSink.getConnection, configuration)
+  }
 
   def this(userconfig: UserConfig, tableName: String) = {
     this(userconfig, tableName, HBaseConfiguration.create())
@@ -51,7 +56,7 @@ class HBaseSink(
 
   def insert(
       rowKey: Array[Byte], columnGroup: Array[Byte], columnName: Array[Byte], value: Array[Byte])
-    : Unit = {
+  : Unit = {
     val put = new Put(rowKey)
     put.addColumn(columnGroup, columnName, value)
     table.put(put)
@@ -115,13 +120,14 @@ object HBaseSink {
   val COLUMN_NAME = "hbase.table.column.name"
   val HBASE_USER = "hbase.user"
 
-  def apply[T](userconfig: UserConfig, tableName: String): HBaseSink = {
-    new HBaseSink(userconfig, tableName)
+  def apply[T](userconfig: UserConfig, tableName: String, configuration: Configuration)
+  : HBaseSink = {
+    new HBaseSink(userconfig, tableName, configuration)
   }
 
-  def apply[T](userconfig: UserConfig, tableName: String, configuration: Configuration)
-    : HBaseSink = {
-    new HBaseSink(userconfig, tableName, configuration)
+  def apply[T](userconfig: UserConfig, tableName: String)
+  : HBaseSink = {
+    new HBaseSink(userconfig, tableName)
   }
 
   private def getConnection(userConfig: UserConfig, configuration: Configuration): Connection = {
