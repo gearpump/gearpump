@@ -1,8 +1,3 @@
----
-layout: global
-title: Gearpump Coding Style
----
-
 ## Scala coding style
 
 For Scala code, Gearpump follows the standard [Scala coding style](http://docs.scala-lang.org/style/).

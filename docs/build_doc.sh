@@ -19,7 +19,20 @@ copy_dir() {
   echo "Making directory $destDir"
   mkdir -p $destDir
   echo "copy from $srcDir to $destDir..."
-  cp -r $srcDir/. $destDir
+  cp -r $srcDir/* $destDir
+}
+
+render_files() {
+  for file in $2; do
+    if [ -d "$file" ];then
+      for child in "$file"/*; do
+        render_files $1 "$child"
+      done
+    elif [ -f "$file" ]; then
+      mustache $1 $file > tmp.md
+      mv tmp.md $file
+    fi
+  done
 }
 
 if [ $# -ne 2 ]; then
@@ -30,23 +43,23 @@ fi
 export SCALA_VERSION=$1
 export BUILD_API=$2
 
-# generate _site documents
-jekyll build
+
+# render file templates
+echo "Rendering file templates using mustache..."
+TEMP_DIR="tmp"
+rm -rf $TEMP_DIR
+copy_dir docs $TEMP_DIR
+render_files version.yml "$TEMP_DIR/introduction $TEMP_DIR/dev $TEMP_DIR/deployment $TEMP_DIR/api $TEMP_DIR/index.md"
+
+# generate site documents
+mkdocs build --clean
 
 # check html link validity
-# htmlproof has been renamed to htmlproofer in Dec 2015
-HTMLPROOF="htmlproof"
-HTML_IGNORE_HREF='--href-ignore "#/"'
-if ! `which $HTMLPROOF >/dev/null`; then
-  HTMLPROOF="htmlproofer"
-  HTML_IGNORE_HREF="--allow-hash-href"
-fi
-echo "Checking generated HTMLs using $HTMLPROOF..."
+echo "Checking generated HTMLs using htmlproofer..."
 
-$HTMLPROOF _site \
+htmlproofer site \
   --disable-external \
-  $HTML_IGNORE_HREF \
-  --url-ignore \#,api/scala/index.html,api/java/index.html,/download.html
+  --file-ignore site/base.html,site/breadcrumbs.html,site/versions.html,site/toc.html,site/footer.html
 
 # generate API doc
 if [ "$BUILD_API" = 1 ]; then
@@ -59,11 +72,11 @@ if [ "$BUILD_API" = 1 ]; then
   cd $CURDIR
 
   echo "Removing old docs"
-  rm -rf _site/api
+  rm -rf site/api
 
   #copy unified ScalaDoc
-  copy_dir "../target/scala-$SCALA_VERSION/unidoc"  "_site/api/scala"
+  copy_dir "../target/scala-$SCALA_VERSION/unidoc"  "site/api/scala"
 
   #copy unified java doc
-  copy_dir "../target/javaunidoc" "_site/api/java"
+  copy_dir "../target/javaunidoc" "site/api/java"
 fi

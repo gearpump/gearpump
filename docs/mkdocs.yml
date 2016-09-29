@@ -1,0 +1,50 @@
+site_name: Apache Gearpump(incubating)
+
+repo_url: 'https://github.com/apache/incubator-gearpump'
+
+use_directory_urls: false
+
+# files under docs/ are copied to tmp/
+# with template variables replaced by mustache
+docs_dir: tmp
+
+pages: 
+- Overview: 'index.md' 
+- Introduction: 
+    - 'Submit Your 1st Application': 'introduction/submit-your-1st-application.md'
+    - 'Client Command Line': 'introduction/commandline.md'
+    - 'Basic Concepts': 'introduction/basic-concepts.md'
+    - 'Technical Highlights': 'introduction/features.md'
+    - 'Reliable Message Delivery': 'introduction/message-delivery.md'
+    - 'Performance': 'introduction/performance-report.md'
+    - 'Gearpump Internals': 'introduction/gearpump-internals.md'
+- Deployment:
+    - 'Local Mode': 'deployment/deployment-local.md'
+    - 'Standalone Mode': 'deployment/deployment-standalone.md'
+    - 'YARN Mode': 'deployment/deployment-yarn.md'
+    - 'Docker Mode': 'deployment/deployment-docker.md'
+    - 'UI Authentication': 'deployment/deployment-ui-authentication.md'
+    - 'High Availability': 'deployment/deployment-ha.md'
+    - 'Reliable Message Delivery': 'deployment/deployment-msg-delivery.md'
+    - 'Configuration': 'deployment/deployment-configuration.md'
+    - 'Resource Isolation': 'deployment/deployment-resource-isolation.md'
+    - 'YARN Security Guide': 'deployment/deployment-security.md'
+    - 'How to Get Your Gearpump Distribution': 'deployment/get-gearpump-distribution.md' 
+    - 'Hardware Requirement': 'deployment/hardware-requirement.md'
+- Programming Guide:
+    - 'Write Your 1st App': 'dev/dev-write-1st-app.md'
+    - 'Customized Message Passing': 'dev/dev-custom-serializer.md'
+    - 'Gearpump Connectors': 'dev/dev-connectors.md'
+    - 'Storm Compatibility': 'dev/dev-storm.md'
+    - 'IDE Setup': 'dev/dev-ide-setup.md'
+    - 'Non Streaming Examples': 'dev/dev-non-streaming-example.md'
+    - 'REST API': 'dev/dev-rest-api.md'
+    - 'Scala API': 'api/scala.md'
+    - 'Java API': 'api/java.md'
+
+theme: readthedocs
+
+markdown_extensions:
+    - codehilite:
+        use_pygments: False
+    - admonition

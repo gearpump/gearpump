@@ -10,21 +10,15 @@ You need to install ruby and ruby-dev first. On Ubuntu, you ca run command like 
     sudo apt-get install ruby
     sudo apt-get install ruby-dev
     sudo apt-get install python-setuptools
+    sudo apt-get install pip
 
 We use Markdown to write and Jekyll to translate the documentation to static HTML. You can install
 all needed software via:
 
-    sudo gem install jekyll
-    sudo gem install kramdown
+    sudo pip install mkdocs
     sudo gem install html-proofer
-    sudo gem install pygments.rb
-    sudo easy_install Pygments
+    sudo gem install mustache
 
-For Mac OSX you may need to do `sudo gem install -n /usr/local/bin jekyll` if you see the following error:
-```
-ERROR:  While executing gem ... (Errno::EPERM)
-    Operation not permitted - /usr/bin/listen
-```
 
 If you are using Mac OSX 10.11+ (El Capitan), you will need to execute following command:
 ```
@@ -45,9 +39,6 @@ module Library
     LIBCURL = '/usr/lib/libcurl.dylib'
 ```
 
-Kramdown is needed for Markdown processing and the Python based Pygments is used for syntax
-highlighting.
-
 
 # How to Build
 Command `./build_doc.sh` can be used to create a full document folder under site/. 
@@ -55,22 +46,8 @@ Command `./build_doc.sh` can be used to create a full document folder under site
 # How to contribute
 
 The documentation pages are written in
-[Markdown](http://daringfireball.net/projects/markdown/syntax). It is possible to use the
-[GitHub flavored syntax](http://github.github.com/github-flavored-markdown) and intermix plain html.
+[Markdown](http://daringfireball.net/projects/markdown/syntax). 
 
-In addition to Markdown, every page contains a Jekyll front matter, which specifies the title of the
-page and the layout to use. The title is used as the top-level heading for the page.
-
-    ---
-    title: "Title of the Page"
-    ---
-
-Furthermore, you can access variables found in `docs/_config.yml` as follows:
-
-    {{ site.NAME }}
-
-This will be replaced with the value of the variable called `NAME` when generating
-the docs.
 
 All documents are structured with headings. From these heading, a page outline is
 automatically generated for each page.
@@ -89,7 +66,7 @@ how a headline looks.
 
 # How to Test
 
-Command `jekyll build` can be used to make a test build.
+Command `mkdocs build` can be used to make a test build.
 
-Command `jekyll serve --watch` can be used for debug purpose. Jekyll will start a web server at
-`localhost:4000` and watch the docs directory for updates. Use this mode to experiment commits and check changes locally.
+Command `mkdocs serve` can be used for debug purpose. Mkdocs will start a web server at
+`localhost:8000`. Use this mode to experiment commits and check changes locally.
