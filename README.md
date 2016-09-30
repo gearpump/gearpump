@@ -1,11 +1,11 @@
 
-## ![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/img/logo.png) Gearpump  [![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://gearpump.apache.org/downloads.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](https://github.com/apache/incubator-gearpump/blob/master/LICENSE) [![Build Status](https://travis-ci.org/apache/incubator-gearpump.svg?branch=master)](https://travis-ci.org/apache/incubator-gearpump?branch=master) [![codecov.io](https://codecov.io/github/apache/incubator-gearpump/coverage.svg?branch=master)](https://codecov.io/github/apache/incubator-gearpump?branch=master)
+## Apache Gearpump (incubating)  [![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://gearpump.apache.org/downloads.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](https://github.com/apache/incubator-gearpump/blob/master/LICENSE) [![Build Status](https://travis-ci.org/apache/incubator-gearpump.svg?branch=master)](https://travis-ci.org/apache/incubator-gearpump?branch=master) [![codecov.io](https://codecov.io/github/apache/incubator-gearpump/coverage.svg?branch=master)](https://codecov.io/github/apache/incubator-gearpump?branch=master)
 
 [![download](https://raw.githubusercontent.com/clockfly/icons/master/gearpump-0.2-rc1.jpg)](http://gearpump.apache.org/downloads.html)
 
 Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
-![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/img/logo2.png)
+![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/docs/img/logo.png)
 
 The name Gearpump is a reference to the engineering term "gear pump", which is a super simple pump that consists of only two gears, but is very powerful at streaming water.
 
@@ -13,11 +13,11 @@ The name Gearpump is a reference to the engineering term "gear pump", which is a
 
 We model streaming within the Akka actor hierarchy.
 
-![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/img/actor_hierarchy.png)
+![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/docs/img/actor_hierarchy.png)
 
 Per initial benchmarks we are able to process near 18 million messages/second (100 bytes per message) with a 8ms latency on a 4-node cluster.
 
-![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/img/dashboard.png)
+![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/docs/img/dashboard.png)
 
 For steps to reproduce the performance test, please check [Performance benchmark](http://gearpump.apache.org/releases/latest/performance-report.html).
 
@@ -109,8 +109,9 @@ Before submitting a PR, you should always run style check first:
 
 ## Contacts
 
-Please use the google user list if possible. For things that are not OK to be shared in mailing list, please contact:
-[Sean Zhong](mailto:xiang.zhong@intel.com), [Kam Kasravi](mailto:kam.d.kasravi@intel.com) or [Weihua Jiang](mailto:weihua.jiang@intel.com).
+* [Subscribe](mailto:user-subscribe@gearpump.incubator.apache.org) or [mail](mailto:user@gearpump.incubator.apache.org) the  [user@gearpump.incubator.apache.org](http://mail-archives.apache.org/mod_mbox/incubator-gearpump-user/) list
+* [Subscribe](mailto:dev-subscribe@gearpump.incubator.apache.org) or [mail](mailto:dev@gearpump.incubator.apache.org) the [dev@gearpump.incubator.apache.org](http://mail-archives.apache.org/mod_mbox/incubator-gearpump-dev/) list
+* Report issues on [JIRA](https://issues.apache.org/jira/browse/GEARPUMP)
 
 ## License
 
