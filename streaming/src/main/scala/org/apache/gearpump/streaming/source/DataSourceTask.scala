@@ -23,7 +23,7 @@ import java.time.Instant
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.plan.OpTranslator.{DummyInputFunction, SingleInputFunction}
+import org.apache.gearpump.streaming.dsl.plan.functions.SingleInputFunction
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 /**
@@ -57,15 +57,10 @@ class DataSourceTask[IN, OUT] private[source](
   private val processMessage: Message => Unit =
     operator match {
       case Some(op) =>
-        op match {
-          case bad: DummyInputFunction[IN] =>
-            (message: Message) => context.output(message)
-          case _ =>
-            (message: Message) => {
-              op.process(message.msg.asInstanceOf[IN]).foreach { m: OUT =>
-                context.output(Message(m, message.timestamp))
-              }
-            }
+        (message: Message) => {
+          op.process(message.msg.asInstanceOf[IN]).foreach { m: OUT =>
+            context.output(Message(m, message.timestamp))
+          }
         }
       case None =>
         (message: Message) => context.output(message)

@@ -24,10 +24,9 @@ import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.streaming.StreamApplication
-import org.apache.gearpump.streaming.dsl.op.{DataSourceOp, Op, OpEdge, ProcessorOp}
-import org.apache.gearpump.streaming.dsl.plan.Planner
+import org.apache.gearpump.streaming.dsl.plan._
 import org.apache.gearpump.streaming.source.DataSource
-import org.apache.gearpump.streaming.task.{Task, TaskContext}
+import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.Message
 
@@ -50,7 +49,8 @@ import scala.language.implicitConversions
  * @param name name of app
  */
 class StreamApp(
-    val name: String, system: ActorSystem, userConfig: UserConfig, val graph: Graph[Op, OpEdge]) {
+    name: String, system: ActorSystem, userConfig: UserConfig,
+    private val graph: Graph[Op, OpEdge]) {
 
   def this(name: String, system: ActorSystem, userConfig: UserConfig) = {
     this(name, system, userConfig, Graph.empty[Op, OpEdge])
@@ -76,33 +76,15 @@ object StreamApp {
 
   implicit class Source(app: StreamApp) extends java.io.Serializable {
 
-    def source[T](dataSource: DataSource, parallelism: Int): Stream[T] = {
-      source(dataSource, parallelism, UserConfig.empty)
-    }
-
-    def source[T](dataSource: DataSource, parallelism: Int, description: String): Stream[T] = {
-      source(dataSource, parallelism, UserConfig.empty, description)
-    }
-
-    def source[T](dataSource: DataSource, parallelism: Int, conf: UserConfig): Stream[T] = {
-      source(dataSource, parallelism, conf, description = null)
-    }
-
-    def source[T](dataSource: DataSource, parallelism: Int, conf: UserConfig, description: String)
-      : Stream[T] = {
+    def source[T](dataSource: DataSource, parallelism: Int = 1,
+        conf: UserConfig = UserConfig.empty, description: String = "source"): Stream[T] = {
       implicit val sourceOp = DataSourceOp(dataSource, parallelism, conf, description)
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)
     }
+
     def source[T](seq: Seq[T], parallelism: Int, description: String): Stream[T] = {
       this.source(new CollectionDataSource[T](seq), parallelism, UserConfig.empty, description)
-    }
-
-    def source[T](source: Class[_ <: Task], parallelism: Int, conf: UserConfig, description: String)
-      : Stream[T] = {
-      val sourceOp = ProcessorOp(source, parallelism, conf, Option(description).getOrElse("source"))
-      app.graph.addVertex(sourceOp)
-      new Stream[T](app.graph, sourceOp)
     }
   }
 }
@@ -115,7 +97,7 @@ class CollectionDataSource[T](seq: Seq[T]) extends DataSource {
 
   override def read(): Message = {
     if (iterator.hasNext) {
-      Message(iterator.next())
+      Message(iterator.next(), Instant.now().toEpochMilli)
     } else {
       null
     }

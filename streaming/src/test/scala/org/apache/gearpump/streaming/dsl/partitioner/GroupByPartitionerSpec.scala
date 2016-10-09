@@ -18,24 +18,33 @@
 
 package org.apache.gearpump.streaming.dsl.partitioner
 
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import java.time.Duration
 
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitionerSpec.People
+import org.apache.gearpump.streaming.dsl.window.api.{FixedWindow, GroupByFn}
+import org.apache.gearpump.streaming.dsl.window.impl.{Bucket, GroupAlsoByWindow}
 
 class GroupByPartitionerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
-  it should "use the outpout of groupBy function to do partition" in {
+
+  it should "group by message payload and window" in {
     val mark = People("Mark", "male")
     val tom = People("Tom", "male")
     val michelle = People("Michelle", "female")
 
     val partitionNum = 10
-    val groupBy = new GroupByPartitioner[People, String](_.gender)
-    assert(groupBy.getPartition(Message(mark), partitionNum)
-      == groupBy.getPartition(Message(tom), partitionNum))
+    val groupByFn: GroupByFn[People, (String, List[Bucket])] =
+      GroupAlsoByWindow[People, String](_.gender, FixedWindow.apply(Duration.ofMillis(5)))
+    val groupBy = new GroupByPartitioner[People, (String, List[Bucket])](groupByFn)
+    groupBy.getPartition(Message(mark, 1L), partitionNum) shouldBe
+      groupBy.getPartition(Message(tom, 2L), partitionNum)
 
-    assert(groupBy.getPartition(Message(mark), partitionNum)
-      != groupBy.getPartition(Message(michelle), partitionNum))
+    groupBy.getPartition(Message(mark, 1L), partitionNum) should not be
+      groupBy.getPartition(Message(tom, 6L), partitionNum)
+
+    groupBy.getPartition(Message(mark, 2L), partitionNum) should not be
+      groupBy.getPartition(Message(michelle, 3L), partitionNum)
   }
 }
 

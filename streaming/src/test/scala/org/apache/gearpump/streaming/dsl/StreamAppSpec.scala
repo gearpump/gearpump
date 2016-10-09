@@ -21,7 +21,10 @@ package org.apache.gearpump.streaming.dsl
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.partitioner.PartitionerDescription
+import org.apache.gearpump.streaming.{ProcessorDescription, StreamApplication}
 import org.apache.gearpump.streaming.source.DataSourceTask
+import org.apache.gearpump.util.Graph
 import org.mockito.Mockito.when
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
@@ -30,7 +33,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 class StreamAppSpec extends FlatSpec with Matchers with BeforeAndAfterAll with MockitoSugar {
 
-  implicit var system: ActorSystem = null
+  implicit var system: ActorSystem = _
 
   override def beforeAll(): Unit = {
     system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
@@ -45,49 +48,25 @@ class StreamAppSpec extends FlatSpec with Matchers with BeforeAndAfterAll with M
     val context: ClientContext = mock[ClientContext]
     when(context.system).thenReturn(system)
 
-    val app = StreamApp("dsl", context)
-    app.source(List("A"), 1, "")
-    app.source(List("B"), 1, "")
+    val dsl = StreamApp("dsl", context)
+    dsl.source(List("A"), 2, "A") shouldBe a [Stream[_]]
+    dsl.source(List("B"), 3, "B") shouldBe a [Stream[_]]
 
-    assert(app.graph.vertices.size == 2)
-  }
-
-  it should "plan the dsl to Processsor(TaskDescription) DAG" in {
-    val context: ClientContext = mock[ClientContext]
-    when(context.system).thenReturn(system)
-
-    val app = StreamApp("dsl", context)
-    val parallism = 3
-    app.source(List("A", "B", "C"), parallism, "").flatMap(Array(_)).reduce(_ + _)
-    val task = app.plan.dag.vertices.iterator.next()
-    assert(task.taskClass == classOf[DataSourceTask[_, _]].getName)
-    assert(task.parallelism == parallism)
-  }
-
-  it should "produce 3 messages" in {
-    val context: ClientContext = mock[ClientContext]
-    when(context.system).thenReturn(system)
-    val app = StreamApp("dsl", context)
-    val list = List[String](
-      "0",
-      "1",
-      "2"
-    )
-    val producer = app.source(list, 1, "producer").flatMap(Array(_)).reduce(_ + _)
-    val task = app.plan.dag.vertices.iterator.next()
-      /*
-      val task = app.plan.dag.vertices.iterator.map(desc => {
-        LOG.info(s"${desc.taskClass}")
-      })
-      val sum = producer.flatMap(msg => {
-        LOG.info("in flatMap")
-        assert(msg.msg.isInstanceOf[String])
-        val num = msg.msg.asInstanceOf[String].toInt
-        Array(num)
-      }).reduce(_+_)
-      val task = app.plan.dag.vertices.iterator.map(desc => {
-        LOG.info(s"${desc.taskClass}")
-      })
-     */
+    val application = dsl.plan()
+    application shouldBe a [StreamApplication]
+    application.name shouldBe "dsl"
+    val dag = application.userConfig
+      .getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get
+    dag.vertices.size shouldBe 2
+    dag.vertices.foreach { processor =>
+      processor.taskClass shouldBe classOf[DataSourceTask[_, _]].getName
+      if (processor.description == "A") {
+        processor.parallelism shouldBe 2
+      } else if (processor.description == "B") {
+        processor.parallelism shouldBe 3
+      } else {
+        fail(s"undefined source ${processor.description}")
+      }
+    }
   }
 }

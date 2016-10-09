@@ -19,9 +19,9 @@
 package org.apache.gearpump.streaming.dsl.javaapi
 
 import scala.collection.JavaConverters._
-
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.dsl.Stream
+import org.apache.gearpump.streaming.dsl.window.api.Window
+import org.apache.gearpump.streaming.dsl.{Stream, WindowStream}
 import org.apache.gearpump.streaming.javaapi.dsl.functions._
 import org.apache.gearpump.streaming.task.Task
 
@@ -63,9 +63,13 @@ class JavaStream[T](val stream: Stream[T]) {
    * Group by a stream and turns it to a list of sub-streams. Operations chained after
    * groupBy applies to sub-streams.
    */
-  def groupBy[Group](fn: GroupByFunction[T, Group], parallelism: Int, description: String)
-    : JavaStream[T] = {
-    new JavaStream[T](stream.groupBy({t: T => fn(t)}, parallelism, description))
+  def groupBy[GROUP](fn: GroupByFunction[T, GROUP],
+      parallelism: Int, description: String): JavaStream[T] = {
+    new JavaStream[T](stream.groupBy((t: T) => fn, parallelism, description))
+  }
+
+  def window(win: Window, description: String): JavaWindowStream[T] = {
+    new JavaWindowStream[T](stream.window(win, description))
   }
 
   /** Add a low level Processor to process messages */
@@ -73,5 +77,13 @@ class JavaStream[T](val stream: Stream[T]) {
       processor: Class[_ <: Task], parallelism: Int, conf: UserConfig, description: String)
     : JavaStream[R] = {
     new JavaStream[R](stream.process(processor, parallelism, conf, description))
+  }
+}
+
+class JavaWindowStream[T](stream: WindowStream[T]) {
+
+  def groupBy[GROUP](fn: GroupByFunction[T, GROUP], parallelism: Int,
+      description: String): JavaStream[T] = {
+    new JavaStream[T](stream.groupBy((t: T) => fn, parallelism, description))
   }
 }

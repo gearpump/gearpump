@@ -22,6 +22,7 @@ object Constants {
   val GEARPUMP_STREAMING_OPERATOR = "gearpump.streaming.dsl.operator"
   val GEARPUMP_STREAMING_SOURCE = "gearpump.streaming.source"
   val GEARPUMP_STREAMING_GROUPBY_FUNCTION = "gearpump.streaming.dsl.groupby-function"
+  val GEARPUMP_STREAMING_WINDOW_FUNCTION = "gearpump.streaming.dsl.window-function"
 
   val GEARPUMP_STREAMING_LOCALITIES = "gearpump.streaming.localities"
 

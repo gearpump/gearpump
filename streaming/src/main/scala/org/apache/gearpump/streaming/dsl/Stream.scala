@@ -20,7 +20,10 @@ package org.apache.gearpump.streaming.dsl
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.dsl.op._
+import org.apache.gearpump.streaming.dsl.plan._
+import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapFunction, ReduceFunction}
+import org.apache.gearpump.streaming.dsl.window.api._
+import org.apache.gearpump.streaming.dsl.window.impl._
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
@@ -35,12 +38,12 @@ class Stream[T](
   /**
    * converts a value[T] to a list of value[R]
    *
-   * @param fun FlatMap function
+   * @param fn FlatMap function
    * @param description The description message for this operation
    * @return A new stream with type [R]
    */
-  def flatMap[R](fun: T => TraversableOnce[R], description: String = null): Stream[R] = {
-    val flatMapOp = FlatMapOp(fun, Option(description).getOrElse("flatmap"))
+  def flatMap[R](fn: T => TraversableOnce[R], description: String = "flatMap"): Stream[R] = {
+    val flatMapOp = ChainableOp(new FlatMapFunction[T, R](fn, description))
     graph.addVertex(flatMapOp)
     graph.addEdge(thisNode, edge.getOrElse(Direct), flatMapOp)
     new Stream[R](graph, flatMapOp)
@@ -49,36 +52,36 @@ class Stream[T](
   /**
    * Maps message of type T message of type R
    *
-   * @param fun Function
+   * @param fn Function
    * @return A new stream with type [R]
    */
-  def map[R](fun: T => R, description: String = null): Stream[R] = {
+  def map[R](fn: T => R, description: String = "map"): Stream[R] = {
     this.flatMap({ data =>
-      Option(fun(data))
-    }, Option(description).getOrElse("map"))
+      Option(fn(data))
+    }, description)
   }
 
   /**
    * Keeps records when fun(T) == true
    *
-   * @param fun  the filter
+   * @param fn  the filter
    * @return  a new stream after filter
    */
-  def filter(fun: T => Boolean, description: String = null): Stream[T] = {
+  def filter(fn: T => Boolean, description: String = "filter"): Stream[T] = {
     this.flatMap({ data =>
-      if (fun(data)) Option(data) else None
-    }, Option(description).getOrElse("filter"))
+      if (fn(data)) Option(data) else None
+    }, description)
   }
 
   /**
    * Reduces operations.
    *
-   * @param fun  reduction function
+   * @param fn  reduction function
    * @param description description message for this operator
    * @return a new stream after reduction
    */
-  def reduce(fun: (T, T) => T, description: String = null): Stream[T] = {
-    val reduceOp = ReduceOp(fun, Option(description).getOrElse("reduce"))
+  def reduce(fn: (T, T) => T, description: String = "reduce"): Stream[T] = {
+    val reduceOp = ChainableOp(new ReduceFunction(fn, description))
     graph.addVertex(reduceOp)
     graph.addEdge(thisNode, edge.getOrElse(Direct), reduceOp)
     new Stream(graph, reduceOp)
@@ -88,7 +91,10 @@ class Stream[T](
    * Log to task log file
    */
   def log(): Unit = {
-    this.map(msg => LoggerFactory.getLogger("dsl").info(msg.toString), "log")
+    this.map(msg => {
+      LoggerFactory.getLogger("dsl").info(msg.toString)
+      msg
+    }, "log")
   }
 
   /**
@@ -97,8 +103,8 @@ class Stream[T](
    * @param other the other stream
    * @return  the merged stream
    */
-  def merge(other: Stream[T], description: String = null): Stream[T] = {
-    val mergeOp = MergeOp(Option(description).getOrElse("merge"))
+  def merge(other: Stream[T], description: String = "merge"): Stream[T] = {
+    val mergeOp = MergeOp(description, UserConfig.empty)
     graph.addVertex(mergeOp)
     graph.addEdge(thisNode, edge.getOrElse(Direct), mergeOp)
     graph.addEdge(other.thisNode, other.edge.getOrElse(Shuffle), mergeOp)
@@ -115,20 +121,29 @@ class Stream[T](
    *
    * For example,
    * {{{
-   * Stream[People].groupBy(_.gender).flatmap(..).filter.(..).reduce(..)
+   * Stream[People].groupBy(_.gender).flatMap(..).filter(..).reduce(..)
    * }}}
    *
-   * @param fun  Group by function
+   * @param fn  Group by function
    * @param parallelism  Parallelism level
    * @param description  The description
    * @return  the grouped stream
    */
-  def groupBy[Group](fun: T => Group, parallelism: Int = 1, description: String = null)
-    : Stream[T] = {
-    val groupOp = GroupByOp(fun, parallelism, Option(description).getOrElse("groupBy"))
-    graph.addVertex(groupOp)
-    graph.addEdge(thisNode, edge.getOrElse(Shuffle), groupOp)
-    new Stream[T](graph, groupOp)
+  def groupBy[GROUP](fn: T => GROUP, parallelism: Int = 1,
+      description: String = "groupBy"): Stream[T] = {
+    window(CountWindow.apply(1).accumulating)
+      .groupBy[GROUP](fn, parallelism, description)
+  }
+
+  /**
+   * Window function
+   *
+   * @param win window definition
+   * @param description window description
+   * @return [[WindowStream]] where groupBy could be applied
+   */
+  def window(win: Window, description: String = "window"): WindowStream[T] = {
+    new WindowStream[T](graph, edge, thisNode, win, description)
   }
 
   /**
@@ -140,12 +155,25 @@ class Stream[T](
    */
   def process[R](
       processor: Class[_ <: Task], parallelism: Int, conf: UserConfig = UserConfig.empty,
-      description: String = null): Stream[R] = {
-    val processorOp = ProcessorOp(processor, parallelism, conf,
-      Option(description).getOrElse("process"))
+      description: String = "process"): Stream[R] = {
+    val processorOp = ProcessorOp(processor, parallelism, conf, description)
     graph.addVertex(processorOp)
     graph.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
     new Stream[R](graph, processorOp, Some(Shuffle))
+  }
+}
+
+class WindowStream[T](graph: Graph[Op, OpEdge], edge: Option[OpEdge], thisNode: Op,
+    window: Window, winDesc: String) {
+
+  def groupBy[GROUP](fn: T => GROUP, parallelism: Int = 1,
+      description: String = "groupBy"): Stream[T] = {
+    val groupBy: GroupByFn[T, (GROUP, List[Bucket])] = GroupAlsoByWindow(fn, window)
+    val groupOp = GroupByOp[T, (GROUP, List[Bucket])](groupBy, parallelism,
+      s"$winDesc.$description")
+    graph.addVertex(groupOp)
+    graph.addEdge(thisNode, edge.getOrElse(Shuffle), groupOp)
+    new Stream[T](graph, groupOp)
   }
 }
 
@@ -192,30 +220,18 @@ object Stream {
   }
 
   implicit class Sink[T](stream: Stream[T]) extends java.io.Serializable {
-    def sink[T](dataSink: DataSink, parallism: Int, conf: UserConfig, description: String)
-      : Stream[T] = {
-      implicit val sink = DataSinkOp[T](dataSink, parallism, conf,
-        Some(description).getOrElse("traversable"))
+    def sink(dataSink: DataSink, parallelism: Int = 1,
+        conf: UserConfig = UserConfig.empty, description: String = "sink"): Stream[T] = {
+      implicit val sink = DataSinkOp(dataSink, parallelism, conf, description)
       stream.graph.addVertex(sink)
       stream.graph.addEdge(stream.thisNode, Shuffle, sink)
       new Stream[T](stream.graph, sink)
-    }
-
-    def sink[T](
-        sink: Class[_ <: Task], parallism: Int, conf: UserConfig = UserConfig.empty,
-        description: String = null): Stream[T] = {
-      val sinkOp = ProcessorOp(sink, parallism, conf, Option(description).getOrElse("source"))
-      stream.graph.addVertex(sinkOp)
-      stream.graph.addEdge(stream.thisNode, Shuffle, sinkOp)
-      new Stream[T](stream.graph, sinkOp)
     }
   }
 }
 
 class LoggerSink[T] extends DataSink {
-  var logger: Logger = null
-
-  private var context: TaskContext = null
+  var logger: Logger = _
 
   override def open(context: TaskContext): Unit = {
     this.logger = context.logger

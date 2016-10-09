@@ -23,7 +23,7 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import org.apache.gearpump.streaming.source.{Watermark, DataSourceTask}
+import org.apache.gearpump.streaming.source.Watermark
 import org.slf4j.Logger
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
@@ -308,9 +308,9 @@ class TaskActor(
 
   private def updateUpstreamMinClock(upstreamClock: TimeStamp): Unit = {
     if (upstreamClock > this.upstreamMinClock) {
+      this.upstreamMinClock = upstreamClock
       task.onWatermarkProgress(Instant.ofEpochMilli(this.upstreamMinClock))
     }
-    this.upstreamMinClock = upstreamClock
 
     val subMinClock = subscriptions.foldLeft(Long.MaxValue) { (min, sub) =>
       val subMin = sub._2.minClock

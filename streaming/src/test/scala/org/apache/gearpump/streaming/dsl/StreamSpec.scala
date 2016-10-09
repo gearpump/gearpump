@@ -22,10 +22,11 @@ import akka.actor._
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner}
+import org.apache.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner, PartitionerDescription}
+import org.apache.gearpump.streaming.{ProcessorDescription, StreamApplication}
 import org.apache.gearpump.streaming.dsl.StreamSpec.Join
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
-import org.apache.gearpump.streaming.dsl.plan.OpTranslator._
+import org.apache.gearpump.streaming.dsl.task.{CountTriggerTask, TransformTask}
 import org.apache.gearpump.streaming.source.DataSourceTask
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
@@ -39,7 +40,6 @@ import scala.concurrent.duration.Duration
 import scala.util.{Either, Left, Right}
 
 class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with MockitoSugar {
-
 
   implicit var system: ActorSystem = _
 
@@ -56,7 +56,7 @@ class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Mock
     val context: ClientContext = mock[ClientContext]
     when(context.system).thenReturn(system)
 
-    val app = StreamApp("dsl", context)
+    val dsl = StreamApp("dsl", context)
 
     val data =
       """
@@ -66,30 +66,32 @@ class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Mock
         five  four
         five
       """
-    val stream = app.source(data.lines.toList, 1, "").
+    val stream = dsl.source(data.lines.toList, 1, "").
       flatMap(line => line.split("[\\s]+")).filter(_.nonEmpty).
       map(word => (word, 1)).
       groupBy(_._1, parallelism = 2).
       reduce((left, right) => (left._1, left._2 + right._2)).
       map[Either[(String, Int), String]](Left(_))
 
-    val query = app.source(List("two"), 1, "").map[Either[(String, Int), String]](Right(_))
+    val query = dsl.source(List("two"), 1, "").map[Either[(String, Int), String]](Right(_))
     stream.merge(query).process[(String, Int)](classOf[Join], 1)
 
-    val appDescription = app.plan()
+    val app: StreamApplication = dsl.plan()
+    val dag = app.userConfig
+      .getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get
 
-    val dagTopology = appDescription.dag.mapVertex(_.taskClass).mapEdge { (node1, edge, node2) =>
+    val dagTopology = dag.mapVertex(_.taskClass).mapEdge { (node1, edge, node2) =>
       edge.partitionerFactory.partitioner.getClass.getName
     }
     val expectedDagTopology = getExpectedDagTopology
 
-    assert(dagTopology.vertices.toSet.equals(expectedDagTopology.vertices.toSet))
-    assert(dagTopology.edges.toSet.equals(expectedDagTopology.edges.toSet))
+    dagTopology.vertices.toSet should contain theSameElementsAs expectedDagTopology.vertices.toSet
+    dagTopology.edges.toSet should contain theSameElementsAs expectedDagTopology.edges.toSet
   }
 
   private def getExpectedDagTopology: Graph[String, String] = {
     val source = classOf[DataSourceTask[_, _]].getName
-    val group = classOf[GroupByTask[_, _, _]].getName
+    val group = classOf[CountTriggerTask[_, _]].getName
     val merge = classOf[TransformTask[_, _]].getName
     val join = classOf[Join].getName
 

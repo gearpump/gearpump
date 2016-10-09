@@ -22,7 +22,6 @@ import akka.actor.ActorSystem
 
 import org.apache.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.Processor
-import org.apache.gearpump.streaming.dsl.op._
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.util.Graph
@@ -33,64 +32,60 @@ class Planner {
    * Converts Dag of Op to Dag of TaskDescription. TaskDescription is part of the low
    * level Graph API.
    */
-  def plan(dag: Graph[Op, OpEdge])(implicit system: ActorSystem)
-    : Graph[Processor[_ <: Task], _ <: Partitioner] = {
+  def plan(dag: Graph[Op, OpEdge])
+    (implicit system: ActorSystem): Graph[Processor[_ <: Task], _ <: Partitioner] = {
 
-    val opTranslator = new OpTranslator()
-
-    val newDag = optimize(dag)
-    newDag.mapEdge { (node1, edge, node2) =>
+    val graph = optimize(dag)
+    graph.mapEdge { (node1, edge, node2) =>
       edge match {
         case Shuffle =>
-          node2.head match {
-            case groupBy: GroupByOp[Any @unchecked, Any @unchecked] =>
-              new GroupByPartitioner(groupBy.fun)
+          node2 match {
+            case groupBy: GroupByOp[_, _] =>
+              new GroupByPartitioner(groupBy.groupByFn)
             case _ => new HashPartitioner
           }
         case Direct =>
           new CoLocationPartitioner
       }
-    }.mapVertex { opChain =>
-      opTranslator.translate(opChain)
-    }
+    }.mapVertex(_.getProcessor)
   }
 
-  private def optimize(dag: Graph[Op, OpEdge]): Graph[OpChain, OpEdge] = {
-    val newGraph = dag.mapVertex(op => OpChain(List(op)))
-
-    val nodes = newGraph.topologicalOrderWithCirclesIterator.toList.reverse
+  private def optimize(dag: Graph[Op, OpEdge])
+    (implicit system: ActorSystem): Graph[Op, OpEdge] = {
+    val graph = dag.copy
+    val nodes = graph.topologicalOrderWithCirclesIterator.toList.reverse
     for (node <- nodes) {
-      val outGoingEdges = newGraph.outgoingEdgesOf(node)
+      val outGoingEdges = graph.outgoingEdgesOf(node)
       for (edge <- outGoingEdges) {
-        merge(newGraph, edge._1, edge._3)
+        merge(graph, edge._1, edge._3)
       }
     }
-    newGraph
+    graph
   }
 
-  private def merge(dag: Graph[OpChain, OpEdge], node1: OpChain, node2: OpChain)
-    : Graph[OpChain, OpEdge] = {
-    if (dag.outDegreeOf(node1) == 1 &&
-      dag.inDegreeOf(node2) == 1 &&
+  private def merge(graph: Graph[Op, OpEdge], node1: Op, node2: Op)
+    (implicit system: ActorSystem): Unit = {
+    if (graph.outDegreeOf(node1) == 1 &&
+      graph.inDegreeOf(node2) == 1 &&
       // For processor node, we don't allow it to merge with downstream operators
-      !node1.head.isInstanceOf[ProcessorOp[_ <: Task]]) {
-      val (_, edge, _) = dag.outgoingEdgesOf(node1).head
+      !node1.isInstanceOf[ProcessorOp[_ <: Task]] &&
+      !node2.isInstanceOf[ProcessorOp[_ <: Task]]) {
+      val (_, edge, _) = graph.outgoingEdgesOf(node1).head
       if (edge == Direct) {
-        val opList = OpChain(node1.ops ++ node2.ops)
-        dag.addVertex(opList)
-        for (incomingEdge <- dag.incomingEdgesOf(node1)) {
-          dag.addEdge(incomingEdge._1, incomingEdge._2, opList)
+        val chainedOp = node1.chain(node2)
+        graph.addVertex(chainedOp)
+        for (incomingEdge <- graph.incomingEdgesOf(node1)) {
+          graph.addEdge(incomingEdge._1, incomingEdge._2, chainedOp)
         }
 
-        for (outgoingEdge <- dag.outgoingEdgesOf(node2)) {
-          dag.addEdge(opList, outgoingEdge._2, outgoingEdge._3)
+        for (outgoingEdge <- graph.outgoingEdgesOf(node2)) {
+          graph.addEdge(chainedOp, outgoingEdge._2, outgoingEdge._3)
         }
 
         // Remove the old vertex
-        dag.removeVertex(node1)
-        dag.removeVertex(node2)
+        graph.removeVertex(node1)
+        graph.removeVertex(node2)
       }
     }
-    dag
   }
 }
