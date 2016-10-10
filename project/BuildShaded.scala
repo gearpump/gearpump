@@ -35,7 +35,7 @@ object BuildShaded extends sbt.Build {
       _.copy(includeScala = false)
     },
     assemblyJarName in assembly := {
-      s"${name.value}-$scalaVersionMajor-${version.value}-assembly.jar"
+      s"${name.value}_$scalaVersionMajor-${version.value}.jar"
     },
     target in assembly := baseDirectory.value.getParentFile / "target" / scalaVersionMajor
   )
@@ -44,92 +44,99 @@ object BuildShaded extends sbt.Build {
     id = "gearpump-shaded",
     base = file("shaded")
   ).aggregate(shaded_akka_kryo, shaded_gs_collections, shaded_guava, shaded_metrics_graphite)
-      .disablePlugins(sbtassembly.AssemblyPlugin)
-
+    .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val shaded_akka_kryo = Project(
     id = "gearpump-shaded-akka-kryo",
     base = file("shaded/akka-kryo"),
-    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-akka-kryo",
-      "assembly"), sbtassembly.AssemblyKeys.assembly) ++
-        Seq(
-          assemblyShadeRules in assembly := Seq(
-            ShadeRule.zap("com.google.protobuf.**").inAll,
-            ShadeRule.zap("com.typesafe.config.**").inAll,
-            ShadeRule.zap("akka.**").inAll,
-            ShadeRule.zap("org.jboss.netty.**").inAll,
-            ShadeRule.zap("net.jpountz.lz4.**").inAll,
-            ShadeRule.zap("org.uncommons.maths.**").inAll,
-            ShadeRule.rename("com.romix.**" -> "org.apache.gearpump.romix.@1").inAll,
-            ShadeRule.rename("com.esotericsoftware.**" ->
-                "org.apache.gearpump.esotericsoftware.@1").inAll,
-            ShadeRule.rename("org.objenesis.**" -> "org.apache.gearpump.objenesis.@1").inAll
-          )
-        ) ++
-        Seq(
-          libraryDependencies ++= Seq(
-            "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion
-          )
+    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-akka-kryo"),
+      sbtassembly.AssemblyKeys.assembly) ++
+      Seq(
+        assemblyShadeRules in assembly := Seq(
+          ShadeRule.zap("com.google.protobuf.**").inAll,
+          ShadeRule.zap("com.typesafe.config.**").inAll,
+          ShadeRule.zap("akka.**").inAll,
+          ShadeRule.zap("org.jboss.netty.**").inAll,
+          ShadeRule.zap("net.jpountz.lz4.**").inAll,
+          ShadeRule.zap("org.uncommons.maths.**").inAll,
+          ShadeRule.rename("com.romix.**" -> "org.apache.gearpump.romix.@1").inAll,
+          ShadeRule.rename("com.esotericsoftware.**" ->
+            "org.apache.gearpump.esotericsoftware.@1").inAll,
+          ShadeRule.rename("org.objenesis.**" -> "org.apache.gearpump.objenesis.@1").inAll
         )
+      ) ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion
+        )
+      )
   )
 
   lazy val shaded_gs_collections = Project(
     id = "gearpump-shaded-gs-collections",
     base = file("shaded/gs-collections"),
-    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-gs-collections",
-      "assembly"), sbtassembly.AssemblyKeys.assembly) ++
-        Seq(
-          assemblyShadeRules in assembly := Seq(
-            ShadeRule.rename("com.gs.collections.**" ->
-                "org.apache.gearpump.gs.collections.@1").inAll
-          )
-        ) ++
-        Seq(
-          libraryDependencies ++= Seq(
-            "com.goldmansachs" % "gs-collections" % gsCollectionsVersion
-          )
+    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-gs-collections"),
+      sbtassembly.AssemblyKeys.assembly) ++
+      Seq(
+        assemblyShadeRules in assembly := Seq(
+          ShadeRule.rename("com.gs.collections.**" ->
+            "org.apache.gearpump.gs.collections.@1").inAll
         )
+      ) ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "com.goldmansachs" % "gs-collections" % gsCollectionsVersion
+        )
+      )
   )
 
   lazy val shaded_guava = Project(
     id = "gearpump-shaded-guava",
     base = file("shaded/guava"),
-    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-guava",
-      "assembly"), sbtassembly.AssemblyKeys.assembly) ++
-        Seq(
-          assemblyShadeRules in assembly := Seq(
-            ShadeRule.rename("com.google.**" -> "org.apache.gearpump.google.@1").inAll
-          )
-        ) ++
-        Seq(
-          libraryDependencies ++= Seq(
-            "com.google.guava" % "guava" % guavaVersion
-          )
+    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-guava"),
+      sbtassembly.AssemblyKeys.assembly) ++
+      Seq(
+        assemblyShadeRules in assembly := Seq(
+          ShadeRule.rename("com.google.**" -> "org.apache.gearpump.google.@1").inAll
         )
+      ) ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "com.google.guava" % "guava" % guavaVersion
+        )
+      )
   )
 
   lazy val shaded_metrics_graphite = Project(
     id = "gearpump-shaded-metrics-graphite",
     base = file("shaded/metrics-graphite"),
-    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-metrics-graphite",
-      "assembly"), sbtassembly.AssemblyKeys.assembly) ++
-        Seq(
-          assemblyShadeRules in assembly := Seq(
-            ShadeRule.rename("com.codahale.metrics.**" ->
-                "org.apache.gearpump.codahale.metrics.@1").inAll
-          )
-        ) ++
-        Seq(
-          libraryDependencies ++= Seq(
-            "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
-            "com.codahale.metrics" % "metrics-jvm" % codahaleVersion
-          )
+    settings = shadeAssemblySettings ++ addArtifact(Artifact("gearpump-shaded-metrics-graphite"),
+      sbtassembly.AssemblyKeys.assembly) ++
+      Seq(
+        assemblyShadeRules in assembly := Seq(
+          ShadeRule.rename("com.codahale.metrics.**" ->
+            "org.apache.gearpump.codahale.metrics.@1").inAll
         )
+      ) ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "com.codahale.metrics" % "metrics-graphite" % codahaleVersion,
+          "com.codahale.metrics" % "metrics-jvm" % codahaleVersion
+        )
+      )
   )
 
   def getShadedJarFile(name: String, gearpumpVersion: String): File = {
     shaded.base / "target" / scalaVersionMajor /
-      s"gearpump-shaded-$name-$scalaVersionMajor-$gearpumpVersion-assembly.jar"
+      s"${name}_$scalaVersionMajor-$gearpumpVersion.jar"
+  }
+
+  def getShadedDepXML(groupId: String, artifactId: String, version: String): scala.xml.Node = {
+    <dependency>
+      <groupId>{groupId}</groupId>
+      <artifactId>{artifactId}</artifactId>
+      <version>{version}</version>
+    </dependency>
   }
 
 }

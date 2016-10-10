@@ -150,12 +150,6 @@ object Build extends sbt.Build {
     )
   )
 
-  val streamingDependencies = Seq(
-    unmanagedJars in Compile ++= Seq(
-      getShadedJarFile("gs-collections", version.value)
-    )
-  )
-
   val coreDependencies = Seq(
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api" % slf4jVersion,
@@ -194,9 +188,9 @@ object Build extends sbt.Build {
     ),
 
     unmanagedJars in Compile ++= Seq(
-      getShadedJarFile("metrics-graphite", version.value),
-      getShadedJarFile("guava", version.value),
-      getShadedJarFile("akka-kryo", version.value)
+      getShadedJarFile(shaded_metrics_graphite.id, version.value),
+      getShadedJarFile(shaded_guava.id, version.value),
+      getShadedJarFile(shaded_akka_kryo.id, version.value)
     )
   )
 
@@ -245,6 +239,20 @@ object Build extends sbt.Build {
       .map(_.filterNot(_.getCanonicalPath.contains("akka")))
   }
 
+  private def addShadedDeps(deps: Seq[xml.Node], node: xml.Node): xml.Node = {
+    node match {
+      case elem: xml.Elem =>
+        val child = if (elem.label == "dependencies") {
+          elem.child ++ deps
+        } else {
+          elem.child.map(addShadedDeps(deps, _))
+        }
+        xml.Elem(elem.prefix, elem.label, elem.attributes, elem.scope, false, child: _*)
+      case _ =>
+        node
+    }
+  }
+
   lazy val root = Project(
     id = "gearpump",
     base = file("."),
@@ -257,7 +265,14 @@ object Build extends sbt.Build {
   lazy val core = Project(
     id = "gearpump-core",
     base = file("core"),
-    settings = commonSettings ++ javadocSettings ++ coreDependencies)
+    settings = commonSettings ++ javadocSettings ++ coreDependencies ++ Seq(
+      pomPostProcess := {
+        (node: xml.Node) => addShadedDeps(List(
+          getShadedDepXML(organization.value, shaded_akka_kryo.id, version.value),
+          getShadedDepXML(organization.value, shaded_guava.id, version.value),
+          getShadedDepXML(organization.value, shaded_metrics_graphite.id, version.value)), node)
+      }
+    ))
       .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val daemon = Project(
@@ -277,9 +292,18 @@ object Build extends sbt.Build {
   lazy val streaming = Project(
     id = "gearpump-streaming",
     base = file("streaming"),
-    settings = commonSettings ++ javadocSettings ++ streamingDependencies)
-      .dependsOn(core % "test->test; compile->compile", daemon % "test->test")
-      .disablePlugins(sbtassembly.AssemblyPlugin)
+    settings = commonSettings ++ javadocSettings ++ Seq(
+      unmanagedJars in Compile ++= Seq(
+        getShadedJarFile(shaded_gs_collections.id, version.value)
+      ),
+
+      pomPostProcess := {
+        (node: xml.Node) => addShadedDeps(List(
+          getShadedDepXML(organization.value, shaded_gs_collections.id, version.value)), node)
+      }
+    ))
+    .dependsOn(core % "test->test; compile->compile", shaded_gs_collections, daemon % "test->test")
+    .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val external_kafka = Project(
     id = "gearpump-external-kafka",
