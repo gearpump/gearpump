@@ -415,6 +415,18 @@ object Build extends sbt.Build {
       ))
       .dependsOn(streaming % "test->test; provided", daemon % "test->test; provided")
 
+  lazy val redis = Project(
+    id = "gearpump-experiments-redis",
+    base = file("experiments/redis"),
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "redis.clients" % "jedis" % "2.9.0"
+        ),
+        mainClass in(Compile, packageBin) := Some("org.apache.gearpump.example.Test")
+      ))
+    .dependsOn(streaming % "test->test; provided", daemon % "test->test; provided")
+
   lazy val storm = Project(
     id = "gearpump-experiments-storm",
     base = file("experiments/storm"),
