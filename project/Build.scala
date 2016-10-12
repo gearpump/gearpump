@@ -145,8 +145,7 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
       "commons-logging" % "commons-logging" % commonsLoggingVersion,
-      "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
-      "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided"
+      "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion
     )
   )
 
@@ -258,7 +257,7 @@ object Build extends sbt.Build {
     base = file("."),
     settings = commonSettings ++ noPublish ++ gearpumpUnidocSetting)
       .aggregate(shaded, core, daemon, streaming, services, external_kafka, external_monoid,
-      external_serializer, examples, storm, yarn, external_hbase, packProject,
+      external_serializer, examples, storm, yarn, external_hbase, gearpumpHadoop, packProject,
       external_hadoopfs, integration_test).settings(Defaults.itSettings: _*)
       .disablePlugins(sbtassembly.AssemblyPlugin)
 
@@ -463,14 +462,24 @@ object Build extends sbt.Build {
       .dependsOn (streaming % "test->test; compile->compile")
       .disablePlugins(sbtassembly.AssemblyPlugin)
 
+  lazy val gearpumpHadoop = Project(
+    id = "gearpump-hadoop",
+    base = file("gearpump-hadoop"),
+    settings = commonSettings ++ noPublish ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
+        )
+      )
+  ).dependsOn(core % "compile->compile").disablePlugins(sbtassembly.AssemblyPlugin)
+
   lazy val yarn = Project(
     id = "gearpump-experiments-yarn",
     base = file("experiments/yarn"),
     settings = commonSettings ++ noPublish ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
           "org.apache.hadoop" % "hadoop-yarn-api" % hadoopVersion,
           "org.apache.hadoop" % "hadoop-yarn-client" % hadoopVersion,
           "org.apache.hadoop" % "hadoop-yarn-common" % hadoopVersion,
@@ -480,8 +489,8 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % hadoopVersion % "provided"
         )
       ))
-      .dependsOn(services % "test->test;compile->compile", daemon % "provided", core % "provided")
-      .disablePlugins(sbtassembly.AssemblyPlugin)
+      .dependsOn(services % "test->test;compile->compile", daemon % "provided",
+        core % "provided", gearpumpHadoop).disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val external_hbase = Project(
     id = "gearpump-external-hbase",

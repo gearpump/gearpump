@@ -17,11 +17,12 @@
  */
 package org.apache.gearpump.cluster.utils;
 
-import org.apache.commons.io.IOUtils;
+import org.apache.gearpump.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class SystemOperation {
 
@@ -44,8 +45,8 @@ public class SystemOperation {
     Process process = new ProcessBuilder(new String[]{"/bin/bash", "-c", cmd}).start();
     try {
       process.waitFor();
-      String output = IOUtils.toString(process.getInputStream());
-      String errorOutput = IOUtils.toString(process.getErrorStream());
+      String output = CharStreams.toString(new InputStreamReader(process.getInputStream()));
+      String errorOutput = CharStreams.toString(new InputStreamReader(process.getErrorStream()));
       LOG.debug("Shell Output: " + output);
       if (errorOutput.length() != 0) {
         LOG.error("Shell Error Output: " + errorOutput);

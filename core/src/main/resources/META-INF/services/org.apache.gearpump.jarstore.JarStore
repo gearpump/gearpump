@@ -17,4 +17,3 @@
 #
 
 org.apache.gearpump.jarstore.local.LocalJarStore
-org.apache.gearpump.jarstore.dfs.DFSJarStore
