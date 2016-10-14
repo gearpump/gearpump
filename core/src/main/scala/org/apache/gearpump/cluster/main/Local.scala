@@ -18,20 +18,19 @@
 
 package org.apache.gearpump.cluster.main
 
-import scala.collection.JavaConverters._
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-
 import akka.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
-import org.slf4j.Logger
-
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.master.{Master => MasterActor}
 import org.apache.gearpump.cluster.worker.{Worker => WorkerActor}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.LogUtil.ProcessType
 import org.apache.gearpump.util.{ActorUtil, AkkaApp, Constants, LogUtil, Util}
+import org.slf4j.Logger
+
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 object Local extends AkkaApp with ArgumentsParser {
   override def akkaConfig: Config = ClusterConfig.master()

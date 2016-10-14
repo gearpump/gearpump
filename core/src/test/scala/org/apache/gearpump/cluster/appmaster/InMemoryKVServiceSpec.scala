@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.cluster.master
-
-import scala.concurrent.duration._
+package org.apache.gearpump.cluster.appmaster
 
 import akka.actor.Props
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
+import org.apache.gearpump.cluster.master.InMemoryKVService
 import org.apache.gearpump.cluster.master.InMemoryKVService._
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+
+import scala.concurrent.duration._
 
 class InMemoryKVServiceSpec
   extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {

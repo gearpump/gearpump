@@ -32,20 +32,20 @@ import redis.clients.jedis.Jedis
 import redis.clients.jedis.Protocol.{DEFAULT_DATABASE, DEFAULT_HOST, DEFAULT_PORT, DEFAULT_TIMEOUT}
 
 /**
-  * Save message in Redis Instance
-  *
-  * @param host
-  * @param port
-  * @param timeout
-  * @param database
-  * @param password
-  */
+ * Save message in Redis Instance
+ *
+ * @param host
+ * @param port
+ * @param timeout
+ * @param database
+ * @param password
+ */
 class RedisSink(
-                    host: String = DEFAULT_HOST,
-                    port: Int = DEFAULT_PORT,
-                    timeout: Int = DEFAULT_TIMEOUT,
-                    database: Int = DEFAULT_DATABASE,
-                    password: String = "") extends DataSink {
+    host: String = DEFAULT_HOST,
+    port: Int = DEFAULT_PORT,
+    timeout: Int = DEFAULT_TIMEOUT,
+    database: Int = DEFAULT_DATABASE,
+    password: String = "") extends DataSink {
 
   private val LOG = LogUtil.getLogger(getClass)
   @transient private lazy val client = new Jedis(host, port, timeout)
@@ -59,7 +59,6 @@ class RedisSink(
   }
 
   override def write(message: Message): Unit = {
-
     message.msg match {
       // GEO
       case msg: GEOADD => client.geoadd(msg.key, msg.longitude, msg.latitude, msg.member)

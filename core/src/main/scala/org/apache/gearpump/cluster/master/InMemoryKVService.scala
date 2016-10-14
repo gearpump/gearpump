@@ -19,16 +19,16 @@
 package org.apache.gearpump.cluster.master
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.TimeoutException
-import scala.concurrent.duration.Duration
 
 import akka.actor._
 import akka.cluster.Cluster
+import akka.cluster.ddata.{LWWMap, LWWMapKey, DistributedData}
 import akka.cluster.ddata.Replicator._
-import akka.cluster.ddata.{DistributedData, LWWMap, LWWMapKey}
+import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-import org.apache.gearpump.util.LogUtil
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration.Duration
 
 /**
  * A replicated simple in-memory KV service. The replications are stored on all masters.

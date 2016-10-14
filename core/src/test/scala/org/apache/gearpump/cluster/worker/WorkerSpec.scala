@@ -17,14 +17,9 @@
  */
 package org.apache.gearpump.cluster.worker
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest._
-
 import org.apache.gearpump.cluster.AppMasterToWorker.{ChangeExecutorResource, LaunchExecutor, ShutdownExecutor}
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToAppMaster.{ExecutorLaunchRejected, ShutdownExecutorFailed, ShutdownExecutorSucceed}
@@ -33,6 +28,10 @@ import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{ExecutorJVMConfig, MasterHarness, TestUtil}
 import org.apache.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
+import org.scalatest._
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config: Config = TestUtil.DEFAULT_CONFIG

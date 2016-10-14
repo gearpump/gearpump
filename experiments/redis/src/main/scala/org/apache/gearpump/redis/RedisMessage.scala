@@ -20,7 +20,6 @@ package org.apache.gearpump.redis
 import java.nio.charset.Charset
 
 object RedisMessage {
-
   private def toBytes(strings: List[String]): List[Array[Byte]] =
     strings.map(string => string.getBytes(Charset.forName("UTF8")))
 
@@ -48,11 +47,10 @@ object RedisMessage {
      * @param latitude
      * @param member
      */
-    case class GEOADD(key: Array[Byte], longitude: Double,
-                      latitude: Double, member: Array[Byte]) {
-      def this(key: String, longitude: Double,
-               latitude: Double, member: String) =
+    case class GEOADD(key: Array[Byte], longitude: Double, latitude: Double, member: Array[Byte]) {
+      def this(key: String, longitude: Double, latitude: Double, member: String) = {
         this(toBytes(key), longitude, latitude, toBytes(member))
+      }
     }
 
   }
@@ -66,7 +64,9 @@ object RedisMessage {
      * @param field
      */
     case class HDEL(key: Array[Byte], field: Array[Byte]) {
-      def this(key: String, field: String) = this(toBytes(key), toBytes(field))
+      def this(key: String, field: String) = {
+        this(toBytes(key), toBytes(field))
+      }
     }
 
     /**
@@ -77,8 +77,9 @@ object RedisMessage {
      * @param increment
      */
     case class HINCRBY(key: Array[Byte], field: Array[Byte], increment: Long) {
-      def this(key: String, field: String, increment: Long) =
+      def this(key: String, field: String, increment: Long) = {
         this(toBytes(key), toBytes(field), increment)
+      }
     }
 
     /**
@@ -89,8 +90,9 @@ object RedisMessage {
      * @param increment
      */
     case class HINCRBYFLOAT(key: Array[Byte], field: Array[Byte], increment: Float) {
-      def this(key: String, field: String, increment: Float) =
+      def this(key: String, field: String, increment: Float) = {
         this(toBytes(key), toBytes(field), increment)
+      }
     }
 
 
@@ -102,8 +104,9 @@ object RedisMessage {
      * @param value
      */
     case class HSET(key: Array[Byte], field: Array[Byte], value: Array[Byte]) {
-      def this(key: String, field: String, value: String) =
+      def this(key: String, field: String, value: String) = {
         this(toBytes(key), toBytes(field), toBytes(value))
+      }
     }
 
     /**
@@ -114,8 +117,9 @@ object RedisMessage {
      * @param value
      */
     case class HSETNX(key: Array[Byte], field: Array[Byte], value: Array[Byte]) {
-      def this(key: String, field: String, value: String) =
+      def this(key: String, field: String, value: String) = {
         this(toBytes(key), toBytes(field), toBytes(value))
+      }
     }
 
   }
@@ -142,8 +146,9 @@ object RedisMessage {
      * @param value
      */
     case class LPUSH(key: Array[Byte], value: Array[Byte]) {
-
-      def this(key: String, value: String) = this(key, toBytes(value))
+      def this(key: String, value: String) = {
+        this(key, toBytes(value))
+      }
     }
 
     /**
@@ -153,7 +158,9 @@ object RedisMessage {
      * @param value
      */
     case class LPUSHX(key: Array[Byte], value: Array[Byte]) {
-      def this(key: String, value: String) = this(toBytes(key), toBytes(value))
+      def this(key: String, value: String) = {
+        this(toBytes(key), toBytes(value))
+      }
     }
 
     /**
@@ -164,7 +171,9 @@ object RedisMessage {
      * @param value
      */
     case class LSET(key: Array[Byte], index: Long, value: Array[Byte]) {
-      def this(key: String, index: Long, value: String) = this(toBytes(key), index, toBytes(value))
+      def this(key: String, index: Long, value: String) = {
+        this(toBytes(key), index, toBytes(value))
+      }
     }
 
     /**
@@ -174,8 +183,9 @@ object RedisMessage {
      * @param value
      */
     case class RPUSH(key: Array[Byte], value: Array[Byte]) {
-
-      def this(key: String, value: String) = this(key, toBytes(value))
+      def this(key: String, value: String) = {
+        this(key, toBytes(value))
+      }
     }
 
     /**
@@ -185,7 +195,9 @@ object RedisMessage {
      * @param value
      */
     case class RPUSHX(key: Array[Byte], value: Array[Byte]) {
-      def this(key: String, value: String) = this(toBytes(key), toBytes(value))
+      def this(key: String, value: String) = {
+        this(toBytes(key), toBytes(value))
+      }
     }
 
   }
@@ -198,8 +210,9 @@ object RedisMessage {
      * @param message
      */
     case class DEL(message: Array[Byte]) {
-
-      def this(message: String) = this(toBytes(message))
+      def this(message: String) = {
+        this(toBytes(message))
+      }
     }
 
     /**
@@ -208,7 +221,9 @@ object RedisMessage {
      * @param key
      */
     case class EXPIRE(key: Array[Byte], seconds: Int) {
-      def this(key: String, seconds: Int) = this(toBytes(key), seconds)
+      def this(key: String, seconds: Int) = {
+        this(toBytes(key), seconds)
+      }
     }
 
     /**
@@ -218,7 +233,9 @@ object RedisMessage {
      * @param timestamp
      */
     case class EXPIREAT(key: Array[Byte], timestamp: Long) {
-      def this(key: String, timestamp: Long) = this(toBytes(key), timestamp)
+      def this(key: String, timestamp: Long) = {
+        this(toBytes(key), timestamp)
+      }
     }
 
     /**
@@ -230,9 +247,11 @@ object RedisMessage {
      * @param database
      * @param timeout
      */
-    case class MIGRATE(host: Array[Byte], port: Int, key: Array[Byte], database: Int, timeout: Int) {
-      def this(host: String, port: Int, key: String, database: Int, timeout: Int) =
+    case class MIGRATE(host: Array[Byte], port: Int, key: Array[Byte],
+        database: Int, timeout: Int) {
+      def this(host: String, port: Int, key: String, database: Int, timeout: Int) = {
         this(toBytes(host), port, toBytes(key), database, timeout)
+      }
     }
 
     /**
@@ -242,7 +261,9 @@ object RedisMessage {
      * @param db
      */
     case class MOVE(key: Array[Byte], db: Int) {
-      def this(key: String, db: Int) = this(toBytes(key), db)
+      def this(key: String, db: Int) = {
+        this(toBytes(key), db)
+      }
     }
 
     /**
@@ -251,7 +272,9 @@ object RedisMessage {
      * @param key
      */
     case class PERSIST(key: Array[Byte]) {
-      def this(key: String) = this(toBytes(key))
+      def this(key: String) = {
+        this(toBytes(key))
+      }
     }
 
     /**
@@ -261,7 +284,9 @@ object RedisMessage {
      * @param milliseconds
      */
     case class PEXPIRE(key: Array[Byte], milliseconds: Long) {
-      def this(key: String, milliseconds: Long) = this(toBytes(key), milliseconds)
+      def this(key: String, milliseconds: Long) = {
+        this(toBytes(key), milliseconds)
+      }
     }
 
     /**
@@ -271,7 +296,9 @@ object RedisMessage {
      * @param timestamp
      */
     case class PEXPIREAT(key: Array[Byte], timestamp: Long) {
-      def this(key: String, milliseconds: Long) = this(toBytes(key), milliseconds)
+      def this(key: String, milliseconds: Long) = {
+        this(toBytes(key), milliseconds)
+      }
     }
 
     /**
@@ -281,7 +308,9 @@ object RedisMessage {
      * @param newKey
      */
     case class RENAME(key: Array[Byte], newKey: Array[Byte]) {
-      def this(key: String, newKey: String) = this(toBytes(key), toBytes(newKey))
+      def this(key: String, newKey: String) = {
+        this(toBytes(key), toBytes(newKey))
+      }
     }
 
     /**
@@ -291,7 +320,9 @@ object RedisMessage {
      * @param newKey
      */
     case class RENAMENX(key: Array[Byte], newKey: Array[Byte]) {
-      def this(key: String, newKey: String) = this(toBytes(key), toBytes(newKey))
+      def this(key: String, newKey: String) = {
+        this(toBytes(key), toBytes(newKey))
+      }
     }
 
   }
@@ -306,8 +337,9 @@ object RedisMessage {
      * @param members
      */
     case class SADD(key: Array[Byte], members: Array[Byte]) {
-
-      def this(key: String, members: String) = this(key, toBytes(members))
+      def this(key: String, members: String) = {
+        this(key, toBytes(members))
+      }
     }
 
 
@@ -319,8 +351,9 @@ object RedisMessage {
      * @param member
      */
     case class SMOVE(source: Array[Byte], destination: Array[Byte], member: Array[Byte]) {
-      def this(source: String, destination: String, member: String) =
+      def this(source: String, destination: String, member: String) = {
         this(toBytes(source), toBytes(destination), toBytes(member))
+      }
     }
 
 
@@ -331,8 +364,9 @@ object RedisMessage {
      * @param member
      */
     case class SREM(key: Array[Byte], member: Array[Byte]) {
-
-      def this(key: String, member: String) = this(key, toBytes(member))
+      def this(key: String, member: String) = {
+        this(key, toBytes(member))
+      }
     }
 
   }
@@ -346,7 +380,9 @@ object RedisMessage {
      * @param value
      */
     case class APPEND(key: Array[Byte], value: Array[Byte]) {
-      def this(key: String, value: String) = this(toBytes(key), toBytes(value))
+      def this(key: String, value: String) = {
+        this(toBytes(key), toBytes(value))
+      }
     }
 
     /**
@@ -355,7 +391,9 @@ object RedisMessage {
      * @param key
      */
     case class DECR(key: Array[Byte]) {
-      def this(key: String) = this(toBytes(key))
+      def this(key: String) = {
+        this(toBytes(key))
+      }
     }
 
     /**
@@ -365,7 +403,9 @@ object RedisMessage {
      * @param decrement
      */
     case class DECRBY(key: Array[Byte], decrement: Int) {
-      def this(key: String, decrement: Int) = this(toBytes(key), decrement)
+      def this(key: String, decrement: Int) = {
+        this(toBytes(key), decrement)
+      }
     }
 
     /**
@@ -374,7 +414,9 @@ object RedisMessage {
      * @param key
      */
     case class INCR(key: Array[Byte]) {
-      def this(key: String) = this(toBytes(key))
+      def this(key: String) = {
+        this(toBytes(key))
+      }
     }
 
     /**
@@ -384,7 +426,9 @@ object RedisMessage {
      * @param increment
      */
     case class INCRBY(key: Array[Byte], increment: Int) {
-      def this(key: String, increment: Int) = this(toBytes(key), increment)
+      def this(key: String, increment: Int) = {
+        this(toBytes(key), increment)
+      }
     }
 
     /**
@@ -394,7 +438,9 @@ object RedisMessage {
      * @param increment
      */
     case class INCRBYFLOAT(key: Array[Byte], increment: Double) {
-      def this(key: String, increment: Number) = this(toBytes(key), increment)
+      def this(key: String, increment: Number) = {
+        this(toBytes(key), increment)
+      }
     }
 
 
@@ -405,7 +451,9 @@ object RedisMessage {
      * @param value
      */
     case class SET(key: Array[Byte], value: Array[Byte]) {
-      def this(key: String, value: String) = this(toBytes(key), toBytes(value))
+      def this(key: String, value: String) = {
+        this(toBytes(key), toBytes(value))
+      }
     }
 
     /**
@@ -416,7 +464,9 @@ object RedisMessage {
      * @param value
      */
     case class SETBIT(key: Array[Byte], offset: Long, value: Array[Byte]) {
-      def this(key: String, offset: Long, value: String) = this(toBytes(key), offset, toBytes(value))
+      def this(key: String, offset: Long, value: String) = {
+        this(toBytes(key), offset, toBytes(value))
+      }
     }
 
     /**
@@ -427,7 +477,9 @@ object RedisMessage {
      * @param value
      */
     case class SETEX(key: Array[Byte], seconds: Int, value: Array[Byte]) {
-      def this(key: String, seconds: Int, value: String) = this(toBytes(key), seconds, toBytes(value))
+      def this(key: String, seconds: Int, value: String) = {
+        this(toBytes(key), seconds, toBytes(value))
+      }
     }
 
     /**
@@ -437,7 +489,9 @@ object RedisMessage {
      * @param value
      */
     case class SETNX(key: Array[Byte], value: Array[Byte]) {
-      def this(key: String, value: String) = this(toBytes(key), toBytes(value))
+      def this(key: String, value: String) = {
+        this(toBytes(key), toBytes(value))
+      }
     }
 
     /**
@@ -448,9 +502,9 @@ object RedisMessage {
      * @param value
      */
     case class SETRANGE(key: Array[Byte], offset: Int, value: Array[Byte]) {
-      def this(key: String, offset: Int, value: String) = this(toBytes(key), offset, toBytes(value))
+      def this(key: String, offset: Int, value: String) = {
+        this(toBytes(key), offset, toBytes(value))
+      }
     }
-
   }
-
 }

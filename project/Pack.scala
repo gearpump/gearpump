@@ -24,7 +24,6 @@ import xerial.sbt.Pack._
 object Pack extends sbt.Build {
   val daemonClassPath = Seq(
     "${PROG_HOME}/conf",
-    "${PROG_HOME}/lib/daemon/*",
     // This is for DFSJarStore
     "${PROG_HOME}/lib/yarn/*"
   )
@@ -37,14 +36,12 @@ object Pack extends sbt.Build {
 
   val serviceClassPath = Seq(
     "${PROG_HOME}/conf",
-    "${PROG_HOME}/lib/daemon/*",
     "${PROG_HOME}/lib/services/*",
     "${PROG_HOME}/dashboard"
   )
 
   val yarnClassPath = Seq(
     "${PROG_HOME}/conf",
-    "${PROG_HOME}/lib/daemon/*",
     "${PROG_HOME}/lib/services/*",
     "${PROG_HOME}/lib/yarn/*",
     "${PROG_HOME}/conf/yarnconf",
@@ -112,11 +109,10 @@ object Pack extends sbt.Build {
             "-Dgearpump.home=${PROG_HOME}")
         ),
         packLibDir := Map(
-          "lib" -> new ProjectsToPack(core.id, streaming.id),
-          "lib/daemon" -> new ProjectsToPack(daemon.id, cgroup.id).exclude(core.id, streaming.id),
+          "lib" -> new ProjectsToPack(core.id, cgroup.id, streaming.id),
           "lib/yarn" -> new ProjectsToPack(gearpumpHadoop.id, yarn.id).
-            exclude(services.id, daemon.id, core.id),
-          "lib/services" -> new ProjectsToPack(services.id).exclude(daemon.id),
+            exclude(services.id, core.id),
+          "lib/services" -> new ProjectsToPack(services.id).exclude(core.id),
           "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id)
         ),
         packExclude := Seq(thisProjectRef.value.project),
@@ -139,7 +135,7 @@ object Pack extends sbt.Build {
           "gear" -> applicationClassPath,
           "local" -> daemonClassPath,
           "master" -> daemonClassPath,
-          "worker" -> daemonClassPath,
+          "worker" -> applicationClassPath,
           "services" -> serviceClassPath,
           "yarnclient" -> yarnClassPath,
           "storm" -> stormClassPath
@@ -149,6 +145,6 @@ object Pack extends sbt.Build {
         packArchiveExcludes := Seq("integrationtest")
 
       )
-  ).dependsOn(core, streaming, services, yarn, storm).
+  ).dependsOn(core, streaming, services, yarn, storm, cgroup).
     disablePlugins(sbtassembly.AssemblyPlugin)
 }

@@ -22,34 +22,33 @@ import java.io.File
 import java.lang.management.ManagementFactory
 import java.net.URL
 import java.util.concurrent.{Executors, TimeUnit}
-import org.apache.gearpump.cluster.worker.Worker.ExecutorWatcher
-
-import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success, Try}
 
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
-import com.typesafe.config.{ConfigValueFactory, Config, ConfigFactory}
-import org.slf4j.Logger
-
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.apache.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
 import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, WorkerConfig}
-import org.apache.gearpump.cluster.MasterToWorker._
+import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceSucceed, UpdateResourceFailed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToAppMaster._
-import org.apache.gearpump.cluster.WorkerToMaster._
+import org.apache.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, ResourceUpdate}
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
+import org.apache.gearpump.cluster.worker.Worker.ExecutorWatcher
 import org.apache.gearpump.cluster.{ClusterConfig, ExecutorJVMConfig}
-import org.apache.gearpump.jarstore.{JarStoreClient, JarStoreServer}
+import org.apache.gearpump.jarstore.JarStoreClient
 import org.apache.gearpump.metrics.Metrics.ReportMetrics
 import org.apache.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import org.apache.gearpump.util.ActorSystemBooter.Daemon
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import org.apache.gearpump.util.{TimeOutScheduler, _}
+import org.slf4j.Logger
+
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Worker is used to track the resource on single machine, it is like
@@ -519,8 +518,7 @@ private[cluster] object Worker {
     }
 
     // The folders are under ${GEARPUMP_HOME}
-    val daemonPathPattern = List("lib" + File.separator + "daemon", "lib" +
-      File.separator + "yarn")
+    val daemonPathPattern = List("lib" + File.separator + "yarn")
 
     override def receive: Receive = {
       case ShutdownExecutor(appId, executorId, reason: String) =>

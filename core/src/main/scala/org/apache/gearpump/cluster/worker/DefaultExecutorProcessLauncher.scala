@@ -20,10 +20,9 @@ package org.apache.gearpump.cluster.worker
 import java.io.File
 
 import com.typesafe.config.Config
-import org.slf4j.Logger
-
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.util.{LogUtil, RichProcess, Util}
+import org.slf4j.Logger
 
 /** Launcher to start an executor process */
 class DefaultExecutorProcessLauncher(val config: Config) extends ExecutorProcessLauncher {

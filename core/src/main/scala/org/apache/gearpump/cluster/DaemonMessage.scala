@@ -18,7 +18,6 @@
 package org.apache.gearpump.cluster
 
 import akka.actor.ActorRef
-
 import org.apache.gearpump.cluster.master.Master.MasterInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.worker.WorkerId

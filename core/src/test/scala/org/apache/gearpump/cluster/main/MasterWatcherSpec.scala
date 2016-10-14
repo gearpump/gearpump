@@ -17,15 +17,14 @@
  */
 package org.apache.gearpump.cluster.main
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
+import org.apache.gearpump.cluster.TestUtil
 import org.scalatest.{FlatSpec, Matchers}
 
-import org.apache.gearpump.cluster.TestUtil
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class MasterWatcherSpec extends FlatSpec with Matchers {
   def config: Config = TestUtil.MASTER_CONFIG

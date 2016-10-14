@@ -19,25 +19,25 @@
 package org.apache.gearpump.cluster.main
 
 import java.util.concurrent.TimeUnit
+
+import akka.actor._
+import akka.cluster.ClusterEvent._
+import akka.cluster.{MemberStatus, Member, Cluster}
+import akka.cluster.ddata.DistributedData
+import akka.cluster.singleton.{ClusterSingletonProxySettings, ClusterSingletonProxy, ClusterSingletonManagerSettings, ClusterSingletonManager}
+import com.typesafe.config.ConfigValueFactory
+import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.cluster.master.Master.MasterListUpdated
+import org.apache.gearpump.cluster.master.{Master => MasterActor, MasterNode}
+import org.apache.gearpump.util.Constants._
+import org.apache.gearpump.util.LogUtil.ProcessType
+import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil}
+import org.slf4j.Logger
+
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
-import akka.actor._
-import akka.cluster.ClusterEvent._
-import akka.cluster.ddata.DistributedData
-import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
-import akka.cluster.{Cluster, Member, MemberStatus}
-import com.typesafe.config.ConfigValueFactory
-import org.slf4j.Logger
-
-import org.apache.gearpump.cluster.ClusterConfig
-import org.apache.gearpump.cluster.master.{Master => MasterActor, MasterNode}
-import org.apache.gearpump.cluster.master.Master.MasterListUpdated
-import org.apache.gearpump.util.Constants._
-import org.apache.gearpump.util.LogUtil.ProcessType
-import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil}
 
 object Master extends AkkaApp with ArgumentsParser {
 

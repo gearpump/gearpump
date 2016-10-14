@@ -17,19 +17,17 @@
  */
 package org.apache.gearpump.cluster.scheduler
 
-import org.apache.gearpump.cluster.worker.WorkerId
-
-import scala.collection.mutable
-
 import akka.actor.{Actor, ActorRef}
-import org.slf4j.Logger
-
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, UpdateResourceSucceed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import org.apache.gearpump.cluster.master.Master.WorkerTerminated
 import org.apache.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
+import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.util.LogUtil
+import org.slf4j.Logger
+
+import scala.collection.mutable
 
 /**
  * Scheduler schedule resource for different applications.

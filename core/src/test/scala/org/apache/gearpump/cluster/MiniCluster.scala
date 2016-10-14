@@ -17,19 +17,18 @@
  */
 package org.apache.gearpump.cluster
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.pattern.ask
 import akka.testkit.TestActorRef
 import com.typesafe.config.ConfigValueFactory
-
 import org.apache.gearpump.cluster.AppMasterToMaster.GetAllWorkers
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
 import org.apache.gearpump.cluster.master.Master
 import org.apache.gearpump.cluster.worker.Worker
 import org.apache.gearpump.util.Constants
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class MiniCluster {
   private val mockMasterIP = "127.0.0.1"

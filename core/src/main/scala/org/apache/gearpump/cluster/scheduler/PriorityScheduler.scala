@@ -18,16 +18,14 @@
 
 package org.apache.gearpump.cluster.scheduler
 
-import org.apache.gearpump.cluster.worker.WorkerId
-
-import scala.collection.mutable
-
 import akka.actor.ActorRef
-
 import org.apache.gearpump.cluster.AppMasterToMaster.RequestResource
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import org.apache.gearpump.cluster.scheduler.Relaxation._
 import org.apache.gearpump.cluster.scheduler.Scheduler.PendingRequest
+import org.apache.gearpump.cluster.worker.WorkerId
+
+import scala.collection.mutable
 
 /** Assign resource to application based on the priority of the application */
 class PriorityScheduler extends Scheduler {

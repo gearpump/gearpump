@@ -140,15 +140,6 @@ object Build extends sbt.Build {
     publishArtifact in Test := false
   )
 
-  val daemonDependencies = Seq(
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
-      "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
-      "commons-logging" % "commons-logging" % commonsLoggingVersion,
-      "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion
-    )
-  )
-
   val coreDependencies = Seq(
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api" % slf4jVersion,
@@ -171,6 +162,10 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-remote" % akkaVersion
         exclude("io.netty", "netty"),
 
+      "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
+      "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
+      "commons-logging" % "commons-logging" % commonsLoggingVersion,
+      "com.typesafe.akka" %% "akka-distributed-data-experimental" % akkaVersion,
       "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-agent" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
@@ -256,7 +251,7 @@ object Build extends sbt.Build {
     id = "gearpump",
     base = file("."),
     settings = commonSettings ++ noPublish ++ gearpumpUnidocSetting)
-      .aggregate(shaded, core, daemon, streaming, services, external_kafka, external_monoid,
+      .aggregate(shaded, core, streaming, services, external_kafka, external_monoid,
       external_serializer, examples, storm, yarn, external_hbase, gearpumpHadoop, packProject,
       external_hadoopfs, integration_test).settings(Defaults.itSettings: _*)
       .disablePlugins(sbtassembly.AssemblyPlugin)
@@ -271,20 +266,13 @@ object Build extends sbt.Build {
           getShadedDepXML(organization.value, shaded_guava.id, version.value),
           getShadedDepXML(organization.value, shaded_metrics_graphite.id, version.value)), node)
       }
-    ))
-      .disablePlugins(sbtassembly.AssemblyPlugin)
+    )).disablePlugins(sbtassembly.AssemblyPlugin)
 
-  lazy val daemon = Project(
-    id = "gearpump-daemon",
-    base = file("daemon"),
-    settings = commonSettings ++ daemonDependencies)
-      .dependsOn(core % "test->test; compile->compile", cgroup % "test->test; compile->compile")
-      .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val cgroup = Project(
     id = "gearpump-experimental-cgroup",
     base = file("experiments/cgroup"),
-    settings = commonSettings ++ noPublish ++ daemonDependencies)
+    settings = commonSettings ++ noPublish)
       .dependsOn (core % "test->test; compile->compile")
       .disablePlugins(sbtassembly.AssemblyPlugin)
 
@@ -301,7 +289,7 @@ object Build extends sbt.Build {
           getShadedDepXML(organization.value, shaded_gs_collections.id, version.value)), node)
       }
     ))
-    .dependsOn(core % "test->test; compile->compile", shaded_gs_collections, daemon % "test->test")
+    .dependsOn(core % "test->test; compile->compile", shaded_gs_collections)
     .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val external_kafka = Project(
@@ -412,19 +400,18 @@ object Build extends sbt.Build {
         ),
         mainClass in(Compile, packageBin) := Some("akka.stream.gearpump.example.Test")
       ))
-      .dependsOn(streaming % "test->test; provided", daemon % "test->test; provided")
+      .dependsOn(streaming % "test->test; provided")
 
   lazy val redis = Project(
     id = "gearpump-experiments-redis",
     base = file("experiments/redis"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++
       Seq(
         libraryDependencies ++= Seq(
           "redis.clients" % "jedis" % "2.9.0"
-        ),
-        mainClass in(Compile, packageBin) := Some("org.apache.gearpump.example.Test")
-      ))
-    .dependsOn(streaming % "test->test; provided", daemon % "test->test; provided")
+        )
+      )
+  ).dependsOn(streaming % "test->test; provided")
 
   lazy val storm = Project(
     id = "gearpump-experiments-storm",
@@ -489,7 +476,7 @@ object Build extends sbt.Build {
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % hadoopVersion % "provided"
         )
       ))
-      .dependsOn(services % "test->test;compile->compile", daemon % "provided",
+      .dependsOn(services % "test->test;compile->compile",
         core % "provided", gearpumpHadoop).disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val external_hbase = Project(

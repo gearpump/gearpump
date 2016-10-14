@@ -18,14 +18,8 @@
 
 package org.apache.gearpump.cluster.master
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.{Failure, Success}
-
 import akka.actor._
 import akka.pattern.ask
-import org.slf4j.Logger
-
 import org.apache.gearpump.cluster.AppMasterToMaster.{AppDataSaved, SaveAppDataFailed, _}
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.ClientToMaster._
@@ -38,6 +32,11 @@ import org.apache.gearpump.cluster.master.InMemoryKVService.{GetKVResult, PutKVR
 import org.apache.gearpump.cluster.master.Master._
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{ActorUtil, TimeOutScheduler, Util, _}
+import org.slf4j.Logger
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 /**
  * AppManager is dedicated child of Master to manager all applications.
