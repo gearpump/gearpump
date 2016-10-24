@@ -41,7 +41,7 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.worker.WorkerSummary
 import org.apache.gearpump.cluster.{ClusterConfig, UserConfig}
 import org.apache.gearpump.jarstore.{JarStoreClient, FileDirective, JarStoreServer}
-import org.apache.gearpump.partitioner.{PartitionerByClassName, PartitionerDescription}
+import org.apache.gearpump.streaming.partitioner.{PartitionerByClassName, PartitionerDescription}
 import org.apache.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
 // NOTE: This cannot be removed!!!
 import org.apache.gearpump.services.util.UpickleUtil._
@@ -192,7 +192,8 @@ class MasterService(val master: ActorRef,
     } ~
     path("partitioners") {
       get {
-        complete(write(BuiltinPartitioners(Constants.BUILTIN_PARTITIONERS.map(_.getName))))
+        complete(write(BuiltinPartitioners(org.apache.gearpump.streaming.Constants
+          .BUILTIN_PARTITIONERS.map(_.getName))))
       }
     }
   }

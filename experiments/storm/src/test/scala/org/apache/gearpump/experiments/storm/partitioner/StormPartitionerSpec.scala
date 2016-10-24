@@ -27,7 +27,7 @@ import org.scalatest.{Matchers, PropSpec}
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.experiments.storm.topology.GearpumpTuple
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.partitioner.Partitioner
 
 class StormPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
 

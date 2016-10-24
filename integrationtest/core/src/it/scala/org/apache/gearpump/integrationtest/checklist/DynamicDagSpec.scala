@@ -33,7 +33,7 @@ class DynamicDagSpec extends TestSpecBase {
       val partitioners = restClient.queryBuiltInPartitioners()
       partitioners.length should be > 0
       partitioners.foreach(clazz =>
-        clazz should startWith("org.apache.gearpump.partitioner.")
+        clazz should startWith("org.apache.gearpump.streaming.partitioner.")
       )
     }
 

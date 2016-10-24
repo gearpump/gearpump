@@ -16,21 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.partitioner
+package org.apache.gearpump.streaming.partitioner
 
 import org.apache.gearpump.Message
 
-/** Used by storm module to broadcast message to all downstream tasks  */
-class BroadcastPartitioner extends MulticastPartitioner {
-  private var lastPartitionNum = -1
-  private var partitions = Array.empty[Int]
-
-  override def getPartitions(
-      msg: Message, partitionNum: Int, currentPartitionId: Int): Array[Int] = {
-    if (partitionNum != lastPartitionNum) {
-      partitions = (0 until partitionNum).toArray
-      lastPartitionNum = partitionNum
-    }
-    partitions
+/**
+ * Only make sense when the message has implemented the hashCode()
+ * Otherwise, it will use Object.hashCode(), which will not return
+ * same hash code after serialization and deserialization.
+ */
+class HashPartitioner extends UnicastPartitioner {
+  override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
+    (msg.msg.hashCode() & Integer.MAX_VALUE) % partitionNum
   }
 }

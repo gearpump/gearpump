@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming
 
-import org.apache.gearpump.partitioner.PartitionerDescription
+import org.apache.gearpump.streaming.partitioner.PartitionerDescription
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.util.Graph
 

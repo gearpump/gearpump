@@ -20,7 +20,7 @@ package org.apache.gearpump.experiments.storm.util
 
 import org.apache.gearpump.experiments.storm.partitioner.StormPartitioner
 import org.apache.gearpump.experiments.storm.topology.GearpumpStormTopology
-import org.apache.gearpump.partitioner.Partitioner
+import org.apache.gearpump.streaming.partitioner.Partitioner
 import org.apache.gearpump.streaming.Processor
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.util.Graph

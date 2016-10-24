@@ -24,7 +24,7 @@ import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.AppJar
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerId
-import org.apache.gearpump.partitioner.PartitionerDescription
+import org.apache.gearpump.streaming.partitioner.PartitionerDescription
 import org.apache.gearpump.streaming.appmaster.JarScheduler._
 import org.apache.gearpump.streaming.task.TaskId
 import org.apache.gearpump.streaming.{DAG, ProcessorDescription}

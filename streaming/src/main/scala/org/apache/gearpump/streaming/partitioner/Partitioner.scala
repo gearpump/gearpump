@@ -16,13 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.partitioner
-
-import scala.reflect.ClassTag
+package org.apache.gearpump.streaming.partitioner
 
 import org.apache.commons.lang.SerializationUtils
-
 import org.apache.gearpump.Message
+
+import scala.reflect.ClassTag
 
 /**
  * For processor chain: A (3 tasks) {@literal ->} B (3 tasks), partitioner decide how ONE task

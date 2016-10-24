@@ -19,7 +19,7 @@
 package org.apache.gearpump.streaming.dsl.partitioner
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.partitioner.UnicastPartitioner
+import org.apache.gearpump.streaming.partitioner.UnicastPartitioner
 import org.apache.gearpump.streaming.dsl.window.api.GroupByFn
 
 /**

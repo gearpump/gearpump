@@ -25,7 +25,7 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
-import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
+import org.apache.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.serializer.{FastKryoSerializer, SerializationFramework}
 import org.apache.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, StartTask, TaskChanged, TaskRegistered}
 import org.apache.gearpump.streaming.task.TaskActorSpec.TestTask

@@ -19,7 +19,7 @@ package org.apache.gearpump.streaming.task
 
 import org.scalatest.{FlatSpec, Matchers}
 
-import org.apache.gearpump.partitioner.{HashPartitioner, Partitioner}
+import org.apache.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.task.SubscriberSpec.TestTask
 import org.apache.gearpump.streaming.{DAG, ProcessorDescription}
 import org.apache.gearpump.util.Graph

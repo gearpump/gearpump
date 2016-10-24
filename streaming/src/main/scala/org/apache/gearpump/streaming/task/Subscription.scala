@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.task
 import org.slf4j.Logger
 
 import org.apache.gearpump.google.common.primitives.Shorts
-import org.apache.gearpump.partitioner.{MulticastPartitioner, Partitioner, UnicastPartitioner}
+import org.apache.gearpump.streaming.partitioner.{MulticastPartitioner, Partitioner, UnicastPartitioner}
 import org.apache.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import org.apache.gearpump.streaming.LifeTime
 import org.apache.gearpump.streaming.task.Subscription._

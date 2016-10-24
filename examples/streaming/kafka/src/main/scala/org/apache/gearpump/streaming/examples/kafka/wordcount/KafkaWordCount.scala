@@ -28,7 +28,7 @@ import org.slf4j.Logger
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.kafka._
 import org.apache.gearpump.streaming.sink.DataSinkProcessor
 import org.apache.gearpump.streaming.source.DataSourceProcessor

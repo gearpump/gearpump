@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.partitioner
-
-import scala.util.Random
+package org.apache.gearpump.streaming.partitioner
 
 import org.apache.gearpump.Message
+
+import scala.util.Random
 
 /**
  * The idea of ShuffleGroupingPartitioner is derived from Storm.

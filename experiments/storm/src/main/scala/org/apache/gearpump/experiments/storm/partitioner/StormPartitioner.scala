@@ -20,7 +20,7 @@ package org.apache.gearpump.experiments.storm.partitioner
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.experiments.storm.topology.GearpumpTuple
-import org.apache.gearpump.partitioner.{MulticastPartitioner, Partitioner}
+import org.apache.gearpump.streaming.partitioner.{MulticastPartitioner, Partitioner}
 
 /**
  * Partitioner bound to a target Storm component

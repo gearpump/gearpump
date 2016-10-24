@@ -21,7 +21,7 @@ import akka.actor.ActorSystem
 
 import org.apache.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
 import org.apache.gearpump.experiments.pagerank.PageRankApplication.NodeWithTaskId
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.appmaster.AppMaster
 import org.apache.gearpump.streaming.{Processor, StreamApplication}
 import org.apache.gearpump.util.Graph

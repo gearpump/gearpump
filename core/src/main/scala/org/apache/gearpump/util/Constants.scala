@@ -20,8 +20,6 @@ package org.apache.gearpump.util
 
 import java.util.concurrent.TimeUnit
 
-import org.apache.gearpump.partitioner._
-
 object Constants {
   val MASTER_WATCHER = "masterwatcher"
   val SINGLETON_MANAGER = "singleton"
@@ -139,14 +137,6 @@ object Constants {
   val GEARPUMP_SERVICE_HOST = "gearpump.services.host"
   val GEARPUMP_SERVICE_SUPERVISOR_PATH = "gearpump.services.supervisor-actor-path"
   val GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE = "gearpump.services.config-render-option-concise"
-
-  // The partitioners provided by Gearpump
-  val BUILTIN_PARTITIONERS = Array(
-    classOf[BroadcastPartitioner],
-    classOf[CoLocationPartitioner],
-    classOf[HashPartitioner],
-    classOf[ShuffleGroupingPartitioner],
-    classOf[ShufflePartitioner])
 
   // Security related
   val GEARPUMP_KEYTAB_FILE = "gearpump.keytab.file"

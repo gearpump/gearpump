@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.appmaster
 import akka.actor.{ExtendedActorSystem, Actor, ActorRef, Stash}
 import akka.serialization.JavaSerializer
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.partitioner.PartitionerDescription
+import org.apache.gearpump.streaming.partitioner.PartitionerDescription
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.DagManager._
 import org.apache.gearpump.streaming.storage.AppDataStore

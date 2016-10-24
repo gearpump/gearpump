@@ -16,29 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.partitioner
-
-import java.util.Random
+package org.apache.gearpump.streaming.partitioner
 
 import org.apache.gearpump.Message
 
 /**
- * Round Robin partition the data to downstream processor tasks.
+ * Will have the same parallelism with last processor
+ * And each task in current processor will co-locate with task of last processor
  */
-class ShufflePartitioner extends UnicastPartitioner {
-  private var seed = 0
-  private var count = 0
-
+class CoLocationPartitioner extends UnicastPartitioner {
   override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
-
-    if (seed == 0) {
-      seed = newSeed()
-    }
-
-    val result = ((count + seed) & Integer.MAX_VALUE) % partitionNum
-    count = count + 1
-    result
+    currentPartitionId
   }
-
-  private def newSeed(): Int = new Random().nextInt()
 }

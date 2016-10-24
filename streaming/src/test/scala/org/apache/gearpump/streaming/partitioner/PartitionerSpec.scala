@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.partitioner
-
-import org.scalatest.{FlatSpec, Matchers}
+package org.apache.gearpump.streaming.partitioner
 
 import org.apache.gearpump.Message
+import org.scalatest.{FlatSpec, Matchers}
 
 class PartitionerSpec extends FlatSpec with Matchers {
   val NUM = 10

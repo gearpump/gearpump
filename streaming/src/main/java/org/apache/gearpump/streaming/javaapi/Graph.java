@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.javaapi;
 
-import org.apache.gearpump.partitioner.Partitioner;
+import org.apache.gearpump.streaming.partitioner.Partitioner;
 import org.apache.gearpump.streaming.Processor;
 import org.apache.gearpump.streaming.task.Task;
 

@@ -30,7 +30,7 @@ import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.metrics.Metrics.ReportMetrics
 import org.apache.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
-import org.apache.gearpump.partitioner.PartitionerDescription
+import org.apache.gearpump.streaming.partitioner.PartitionerDescription
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask, UnRegisterTask}
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.AppMaster._

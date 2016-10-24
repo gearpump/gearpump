@@ -27,7 +27,7 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import org.apache.gearpump.partitioner.HashPartitioner
+import org.apache.gearpump.streaming.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.examples.state.processor.CountProcessor
 import org.apache.gearpump.streaming.hadoop.HadoopCheckpointStoreFactory
 import org.apache.gearpump.streaming.hadoop.lib.rotation.FileSizeRotation

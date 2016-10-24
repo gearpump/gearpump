@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
 
-import org.apache.gearpump.partitioner.{CoLocationPartitioner, HashPartitioner, Partitioner}
+import org.apache.gearpump.streaming.partitioner.{CoLocationPartitioner, HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.Processor
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.streaming.task.Task

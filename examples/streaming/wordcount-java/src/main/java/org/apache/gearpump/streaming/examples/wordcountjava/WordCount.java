@@ -23,12 +23,11 @@ import org.apache.gearpump.cluster.ClusterConfig;
 import org.apache.gearpump.cluster.UserConfig;
 import org.apache.gearpump.cluster.client.ClientContext;
 import org.apache.gearpump.cluster.embedded.EmbeddedCluster;
-import org.apache.gearpump.partitioner.HashPartitioner;
-import org.apache.gearpump.partitioner.Partitioner;
+import org.apache.gearpump.streaming.partitioner.HashPartitioner;
+import org.apache.gearpump.streaming.partitioner.Partitioner;
 import org.apache.gearpump.streaming.javaapi.Graph;
 import org.apache.gearpump.streaming.javaapi.Processor;
 import org.apache.gearpump.streaming.javaapi.StreamApplication;
-import org.apache.gearpump.util.Constants;
 
 /** Java version of WordCount with Processor Graph API */
 public class WordCount {
