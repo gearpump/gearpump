@@ -196,14 +196,6 @@ class AppMasterService(val master: ActorRef,
       } ~
       pathEnd {
         delete {
-          val writer = (result: ShutdownApplicationResult) => {
-            val output = if (result.appId.isSuccess) {
-              Map("status" -> "success", "info" -> null)
-            } else {
-              Map("status" -> "fail", "info" -> result.appId.failed.get.toString)
-            }
-            write(output)
-          }
           onComplete(askActor[ShutdownApplicationResult](master, ShutdownApplication(appId))) {
             case Success(result) =>
               val output = if (result.appId.isSuccess) {
