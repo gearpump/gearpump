@@ -23,10 +23,10 @@ import java.util
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
+import com.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import org.apache.gearpump.streaming.source.Watermark
 import org.slf4j.Logger
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import org.apache.gearpump.metrics.Metrics
 import org.apache.gearpump.serializer.SerializationFramework
 import org.apache.gearpump.streaming.AppMasterToExecutor._

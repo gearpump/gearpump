@@ -22,9 +22,9 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import com.typesafe.config.{ConfigValueFactory, ConfigValue}
+import com.google.common.io.Files
+import com.typesafe.config.ConfigValueFactory
 import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.google.common.io.Files
 import org.apache.gearpump.jarstore.local.LocalJarStore
 import org.apache.gearpump.util.{FileUtils, LogUtil}
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -39,7 +39,7 @@ class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
   val host = "localhost"
   private val LOG = LogUtil.getLogger(getClass)
 
-  var system: ActorSystem = null
+  var system: ActorSystem = _
 
   override def afterAll {
     if (null != system) {
@@ -75,7 +75,6 @@ class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
   "The file server" should {
     "serve the data previously stored" in {
-
       val rootDir = Files.createTempDir()
       val localJarStore: JarStore = new LocalJarStore
       val conf = TestUtil.DEFAULT_CONFIG.withValue("gearpump.jarstore.rootpath",

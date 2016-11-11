@@ -19,19 +19,18 @@
 package org.apache.gearpump.serializer
 
 import akka.actor.ExtendedActorSystem
-
-import org.apache.gearpump.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
-import org.apache.gearpump.objenesis.strategy.StdInstantiatorStrategy
-import org.apache.gearpump.romix.serialization.kryo.KryoSerializerWrapper
+import com.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
+import com.romix.akka.serialization.kryo.{KryoBasedSerializer, KryoSerializer}
 import org.apache.gearpump.serializer.FastKryoSerializer.KryoSerializationException
 import org.apache.gearpump.util.LogUtil
+import org.objenesis.strategy.StdInstantiatorStrategy
 
 class FastKryoSerializer(system: ExtendedActorSystem) extends Serializer {
 
   private val LOG = LogUtil.getLogger(getClass)
   private val config = system.settings.config
 
-  private val kryoSerializer = new KryoSerializerWrapper(system)
+  private val kryoSerializer: KryoBasedSerializer = new KryoSerializer(system).serializer
   private val kryo = kryoSerializer.kryo
   val strategy = new DefaultInstantiatorStrategy
   strategy.setFallbackInstantiatorStrategy(new StdInstantiatorStrategy)
@@ -40,7 +39,7 @@ class FastKryoSerializer(system: ExtendedActorSystem) extends Serializer {
 
   override def serialize(message: Any): Array[Byte] = {
     try {
-      kryoSerializer.toBinary(message)
+      kryoSerializer.toBinary(message.asInstanceOf[AnyRef])
     } catch {
       case ex: java.lang.IllegalArgumentException =>
         val clazz = message.getClass

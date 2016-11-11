@@ -18,19 +18,22 @@
 
 package org.apache.gearpump.serializer
 
+import akka.actor.{ActorSystem, ExtendedActorSystem}
+
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+
+import org.apache.gearpump.cluster.TestUtil
+import org.apache.gearpump.serializer.SerializerSpec._
+
+import org.scalatest.mock.MockitoSugar
+import org.scalatest.{FlatSpec, Matchers}
+
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-import akka.actor.{ActorSystem, ExtendedActorSystem}
-import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{FlatSpec, Matchers}
-
-import org.apache.gearpump.cluster.TestUtil
-import org.apache.gearpump.esotericsoftware.kryo.io.{Input, Output}
-import org.apache.gearpump.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
-import org.apache.gearpump.serializer.SerializerSpec._
 
 class SerializerSpec extends FlatSpec with Matchers with MockitoSugar {
   val config = ConfigFactory.empty.withValue("gearpump.serializers",
@@ -70,7 +73,7 @@ object SerializerSpec {
 
   class ClassASerializer extends KryoSerializer[ClassA] {
     override def write(kryo: Kryo, output: Output, `object`: ClassA): Unit = {
-      output.writeString(classOf[ClassA].getName.toString)
+      output.writeString(classOf[ClassA].getName)
     }
 
     override def read(kryo: Kryo, input: Input, `type`: Class[ClassA]): ClassA = {

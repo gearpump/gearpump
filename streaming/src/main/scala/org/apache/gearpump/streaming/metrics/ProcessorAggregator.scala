@@ -20,12 +20,11 @@ package org.apache.gearpump.streaming.metrics
 
 import java.util
 
+import com.google.common.collect.Iterators
 import com.typesafe.config.Config
-
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.ClientToMaster.ReadOption
 import org.apache.gearpump.cluster.MasterToClient.HistoryMetricsItem
-import org.apache.gearpump.google.common.collect.Iterators
 import org.apache.gearpump.metrics.Metrics.{Histogram, Meter}
 import org.apache.gearpump.metrics.MetricsAggregator
 import org.apache.gearpump.streaming.metrics.ProcessorAggregator._

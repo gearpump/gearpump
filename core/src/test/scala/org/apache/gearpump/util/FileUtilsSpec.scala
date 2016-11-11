@@ -18,12 +18,12 @@
 
 package org.apache.gearpump.util
 
+import com.google.common.io.Files
+
 import java.io.File
 import java.util
 
 import org.scalatest.FlatSpec
-
-import org.apache.gearpump.google.common.io.Files
 
 class FileUtilsSpec extends FlatSpec {
   val TXT =

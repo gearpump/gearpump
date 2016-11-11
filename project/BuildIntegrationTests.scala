@@ -18,27 +18,26 @@
 
 import sbt.Keys._
 import sbt._
-import Build._
+import BuildGearpump._
+import BuildExperiments.storm
+import BuildDashboard.services
+import BuildExternals.{external_kafka, external_serializer}
+import Dependencies._
 import sbtassembly.AssemblyPlugin.autoImport._
 
-object BuildIntegrationTest extends sbt.Build {
+object BuildIntegrationTests extends sbt.Build {
 
-  val jsonSimpleVersion = "1.1"
-  val storm09Version = "0.9.6"
+  lazy val integrationTests: Seq[ProjectReference] = Seq(
+    it_core,
+    it_storm09,
+    it_storm010
+  )
 
-  lazy val integration_test = Project(
-    id = "gearpump-integrationtest",
-    base = file("integrationtest"),
-    settings = commonSettings ++ noPublish
-  ).aggregate(it_core, it_storm09, it_storm010).
-    disablePlugins(sbtassembly.AssemblyPlugin)
-
-  val itTestFilter: String => Boolean = { name => name endsWith "Suite" }
   lazy val it_core = Project(
     id = "gearpump-integrationtest-core",
     base = file("integrationtest/core"),
     settings = commonSettings ++ noPublish ++ Seq(
-      testOptions in IntegrationTest += Tests.Filter(itTestFilter),
+      testOptions in IntegrationTest += Tests.Filter(_.endsWith("Suite")),
       libraryDependencies ++= Seq(
         "com.lihaoyi" %% "upickle" % upickleVersion,
         "org.scalatest" %% "scalatest" % scalaTestVersion % "it",
@@ -51,6 +50,7 @@ object BuildIntegrationTest extends sbt.Build {
     )
   ).configs(IntegrationTest).settings(Defaults.itSettings: _*)
     .dependsOn(
+      core % "provided",
       streaming % "test->test; provided",
       services % "test->test; provided",
       external_kafka,
@@ -73,7 +73,7 @@ object BuildIntegrationTest extends sbt.Build {
         target in assembly := baseDirectory.value.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
       )
-  ) dependsOn (storm % "provided")
+  ).dependsOn(core % "provided", storm % "provided")
 
   // Integration test for Storm 0.10.x
   lazy val it_storm010 = Project(
@@ -89,5 +89,5 @@ object BuildIntegrationTest extends sbt.Build {
         target in assembly := baseDirectory.value.getParentFile / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
       )
-  ) dependsOn (storm % "provided")
+  ).dependsOn(core % "provided", storm % "provided")
 }

@@ -20,12 +20,11 @@ package org.apache.gearpump.metrics
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.duration._
-
 import akka.actor.{Actor, ActorRef}
-
-import org.apache.gearpump.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import org.apache.gearpump.codahale.metrics.{MetricFilter, Slf4jReporter}
+import com.codahale.metrics.{MetricFilter, Slf4jReporter}
+import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
 import org.apache.gearpump.metrics.Metrics.{DemandMoreMetrics, ReportMetrics}
 import org.apache.gearpump.metrics.MetricsReporterService.ReportTo
 import org.apache.gearpump.util.Constants._

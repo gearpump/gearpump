@@ -147,7 +147,7 @@ object RedisMessage {
      */
     case class LPUSH(key: Array[Byte], value: Array[Byte]) {
       def this(key: String, value: String) = {
-        this(key, toBytes(value))
+        this(toBytes(key), toBytes(value))
       }
     }
 
@@ -184,7 +184,7 @@ object RedisMessage {
      */
     case class RPUSH(key: Array[Byte], value: Array[Byte]) {
       def this(key: String, value: String) = {
-        this(key, toBytes(value))
+        this(toBytes(key), toBytes(value))
       }
     }
 
@@ -338,7 +338,7 @@ object RedisMessage {
      */
     case class SADD(key: Array[Byte], members: Array[Byte]) {
       def this(key: String, members: String) = {
-        this(key, toBytes(members))
+        this(toBytes(key), toBytes(members))
       }
     }
 
@@ -365,7 +365,7 @@ object RedisMessage {
      */
     case class SREM(key: Array[Byte], member: Array[Byte]) {
       def this(key: String, member: String) = {
-        this(key, toBytes(member))
+        this(toBytes(key), toBytes(member))
       }
     }
 
@@ -438,7 +438,7 @@ object RedisMessage {
      * @param increment
      */
     case class INCRBYFLOAT(key: Array[Byte], increment: Double) {
-      def this(key: String, increment: Number) = {
+      def this(key: String, increment: Double) = {
         this(toBytes(key), increment)
       }
     }

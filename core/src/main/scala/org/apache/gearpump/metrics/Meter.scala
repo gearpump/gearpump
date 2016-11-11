@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.metrics
 
-import org.apache.gearpump.codahale.metrics.{Meter => CodaHaleMeter}
+import com.codahale.metrics.{Meter => CodaHaleMeter}
 
 /** See org.apache.gearpump.codahale.metrics.Meter */
 class Meter(val name: String, meter: CodaHaleMeter, sampleRate: Int = 1) {

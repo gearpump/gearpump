@@ -21,7 +21,7 @@ package org.apache.gearpump.util
 import java.io.{File, IOException}
 import java.nio.charset.Charset
 
-import org.apache.gearpump.google.common.io.Files
+import com.google.common.io.Files
 
 object FileUtils {
   private val UTF8 = Charset.forName("UTF-8")

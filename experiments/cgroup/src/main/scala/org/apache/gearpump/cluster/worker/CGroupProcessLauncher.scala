@@ -43,7 +43,7 @@ class CGroupProcessLauncher(val config: Config) extends ExecutorProcessLauncher 
   }
 
   override def createProcess(
-    appId: Int, executorId: Int, resource: Resource, appConfig: Config, options: Array[String],
+      appId: Int, executorId: Int, resource: Resource, appConfig: Config, options: Array[String],
     classPath: Array[String], mainClass: String, arguments: Array[String]): RichProcess = {
     val cgroupCommand = if (executorId != APP_MASTER) {
       cgroupManager.map(_.startNewExecutor(appConfig, resource.slots, appId,

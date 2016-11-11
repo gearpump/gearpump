@@ -22,10 +22,10 @@ import java.time.Instant
 import akka.actor.ActorSystem
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.gs.collections.api.block.procedure.Procedure
-import org.apache.gearpump.gs.collections.impl.list.mutable.FastList
-import org.apache.gearpump.gs.collections.impl.map.mutable.UnifiedMap
-import org.apache.gearpump.gs.collections.impl.map.sorted.mutable.TreeSortedMap
+import com.gs.collections.api.block.procedure.Procedure
+import com.gs.collections.impl.list.mutable.FastList
+import com.gs.collections.impl.map.mutable.UnifiedMap
+import com.gs.collections.impl.map.sorted.mutable.TreeSortedMap
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.plan.functions.{EmitFunction, SingleInputFunction}
 import org.apache.gearpump.streaming.dsl.window.api.Discarding

@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.cluster.utils;
 
-import org.apache.gearpump.google.common.io.CharStreams;
+import com.google.common.io.CharStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -18,10 +18,10 @@
 
 package org.apache.gearpump.metrics
 
-import org.apache.gearpump.codahale.metrics.{Counter => CodaHaleCounter}
+import com.codahale.metrics.{Counter => CodaHaleCounter}
 
 /**
- * @see org.apache.gearpump.codahale.metrics.Counter
+ * @see com.codahale.metrics.Counter
  */
 class Counter(val name: String, counter: CodaHaleCounter, sampleRate: Int = 1) {
   private var sampleCount = 0L

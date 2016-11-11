@@ -18,7 +18,9 @@
 
 import sbt.Keys._
 import sbt._
-import Build._
+import BuildGearpump._
+import BuildDashboard.services
+import BuildExperiments.{cgroup, storm, yarn}
 import xerial.sbt.Pack._
 
 object Pack extends sbt.Build {
@@ -69,9 +71,14 @@ object Pack extends sbt.Build {
           "storm" -> "org.apache.gearpump.experiments.storm.StormRunner"
         ),
         packJvmOpts := Map(
-          "gear" -> Seq("-Djava.net.preferIPv4Stack=true", "-Dgearpump.home=${PROG_HOME}"),
+          "gear" -> Seq(
+            "-noverify",
+            "-Djava.net.preferIPv4Stack=true",
+            "-Dgearpump.home=${PROG_HOME}"),
+
           "local" -> Seq(
             "-server",
+            "-noverify",
             "-Djava.net.preferIPv4Stack=true",
             "-DlogFilename=local",
             "-Dgearpump.home=${PROG_HOME}",
@@ -79,6 +86,7 @@ object Pack extends sbt.Build {
 
           "master" -> Seq(
             "-server",
+            "-noverify",
             "-Djava.net.preferIPv4Stack=true",
             "-DlogFilename=master",
             "-Dgearpump.home=${PROG_HOME}",
@@ -86,6 +94,7 @@ object Pack extends sbt.Build {
 
           "worker" -> Seq(
             "-server",
+            "-noverify",
             "-Djava.net.preferIPv4Stack=true",
             "-DlogFilename=worker",
             "-Dgearpump.home=${PROG_HOME}",
@@ -93,23 +102,25 @@ object Pack extends sbt.Build {
 
           "services" -> Seq(
             "-server",
+            "-noverify",
             "-Djava.net.preferIPv4Stack=true",
             "-Dgearpump.home=${PROG_HOME}",
             "-Djava.rmi.server.hostname=localhost"),
 
           "yarnclient" -> Seq(
             "-server",
+            "-noverify",
             "-Djava.net.preferIPv4Stack=true",
             "-Dgearpump.home=${PROG_HOME}",
             "-Djava.rmi.server.hostname=localhost"),
 
           "storm" -> Seq(
             "-server",
+            "-noverify",
             "-Djava.net.preferIPv4Stack=true",
             "-Dgearpump.home=${PROG_HOME}")
         ),
         packLibDir := Map(
-          "lib" -> new ProjectsToPack(core.id, cgroup.id, streaming.id),
           "lib/yarn" -> new ProjectsToPack(gearpumpHadoop.id, yarn.id).
             exclude(services.id, core.id),
           "lib/services" -> new ProjectsToPack(services.id).exclude(core.id),
@@ -120,7 +131,9 @@ object Pack extends sbt.Build {
         packResourceDir += (baseDirectory.value / ".." / "bin" -> "bin"),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
         packResourceDir += (baseDirectory.value / ".." / "yarnconf" -> "conf/yarnconf"),
-        packResourceDir += (baseDirectory.value / ".." / "shaded" / "target" /
+        packResourceDir += (baseDirectory.value / ".." / "core" / "target" /
+          CrossVersion.binaryScalaVersion(scalaVersion.value) -> "lib"),
+        packResourceDir += (baseDirectory.value / ".." / "streaming" / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value) -> "lib"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" /
