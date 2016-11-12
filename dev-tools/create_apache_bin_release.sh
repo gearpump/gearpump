@@ -24,10 +24,12 @@ OPTIONS:
   -p      GPG_PASSPHRASE
   -r      RAT Tool
   -v      Verify signed release
+  -c      Clean before building
 EOF
 }
 VERIFY=false
 RUN_RAT=false
+CLEAN=false
 RELEASE_VERSION=$(grep '^version' version.sbt|sed 's/^.*"\(.*\)"$/\1/')
 GEARPUMP_RELEASE_VERSION=gearpump-${RELEASE_VERSION}-incubating
 while getopts “hrvk:p:” OPTION
@@ -49,6 +51,9 @@ do
          v)
              VERIFY=true
              ;;
+         c)
+             CLEAN=true
+             ;;
          ?)
              usage
              exit
@@ -58,8 +63,8 @@ done
 shift $((OPTIND-1))
 if [ $VERIFY = "true" ]; then
   gpg --import KEYS 2>/dev/null
-  echo Verifying ${GEARPUMP_RELEASE_VERSION}-src.tgz.asc 
-  gpg --verify ${GEARPUMP_RELEASE_VERSION}-src.tgz.asc
+  echo Verifying ${GEARPUMP_RELEASE_VERSION}-bin.tgz.asc 
+  gpg --verify ${GEARPUMP_RELEASE_VERSION}-bin.tgz.asc
   exit 0
 fi
 if [ $RUN_RAT = "true" ]; then
@@ -77,15 +82,29 @@ if [ -z $GPG_PASSPHRASE ]; then
   exit 1
 fi
 
-dev-tools/build clean reset scrub
-echo .git > exclude-list
-echo .DS_Store >> exclude-list
-rsync -a --exclude-from exclude-list ../incubator-gearpump/ $GEARPUMP_RELEASE_VERSION
-tar czf ${GEARPUMP_RELEASE_VERSION}-src.tgz $GEARPUMP_RELEASE_VERSION
-echo Signing ${GEARPUMP_RELEASE_VERSION}-src.tgz
-echo $GPG_PASSPHRASE | gpg --batch --default-key $GPG_KEY --passphrase-fd 0 --armour --output ${GEARPUMP_RELEASE_VERSION}-src.tgz.asc --detach-sig ${GEARPUMP_RELEASE_VERSION}-src.tgz
-gpg --print-md MD5 ${GEARPUMP_RELEASE_VERSION}-src.tgz > ${GEARPUMP_RELEASE_VERSION}-src.tgz.md5
-gpg --print-md SHA1 ${GEARPUMP_RELEASE_VERSION}-src.tgz > ${GEARPUMP_RELEASE_VERSION}-src.tgz.sha
-rm -rf ${GEARPUMP_RELEASE_VERSION} exclude-list
+if [ $CLEAN = "true" ]; then
+  dev-tools/build clean reset scrub
+fi
+dev-tools/build all
+PACKED_ARCHIVE=output/target/gearpump-2.11-${RELEASE_VERSION}.tar.gz
+if [ ! -f $PACKED_ARCHIVE ]; then
+  echo "missing $PACKED_ARCHIVE"
+  echo "You must run 'sbt assembly pack pack-archive' first"
+  exit 1
+fi
+mkdir tmp
+cd tmp
+tar xzf ../$PACKED_ARCHIVE
+cp ../NOTICE ../README.md ../CHANGELOG.md .
+cp ../LICENSE.bin LICENSE
+rsync -a ../tmp/ $GEARPUMP_RELEASE_VERSION
+tar czf ../${GEARPUMP_RELEASE_VERSION}-bin.tgz $GEARPUMP_RELEASE_VERSION
+echo Signing ../${GEARPUMP_RELEASE_VERSION}-bin.tgz
+echo $GPG_PASSPHRASE | gpg --batch --default-key $GPG_KEY --passphrase-fd 0 --armour --output ../${GEARPUMP_RELEASE_VERSION}-bin.tgz.asc --detach-sig ../${GEARPUMP_RELEASE_VERSION}-bin.tgz
+gpg --print-md MD5 ../${GEARPUMP_RELEASE_VERSION}-bin.tgz > ../${GEARPUMP_RELEASE_VERSION}-bin.tgz.md5
+gpg --print-md SHA1 ../${GEARPUMP_RELEASE_VERSION}-bin.tgz > ../${GEARPUMP_RELEASE_VERSION}-bin.tgz.sha
+cd ..
+rm -rf tmp
+
 
 

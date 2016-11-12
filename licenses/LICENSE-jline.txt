@@ -1,0 +1,3 @@
+JLine is distributed under the BSD license, meaning that you are completely free to redistribute, modify, or sell it with almost no restrictins. For more information on the BSD license, see http://www.opensource.org/licenses/bsd-license.php.
+
+

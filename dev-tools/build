@@ -1,0 +1,72 @@
+#!/bin/bash
+usage() {
+cat << EOF
+usage: $0 options commands
+OPTIONS:
+  -h      Show this message
+COMMANDS:
+  all:      normal build of all components
+  clean:    clean all sbt artifacts
+  publish:  publish to local
+  publish-m2:  publish to local .m2
+  reset:    remove all idea project files
+  scrub:    remove all untracked git files
+  test:     run coverage and test
+EOF
+}
+while getopts “h” OPTION
+do
+     case "${OPTION}" in
+         h)
+             usage
+             exit 1
+             ;;
+         ?)
+             usage
+             exit
+             ;;
+     esac
+done
+shift $((OPTIND-1))
+if [ $# = 0 ]; then
+  echo sbt assembly pack pack-archive
+  sbt assembly pack pack-archive
+else
+  while (( "$#" )); do
+    case "$1" in 
+      all)
+        echo sbt assembly pack pack-archive
+        sbt assembly pack pack-archive
+        ;;
+      clean)
+        echo rm -rf $(find . -maxdepth 4 -name target -o -name project|grep -v '^./project'|sed '/project\/project/d'|sed '/project\/target/d')
+        rm -rf $(find . -maxdepth 4 -name target -o -name project|grep -v '^./project'|sed '/project\/project/d'|sed '/project\/target/d')
+        rm -rf project/project project/target output
+        ;;
+      publish)
+        echo sbt publish-local
+        sbt publish-local
+        ;;
+      publish-m2)
+        echo sbt publish-m2
+        sbt publish-m2
+        ;;
+      reset)
+        echo rm -rf $(find . -name .idea -type d)
+        rm -rf $(find . -name .idea -type d)
+        ;;
+      scrub)
+        git clean -df
+        ;;
+      test)
+        echo sbt coverage test
+        sbt coverage test
+        ;;
+      *)
+        usage
+        exit
+        ;;
+    esac
+    shift
+  done
+fi

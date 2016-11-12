@@ -1,3 +1,31 @@
+Apache Gearpump 0.8.2
+==================
+Change log:
+------------------
+- GEARPUMP-234 Update LICENSE and related files for 0.8.2-incubating binary release
+- GEARPUMP-226 refactor build files
+- GEARPUMP-230 Removed unused code from AppMasterService
+- GEARPUMP-227 remove unneeded license files
+- GEARPUMP-225 move partitioner from gearpump-core to module gearpump-streaming
+- GEARPUMP-224 Merge gearpump-daemon to gearpump-core
+- GEARPUMP-222 DFSJarStore is loaded even when local file path is configured
+- GEARPUMP-215 Gearpump Redis Integration - RedisStorage
+- GEARPUMP-212 Make Gearpump's shaded artifacts publishable
+- GEARPUMP-208 Demo site goes down a lot. Also references gearpump.io when connection is refused
+- GEARPUMP-207 remove hadoop dependency out of application path from dashboard
+- GEARPUMP-205 remove hdfs dependency from command gear's classpath
+- GEARPUMP-203 Use DataSourceTask / DataSinkTask for DSL
+- GEARPUMP-201 integration test failure
+- GEARPUMP-197 Busy loop in FetchThread when incoming queue is full
+- GEARPUMP-189 Update project/Build.scala to enable publishing releases to https://repository.apache.org/content/repositories/releases/org/apache/gearpump/
+- GEARPUMP-188 use java.time.Instant for Task start time
+- GEARPUMP-185 Yarn kills Apache Gearpump's worker if the memory usage is too high
+- GEARPUMP-171 Fix some typos
+- GEARPUMP-48  Improve Java interoperability
+- GEARPUMP-37  Sometimes application clock is "not started" when the data stream is very slow
+- GEARPUMP-32  Minimum clock of source Tasks maybe inaccurate
+- GEARPUMP-15  Define initial Apache branded home website
+
 Apache Gearpump 0.8.1
 ==================
 Change log:
