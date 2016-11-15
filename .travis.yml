@@ -1,10 +1,22 @@
 language:
 - java
 - scala
-sudo: false
-before_script:
-- mkdir -p $HOME/.sbt/launchers/0.13.13/
-- curl -L -o $HOME/.sbt/launchers/0.13.13/sbt-launch.jar http://dl.bintray.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.13/sbt-launch.jar
+sudo: required
+jdk:
+- oraclejdk8
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
+scala:
+- 2.11.8
+cache:
+  directories:
+  - $HOME/.m2/repository
+  - $HOME/.sbt
+  - $HOME/.ivy2
+git:
+  depth: 1
 script:
 - echo "TRAVIS_PULL_REQUEST" $TRAVIS_PULL_REQUEST
 - echo "TRAVIS_BRANCH" $TRAVIS_BRANCH
@@ -17,21 +29,7 @@ script:
     then sbt -jvm-opts project/travis/jvmopts clean +assembly +publish | grep -v -E "$skipLogs"; sbt -jvm-opts project/travis/jvmopts scalastyle test:scalastyle it:scalastyle unidoc coverage  +test  | grep -v -E "$skipLogs";
   elif [[ $TRAVIS_TAG != "" ]];
     then sbt -jvm-opts project/travis/jvmopts clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
-  fi  
-jdk:
-- oraclejdk8
-addons:
-  apt:
-    packages:
-      - oracle-java8-installer
-scala:
-- 2.11.8
-cache:
-  directories:
-  - $HOME/.m2
-  - $HOME/.ivy2
-git:
-  depth: 1
+  fi
 after_success:
 - if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "apache/incubator-gearpump" || $TRAVIS_BRANCH == "master" ]];
     then bash <(curl -s https://codecov.io/bash);  

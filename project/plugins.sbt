@@ -16,8 +16,7 @@
  * limitations under the License.
  */
 
-resolvers += Resolver.url("fvunicorn",
-  url("http://dl.bintray.com/fvunicorn/sbt-plugins"))(Resolver.ivyStylePatterns)
+resolvers += Resolver.bintrayIvyRepo("fvunicorn", "sbt-plugins")
 
 resolvers += Classpaths.sbtPluginReleases
 

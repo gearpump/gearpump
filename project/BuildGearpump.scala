@@ -41,10 +41,9 @@ object BuildGearpump extends sbt.Build {
   val commonSettings = Seq(jacoco.settings: _*) ++ sonatypeSettings ++
     Seq(
       resolvers ++= Seq(
+        // https://repo1.maven.org/maven2 has been added by default
         "apache-repo" at "https://repository.apache.org/content/repositories",
-        "maven1-repo" at "http://repo1.maven.org/maven2",
-        "maven2-repo" at "http://mvnrepository.com/artifact",
-        "sonatype" at "https://oss.sonatype.org/content/repositories/releases",
+        Resolver.sonatypeRepo("releases"),
         "clojars" at "http://clojars.org/repo"
       )
     ) ++
