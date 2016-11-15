@@ -31,8 +31,10 @@ VERIFY=false
 RUN_RAT=false
 CLEAN=false
 RELEASE_VERSION=$(grep '^version' version.sbt|sed 's/^.*"\(.*\)"$/\1/')
-GEARPUMP_RELEASE_VERSION=gearpump-${RELEASE_VERSION}-incubating
-while getopts “hrvk:p:” OPTION
+GEARPUMP_ARCHIVE_FOLDER=gearpump-2.11-${RELEASE_VERSION}
+GEARPUMP_SCALA_VERSION=gearpump_2.11-${RELEASE_VERSION}
+GEARPUMP_RELEASE_VERSION=${GEARPUMP_SCALA_VERSION}-incubating
+while getopts “hcrvk:p:” OPTION
 do
      case "${OPTION}" in
          h)
@@ -95,9 +97,11 @@ fi
 mkdir tmp
 cd tmp
 tar xzf ../$PACKED_ARCHIVE
+mv $GEARPUMP_ARCHIVE_FOLDER/* .
+rmdir $GEARPUMP_ARCHIVE_FOLDER
 cp ../NOTICE ../README.md ../CHANGELOG.md .
 cp ../LICENSE.bin LICENSE
-rsync -a ../tmp/ $GEARPUMP_RELEASE_VERSION
+rsync -a ../tmp/ $GEARPUMP_RELEASE_VERSION 
 tar czf ../${GEARPUMP_RELEASE_VERSION}-bin.tgz $GEARPUMP_RELEASE_VERSION
 echo Signing ../${GEARPUMP_RELEASE_VERSION}-bin.tgz
 echo $GPG_PASSPHRASE | gpg --batch --default-key $GPG_KEY --passphrase-fd 0 --armour --output ../${GEARPUMP_RELEASE_VERSION}-bin.tgz.asc --detach-sig ../${GEARPUMP_RELEASE_VERSION}-bin.tgz

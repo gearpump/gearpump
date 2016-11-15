@@ -2,6 +2,8 @@ Apache Gearpump 0.8.2
 ==================
 Change log:
 ------------------
+- GEARPUMP-238 Correct release naming and packaging
+- GEARPUMP-237 do not manually download sbt launcher jar on travis
 - GEARPUMP-234 Update LICENSE and related files for 0.8.2-incubating binary release
 - GEARPUMP-226 refactor build files
 - GEARPUMP-230 Removed unused code from AppMasterService
