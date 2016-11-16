@@ -2,6 +2,8 @@ Apache Gearpump 0.8.2
 ==================
 Change log:
 ------------------
+- GEARPUMP-241 Update CHANGELOG.md to reflect all JIRA's 
+- GEARPUMP-240 Correct licenses
 - GEARPUMP-239 Correct binary and source licenses subdirectory
 - GEARPUMP-238 Correct release naming and packaging
 - GEARPUMP-237 do not manually download sbt launcher jar on travis
