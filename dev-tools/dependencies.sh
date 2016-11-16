@@ -15,6 +15,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
+#
+# This will generate a file LICENSE.dependencies which can be used as input to the LICENSE.bin (binary release)
+# Some additional work is needed to automate the LICENSE.bin file generation - and it may be difficult to do so.
+# LICENSE.dependencies does save time by categorizing dependencies under the different licenses
+#
 sbt dependencyLicenseInfo | tee dependencyInfo
 cat dependencyInfo | sed -E "s/"$'\E'"\[([0-9]{1,3}((;[0-9]{1,3})*)?)?[m|K]//g" | grep '^\[info\]' | grep -v '^\[info\] Updating'|grep -v '^\[info\] Resolving'|grep -v '^\[info\] Done'|grep -v '^\[info\] Loading '|grep -v '^\[info\] Set ' > licenses.out 
 cat licenses.out | grep '\[info\] [A-Z]' | sed 's/^\[info\] //' | sort | uniq > license.types
@@ -33,11 +39,13 @@ done
 rm -f LICENSE.dependencies
 touch LICENSE.dependencies
 cat license.types | while read LINE; do 
-echo cat licenses.out \| sed "'"'/^\[info\] '$LINE'$/,/^\[info\] $/!d;//d'"'" \| sort \| uniq > cmd
-echo "$LINE" >> LICENSE.dependencies
-sh cmd >> LICENSE.dependencies
-echo ' ' >> LICENSE.dependencies
+  echo cat licenses.out \| sed "'"'/^\[info\] '$LINE'$/,/^\[info\] $/!d;//d'"'" \| sort \| uniq > cmd
+  echo "$LINE" >> LICENSE.dependencies
+  sh cmd >> LICENSE.dependencies
+  echo ' ' >> LICENSE.dependencies
 done
+cat LICENSE.dependencies | sed 's/^\[info\] //' > LICENSE.d
+mv LICENSE.d LICENSE.dependencies
 
 #cleanup
 rm -f cmd license.types licenses.out lines dependencyInfo

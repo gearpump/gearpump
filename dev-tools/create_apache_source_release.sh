@@ -80,6 +80,10 @@ fi
 dev-tools/build clean reset scrub
 echo .git > exclude-list
 echo .DS_Store >> exclude-list
+for i in $(ls licenses/*|grep -v LICENSE-jquery.txt|grep -v LICENSE-bootstrap.txt); do
+  echo $i >> exclude-list
+done
+cat exclude-list
 rsync -a --exclude-from exclude-list ../incubator-gearpump/ $GEARPUMP_RELEASE_VERSION
 tar czf ${GEARPUMP_RELEASE_VERSION}-src.tgz $GEARPUMP_RELEASE_VERSION
 echo Signing ${GEARPUMP_RELEASE_VERSION}-src.tgz

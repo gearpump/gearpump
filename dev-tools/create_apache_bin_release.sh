@@ -101,6 +101,7 @@ mv $GEARPUMP_ARCHIVE_FOLDER/* .
 rmdir $GEARPUMP_ARCHIVE_FOLDER
 cp ../NOTICE ../README.md ../CHANGELOG.md .
 cp ../LICENSE.bin LICENSE
+cp -r ../licenses .
 rsync -a ../tmp/ $GEARPUMP_RELEASE_VERSION 
 tar czf ../${GEARPUMP_RELEASE_VERSION}-bin.tgz $GEARPUMP_RELEASE_VERSION
 echo Signing ../${GEARPUMP_RELEASE_VERSION}-bin.tgz
