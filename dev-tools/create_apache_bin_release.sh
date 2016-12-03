@@ -99,7 +99,7 @@ cd tmp
 tar xzf ../$PACKED_ARCHIVE
 mv $GEARPUMP_ARCHIVE_FOLDER/* .
 rmdir $GEARPUMP_ARCHIVE_FOLDER
-cp ../NOTICE ../README.md ../CHANGELOG.md .
+cp ../NOTICE ../README.md ../CHANGELOG.md ../DISCLAIMER .
 cp ../LICENSE.bin LICENSE
 cp -r ../licenses .
 rsync -a ../tmp/ $GEARPUMP_RELEASE_VERSION 
