@@ -267,7 +267,7 @@ To build Gearpump document use
 <a name="ide-setup"></a>
 ## IDE setup
 IDE environment can be set up on either Windows, Linux and Mac platform. You can choose the one you prefer. 
-The IDE setup guide can be found at [Gearpump website](http://gearpump.apache.org/releases/latest/dev-ide-setup.html).
+The IDE setup guide can be found at [Gearpump website](http://gearpump.apache.org/releases/latest/dev/dev-ide-setup/index.html).
 
 It is highly recommended to perform [package build](#build) before IDE setup.
 
