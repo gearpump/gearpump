@@ -21,7 +21,6 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Actor.Receive
-import akka.actor.ActorSystem
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._

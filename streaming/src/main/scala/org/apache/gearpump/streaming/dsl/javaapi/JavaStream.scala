@@ -65,7 +65,7 @@ class JavaStream[T](val stream: Stream[T]) {
    */
   def groupBy[GROUP](fn: GroupByFunction[T, GROUP],
       parallelism: Int, description: String): JavaStream[T] = {
-    new JavaStream[T](stream.groupBy((t: T) => fn, parallelism, description))
+    new JavaStream[T](stream.groupBy(fn.apply, parallelism, description))
   }
 
   def window(win: Window, description: String): JavaWindowStream[T] = {
