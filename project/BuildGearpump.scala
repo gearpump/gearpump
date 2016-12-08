@@ -106,7 +106,9 @@ object BuildGearpump extends sbt.Build {
           ),
           List.empty[xml.Node],
           node)
-      }
+      },
+
+      cleanFiles += (baseDirectory.value / "examples" / "target")
     )
 
   val noPublish = Seq(
