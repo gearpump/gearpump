@@ -37,8 +37,29 @@ object BuildExamples extends sbt.Build {
     stockcrawler,
     transport,
     wordcount,
-    wordcountJava
+    wordcountJava,
+    example_hbase
   )
+
+  lazy val example_hbase = Project(
+    id = "gearpump-examples-hbase",
+    base = file("examples/streaming/hbase"),
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
+            exclude("commons-beanutils", "commons-beanutils-core")
+            exclude("commons-beanutils", "commons-beanutils")
+            exclude("asm", "asm")
+            exclude("org.ow2.asm", "asm")
+        ),
+        mainClass in(Compile, packageBin) :=
+          Some("org.apache.gearpump.streaming.examples.hbase.HBaseConn"),
+
+        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
+          CrossVersion.binaryScalaVersion(scalaVersion.value)
+      )
+  ) dependsOn(streaming % "test->test; provided", core % "provided", external_hbase)
 
   lazy val wordcountJava = Project(
     id = "gearpump-examples-wordcountjava",
