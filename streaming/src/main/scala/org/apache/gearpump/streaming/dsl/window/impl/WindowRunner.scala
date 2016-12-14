@@ -26,6 +26,7 @@ import com.gs.collections.api.block.procedure.Procedure
 import com.gs.collections.impl.list.mutable.FastList
 import com.gs.collections.impl.map.mutable.UnifiedMap
 import com.gs.collections.impl.map.sorted.mutable.TreeSortedMap
+import com.gs.collections.impl.set.mutable.UnifiedSet
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.plan.functions.{EmitFunction, SingleInputFunction}
 import org.apache.gearpump.streaming.dsl.window.api.Discarding
@@ -46,18 +47,6 @@ object DefaultWindowRunner {
   private val LOG: Logger = LogUtil.getLogger(classOf[DefaultWindowRunner[_, _, _]])
 
   case class WindowGroup[GROUP](bucket: Bucket, group: GROUP)
-    extends Comparable[WindowGroup[GROUP]] {
-    override def compareTo(o: WindowGroup[GROUP]): Int = {
-      val ret = bucket.compareTo(o.bucket)
-      if (ret != 0) {
-        ret
-      } else if (group.equals(o.group)) {
-        0
-      } else {
-        -1
-      }
-    }
-  }
 }
 
 class DefaultWindowRunner[IN, GROUP, OUT](
@@ -66,7 +55,8 @@ class DefaultWindowRunner[IN, GROUP, OUT](
   extends WindowRunner {
   import org.apache.gearpump.streaming.dsl.window.impl.DefaultWindowRunner._
 
-  private val windowGroups = new TreeSortedMap[WindowGroup[GROUP], FastList[IN]]
+  private val windows = new TreeSortedMap[Bucket, UnifiedSet[WindowGroup[GROUP]]]
+  private val windowGroups = new UnifiedMap[WindowGroup[GROUP], FastList[IN]]
   private val groupFns = new UnifiedMap[GROUP, SingleInputFunction[IN, OUT]]
 
 
@@ -74,6 +64,10 @@ class DefaultWindowRunner[IN, GROUP, OUT](
     val (group, buckets) = groupBy.groupBy(message)
     buckets.foreach { bucket =>
       val wg = WindowGroup(bucket, group)
+      val wgs = windows.getOrDefault(bucket, new UnifiedSet[WindowGroup[GROUP]](1))
+      wgs.add(wg)
+      windows.put(bucket, wgs)
+
       val inputs = windowGroups.getOrDefault(wg, new FastList[IN](1))
       inputs.add(message.msg.asInstanceOf[IN])
       windowGroups.put(wg, inputs)
@@ -87,21 +81,27 @@ class DefaultWindowRunner[IN, GROUP, OUT](
 
     @annotation.tailrec
     def onTrigger(): Unit = {
-      if (windowGroups.notEmpty()) {
-        val first = windowGroups.firstKey
-        if (!time.isBefore(first.bucket.endTime)) {
-          val inputs = windowGroups.remove(first)
-          val reduceFn = groupFns.get(first.group)
-            .andThen[Unit](new EmitFunction[OUT](emitResult(_, time)))
-          inputs.forEach(new Procedure[IN] {
-            override def value(t: IN): Unit = {
-              reduceFn.process(t)
+      if (windows.notEmpty()) {
+        val first = windows.firstKey
+        if (!time.isBefore(first.endTime)) {
+          val wgs = windows.remove(first)
+          wgs.forEach(new Procedure[WindowGroup[GROUP]] {
+            override def value(each: WindowGroup[GROUP]): Unit = {
+              val inputs = windowGroups.remove(each)
+              val reduceFn = groupFns.get(each.group)
+                .andThen[Unit](new EmitFunction[OUT](emitResult(_, time)))
+              inputs.forEach(new Procedure[IN] {
+                override def value(t: IN): Unit = {
+                  reduceFn.process(t)
+                }
+              })
+              reduceFn.finish()
+              if (groupBy.window.accumulationMode == Discarding) {
+                reduceFn.clearState()
+              }
             }
           })
-          reduceFn.finish()
-          if (groupBy.window.accumulationMode == Discarding) {
-            reduceFn.clearState()
-          }
+
           onTrigger()
         }
       }
