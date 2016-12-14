@@ -19,6 +19,7 @@
 package org.apache.gearpump.experiments.yarn
 
 object Constants {
+  val CONTAINER_USER = "gearpump.yarn.user"
   val APPMASTER_NAME = "gearpump.yarn.applicationmaster.name"
   val APPMASTER_COMMAND = "gearpump.yarn.applicationmaster.command"
   val APPMASTER_MEMORY = "gearpump.yarn.applicationmaster.memory"

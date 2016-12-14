@@ -26,6 +26,7 @@ import com.typesafe.config.{Config, ConfigValueFactory}
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import org.apache.gearpump.experiments.yarn.Constants
+import org.apache.gearpump.experiments.yarn.Constants._
 import org.apache.gearpump.experiments.yarn.appmaster.AppMasterCommand
 import org.apache.gearpump.experiments.yarn.appmaster.YarnAppMaster.{ActiveConfig, GetActiveConfig}
 import org.apache.gearpump.experiments.yarn.glue.Records.{ApplicationId, Resource}
@@ -183,6 +184,10 @@ object LaunchCluster extends AkkaApp with ArgumentsParser {
     val parsed = parse(args)
     if (parsed.getBoolean(VERBOSE)) {
       LogUtil.verboseLogToConsole()
+    }
+    val userName = inputAkkaConf.getString(CONTAINER_USER)
+    if (userName != null) {
+      System.setProperty("HADOOP_USER_NAME", userName)
     }
 
     val yarnConfig = new YarnConfig()
