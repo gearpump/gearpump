@@ -45,7 +45,7 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
 
     val first = mock[SingleInputFunction[R, S]]
     val second = mock[SingleInputFunction[S, T]]
-    val andThen = new AndThen(first, second)
+    val andThen = AndThen(first, second)
 
     "chain first and second functions when processing input value" in {
       val input = mock[R]
@@ -86,7 +86,11 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
 
     "return AndThen on andThen" in {
       val third = mock[SingleInputFunction[T, Any]]
-      andThen.andThen[Any](third) shouldBe an [AndThen[_, _, _]]
+      when(second.andThen(third)).thenReturn(AndThen(second, third))
+
+      andThen.andThen[Any](third)
+
+      verify(first).andThen(AndThen(second, third))
     }
   }
 
@@ -241,7 +245,7 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
       val taskContext = MockUtil.mockTaskContext
       implicit val actorSystem = MockUtil.system
 
-      val data = "one two three".split("\\s")
+      val data = "one two three".split("\\s+")
       val dataSource = new CollectionDataSource[String](data)
       val conf = UserConfig.empty.withValue(GEARPUMP_STREAMING_SOURCE, dataSource)
 

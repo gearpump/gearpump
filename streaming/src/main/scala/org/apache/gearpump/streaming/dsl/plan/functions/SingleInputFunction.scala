@@ -20,16 +20,21 @@ package org.apache.gearpump.streaming.dsl.plan.functions
 trait SingleInputFunction[IN, OUT] extends Serializable {
   def process(value: IN): TraversableOnce[OUT]
   def andThen[OUTER](other: SingleInputFunction[OUT, OUTER]): SingleInputFunction[IN, OUTER] = {
-    new AndThen(this, other)
+    AndThen(this, other)
   }
   def finish(): TraversableOnce[OUT] = None
   def clearState(): Unit = {}
   def description: String
 }
 
-class AndThen[IN, MIDDLE, OUT](
+case class AndThen[IN, MIDDLE, OUT](
     first: SingleInputFunction[IN, MIDDLE], second: SingleInputFunction[MIDDLE, OUT])
   extends SingleInputFunction[IN, OUT] {
+
+  override def andThen[OUTER](
+      other: SingleInputFunction[OUT, OUTER]): SingleInputFunction[IN, OUTER] = {
+    first.andThen(second.andThen(other))
+  }
 
   override def process(value: IN): TraversableOnce[OUT] = {
     first.process(value).flatMap(second.process)
