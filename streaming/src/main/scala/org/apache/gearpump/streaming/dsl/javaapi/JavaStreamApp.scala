@@ -41,7 +41,7 @@ class JavaStreamApp(name: String, context: ClientContext, userConfig: UserConfig
     new JavaStream[T](streamApp.source(dataSource, parallelism, conf, description))
   }
 
-  def run(): Unit = {
+  def submit(): Int = {
     context.submit(streamApp)
   }
 }
