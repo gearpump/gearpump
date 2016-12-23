@@ -159,7 +159,7 @@ class MasterService(val master: ActorRef,
         entity(as[String]) { request =>
           val msg = java.net.URLDecoder.decode(request, "UTF-8")
           val submitApplicationRequest = read[SubmitApplicationRequest](msg)
-          import submitApplicationRequest.{appName, dag, processors, userconfig}
+          import submitApplicationRequest.{appName, dag, processors, userConfig}
           val context = ClientContext(system.settings.config, system, master)
 
           val graph = dag.mapVertex { processorId =>
@@ -168,7 +168,7 @@ class MasterService(val master: ActorRef,
             PartitionerDescription(new PartitionerByClassName(edge))
           }
 
-          val effectiveConfig = if (userconfig == null) UserConfig.empty else userconfig
+          val effectiveConfig = if (userConfig == null) UserConfig.empty else userConfig
           val appId = context.submit(new StreamApplication(appName, effectiveConfig, graph))
 
           import upickle.default.write
@@ -346,5 +346,5 @@ object MasterService {
       appName: String,
       processors: Map[ProcessorId, ProcessorDescription],
       dag: Graph[Int, String],
-      userconfig: UserConfig)
+      userConfig: UserConfig)
 }

@@ -32,15 +32,15 @@ import io.gearpump.streaming.task.TaskContext
 import io.gearpump.util.{Constants, FileUtils}
 
 class HBaseSink(
-    userconfig: UserConfig, tableName: String, @transient var configuration: Configuration)
+    userConfig: UserConfig, tableName: String, @transient var configuration: Configuration)
   extends DataSink{
-  lazy val connection = HBaseSink.getConnection(userconfig, configuration)
+  lazy val connection = HBaseSink.getConnection(userConfig, configuration)
   lazy val table = connection.getTable(TableName.valueOf(tableName))
 
   override def open(context: TaskContext): Unit = {}
 
-  def this(userconfig: UserConfig, tableName: String) = {
-    this(userconfig, tableName, HBaseConfiguration.create())
+  def this(userConfig: UserConfig, tableName: String) = {
+    this(userConfig, tableName, HBaseConfiguration.create())
   }
 
   def insert(rowKey: String, columnGroup: String, columnName: String, value: String): Unit = {
@@ -105,13 +105,13 @@ object HBaseSink {
   val COLUMN_FAMILY = "hbase.table.column.family"
   val COLUMN_NAME = "hbase.table.column.name"
 
-  def apply[T](userconfig: UserConfig, tableName: String): HBaseSink = {
-    new HBaseSink(userconfig, tableName)
+  def apply[T](userConfig: UserConfig, tableName: String): HBaseSink = {
+    new HBaseSink(userConfig, tableName)
   }
 
-  def apply[T](userconfig: UserConfig, tableName: String, configuration: Configuration)
+  def apply[T](userConfig: UserConfig, tableName: String, configuration: Configuration)
     : HBaseSink = {
-    new HBaseSink(userconfig, tableName, configuration)
+    new HBaseSink(userConfig, tableName, configuration)
   }
 
   private def getConnection(userConfig: UserConfig, configuration: Configuration): Connection = {
