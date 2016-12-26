@@ -31,22 +31,22 @@ import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.hadoop.security.UserGroupInformation
 
-class HBaseSink(userconfig: UserConfig, tableName: String,
+class HBaseSink(userConfig: UserConfig, tableName: String,
     val conn: (UserConfig, Configuration)
     => Connection, @transient var configuration: Configuration)
   extends DataSink {
 
-  lazy val connection = conn(userconfig, configuration)
+  lazy val connection = conn(userConfig, configuration)
   lazy val table = connection.getTable(TableName.valueOf(tableName))
 
   override def open(context: TaskContext): Unit = {}
 
-  def this(userconfig: UserConfig, tableName: String, configuration: Configuration) = {
-    this(userconfig, tableName, HBaseSink.getConnection, configuration)
+  def this(userConfig: UserConfig, tableName: String, configuration: Configuration) = {
+    this(userConfig, tableName, HBaseSink.getConnection, configuration)
   }
 
-  def this(userconfig: UserConfig, tableName: String) = {
-    this(userconfig, tableName, HBaseConfiguration.create())
+  def this(userConfig: UserConfig, tableName: String) = {
+    this(userConfig, tableName, HBaseConfiguration.create())
   }
 
   def insert(rowKey: String, columnGroup: String, columnName: String, value: String): Unit = {
@@ -120,14 +120,14 @@ object HBaseSink {
   val COLUMN_NAME = "hbase.table.column.name"
   val HBASE_USER = "hbase.user"
 
-  def apply[T](userconfig: UserConfig, tableName: String, configuration: Configuration)
+  def apply[T](userConfig: UserConfig, tableName: String, configuration: Configuration)
   : HBaseSink = {
-    new HBaseSink(userconfig, tableName, configuration)
+    new HBaseSink(userConfig, tableName, configuration)
   }
 
-  def apply[T](userconfig: UserConfig, tableName: String)
+  def apply[T](userConfig: UserConfig, tableName: String)
   : HBaseSink = {
-    new HBaseSink(userconfig, tableName)
+    new HBaseSink(userConfig, tableName)
   }
 
   private def getConnection(userConfig: UserConfig, configuration: Configuration): Connection = {
