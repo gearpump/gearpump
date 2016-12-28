@@ -19,23 +19,23 @@
 package org.apache.gearpump.cluster.client
 
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConverters._
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-import scala.util.Try
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigValueFactory}
-import org.slf4j.Logger
-
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, ReplayFromTimestampWindowTrailingEdge}
 import org.apache.gearpump.cluster.MasterToClient.ReplayApplicationResult
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.jarstore.{JarStoreClient, JarStoreServer}
+import org.apache.gearpump.jarstore.JarStoreClient
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
+import org.slf4j.Logger
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+import scala.util.Try
 
 /**
  * ClientContext is a user facing util to submit/manage an application.
@@ -139,6 +139,10 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
 
   private def loadFile(jarPath: String): AppJar = {
     val jarFile = new java.io.File(jarPath)
+    if (!jarFile.exists()) {
+      val error = s"File $jarPath does not exist and cannot submit application"
+      throw new Exception(error)
+    }
     Util.uploadJar(jarFile, jarStoreClient)
   }
 
