@@ -92,10 +92,12 @@ class DefaultWindowRunner[IN, GROUP, OUT](
                 .andThen[Unit](new EmitFunction[OUT](emitResult(_, time)))
               inputs.forEach(new Procedure[IN] {
                 override def value(t: IN): Unit = {
-                  reduceFn.process(t)
+                  // .toList forces eager evaluation
+                  reduceFn.process(t).toList
                 }
               })
-              reduceFn.finish()
+              // .toList forces eager evaluation
+              reduceFn.finish().toList
               if (groupBy.window.accumulationMode == Discarding) {
                 reduceFn.clearState()
               }
