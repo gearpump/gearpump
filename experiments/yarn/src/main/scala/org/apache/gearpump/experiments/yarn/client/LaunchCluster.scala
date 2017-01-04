@@ -185,8 +185,8 @@ object LaunchCluster extends AkkaApp with ArgumentsParser {
     if (parsed.getBoolean(VERBOSE)) {
       LogUtil.verboseLogToConsole()
     }
-    val userName = inputAkkaConf.getString(CONTAINER_USER)
-    if (userName != null) {
+    if (inputAkkaConf.hasPath(CONTAINER_USER)) {
+      val userName = inputAkkaConf.getString(CONTAINER_USER)
       System.setProperty("HADOOP_USER_NAME", userName)
     }
 

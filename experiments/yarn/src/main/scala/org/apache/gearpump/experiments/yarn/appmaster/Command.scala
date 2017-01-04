@@ -48,7 +48,7 @@ abstract class AbstractCommand extends Command {
     : String = {
     val exe = config.getString(java)
 
-    s"$exe -cp ${classPath.mkString(":")}:" +
+    s"$exe -noverify -cp ${classPath.mkString(":")}:" +
       "$CLASSPATH " + properties.mkString(" ") +
       s" $mainClazz ${cliOpts.mkString(" ")} 2>&1 | /usr/bin/tee -a ${LOG_DIR_EXPANSION_VAR}/stderr"
   }

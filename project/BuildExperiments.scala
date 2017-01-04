@@ -115,6 +115,6 @@ object BuildExperiments extends sbt.Build {
     id = "gearpump-experimental-cgroup",
     base = file("experiments/cgroup"),
     settings = commonSettings ++ noPublish)
-    .dependsOn (core % "test->test; compile->compile")
+    .dependsOn (core % "provided")
     .disablePlugins(sbtassembly.AssemblyPlugin)
 }

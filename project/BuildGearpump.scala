@@ -221,7 +221,7 @@ object BuildGearpump extends sbt.Build {
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion
         )
       )
-  ).dependsOn(core % "compile->compile").disablePlugins(sbtassembly.AssemblyPlugin)
+  ).dependsOn(core % "provided").disablePlugins(sbtassembly.AssemblyPlugin)
 
   private def changeShadedDeps(toExclude: Set[String], toInclude: List[xml.Node],
       node: xml.Node): xml.Node = {
