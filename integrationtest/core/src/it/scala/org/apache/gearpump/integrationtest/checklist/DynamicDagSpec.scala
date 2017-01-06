@@ -26,7 +26,7 @@ class DynamicDagSpec extends TestSpecBase {
 
   val sourceTaskClass = "org.apache.gearpump.streaming.examples.sol.SOLStreamProducer"
   val sinkTaskClass = "org.apache.gearpump.streaming.examples.sol.SOLStreamProcessor"
-  lazy val solJar = cluster.queryBuiltInExampleJars("sol-").head
+  lazy val solJar = cluster.queryBuiltInExampleJars("sol").head
 
   "dynamic dag" should {
     "can retrieve a list of built-in partitioner classes" in {

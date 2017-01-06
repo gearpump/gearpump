@@ -102,23 +102,30 @@ object BuildExamples extends sbt.Build {
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
     base = file("examples/distributedshell"),
-    settings = exampleSettings("org.apache.gearpump.examples.distributedshell.DistributedShell")
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
+      mainClass in(Compile, packageBin) :=
+        Some("org.apache.gearpump.examples.distributedshell.DistributedShell"),
+      target in assembly := baseDirectory.value.getParentFile / "target" /
+        CrossVersion.binaryScalaVersion(scalaVersion.value)
+    )
   ).dependsOn(core % "test->test; provided")
 
   lazy val distributeservice = Project(
     id = "gearpump-examples-distributeservice",
     base = file("examples/distributeservice"),
-    settings =
-      exampleSettings("org.apache.gearpump.experiments.distributeservice.DistributeService") ++
-        Seq(
-          libraryDependencies ++= Seq(
-            "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
-            "commons-lang" % "commons-lang" % commonsLangVersion,
-            "commons-io" % "commons-io" % commonsIOVersion,
-            "io.spray" %% "spray-can" % sprayVersion,
-            "io.spray" %% "spray-routing-shapeless2" % sprayVersion
-          )
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
+      mainClass in(Compile, packageBin) :=
+        Some("org.apache.gearpump.experiments.distributeservice.DistributeService"),
+      target in assembly := baseDirectory.value.getParentFile / "target" /
+        CrossVersion.binaryScalaVersion(scalaVersion.value),
+      libraryDependencies ++= Seq(
+        "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
+        "commons-lang" % "commons-lang" % commonsLangVersion,
+        "commons-io" % "commons-io" % commonsIOVersion,
+        "io.spray" %% "spray-can" % sprayVersion,
+        "io.spray" %% "spray-routing-shapeless2" % sprayVersion
         )
+    )
   ).dependsOn(core % "test->test; provided")
 
   lazy val fsio = Project(

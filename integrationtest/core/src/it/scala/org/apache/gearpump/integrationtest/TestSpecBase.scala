@@ -51,7 +51,7 @@ trait TestSpecBase
   lazy val commandLineClient = cluster.commandLineClient
   lazy val restClient = cluster.restClient
 
-  lazy val wordCountJar = cluster.queryBuiltInExampleJars("wordcount-").head
+  lazy val wordCountJar = cluster.queryBuiltInExampleJars("wordcount_").head
   lazy val wordCountName = "wordCount"
   lazy val wordCountClass = "org.apache.gearpump.streaming.examples.wordcount.WordCount"
 

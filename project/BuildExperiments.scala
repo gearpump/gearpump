@@ -88,7 +88,6 @@ object BuildExperiments extends sbt.Build {
             exclude("clout", "clout")
             exclude("compojure", "compojure")
             exclude("hiccup", "hiccup")
-            exclude("javax.servlet", "servlet-api")
             exclude("jline", "jline")
             exclude("joda-time", "joda-time")
             exclude("org.clojure", "core.incubator")

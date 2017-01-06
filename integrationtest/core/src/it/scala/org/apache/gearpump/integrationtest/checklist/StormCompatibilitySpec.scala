@@ -53,7 +53,7 @@ class StormCompatibilitySpec extends TestSpecBase {
   }
 
   def getStormJar(stormVersion: String): String = {
-    cluster.queryBuiltInITJars(s"storm$stormVersion-").head
+    cluster.queryBuiltInITJars(s"storm$stormVersion").head
   }
 
   "Storm over Gearpump" should withStorm {
@@ -168,11 +168,10 @@ class StormCompatibilitySpec extends TestSpecBase {
                 s"executor $executorToKill killed")
 
               // verify no message loss
-              val detector = new
-                  MessageLossDetector(producer.lastWriteNum)
-              val kafkaReader = new
-                  SimpleKafkaReader(detector, sinkTopic, host = kafkaCluster.advertisedHost,
-                    port = kafkaCluster.advertisedPort)
+              val detector = new MessageLossDetector(producer.lastWriteNum)
+              val kafkaReader =
+                new SimpleKafkaReader(detector, sinkTopic, host = kafkaCluster.advertisedHost,
+                  port = kafkaCluster.advertisedPort)
 
               Util.retryUntil(() => {
                 kafkaReader.read()

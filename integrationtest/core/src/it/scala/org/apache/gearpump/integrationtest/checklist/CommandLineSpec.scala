@@ -90,7 +90,7 @@ class CommandLineSpec extends TestSpecBase {
       // setup
       val args = "-debug true -sleep 10"
       val appId = expectSubmitAppSuccess(wordCountJar, args)
-      var success = commandLineClient.killApp(appId)
+      val success = commandLineClient.killApp(appId)
       success shouldBe true
     }
 

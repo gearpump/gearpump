@@ -28,7 +28,7 @@ import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
 class ConnectorKafkaSpec extends TestSpecBase {
 
   private lazy val kafkaCluster = new KafkaCluster(cluster.getNetworkGateway)
-  private lazy val kafkaJar = cluster.queryBuiltInExampleJars("kafka-").head
+  private lazy val kafkaJar = cluster.queryBuiltInExampleJars("kafka").head
   private var producer: NumericalDataProducer = null
 
   override def beforeAll(): Unit = {

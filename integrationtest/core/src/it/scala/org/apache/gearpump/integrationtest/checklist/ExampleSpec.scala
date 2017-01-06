@@ -32,7 +32,7 @@ class ExampleSpec extends TestSpecBase {
 
   "distributed shell" should {
     "execute commands on machines where its executors are running" in {
-      val distShellJar = cluster.queryBuiltInExampleJars("distributedshell-").head
+      val distShellJar = cluster.queryBuiltInExampleJars("distributedshell").head
       val mainClass = "org.apache.gearpump.examples.distributedshell.DistributedShell"
       val clientClass = "org.apache.gearpump.examples.distributedshell.DistributedShellClient"
       val appId = restClient.getNextAvailableAppId()
@@ -61,7 +61,7 @@ class ExampleSpec extends TestSpecBase {
   }
 
   "wordcount" should {
-    val wordCountJarNamePrefix = "wordcount-"
+    val wordCountJarNamePrefix = "wordcount_"
     behave like streamingApplication(wordCountJarNamePrefix, wordCountName)
 
     "can submit immediately after killing a former one" in {
@@ -84,19 +84,19 @@ class ExampleSpec extends TestSpecBase {
   }
 
   "wordcount(java)" should {
-    val wordCountJavaJarNamePrefix = "wordcountjava-"
+    val wordCountJavaJarNamePrefix = "wordcountjava"
     val wordCountJavaName = "wordcountJava"
     behave like streamingApplication(wordCountJavaJarNamePrefix, wordCountJavaName)
   }
 
   "sol" should {
-    val solJarNamePrefix = "sol-"
+    val solJarNamePrefix = "sol"
     val solName = "sol"
     behave like streamingApplication(solJarNamePrefix, solName)
   }
 
   "complexdag" should {
-    val dynamicDagJarNamePrefix = "complexdag-"
+    val dynamicDagJarNamePrefix = "complexdag"
     val dynamicDagName = "dag"
     behave like streamingApplication(dynamicDagJarNamePrefix, dynamicDagName)
   }
