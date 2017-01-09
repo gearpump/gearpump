@@ -155,12 +155,17 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
       }
     }
 
-    "throw exception on getProcessor" in {
-      val fn1 = mock[SingleInputFunction[Any, Any]]
-      val chainableOp1 = ChainableOp[Any, Any](fn1)
-      intercept[UnsupportedOperationException] {
-        chainableOp1.getProcessor
+    "get Processor" in {
+      val fn = new SingleInputFunction[Any, Any] {
+        override def process(value: Any): TraversableOnce[Any] = null
+
+        override def description: String = null
       }
+      val chainableOp = ChainableOp[Any, Any](fn)
+
+      val processor = chainableOp.getProcessor
+      processor shouldBe a[Processor[_]]
+      processor.parallelism shouldBe 1
     }
   }
 

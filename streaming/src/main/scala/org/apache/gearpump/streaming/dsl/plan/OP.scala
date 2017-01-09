@@ -141,7 +141,8 @@ case class ChainableOp[IN, OUT](
   }
 
   override def getProcessor(implicit system: ActorSystem): Processor[_ <: Task] = {
-    throw new UnsupportedOperationException("ChainedOp cannot be translated to Processor")
+    Processor[TransformTask[Any, Any]](1, description,
+      userConfig.withValue(Constants.GEARPUMP_STREAMING_OPERATOR, fn))
   }
 }
 
