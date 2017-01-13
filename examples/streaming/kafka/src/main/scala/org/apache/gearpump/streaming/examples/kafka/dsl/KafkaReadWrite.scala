@@ -21,8 +21,8 @@ package org.apache.gearpump.streaming.examples.kafka.dsl
 import java.util.Properties
 
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.cluster.main.{CLIOption, ArgumentsParser}
-import org.apache.gearpump.streaming.dsl.StreamApp
+import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import org.apache.gearpump.streaming.dsl.scalaapi.StreamApp
 import org.apache.gearpump.streaming.kafka.KafkaStoreFactory
 import org.apache.gearpump.streaming.kafka.dsl.KafkaDSL
 import org.apache.gearpump.streaming.kafka.dsl.KafkaDSL._

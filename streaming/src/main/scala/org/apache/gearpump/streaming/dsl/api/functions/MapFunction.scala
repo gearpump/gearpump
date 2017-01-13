@@ -15,17 +15,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.streaming.dsl.api.functions
 
-package org.apache.gearpump.streaming.javaapi.dsl.functions;
+import org.apache.gearpump.streaming.dsl.scalaapi.functions.SerializableFunction
 
-import java.io.Serializable;
+object MapFunction {
+
+  def apply[T, R](fn: T => R): MapFunction[T, R] = {
+    new MapFunction[T, R] {
+      override def apply(t: T): R = {
+        fn(t)
+      }
+    }
+  }
+}
 
 /**
- * GroupBy function which assign value of type T to groups
+ * Transforms an input into an output of possibly different types.
  *
- * @param <T> Input value type
- * @param <Group> Group Type
+ * @param T Input value type
+ * @param R Output value type
  */
-public interface GroupByFunction<T, Group> extends Serializable {
-  Group apply(T t);
+abstract class MapFunction[T, R] extends SerializableFunction {
+
+  def apply(t: T): R
+
 }

@@ -16,14 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.dsl
+package org.apache.gearpump.streaming.dsl.scalaapi
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunction, ReduceFunction}
+import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.plan._
-import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapFunction, ReduceFunction}
+import org.apache.gearpump.streaming.dsl.plan.functions._
 import org.apache.gearpump.streaming.dsl.window.api._
-import org.apache.gearpump.streaming.dsl.window.impl._
+import org.apache.gearpump.streaming.dsl.window.impl.{Bucket, GroupAlsoByWindow}
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
@@ -36,55 +38,95 @@ class Stream[T](
     private val edge: Option[OpEdge] = None) {
 
   /**
-   * converts a value[T] to a list of value[R]
+   * Returns a new stream by applying a flatMap function to each element
+   * and flatten the results.
    *
-   * @param fn FlatMap function
+   * @param fn flatMap function
    * @param description The description message for this operation
    * @return A new stream with type [R]
    */
   def flatMap[R](fn: T => TraversableOnce[R], description: String = "flatMap"): Stream[R] = {
-    val flatMapOp = ChainableOp(new FlatMapFunction[T, R](fn, description))
-    graph.addVertex(flatMapOp)
-    graph.addEdge(thisNode, edge.getOrElse(Direct), flatMapOp)
-    new Stream[R](graph, flatMapOp)
+    this.flatMap(FlatMapFunction(fn), description)
   }
 
   /**
-   * Maps message of type T message of type R
+   * Returns a new stream by applying a flatMap function to each element
+   * and flatten the results.
    *
-   * @param fn Function
+   * @param fn flatMap function
+   * @param description The description message for this operation
+   * @return A new stream with type [R]
+   */
+  def flatMap[R](fn: FlatMapFunction[T, R], description: String): Stream[R] = {
+    transform(new FlatMapper[T, R](fn, description))
+  }
+
+  /**
+   * Returns a new stream by applying a map function to each element.
+   *
+   * @param fn map function
    * @return A new stream with type [R]
    */
   def map[R](fn: T => R, description: String = "map"): Stream[R] = {
-    this.flatMap({ data =>
-      Option(fn(data))
-    }, description)
+    this.map(MapFunction(fn), description)
   }
 
   /**
-   * Keeps records when fun(T) == true
+   * Returns a new stream by applying a map function to each element.
    *
-   * @param fn  the filter
-   * @return  a new stream after filter
+   * @param fn map function
+   * @return A new stream with type [R]
+   */
+  def map[R](fn: MapFunction[T, R], description: String): Stream[R] = {
+    this.flatMap(FlatMapFunction(fn), description)
+  }
+
+  /**
+   * Returns a new Stream keeping the elements that satisfy the filter function.
+   *
+   * @param fn filter function
+   * @return a new stream after filter
    */
   def filter(fn: T => Boolean, description: String = "filter"): Stream[T] = {
-    this.flatMap({ data =>
-      if (fn(data)) Option(data) else None
-    }, description)
+    this.filter(FilterFunction(fn), description)
   }
 
   /**
-   * Reduces operations.
+   * Returns a new Stream keeping the elements that satisfy the filter function.
    *
-   * @param fn  reduction function
+   * @param fn filter function
+   * @return a new stream after filter
+   */
+  def filter(fn: FilterFunction[T], description: String): Stream[T] = {
+    this.flatMap(FlatMapFunction(fn), description)
+  }
+  /**
+   * Returns a new stream by applying a reduce function over all the elements.
+   *
+   * @param fn reduce function
    * @param description description message for this operator
-   * @return a new stream after reduction
+   * @return a new stream after reduce
    */
   def reduce(fn: (T, T) => T, description: String = "reduce"): Stream[T] = {
-    val reduceOp = ChainableOp(new ReduceFunction(fn, description))
-    graph.addVertex(reduceOp)
-    graph.addEdge(thisNode, edge.getOrElse(Direct), reduceOp)
-    new Stream(graph, reduceOp)
+    reduce(ReduceFunction(fn), description)
+  }
+
+  /**
+   * Returns a new stream by applying a reduce function over all the elements.
+   *
+   * @param fn reduce function
+   * @param description description message for this operator
+   * @return a new stream after reduce
+   */
+  def reduce(fn: ReduceFunction[T], description: String): Stream[T] = {
+    transform(new Reducer[T](fn, description))
+  }
+
+  private def transform[R](fn: SingleInputFunction[T, R]): Stream[R] = {
+    val op = ChainableOp(fn)
+    graph.addVertex(op)
+    graph.addEdge(thisNode, edge.getOrElse(Direct), op)
+    new Stream(graph, op)
   }
 
   /**

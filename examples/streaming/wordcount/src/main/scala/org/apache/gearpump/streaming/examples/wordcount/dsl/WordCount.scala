@@ -20,8 +20,8 @@ package org.apache.gearpump.streaming.examples.wordcount.dsl
 
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import org.apache.gearpump.streaming.dsl.StreamApp
-import org.apache.gearpump.streaming.dsl.StreamApp._
+import org.apache.gearpump.streaming.dsl.scalaapi.StreamApp
+import org.apache.gearpump.streaming.dsl.scalaapi.StreamApp._
 import org.apache.gearpump.util.AkkaApp
 
 /** Same WordCount with High level DSL syntax */

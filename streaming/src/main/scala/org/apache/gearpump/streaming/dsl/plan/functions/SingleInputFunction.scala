@@ -17,23 +17,35 @@
  */
 package org.apache.gearpump.streaming.dsl.plan.functions
 
-trait SingleInputFunction[IN, OUT] extends Serializable {
+import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
+import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
+
+/**
+ * Internal function to process single input
+ *
+ * @param IN input value type
+ * @param OUT output value type
+ */
+sealed trait SingleInputFunction[IN, OUT] extends java.io.Serializable {
+
+  def setup(): Unit = {}
+
   def process(value: IN): TraversableOnce[OUT]
-  def andThen[OUTER](other: SingleInputFunction[OUT, OUTER]): SingleInputFunction[IN, OUTER] = {
-    AndThen(this, other)
-  }
+
   def finish(): TraversableOnce[OUT] = None
-  def clearState(): Unit = {}
+
+  def teardown(): Unit = {}
+
   def description: String
 }
 
-case class AndThen[IN, MIDDLE, OUT](
-    first: SingleInputFunction[IN, MIDDLE], second: SingleInputFunction[MIDDLE, OUT])
+case class AndThen[IN, MIDDLE, OUT](first: SingleInputFunction[IN, MIDDLE],
+    second: SingleInputFunction[MIDDLE, OUT])
   extends SingleInputFunction[IN, OUT] {
 
-  override def andThen[OUTER](
-      other: SingleInputFunction[OUT, OUTER]): SingleInputFunction[IN, OUTER] = {
-    first.andThen(second.andThen(other))
+  override def setup(): Unit = {
+    first.setup()
+    second.setup()
   }
 
   override def process(value: IN): TraversableOnce[OUT] = {
@@ -49,9 +61,9 @@ case class AndThen[IN, MIDDLE, OUT](
     }
   }
 
-  override def clearState(): Unit = {
-    first.clearState()
-    second.clearState()
+  override def teardown(): Unit = {
+    first.teardown()
+    second.teardown()
   }
 
   override def description: String = {
@@ -61,21 +73,30 @@ case class AndThen[IN, MIDDLE, OUT](
   }
 }
 
-class FlatMapFunction[IN, OUT](fn: IN => TraversableOnce[OUT], descriptionMessage: String)
+class FlatMapper[IN, OUT](fn: FlatMapFunction[IN, OUT], val description: String)
   extends SingleInputFunction[IN, OUT] {
+
+  override def setup(): Unit = {
+    fn.setup()
+  }
 
   override def process(value: IN): TraversableOnce[OUT] = {
     fn(value)
   }
 
-  override def description: String = descriptionMessage
+  override def teardown(): Unit = {
+    fn.teardown()
+  }
 }
 
-
-class ReduceFunction[T](fn: (T, T) => T, descriptionMessage: String)
+class Reducer[T](fn: ReduceFunction[T], val description: String)
   extends SingleInputFunction[T, T] {
 
   private var state: Option[T] = None
+
+  override def setup(): Unit = {
+    fn.setup()
+  }
 
   override def process(value: T): TraversableOnce[T] = {
     if (state.isEmpty) {
@@ -90,22 +111,17 @@ class ReduceFunction[T](fn: (T, T) => T, descriptionMessage: String)
     state
   }
 
-  override def clearState(): Unit = {
+  override def teardown(): Unit = {
     state = None
+    fn.teardown()
   }
-
-  override def description: String = descriptionMessage
 }
 
-class EmitFunction[T](emit: T => Unit) extends SingleInputFunction[T, Unit] {
+class Emit[T](emit: T => Unit) extends SingleInputFunction[T, Unit] {
 
   override def process(value: T): TraversableOnce[Unit] = {
     emit(value)
     None
-  }
-
-  override def andThen[R](other: SingleInputFunction[Unit, R]): SingleInputFunction[T, R] = {
-    throw new UnsupportedOperationException("andThen is not supposed to be called on EmitFunction")
   }
 
   override def description: String = ""

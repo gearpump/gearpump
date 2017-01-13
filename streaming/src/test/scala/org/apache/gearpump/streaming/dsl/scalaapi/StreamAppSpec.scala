@@ -16,14 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.dsl
+package org.apache.gearpump.streaming.dsl.scalaapi
 
 import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.streaming.dsl.scalaapi
 import org.apache.gearpump.streaming.partitioner.PartitionerDescription
-import org.apache.gearpump.streaming.{ProcessorDescription, StreamApplication}
 import org.apache.gearpump.streaming.source.DataSourceTask
+import org.apache.gearpump.streaming.{ProcessorDescription, StreamApplication}
 import org.apache.gearpump.util.Graph
 import org.mockito.Mockito.when
 import org.scalatest._
@@ -49,8 +50,8 @@ class StreamAppSpec extends FlatSpec with Matchers with BeforeAndAfterAll with M
     when(context.system).thenReturn(system)
 
     val dsl = StreamApp("dsl", context)
-    dsl.source(List("A"), 2, "A") shouldBe a [Stream[_]]
-    dsl.source(List("B"), 3, "B") shouldBe a [Stream[_]]
+    dsl.source(List("A"), 2, "A") shouldBe a [scalaapi.Stream[_]]
+    dsl.source(List("B"), 3, "B") shouldBe a [scalaapi.Stream[_]]
 
     val application = dsl.plan()
     application shouldBe a [StreamApplication]

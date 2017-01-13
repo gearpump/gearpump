@@ -15,18 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.streaming.dsl.javaapi.functions
 
-package org.apache.gearpump.streaming.javaapi.dsl.functions;
-
-import java.io.Serializable;
-import java.util.Iterator;
+import org.apache.gearpump.streaming.dsl.api.functions.MapFunction
 
 /**
- * Function that converts a value of type T to a iterator of values of type R.
+ * Assigns the input value into a group.
  *
- * @param <T> Input value type
- * @param <R> Return value type
+ * @param T Input value type
+ * @param GROUP Group value type
  */
-public interface FlatMapFunction<T, R> extends Serializable {
-  Iterator<R> apply(T t);
-}
+abstract class GroupByFunction[T, GROUP] extends MapFunction[T, GROUP]

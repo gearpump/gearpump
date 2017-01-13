@@ -23,10 +23,12 @@ import java.time.Instant
 import akka.actor.ActorSystem
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
+import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
 import org.apache.gearpump.streaming.partitioner.CoLocationPartitioner
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.streaming.dsl.plan.PlannerSpec._
-import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapFunction, ReduceFunction}
+import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapper, Reducer}
+import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.window.api.GroupByFn
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.source.DataSource
@@ -56,8 +58,8 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
     val graph = Graph.empty[Op, OpEdge]
     val sourceOp = DataSourceOp(new AnySource)
     val groupByOp = GroupByOp(new AnyGroupByFn)
-    val flatMapOp = ChainableOp[Any, Any](anyFlatMapFunction)
-    val reduceOp = ChainableOp[Any, Any](anyReduceFunction)
+    val flatMapOp = ChainableOp[Any, Any](anyFlatMapper)
+    val reduceOp = ChainableOp[Any, Any](anyReducer)
     val processorOp = new ProcessorOp[AnyTask]
     val sinkOp = DataSinkOp(new AnySink)
     val directEdge = Direct
@@ -92,9 +94,10 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
 object PlannerSpec {
 
   private val anyParallelism = 1
-  private val anyFlatMapFunction = new FlatMapFunction[Any, Any](Option(_), "flatMap")
-  private val anyReduceFunction = new ReduceFunction[Any](
-    (left: Any, right: Any) => (left, right), "reduce")
+  private val anyFlatMapper = new FlatMapper[Any, Any](
+    FlatMapFunction(Option(_)), "flatMap")
+  private val anyReducer = new Reducer[Any](
+    ReduceFunction((left: Any, right: Any) => (left, right)), "reduce")
 
   class AnyTask(context: TaskContext, config: UserConfig) extends Task(context, config)
 

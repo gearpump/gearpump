@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.dsl
+package org.apache.gearpump.streaming.dsl.scalaapi
 
 import java.time.Instant
 
 import akka.actor.ActorSystem
+import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.streaming.StreamApplication
@@ -28,7 +29,6 @@ import org.apache.gearpump.streaming.dsl.plan._
 import org.apache.gearpump.streaming.source.DataSource
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.Graph
-import org.apache.gearpump.Message
 
 import scala.language.implicitConversions
 

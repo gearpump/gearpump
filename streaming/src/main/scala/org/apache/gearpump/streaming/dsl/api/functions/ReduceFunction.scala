@@ -15,16 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.streaming.dsl.api.functions
 
-package org.apache.gearpump.streaming.javaapi.dsl.functions;
+import org.apache.gearpump.streaming.dsl.scalaapi.functions.SerializableFunction
 
-import java.io.Serializable;
+object ReduceFunction {
+
+  def apply[T](fn: (T, T) => T): ReduceFunction[T] = {
+    new ReduceFunction[T] {
+      override def apply(t1: T, t2: T): T = {
+        fn(t1, t2)
+      }
+    }
+  }
+}
 
 /**
- * Function that applies reduce operation
+ * Combines two inputs into one output of the same type.
  *
- * @param <T> Input value type
+ * @param T Type of both inputs and output
  */
-public interface ReduceFunction<T> extends Serializable {
-  T apply(T t1, T t2);
+abstract class ReduceFunction[T] extends SerializableFunction {
+
+  def apply(t1: T, t2: T): T
+
 }

@@ -23,9 +23,8 @@ import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.plan.functions.SingleInputFunction
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
-class TransformTask[IN, OUT](
-    operator: Option[SingleInputFunction[IN, OUT]], taskContext: TaskContext,
-    userConf: UserConfig) extends Task(taskContext, userConf) {
+class TransformTask[IN, OUT](operator: Option[SingleInputFunction[IN, OUT]],
+    taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
   def this(taskContext: TaskContext, userConf: UserConfig) = {
     this(userConf.getValue[SingleInputFunction[IN, OUT]](

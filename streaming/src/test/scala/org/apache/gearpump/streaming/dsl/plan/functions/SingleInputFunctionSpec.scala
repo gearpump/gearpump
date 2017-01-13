@@ -23,9 +23,11 @@ import akka.actor.ActorSystem
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.CollectionDataSource
 import org.apache.gearpump.streaming.source.DataSourceTask
 import org.apache.gearpump.streaming.Constants._
+import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
+import org.apache.gearpump.streaming.dsl.scalaapi.CollectionDataSource
+import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.task.{CountTriggerTask, TransformTask}
 import org.apache.gearpump.streaming.dsl.window.api.CountWindow
 import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
@@ -77,149 +79,31 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
       andThen.finish().toList shouldBe List(secondResult)
     }
 
-    "clear both states on clearState" in {
-      andThen.clearState()
+    "set up both functions on setup" in {
+      andThen.setup()
 
-      verify(first).clearState()
-      verify(second).clearState()
+      verify(first).setup()
+      verify(second).setup()
     }
 
-    "return AndThen on andThen" in {
-      val third = mock[SingleInputFunction[T, Any]]
-      when(second.andThen(third)).thenReturn(AndThen(second, third))
+    "tear down both functions on teardown" in {
+      andThen.teardown()
 
-      andThen.andThen[Any](third)
-
-      verify(first).andThen(AndThen(second, third))
-    }
-  }
-
-  "FlatMapFunction" should {
-
-    val flatMap = mock[R => TraversableOnce[S]]
-    val flatMapFunction = new FlatMapFunction[R, S](flatMap, "flatMap")
-
-    "call flatMap function when processing input value" in {
-      val input = mock[R]
-      flatMapFunction.process(input)
-      verify(flatMap).apply(input)
+      verify(first).teardown()
+      verify(second).teardown()
     }
 
-    "return passed in description" in {
-      flatMapFunction.description shouldBe "flatMap"
-    }
-
-    "return None on finish" in {
-      flatMapFunction.finish() shouldBe List.empty[S]
-    }
-
-    "do nothing on clearState" in {
-      flatMapFunction.clearState()
-      verifyZeroInteractions(flatMap)
-    }
-
-    "return AndThen on andThen" in {
-      val other = mock[SingleInputFunction[S, T]]
-      flatMapFunction.andThen[T](other) shouldBe an [AndThen[_, _, _]]
-    }
-  }
-
-  "ReduceFunction" should {
-
-
-    "call reduce function when processing input value" in {
-      val reduce = mock[(T, T) => T]
-      val reduceFunction = new ReduceFunction[T](reduce, "reduce")
-      val input1 = mock[T]
-      val input2 = mock[T]
-      val output = mock[T]
-
-      when(reduce.apply(input1, input2)).thenReturn(output, output)
-
-      reduceFunction.process(input1) shouldBe List.empty[T]
-      reduceFunction.process(input2) shouldBe List.empty[T]
-      reduceFunction.finish() shouldBe List(output)
-
-      reduceFunction.clearState()
-      reduceFunction.process(input1) shouldBe List.empty[T]
-      reduceFunction.clearState()
-      reduceFunction.process(input2) shouldBe List.empty[T]
-      reduceFunction.finish() shouldBe List(input2)
-    }
-
-    "return passed in description" in {
-      val reduce = mock[(T, T) => T]
-      val reduceFunction = new ReduceFunction[T](reduce, "reduce")
-      reduceFunction.description shouldBe "reduce"
-    }
-
-    "return None on finish" in {
-      val reduce = mock[(T, T) => T]
-      val reduceFunction = new ReduceFunction[T](reduce, "reduce")
-      reduceFunction.finish() shouldBe List.empty[T]
-    }
-
-    "do nothing on clearState" in {
-      val reduce = mock[(T, T) => T]
-      val reduceFunction = new ReduceFunction[T](reduce, "reduce")
-      reduceFunction.clearState()
-      verifyZeroInteractions(reduce)
-    }
-
-    "return AndThen on andThen" in {
-      val reduce = mock[(T, T) => T]
-      val reduceFunction = new ReduceFunction[T](reduce, "reduce")
-      val other = mock[SingleInputFunction[T, Any]]
-      reduceFunction.andThen[Any](other) shouldBe an[AndThen[_, _, _]]
-    }
-  }
-
-  "EmitFunction" should {
-
-    val emit = mock[T => Unit]
-    val emitFunction = new EmitFunction[T](emit)
-
-    "emit input value when processing input value" in {
-      val input = mock[T]
-
-      emitFunction.process(input) shouldBe List.empty[Unit]
-
-      verify(emit).apply(input)
-    }
-
-    "return empty description" in {
-      emitFunction.description shouldBe ""
-    }
-
-    "return None on finish" in {
-      emitFunction.finish() shouldBe List.empty[Unit]
-    }
-
-    "do nothing on clearState" in {
-      emitFunction.clearState()
-      verifyZeroInteractions(emit)
-    }
-
-    "throw exception on andThen" in {
-      val other = mock[SingleInputFunction[Unit, Any]]
-      intercept[UnsupportedOperationException] {
-        emitFunction.andThen(other)
-      }
-    }
-  }
-
-  "andThen" should {
     "chain multiple single input function" in {
-      val split = new FlatMapFunction[String, String](line => line.split("\\s"), "split")
+      val split = new FlatMapper[String, String](FlatMapFunction(_.split("\\s")), "split")
 
-      val filter = new FlatMapFunction[String, String](word =>
-        if (word.isEmpty) None else Some(word), "filter")
+      val filter = new FlatMapper[String, String](
+        FlatMapFunction(word => if (word.isEmpty) None else Some(word)), "filter")
 
-      val map = new FlatMapFunction[String, Int](word => Some(1), "map")
+      val map = new FlatMapper[String, Int](FlatMapFunction(word => Some(1)), "map")
 
-      val sum = new ReduceFunction[Int]({ (left, right) => left + right }, "sum")
+      val sum = new Reducer[Int](ReduceFunction({(left, right) => left + right}), "sum")
 
-      val all = split.andThen(filter).andThen(map).andThen(sum)
+      val all = AndThen(split, AndThen(filter, AndThen(map, sum)))
 
       assert(all.description == "split.filter.map.sum")
 
@@ -236,6 +120,123 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
       val result = all.finish().toList
       assert(result.nonEmpty)
       assert(result.last == 15)
+    }
+  }
+
+  "FlatMapper" should {
+
+    val flatMapFunction = mock[FlatMapFunction[R, S]]
+    val flatMapper = new FlatMapper[R, S](flatMapFunction, "flatMap")
+
+    "call flatMap function when processing input value" in {
+      val input = mock[R]
+      flatMapper.process(input)
+      verify(flatMapFunction).apply(input)
+    }
+
+    "return passed in description" in {
+      flatMapper.description shouldBe "flatMap"
+    }
+
+    "return None on finish" in {
+      flatMapper.finish() shouldBe List.empty[S]
+    }
+
+    "set up FlatMapFunction on setup" in {
+      flatMapper.setup()
+
+      verify(flatMapFunction).setup()
+    }
+
+    "tear down FlatMapFunction on teardown" in {
+      flatMapper.teardown()
+
+      verify(flatMapFunction).teardown()
+    }
+  }
+
+  "ReduceFunction" should {
+
+    "call reduce function when processing input value" in {
+      val reduceFunction = mock[ReduceFunction[T]]
+      val reducer = new Reducer[T](reduceFunction, "reduce")
+      val input1 = mock[T]
+      val input2 = mock[T]
+      val output = mock[T]
+
+      when(reduceFunction.apply(input1, input2)).thenReturn(output, output)
+
+      reducer.process(input1) shouldBe List.empty[T]
+      reducer.process(input2) shouldBe List.empty[T]
+      reducer.finish() shouldBe List(output)
+
+      reducer.teardown()
+      reducer.process(input1) shouldBe List.empty[T]
+      reducer.teardown()
+      reducer.process(input2) shouldBe List.empty[T]
+      reducer.finish() shouldBe List(input2)
+    }
+
+    "return passed in description" in {
+      val reduceFunction = mock[ReduceFunction[T]]
+      val reducer = new Reducer[T](reduceFunction, "reduce")
+      reducer.description shouldBe "reduce"
+    }
+
+    "return None on finish" in {
+      val reduceFunction = mock[ReduceFunction[T]]
+      val reducer = new Reducer[T](reduceFunction, "reduce")
+      reducer.finish() shouldBe List.empty[T]
+    }
+
+    "set up reduce function on setup" in {
+      val reduceFunction = mock[ReduceFunction[T]]
+      val reducer = new Reducer[T](reduceFunction, "reduce")
+      reducer.setup()
+
+      verify(reduceFunction).setup()
+    }
+
+    "tear down reduce function on teardown" in {
+      val reduceFunction = mock[ReduceFunction[T]]
+      val reducer = new Reducer[T](reduceFunction, "reduce")
+      reducer.teardown()
+
+      verify(reduceFunction).teardown()
+    }
+  }
+
+  "Emit" should {
+
+    val emitFunction = mock[T => Unit]
+    val emit = new Emit[T](emitFunction)
+
+    "emit input value when processing input value" in {
+      val input = mock[T]
+
+      emit.process(input) shouldBe List.empty[Unit]
+
+      verify(emitFunction).apply(input)
+    }
+
+    "return empty description" in {
+      emit.description shouldBe ""
+    }
+
+    "return None on finish" in {
+      emit.finish() shouldBe List.empty[Unit]
+    }
+
+    "do nothing on setup" in {
+      emit.setup()
+
+      verifyZeroInteractions(emitFunction)
+    }
+
+    "do nothing on teardown" in {
+      emit.teardown()
+
+      verifyZeroInteractions(emitFunction)
     }
   }
 
@@ -261,7 +262,8 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
 
       // Source with transformer
       val anotherTaskContext = MockUtil.mockTaskContext
-      val double = new FlatMapFunction[String, String](word => List(word, word), "double")
+      val double = new FlatMapper[String, String](FlatMapFunction(
+        word => List(word, word)), "double")
       val another = new DataSourceTask(anotherTaskContext,
         conf.withValue(GEARPUMP_STREAMING_OPERATOR, double))
       another.onStart(Instant.EPOCH)
@@ -279,9 +281,8 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
 
       val data = "1 2  2  3 3  3"
 
-      val concat = new ReduceFunction[String]({ (left, right) =>
-        left + right
-      }, "concat")
+      val concat = new Reducer[String](ReduceFunction({ (left, right) =>
+        left + right}), "concat")
 
       implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
       val config = UserConfig.empty.withValue[SingleInputFunction[String, String]](
@@ -315,7 +316,8 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
       // Source with transformer
       val taskContext = MockUtil.mockTaskContext
       val conf = UserConfig.empty
-      val double = new FlatMapFunction[String, String](word => List(word, word), "double")
+      val double = new FlatMapper[String, String](FlatMapFunction(
+        word => List(word, word)), "double")
       val task = new TransformTask[String, String](Some(double), taskContext, conf)
       task.onStart(Instant.EPOCH)
 

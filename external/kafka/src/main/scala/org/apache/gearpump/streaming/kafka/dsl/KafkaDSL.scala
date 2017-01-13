@@ -21,7 +21,7 @@ import java.util.Properties
 
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.dsl
-import org.apache.gearpump.streaming.dsl.StreamApp
+import org.apache.gearpump.streaming.dsl.scalaapi.{Stream, StreamApp}
 import org.apache.gearpump.streaming.kafka.{KafkaSink, KafkaSource}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 
@@ -44,7 +44,7 @@ object KafkaDSL {
       parallelism: Int = 1,
       config: UserConfig = UserConfig.empty,
       description: String = "KafkaSource"
-      ): dsl.Stream[T] = {
+      ): Stream[T] = {
     app.source[T](new KafkaSource(topics, properties), parallelism, config, description)
   }
 
@@ -66,19 +66,19 @@ object KafkaDSL {
       properties: Properties,
       parallelism: Int = 1,
       config: UserConfig = UserConfig.empty,
-      description: String = "KafkaSource"): dsl.Stream[T] = {
+      description: String = "KafkaSource"): Stream[T] = {
     val source = new KafkaSource(topics, properties)
     source.setCheckpointStore(checkpointStoreFactory)
     app.source[T](source, parallelism, config, description)
   }
 
   import scala.language.implicitConversions
-  implicit def streamToKafkaDSL[T](stream: dsl.Stream[T]): KafkaDSL[T] = {
+  implicit def streamToKafkaDSL[T](stream: Stream[T]): KafkaDSL[T] = {
     new KafkaDSL[T](stream)
   }
 }
 
-class KafkaDSL[T](stream: dsl.Stream[T]) {
+class KafkaDSL[T](stream: Stream[T]) {
 
   /**
    * Sinks data to Kafka
@@ -94,7 +94,7 @@ class KafkaDSL[T](stream: dsl.Stream[T]) {
       properties: Properties,
       parallelism: Int = 1,
       userConfig: UserConfig = UserConfig.empty,
-      description: String = "KafkaSink"): dsl.Stream[T] = {
+      description: String = "KafkaSink"): Stream[T] = {
     stream.sink(new KafkaSink(topic, properties), parallelism, userConfig, description)
   }
 }

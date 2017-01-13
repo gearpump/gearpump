@@ -19,12 +19,13 @@
 package org.apache.gearpump.streaming.dsl.javaapi
 
 import java.util.Collection
-import scala.collection.JavaConverters._
 
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.streaming.dsl.{CollectionDataSource, StreamApp}
+import org.apache.gearpump.streaming.dsl.scalaapi.{CollectionDataSource, StreamApp}
 import org.apache.gearpump.streaming.source.DataSource
+
+import scala.collection.JavaConverters._
 
 class JavaStreamApp(name: String, context: ClientContext, userConfig: UserConfig) {
 

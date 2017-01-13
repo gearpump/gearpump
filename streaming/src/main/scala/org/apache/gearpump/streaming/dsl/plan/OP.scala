@@ -22,7 +22,7 @@ import akka.actor.ActorSystem
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.Processor.DefaultProcessor
-import org.apache.gearpump.streaming.dsl.plan.functions.SingleInputFunction
+import org.apache.gearpump.streaming.dsl.plan.functions.{AndThen, SingleInputFunction}
 import org.apache.gearpump.streaming.{Constants, Processor}
 import org.apache.gearpump.streaming.dsl.task.TransformTask
 import org.apache.gearpump.streaming.dsl.window.api.GroupByFn
@@ -134,7 +134,7 @@ case class ChainableOp[IN, OUT](
     other match {
       case op: ChainableOp[OUT, _] =>
         // TODO: preserve type info
-        ChainableOp(fn.andThen(op.fn))
+        ChainableOp(AndThen(fn, op.fn))
       case _ =>
         throw new OpChainException(this, other)
     }

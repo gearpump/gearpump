@@ -15,17 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump.streaming.dsl.javaapi.functions
 
-package org.apache.gearpump.streaming.javaapi.dsl.functions;
-
-import java.io.Serializable;
+import org.apache.gearpump.streaming.dsl.scalaapi.functions.SerializableFunction
 
 /**
- * Function that map a value of type T to value of type R
+ * Transforms one input into zero or more outputs of possibly different types.
+ * This Java version of FlatMapFunction returns a java.util.Iterator.
  *
- * @param <T> Input value type
- * @param <R> Output value type
+ * @param T Input value type
+ * @param R Output value type
  */
-public interface MapFunction<T, R> extends Serializable {
-  R apply(T t);
+abstract class FlatMapFunction[T, R] extends SerializableFunction {
+
+  def apply(t: T): java.util.Iterator[R]
 }

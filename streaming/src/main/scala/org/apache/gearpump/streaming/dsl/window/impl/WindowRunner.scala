@@ -28,7 +28,7 @@ import com.gs.collections.impl.map.mutable.UnifiedMap
 import com.gs.collections.impl.map.sorted.mutable.TreeSortedMap
 import com.gs.collections.impl.set.mutable.UnifiedSet
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.plan.functions.{EmitFunction, SingleInputFunction}
+import org.apache.gearpump.streaming.dsl.plan.functions.{AndThen, Emit, SingleInputFunction}
 import org.apache.gearpump.streaming.dsl.window.api.Discarding
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.LogUtil
@@ -39,7 +39,6 @@ trait WindowRunner {
   def process(message: Message): Unit
 
   def trigger(time: Instant): Unit
-
 }
 
 object DefaultWindowRunner {
@@ -59,7 +58,6 @@ class DefaultWindowRunner[IN, GROUP, OUT](
   private val windowGroups = new UnifiedMap[WindowGroup[GROUP], FastList[IN]]
   private val groupFns = new UnifiedMap[GROUP, SingleInputFunction[IN, OUT]]
 
-
   override def process(message: Message): Unit = {
     val (group, buckets) = groupBy.groupBy(message)
     buckets.foreach { bucket =>
@@ -72,8 +70,11 @@ class DefaultWindowRunner[IN, GROUP, OUT](
       inputs.add(message.msg.asInstanceOf[IN])
       windowGroups.put(wg, inputs)
     }
-    groupFns.putIfAbsent(group,
-      userConfig.getValue[SingleInputFunction[IN, OUT]](GEARPUMP_STREAMING_OPERATOR).get)
+    if (!groupFns.containsKey(group)) {
+      val fn = userConfig.getValue[SingleInputFunction[IN, OUT]](GEARPUMP_STREAMING_OPERATOR).get
+      fn.setup()
+      groupFns.put(group, fn)
+    }
   }
 
   override def trigger(time: Instant): Unit = {
@@ -88,8 +89,7 @@ class DefaultWindowRunner[IN, GROUP, OUT](
           wgs.forEach(new Procedure[WindowGroup[GROUP]] {
             override def value(each: WindowGroup[GROUP]): Unit = {
               val inputs = windowGroups.remove(each)
-              val reduceFn = groupFns.get(each.group)
-                .andThen[Unit](new EmitFunction[OUT](emitResult(_, time)))
+              val reduceFn = AndThen(groupFns.get(each.group), new Emit[OUT](emitResult(_, time)))
               inputs.forEach(new Procedure[IN] {
                 override def value(t: IN): Unit = {
                   // .toList forces eager evaluation
@@ -99,7 +99,7 @@ class DefaultWindowRunner[IN, GROUP, OUT](
               // .toList forces eager evaluation
               reduceFn.finish().toList
               if (groupBy.window.accumulationMode == Discarding) {
-                reduceFn.clearState()
+                reduceFn.teardown()
               }
             }
           })

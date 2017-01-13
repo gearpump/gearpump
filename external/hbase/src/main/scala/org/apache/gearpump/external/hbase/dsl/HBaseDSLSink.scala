@@ -18,13 +18,10 @@
 package org.apache.gearpump.external.hbase.dsl
 
 import scala.language.implicitConversions
-
 import org.apache.hadoop.conf.Configuration
-
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.external.hbase.HBaseSink
-import org.apache.gearpump.streaming.dsl.Stream
-import org.apache.gearpump.streaming.dsl.Stream.Sink
+import org.apache.gearpump.streaming.dsl.scalaapi.Stream
 
 /** Create a HBase DSL Sink */
 class HBaseDSLSink[T](stream: Stream[T]) {

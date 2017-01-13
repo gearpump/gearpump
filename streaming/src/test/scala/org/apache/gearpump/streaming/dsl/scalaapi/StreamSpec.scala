@@ -16,19 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.dsl
+package org.apache.gearpump.streaming.dsl.scalaapi
 
 import akka.actor._
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.partitioner.{CoLocationPartitioner, HashPartitioner, PartitionerDescription}
-import org.apache.gearpump.streaming.{ProcessorDescription, StreamApplication}
-import org.apache.gearpump.streaming.dsl.StreamSpec.Join
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
+import org.apache.gearpump.streaming.dsl.scalaapi.StreamSpec.Join
 import org.apache.gearpump.streaming.dsl.task.{CountTriggerTask, TransformTask}
+import org.apache.gearpump.streaming.partitioner.{CoLocationPartitioner, HashPartitioner, PartitionerDescription}
 import org.apache.gearpump.streaming.source.DataSourceTask
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
+import org.apache.gearpump.streaming.{ProcessorDescription, StreamApplication}
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
 import org.mockito.Mockito.when
@@ -71,9 +71,10 @@ class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Mock
       map(word => (word, 1)).
       groupBy(_._1, parallelism = 2).
       reduce((left, right) => (left._1, left._2 + right._2)).
-      map[Either[(String, Int), String]](Left(_))
+      map[Either[(String, Int), String]]({t: (String, Int) => Left(t)})
 
-    val query = dsl.source(List("two"), 1, "").map[Either[(String, Int), String]](Right(_))
+    val query = dsl.source(List("two"), 1, "").map[Either[(String, Int), String]](
+      {s: String => Right(s)})
     stream.merge(query).process[(String, Int)](classOf[Join], 1)
 
     val app: StreamApplication = dsl.plan()
