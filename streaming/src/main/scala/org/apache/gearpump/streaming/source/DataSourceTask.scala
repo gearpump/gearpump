@@ -69,6 +69,7 @@ class DataSourceTask[IN, OUT] private[source](
   override def onStart(startTime: Instant): Unit = {
     LOG.info(s"opening data source at $startTime")
     source.open(context, startTime)
+    operator.foreach(_.setup())
 
     self ! Watermark(source.getWatermark)
   }
@@ -82,6 +83,7 @@ class DataSourceTask[IN, OUT] private[source](
   }
 
   override def onStop(): Unit = {
+    operator.foreach(_.teardown())
     LOG.info("closing data source...")
     source.close()
   }

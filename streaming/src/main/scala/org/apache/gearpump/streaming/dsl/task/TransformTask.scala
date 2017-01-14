@@ -17,6 +17,8 @@
  */
 package org.apache.gearpump.streaming.dsl.task
 
+import java.time.Instant
+
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
@@ -31,6 +33,10 @@ class TransformTask[IN, OUT](operator: Option[SingleInputFunction[IN, OUT]],
       GEARPUMP_STREAMING_OPERATOR)(taskContext.system), taskContext, userConf)
   }
 
+  override def onStart(startTime: Instant): Unit = {
+    operator.foreach(_.setup())
+  }
+
   override def onNext(msg: Message): Unit = {
     val time = msg.timestamp
 
@@ -42,5 +48,9 @@ class TransformTask[IN, OUT](operator: Option[SingleInputFunction[IN, OUT]],
       case None =>
         taskContext.output(new Message(msg.msg, time))
     }
+  }
+
+  override def onStop(): Unit = {
+    operator.foreach(_.teardown())
   }
 }
