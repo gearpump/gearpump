@@ -169,7 +169,7 @@ class MasterService(val master: ActorRef,
           }
 
           val effectiveConfig = if (userConfig == null) UserConfig.empty else userConfig
-          val appId = context.submit(new StreamApplication(appName, effectiveConfig, graph))
+          val appId = context.submit(new StreamApplication(appName, effectiveConfig, graph)).appId
 
           import upickle.default.write
           val submitApplicationResultValue = SubmitApplicationResultValue(appId)

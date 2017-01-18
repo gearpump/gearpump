@@ -21,13 +21,12 @@ package org.apache.gearpump.util
 import org.apache.gearpump.cluster.AppMasterContext
 import org.apache.gearpump.cluster.worker.WorkerId
 
-import scala.concurrent.{ExecutionContext, Future}
-
+import scala.concurrent.{Await, ExecutionContext, Future}
 import akka.actor.Actor.Receive
 import akka.actor._
 import akka.pattern.ask
 import org.slf4j.Logger
-
+import akka.util.Timeout
 import org.apache.gearpump.cluster.AppMasterToMaster.{ActivateAppMaster, GetAllWorkers}
 import org.apache.gearpump.cluster.ClientToMaster.{ResolveAppId, ResolveWorkerId}
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
@@ -35,6 +34,8 @@ import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ResolveWo
 import org.apache.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, StartExecutorSystems}
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
 import org.apache.gearpump.transport.HostPort
+
+import scala.concurrent.duration.Duration
 
 object ActorUtil {
   private val LOG: Logger = LogUtil.getLogger(getClass)
@@ -135,5 +136,14 @@ object ActorUtil {
   def askActor[T](actor: ActorRef, msg: Any)(implicit ex: ExecutionContext): Future[T] = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
     (actor ? msg).asInstanceOf[Future[T]]
+  }
+
+  def askActor[T](actor: ActorRef, msg: Any, timeout: Timeout)(implicit ex: ExecutionContext): T = {
+    askActor(actor, msg, timeout, ActorRef.noSender)
+  }
+
+  def askActor[T](actor: ActorRef, msg: Any, timeout: Timeout, sender: ActorRef)
+    (implicit ex: ExecutionContext): T = {
+    Await.result(actor.ask(msg)(timeout, sender).asInstanceOf[Future[T]], Duration.Inf)
   }
 }

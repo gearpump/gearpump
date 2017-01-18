@@ -163,7 +163,7 @@ class GearpumpNimbus(clientContext: ClientContext, stormConf: JMap[AnyRef, AnyRe
       .withValue[JMap[AnyRef, AnyRef]](StormConstants.STORM_CONFIG, stormConfig)
     val app = StreamApplication(name, processorGraph, config)
     LOG.info(s"jar file uploaded to $uploadedJarLocation")
-    val appId = clientContext.submit(app, uploadedJarLocation, workerNum)
+    val appId = clientContext.submit(app, uploadedJarLocation, workerNum).appId
     applications += name -> appId
     topologies += name -> TopologyData(topology, stormConfig, uploadedJarLocation)
     LOG.info(s"Storm Application $appId submitted")

@@ -33,9 +33,9 @@ object DistributedShell extends AkkaApp with ArgumentsParser {
   override def main(akkaConf: Config, args: Array[String]): Unit = {
     LOG.info(s"Distributed shell submitting application...")
     val context = ClientContext(akkaConf)
-    val appId = context.submit(Application[DistShellAppMaster]("DistributedShell",
+    val app = context.submit(Application[DistShellAppMaster]("DistributedShell",
     UserConfig.empty))
     context.close()
-    LOG.info(s"Distributed Shell Application started with appId $appId !")
+    LOG.info(s"Distributed Shell Application started with appId ${app.appId} !")
   }
 }

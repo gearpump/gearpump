@@ -33,9 +33,9 @@ object DistributeService extends AkkaApp with ArgumentsParser {
   override def main(akkaConf: Config, args: Array[String]): Unit = {
     LOG.info(s"Distribute Service submitting application...")
     val context = ClientContext(akkaConf)
-    val appId = context.submit(Application[DistServiceAppMaster]("DistributedService",
+    val app = context.submit(Application[DistServiceAppMaster]("DistributedService",
       UserConfig.empty))
     context.close()
-    LOG.info(s"Distribute Service Application started with appId $appId !")
+    LOG.info(s"Distribute Service Application started with appId ${app.appId} !")
   }
 }

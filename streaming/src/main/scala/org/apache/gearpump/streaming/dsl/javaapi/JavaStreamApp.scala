@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.dsl.javaapi
 import java.util.Collection
 
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.client.{ClientContext, RunningApplication}
 import org.apache.gearpump.streaming.dsl.scalaapi.{CollectionDataSource, StreamApp}
 import org.apache.gearpump.streaming.source.DataSource
 
@@ -42,7 +42,7 @@ class JavaStreamApp(name: String, context: ClientContext, userConfig: UserConfig
     new JavaStream[T](streamApp.source(dataSource, parallelism, conf, description))
   }
 
-  def submit(): Int = {
+  def submit(): RunningApplication = {
     context.submit(streamApp)
   }
 }

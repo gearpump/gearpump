@@ -23,8 +23,9 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigValueFactory}
-import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, ReplayFromTimestampWindowTrailingEdge}
-import org.apache.gearpump.cluster.MasterToClient.ReplayApplicationResult
+import org.apache.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication, SubmitApplication}
+import org.apache.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
+import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.jarstore.JarStoreClient
@@ -32,10 +33,11 @@ import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 import org.slf4j.Logger
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * ClientContext is a user facing util to submit/manage an application.
@@ -43,7 +45,6 @@ import scala.util.Try
  * TODO: add interface to query master here
  */
 class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
-
   def this(system: ActorSystem) = {
     this(system.settings.config, system, null)
   }
@@ -53,20 +54,20 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   }
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
-  private implicit val timeout = Timeout(5, TimeUnit.SECONDS)
-
   implicit val system = Option(sys).getOrElse(ActorSystem(s"client${Util.randInt()}", config))
   LOG.info(s"Starting system ${system.name}")
-  val shouldCleanupSystem = Option(sys).isEmpty
-
   private val jarStoreClient = new JarStoreClient(config, system)
+  private val masterClientTimeout = {
+    val timeout = Try(config.getInt(Constants.GEARPUMP_MASTERCLIENT_TIMEOUT)).getOrElse(90)
+    Timeout(timeout, TimeUnit.SECONDS)
+  }
 
   private lazy val master: ActorRef = {
     val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
       .flatMap(Util.parseHostList)
     val master = Option(_master).getOrElse(system.actorOf(MasterProxy.props(masters),
       s"masterproxy${system.name}"))
-    LOG.info(s"Creating master proxy ${master} for master list: $masters")
+    LOG.info(s"Creating master proxy $master for master list: $masters")
     master
   }
 
@@ -75,26 +76,25 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
    * defined. Otherwise, it assumes the jar is on the target runtime classpath, thus will
    * not send the jar across the wire.
    */
-  def submit(app: Application): Int = {
+  def submit(app: Application): RunningApplication = {
     submit(app, System.getProperty(GEARPUMP_APP_JAR))
   }
 
-  def submit(app: Application, jar: String): Int = {
-    submit(app, jar, getExecutorNum())
+  def submit(app: Application, jar: String): RunningApplication = {
+    submit(app, jar, getExecutorNum)
   }
 
-  def submit(app: Application, jar: String, executorNum: Int): Int = {
-    val client = getMasterClient
+  def submit(app: Application, jar: String, executorNum: Int): RunningApplication = {
     val appName = checkAndAddNamePrefix(app.name, System.getProperty(GEARPUMP_APP_NAME_PREFIX))
     val submissionConfig = getSubmissionConfig(config)
       .withValue(APPLICATION_EXECUTOR_NUMBER, ConfigValueFactory.fromAnyRef(executorNum))
     val appDescription =
       AppDescription(appName, app.appMaster.getName, app.userConfig, submissionConfig)
     val appJar = Option(jar).map(loadFile)
-    client.submitApplication(appDescription, appJar)
+    submitApplication(SubmitApplication(appDescription, appJar))
   }
 
-  private def getExecutorNum(): Int = {
+  private def getExecutorNum: Int = {
     Try(System.getProperty(APPLICATION_EXECUTOR_NUMBER).toInt).getOrElse(1)
   }
 
@@ -102,8 +102,11 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
     ClusterConfig.filterOutDefaultConfig(config)
   }
 
+  def listApps: AppMastersData = {
+    ActorUtil.askActor[AppMastersData](master, AppMastersDataRequest, masterClientTimeout)
+  }
+
   def replayFromTimestampWindowTrailingEdge(appId: Int): ReplayApplicationResult = {
-    import scala.concurrent.ExecutionContext.Implicits.global
     val result = Await.result(
       ActorUtil.askAppMaster[ReplayApplicationResult](master,
         appId, ReplayFromTimestampWindowTrailingEdge(appId)), Duration.Inf)
@@ -111,27 +114,29 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
   }
 
   def askAppMaster[T](appId: Int, msg: Any): Future[T] = {
-    import scala.concurrent.ExecutionContext.Implicits.global
     ActorUtil.askAppMaster[T](master, appId, msg)
   }
 
-  def listApps: AppMastersData = {
-    val client = getMasterClient
-    client.listApplications
-  }
-
   def shutdown(appId: Int): Unit = {
-    val client = getMasterClient
-    client.shutdownApplication(appId)
+    val result = ActorUtil.askActor[ShutdownApplicationResult](master,
+      ShutdownApplication(appId), masterClientTimeout)
+    result.appId match {
+      case Success(_) =>
+      case Failure(ex) => throw ex
+    }
   }
 
   def resolveAppID(appId: Int): ActorRef = {
-    val client = getMasterClient
-    client.resolveAppId(appId)
+    val result = ActorUtil.askActor[ResolveAppIdResult](master,
+      ResolveAppId(appId), masterClientTimeout)
+    result.appMaster match {
+      case Success(appMaster) => appMaster
+      case Failure(ex) => throw ex
+    }
   }
 
   def close(): Unit = {
-    if (shouldCleanupSystem) {
+    if (sys == null) {
       LOG.info(s"Shutting down system ${system.name}")
       system.terminate()
     }
@@ -161,9 +166,18 @@ class ClientContext(config: Config, sys: ActorSystem, _master: ActorRef) {
     fullName
   }
 
-  private def getMasterClient: MasterClient = {
-    val timeout = Try(config.getInt(Constants.GEARPUMP_MASTERCLIENT_TIMEOUT)).getOrElse(90)
-    new MasterClient(master, akka.util.Timeout(timeout, TimeUnit.SECONDS))
+  private def submitApplication(submitApplication: SubmitApplication): RunningApplication = {
+    val result = ActorUtil.askActor[SubmitApplicationResult](master,
+      submitApplication, masterClientTimeout)
+    val application = result.appId match {
+      case Success(appId) =>
+        // scalastyle:off println
+        Console.println(s"Submit application succeed. The application id is $appId")
+        // scalastyle:on println
+        new RunningApplication(appId, master, masterClientTimeout)
+      case Failure(ex) => throw ex
+    }
+    application
   }
 }
 
