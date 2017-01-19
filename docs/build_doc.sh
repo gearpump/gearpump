@@ -64,8 +64,10 @@ export BUILD_API=$2
 # render file templates
 echo "Rendering file templates using mustache..."
 TEMP_DIR="tmp"
-rm -rf $TEMP_DIR
-copy_dir docs $TEMP_DIR
+if [ -d "$TEMP_DIR" ]; then
+	rm -rf "$TEMP_DIR"
+fi
+copy_dir contents $TEMP_DIR
 render_files version.yml "$TEMP_DIR/introduction $TEMP_DIR/dev $TEMP_DIR/deployment $TEMP_DIR/api $TEMP_DIR/index.md"
 
 # generate site documents

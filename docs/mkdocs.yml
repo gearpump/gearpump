@@ -2,6 +2,8 @@ site_name: Apache Gearpump(incubating)
 
 repo_url: 'https://github.com/apache/incubator-gearpump'
 
+edit_uri: 'edit/master/docs/contents'
+
 use_directory_urls: false
 
 # files under docs/ are copied to tmp/
