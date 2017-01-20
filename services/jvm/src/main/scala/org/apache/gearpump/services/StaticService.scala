@@ -19,10 +19,12 @@
 package org.apache.gearpump.services
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.marshalling.ToResponseMarshallable._
+import akka.http.scaladsl.server.{RejectionHandler, StandardRoute}
 import akka.stream.Materializer
-
 import org.apache.gearpump.util.Util
 // NOTE: This cannot be removed!!!
 import org.apache.gearpump.services.util.UpickleUtil._
@@ -56,14 +58,14 @@ class StaticService(override val system: ActorSystem, supervisorPath: String)
       getFromResource("index.html")
     } ~
     path("favicon.ico") {
-      complete(StatusCodes.NotFound)
+      complete(ToResponseMarshallable(StatusCodes.NotFound))
     } ~
     pathPrefix("webjars") {
       get {
         getFromResourceDirectory("META-INF/resources/webjars")
       }
     } ~
-    path(Rest) { path =>
+    path(Remaining) { path =>
       getFromResource("%s" format path)
     }
   }

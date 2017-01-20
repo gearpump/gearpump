@@ -124,11 +124,10 @@ case class DataSinkOp(
  * to another Op to be used
  */
 case class ChainableOp[IN, OUT](
-    fn: SingleInputFunction[IN, OUT]) extends Op {
+    fn: SingleInputFunction[IN, OUT],
+    userConfig: UserConfig = UserConfig.empty) extends Op {
 
   override def description: String = fn.description
-
-  override def userConfig: UserConfig = UserConfig.empty
 
   override def chain(other: Op)(implicit system: ActorSystem): Op = {
     other match {

@@ -63,7 +63,7 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
           failWith(ex)
       }
     } ~
-    path("metrics" / RestPath ) { path =>
+    path("metrics" / RemainingPath ) { path =>
       val workerId = WorkerId.parse(workerIdString)
       parameter(ReadOption.Key ? ReadOption.ReadLatest) { readOption =>
         val query = QueryHistoryMetrics(path.head.toString, readOption)

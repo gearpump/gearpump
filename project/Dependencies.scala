@@ -23,7 +23,8 @@ object Dependencies {
 
   val crossScalaVersionNumbers = Seq("2.11.8")
   val scalaVersionNumber = crossScalaVersionNumbers.last
-  val akkaVersion = "2.4.3"
+  val akkaVersion = "2.4.16"
+  val akkaHttpVersion = "10.0.1"
   val hadoopVersion = "2.6.0"
   val hbaseVersion = "1.0.0"
   val commonsHttpVersion = "3.1"
@@ -82,10 +83,9 @@ object Dependencies {
       "com.typesafe.akka" %% "akka-agent" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
       "com.typesafe.akka" %% "akka-kernel" % akkaVersion,
-      "com.typesafe.akka" %% "akka-http-experimental" % akkaVersion,
-      "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaVersion,
+      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
+      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "org.scala-lang" % "scala-reflect" % scalaVersionNumber,
-      "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
       "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
       "com.google.guava" % "guava" % guavaVersion,
       "com.codahale.metrics" % "metrics-graphite" % codahaleVersion

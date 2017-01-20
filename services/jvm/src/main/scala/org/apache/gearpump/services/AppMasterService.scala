@@ -149,7 +149,7 @@ class AppMasterService(val master: ActorRef,
             }
           }
       } ~
-      path("metrics" / RestPath) { path =>
+      path("metrics" / RemainingPath) { path =>
         parameterMap { optionMap =>
           parameter("aggregator" ? "") { aggregator =>
             parameter(ReadOption.Key ? ReadOption.ReadLatest) { readOption =>

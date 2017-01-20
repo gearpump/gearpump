@@ -60,8 +60,8 @@ import org.apache.gearpump.services.util.UpickleUtil._
 class SecurityService(inner: RouteService, implicit val system: ActorSystem) extends RouteService {
 
   // Use scheme "GearpumpBasic" to avoid popping up web browser native authentication box.
-  private val challenge = HttpChallenge(scheme = "GearpumpBasic", realm = "gearpump",
-    params = Map.empty)
+  private val challenge = HttpChallenge(scheme = "GearpumpBasic", realm = Some("gearpump"),
+    params = Map.empty[String, String])
 
   val LOG = LogUtil.getLogger(getClass, "AUDIT")
 

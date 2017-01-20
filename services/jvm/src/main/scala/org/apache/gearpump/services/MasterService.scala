@@ -102,7 +102,7 @@ class MasterService(val master: ActorRef,
           failWith(ex)
       }
     } ~
-    path("metrics" / RestPath) { path =>
+    path("metrics" / RemainingPath) { path =>
       parameters(ParamMagnet(ReadOption.Key ? ReadOption.ReadLatest)) { readOption: String =>
         val query = QueryHistoryMetrics(path.head.toString, readOption)
         onComplete(askActor[HistoryMetrics](master, query)) {
