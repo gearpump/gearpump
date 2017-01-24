@@ -28,7 +28,7 @@ import org.apache.gearpump.cluster.MasterToClient.{ReplayApplicationResult, Reso
 import org.apache.gearpump.cluster.MasterToWorker.WorkerRegistered
 import org.apache.gearpump.cluster.WorkerToMaster.RegisterNewWorker
 import org.apache.gearpump.cluster.master.MasterProxy
-import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
+import org.apache.gearpump.cluster.{ApplicationStatus, MasterHarness, TestUtil}
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{Constants, LogUtil, Util}
@@ -107,7 +107,8 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
     }
 
     masterReceiver.expectMsg(PROCESS_BOOT_TIME, AppMastersDataRequest)
-    masterReceiver.reply(AppMastersData(List(AppMasterData(AppMasterActive, 0, "appName"))))
+    masterReceiver.reply(AppMastersData(List(AppMasterData(
+      ApplicationStatus.ACTIVE, 0, "appName"))))
   }
 
   "Kill" should "be started without exception" in {

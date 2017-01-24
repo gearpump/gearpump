@@ -35,8 +35,8 @@ import org.apache.gearpump.cluster.master.MasterProxy.WatchMaster
 class MasterConnectionKeeperSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
   implicit var system: ActorSystem = null
-  val register = RegisterAppMaster(null, null)
   val appId = 0
+  val register = RegisterAppMaster(appId, null, null)
 
   override def beforeAll(): Unit = {
     system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)

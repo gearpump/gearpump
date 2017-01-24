@@ -66,7 +66,7 @@ class ExecutorManagerSpec extends FlatSpec with Matchers with BeforeAndAfterAll 
     val appName = "app"
     val appJar = Some(AppJar("for_test", FilePath("path")))
 
-    val appMasterContext = AppMasterContext(appId, username, null, null, appJar, master.ref, null)
+    val appMasterContext = AppMasterContext(appId, username, null, null, appJar, master.ref)
 
     val executorFactory = (_: ExecutorContext, _: UserConfig, _: Address, _: ExecutorId) => {
       executor.ref ! StartExecutorActorPlease

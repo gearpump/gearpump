@@ -17,16 +17,19 @@
  */
 package org.apache.gearpump.cluster.client
 
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
-import akka.actor.ActorRef
 import akka.util.Timeout
-import org.apache.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication}
-import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ShutdownApplicationResult}
-import org.apache.gearpump.util.ActorUtil
+import org.apache.gearpump.cluster.ClientToMaster.{RegisterAppResultListener, ResolveAppId, ShutdownApplication}
+import org.apache.gearpump.cluster.MasterToClient._
+import org.apache.gearpump.cluster.client.RunningApplication._
+import org.apache.gearpump.util.{ActorUtil, LogUtil}
+import org.slf4j.Logger
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 class RunningApplication(val appId: Int, master: ActorRef, timeout: Timeout) {
   lazy val appMaster: Future[ActorRef] = resolveAppMaster(appId)
@@ -40,6 +43,21 @@ class RunningApplication(val appId: Int, master: ActorRef, timeout: Timeout) {
     }
   }
 
+  /**
+   * This funtion will block until the application finished or failed.
+   * If failed, an exception will be thrown out
+   */
+  def waitUntilFinish(): Unit = {
+    val result = ActorUtil.askActor[ApplicationResult](master,
+      RegisterAppResultListener(appId), INF_TIMEOUT)
+    result match {
+      case failed: ApplicationFailed =>
+        throw failed.error
+      case _ =>
+        LOG.info(s"Application $appId succeeded")
+    }
+  }
+
   def askAppMaster[T](msg: Any): Future[T] = {
     appMaster.flatMap(_.ask(msg)(timeout).asInstanceOf[Future[T]])
   }
@@ -48,5 +66,11 @@ class RunningApplication(val appId: Int, master: ActorRef, timeout: Timeout) {
     master.ask(ResolveAppId(appId))(timeout).
       asInstanceOf[Future[ResolveAppIdResult]].map(_.appMaster.get)
   }
+}
+
+object RunningApplication {
+  private val LOG: Logger = LogUtil.getLogger(getClass)
+  // This magic number is derived from Akka's configuration, which is the maximum delay
+  private val INF_TIMEOUT = new Timeout(2147482 seconds)
 }
 

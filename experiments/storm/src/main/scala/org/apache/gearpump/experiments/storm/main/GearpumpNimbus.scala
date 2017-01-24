@@ -21,11 +21,11 @@ package org.apache.gearpump.experiments.storm.main
 import java.io.{File, FileOutputStream, FileWriter}
 import java.nio.ByteBuffer
 import java.nio.channels.{Channels, WritableByteChannel}
-import java.util.{HashMap => JHashMap, Map => JMap, UUID}
+import java.util.{UUID, HashMap => JHashMap, Map => JMap}
+
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigValueFactory
 import backtype.storm.Config
@@ -35,10 +35,9 @@ import backtype.storm.utils.Utils
 import org.apache.storm.shade.org.json.simple.JSONValue
 import org.apache.storm.shade.org.yaml.snakeyaml.Yaml
 import org.slf4j.Logger
-
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import org.apache.gearpump.cluster.{MasterToAppMaster, UserConfig}
+import org.apache.gearpump.cluster.{ApplicationStatus, MasterToAppMaster, UserConfig}
 import org.apache.gearpump.experiments.storm.topology.GearpumpStormTopology
 import org.apache.gearpump.experiments.storm.util.TimeCacheMapWrapper.Callback
 import org.apache.gearpump.experiments.storm.util.{GraphBuilder, StormConstants, StormUtil, TimeCacheMapWrapper}
@@ -271,7 +270,7 @@ class GearpumpNimbus(clientContext: ClientContext, stormConf: JMap[AnyRef, AnyRe
     clientContext.listApps.appMasters.foreach { app =>
       val name = app.appName
       if (applications.contains(name)) {
-        if (app.status != MasterToAppMaster.AppMasterActive) {
+        if (app.status != ApplicationStatus.ACTIVE) {
           removeTopology(name)
         }
       }

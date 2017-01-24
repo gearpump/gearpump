@@ -24,12 +24,13 @@ import org.apache.log4j.Logger
 import upickle.Js
 import upickle.default._
 
+import org.apache.gearpump.cluster.ApplicationStatus._
 import org.apache.gearpump.cluster.AppMasterToMaster.MasterData
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import org.apache.gearpump.cluster.MasterToClient.HistoryMetrics
 import org.apache.gearpump.cluster.master.MasterSummary
 import org.apache.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import org.apache.gearpump.cluster.{AppJar, MasterToAppMaster}
+import org.apache.gearpump.cluster.AppJar
 import org.apache.gearpump.integrationtest.{Docker, Util}
 import org.apache.gearpump.services.AppMasterService.Status
 import org.apache.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners}
@@ -78,7 +79,7 @@ class RestClient(host: String, port: Int) {
   }
 
   def listRunningWorkers(): Array[WorkerSummary] = {
-    listWorkers().filter(_.state == MasterToAppMaster.AppMasterActive)
+    listWorkers().filter(_.state == ACTIVE.status)
   }
 
   def listApps(): Array[AppMasterData] = {
@@ -87,12 +88,12 @@ class RestClient(host: String, port: Int) {
   }
 
   def listPendingOrRunningApps(): Array[AppMasterData] = {
-    listApps().filter(app => app.status == MasterToAppMaster.AppMasterActive
-      || app.status == MasterToAppMaster.AppMasterPending)
+    listApps().filter(app => app.status == ACTIVE
+      || app.status == PENDING)
   }
 
   def listRunningApps(): Array[AppMasterData] = {
-    listApps().filter(_.status == MasterToAppMaster.AppMasterActive)
+    listApps().filter(_.status == ACTIVE)
   }
 
   def getNextAvailableAppId(): Int = {

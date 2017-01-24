@@ -18,8 +18,7 @@
 package org.apache.gearpump.integrationtest.checklist
 
 import scala.concurrent.duration.Duration
-
-import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.cluster.{ApplicationStatus, MasterToAppMaster}
 import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
 import org.apache.gearpump.util.{Constants, LogUtil}
@@ -48,7 +47,7 @@ class StabilitySpec extends TestSpecBase {
 
       // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
-      laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
+      laterAppMaster.status shouldEqual ApplicationStatus.ACTIVE
       laterAppMaster.clock should be > 0L
     }
   }
@@ -70,7 +69,7 @@ class StabilitySpec extends TestSpecBase {
 
       // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
-      laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
+      laterAppMaster.status shouldEqual ApplicationStatus.ACTIVE
       laterAppMaster.clock should be > 0L
     }
   }
@@ -129,7 +128,7 @@ class StabilitySpec extends TestSpecBase {
 
       // verify
       val laterAppMaster = restClient.queryStreamingAppDetail(appId)
-      laterAppMaster.status shouldEqual MasterToAppMaster.AppMasterActive
+      laterAppMaster.status shouldEqual ApplicationStatus.ACTIVE
       laterAppMaster.clock should be > 0L
     }
   }

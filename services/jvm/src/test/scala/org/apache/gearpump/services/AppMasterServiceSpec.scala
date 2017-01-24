@@ -20,7 +20,6 @@ package org.apache.gearpump.services
 
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
-
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
@@ -30,12 +29,11 @@ import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.slf4j.Logger
 import upickle.default.read
-
 import org.apache.gearpump.cluster.AppMasterToMaster.GeneralAppMasterSummary
 import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import org.apache.gearpump.cluster.MasterToClient._
-import org.apache.gearpump.cluster.TestUtil
+import org.apache.gearpump.cluster.{ApplicationStatus, TestUtil}
 import org.apache.gearpump.jarstore.{JarStoreClient, JarStoreServer}
 import org.apache.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import org.apache.gearpump.util.LogUtil
@@ -85,7 +83,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
           sender ! ResolveAppIdResult(Success(mockAppMaster.ref))
           KeepRunning
         case AppMasterDataRequest(appId, _) =>
-          sender ! AppMasterData("active")
+          sender ! AppMasterData(ApplicationStatus.ACTIVE)
           KeepRunning
         case QueryAppMasterConfig(appId) =>
           sender ! AppMasterConfig(null)

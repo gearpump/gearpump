@@ -19,20 +19,34 @@
 package org.apache.gearpump.cluster.appmaster
 
 import akka.actor.ActorRef
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.cluster.{ApplicationStatus, ApplicationTerminalStatus}
 
-import org.apache.gearpump._
-import org.apache.gearpump.cluster.AppMasterRegisterData
-
-/** Run time info used to start an AppMaster */
-case class AppMasterRuntimeInfo(
+/** Run time info of Application */
+case class ApplicationRuntimeInfo(
     appId: Int,
     // AppName is the unique Id for an application
     appName: String,
-    worker: ActorRef = null,
-    user: String = null,
+    appMaster: ActorRef = ActorRef.noSender,
+    worker: ActorRef = ActorRef.noSender,
+    user: String = "",
     submissionTime: TimeStamp = 0,
     startTime: TimeStamp = 0,
     finishTime: TimeStamp = 0,
-    config: Config = null)
-  extends AppMasterRegisterData
+    config: Config = ConfigFactory.empty(),
+    status: ApplicationStatus = ApplicationStatus.NONEXIST) {
+
+  def onAppMasterRegistered(appMaster: ActorRef, worker: ActorRef): ApplicationRuntimeInfo = {
+    this.copy(appMaster = appMaster, worker = worker)
+  }
+
+  def onAppMasterActivated(timeStamp: TimeStamp): ApplicationRuntimeInfo = {
+    this.copy(startTime = timeStamp, status = ApplicationStatus.ACTIVE)
+  }
+
+  def onFinalStatus(timeStamp: TimeStamp, finalStatus: ApplicationTerminalStatus):
+    ApplicationRuntimeInfo = {
+    this.copy(finishTime = timeStamp, status = finalStatus)
+  }
+}

@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.util
 
-import org.apache.gearpump.cluster.AppMasterContext
+import org.apache.gearpump.cluster.{ApplicationStatus, AppMasterContext}
 import org.apache.gearpump.cluster.worker.WorkerId
 
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -27,7 +27,7 @@ import akka.actor._
 import akka.pattern.ask
 import org.slf4j.Logger
 import akka.util.Timeout
-import org.apache.gearpump.cluster.AppMasterToMaster.{ActivateAppMaster, GetAllWorkers}
+import org.apache.gearpump.cluster.AppMasterToMaster.{ApplicationStatusChanged, GetAllWorkers}
 import org.apache.gearpump.cluster.ClientToMaster.{ResolveAppId, ResolveWorkerId}
 import org.apache.gearpump.cluster.MasterToAppMaster.WorkerList
 import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ResolveWorkerIdResult}
@@ -42,6 +42,14 @@ object ActorUtil {
 
   def getSystemAddress(system: ActorSystem): Address = {
     system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  }
+
+  def getFullPath(system: ActorSystem, actorRef: ActorRef): String = {
+    if (actorRef != ActorRef.noSender) {
+      getFullPath(system, actorRef.path)
+    } else {
+      ""
+    }
   }
 
   def getFullPath(system: ActorSystem, path: ActorPath): String = {
@@ -102,7 +110,8 @@ object ActorUtil {
   def tellMasterIfApplicationReady(workerNum: Option[Int], executorSystemNum: Int,
       appContext: AppMasterContext): Unit = {
     if (workerNum.contains(executorSystemNum)) {
-      appContext.masterProxy ! ActivateAppMaster(appContext.appId)
+      appContext.masterProxy ! ApplicationStatusChanged(appContext.appId, ApplicationStatus.ACTIVE,
+        System.currentTimeMillis(), null)
     }
   }
 

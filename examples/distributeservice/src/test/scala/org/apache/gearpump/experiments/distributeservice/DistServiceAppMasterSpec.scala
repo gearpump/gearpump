@@ -27,7 +27,7 @@ import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
 import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, RegisterAppMaster, RequestResource}
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated, WorkerList}
-import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, ApplicationRuntimeInfo}
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, TestUtil, UserConfig}
@@ -52,11 +52,10 @@ class DistServiceAppMasterSpec extends WordSpec with Matchers with BeforeAndAfte
 
   "DistService AppMaster" should {
     "responsable for service distributing" in {
-      val appMasterInfo = AppMasterRuntimeInfo(appId, "appName", mockWorker1.ref)
-      val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar, masterProxy,
-        appMasterInfo)
+      val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar, masterProxy)
       TestActorRef[DistServiceAppMaster](
-        AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription, appMasterContext))
+        AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription,
+          appMasterContext))
       val registerAppMaster = mockMaster.receiveOne(15.seconds)
       assert(registerAppMaster.isInstanceOf[RegisterAppMaster])
 

@@ -19,29 +19,12 @@
 package org.apache.gearpump.cluster.appmaster
 
 import org.apache.gearpump.cluster.{AppDescription, AppJar}
+import akka.routing.MurmurHash._
 
 /**
- * This state for single application, it is be distributed across the masters.
+ * The meta data of an application, which stores the crucial infomation of how to launch
+ * the application, like the application jar file location. This data is distributed
+ * across the masters.
  */
-case class ApplicationState(
-    appId: Int, appName: String, attemptId: Int, app: AppDescription, jar: Option[AppJar],
-    username: String, state: Any) extends Serializable {
-
-  override def equals(other: Any): Boolean = {
-    other match {
-      case that: ApplicationState =>
-        if (appId == that.appId && attemptId == that.attemptId) {
-          true
-        } else {
-          false
-        }
-      case _ =>
-        false
-    }
-  }
-
-  override def hashCode: Int = {
-    import akka.routing.MurmurHash._
-    extendHash(appId, attemptId, startMagicA, startMagicB)
-  }
-}
+case class ApplicationMetaData(appId: Int, attemptId: Int, appDesc: AppDescription,
+    jar: Option[AppJar], username: String)

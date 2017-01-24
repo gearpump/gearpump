@@ -18,8 +18,8 @@
 
 package org.apache.gearpump.services.util
 
+import org.apache.gearpump.cluster.ApplicationStatus
 import upickle.Js
-
 import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.util.Graph
 
@@ -37,6 +37,19 @@ object UpickleUtil {
     }
   }
 
+  implicit val appStatusReader: upickle.default.Reader[ApplicationStatus] =
+    upickle.default.Reader[ApplicationStatus] {
+      case Js.Str(str) =>
+        str match {
+          case "pending" => ApplicationStatus.PENDING
+          case "active" => ApplicationStatus.ACTIVE
+          case "succeeded" => ApplicationStatus.SUCCEEDED
+          case "failed" => ApplicationStatus.FAILED
+          case "terminated" => ApplicationStatus.TERMINATED
+          case _ => ApplicationStatus.NONEXIST
+        }
+    }
+
   implicit val workerIdReader: upickle.default.Reader[WorkerId] = upickle.default.Reader[WorkerId] {
     case Js.Str(str) =>
       WorkerId.parse(str)
@@ -45,5 +58,11 @@ object UpickleUtil {
   implicit val workerIdWriter: upickle.default.Writer[WorkerId] = upickle.default.Writer[WorkerId] {
     case workerId: WorkerId =>
       Js.Str(WorkerId.render(workerId))
+  }
+
+  implicit val appStatusWriter: upickle.default.Writer[ApplicationStatus] =
+    upickle.default.Writer[ApplicationStatus] {
+    case status: ApplicationStatus =>
+      Js.Str(status.toString)
   }
 }

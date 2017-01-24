@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.LastFailure
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, ApplicationRuntimeInfo}
 import org.apache.gearpump.cluster.master.MasterProxy
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerId
@@ -72,7 +72,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
   var mockWorker: TestProbe = null
   var appDescription: AppDescription = null
   var appMasterContext: AppMasterContext = null
-  var appMasterRuntimeInfo: AppMasterRuntimeInfo = null
+  var appMasterRuntimeInfo: ApplicationRuntimeInfo = null
 
   override def beforeEach(): Unit = {
     startActorSystem()
@@ -82,13 +82,12 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     mockMaster = TestProbe()(getActorSystem)
     mockWorker = TestProbe()(getActorSystem)
     mockMaster.ignoreMsg(ignoreSaveAppData)
-    appMasterRuntimeInfo = AppMasterRuntimeInfo(appId, appName = appId.toString)
+    appMasterRuntimeInfo = ApplicationRuntimeInfo(appId, appName = appId.toString)
 
     implicit val system = getActorSystem
     conf = UserConfig.empty.withValue(AppMasterSpec.MASTER, mockMaster.ref)
-    val mockJar = AppJar("for_test", FilePath("path"))
-    appMasterContext = AppMasterContext(appId, "test", resource, null, Some(mockJar),
-      mockMaster.ref, appMasterRuntimeInfo)
+    val mockJar = Some(AppJar("for_test", FilePath("path")))
+    appMasterContext = AppMasterContext(appId, "test", resource, null, mockJar, mockMaster.ref)
     val graph = Graph(taskDescription1 ~ partitioner ~> taskDescription2)
     val streamApp = StreamApplication("test", graph, conf)
     appDescription = Application.ApplicationToAppDescription(streamApp)
@@ -124,7 +123,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       // triggers ResourceAllocationTimeout in ExecutorSystemScheduler
       mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(Resource(2),
         mockWorker.ref, workerId))))
-      mockMaster.expectMsg(60.seconds, ShutdownApplication(appId))
+      val statusChanged = mockMaster.expectMsgType[ApplicationStatusChanged](60.seconds)
+      statusChanged.newStatus shouldBe ApplicationStatus.FAILED
     }
 
     "reschedule the resource when the worker reject to start executor" in {
@@ -248,7 +248,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
       // fail to recover after restarting a tasks for 5 times
       appMaster.tell(MessageLoss(0, TaskId(0, 0), "message loss"), mockTask.ref)
-      mockMaster.expectMsg(60.seconds, ShutdownApplication(appId))
+      val statusChanged = mockMaster.expectMsgType[ApplicationStatusChanged](60.seconds)
+      statusChanged.newStatus shouldBe ApplicationStatus.FAILED
 
       workerSystem.terminate()
     }
@@ -281,7 +282,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
   def expectAppStarted(): Unit = {
     // wait for app to get started
-    mockMaster.expectMsg(ActivateAppMaster(appId))
+    mockMaster.expectMsgType[ApplicationStatusChanged]
     mockMaster.reply(AppMasterActivated(appId))
   }
 }

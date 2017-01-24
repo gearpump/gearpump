@@ -18,14 +18,15 @@
 
 package org.apache.gearpump.cluster
 
-import scala.reflect.ClassTag
+import java.io.Serializable
 
 import akka.actor.{Actor, ActorRef, ActorSystem}
 import com.typesafe.config.{Config, ConfigFactory}
-
 import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.jarstore.FilePath
+
+import scala.reflect.ClassTag
 
 /**
  * This contains all information to run an application
@@ -38,8 +39,7 @@ import org.apache.gearpump.jarstore.FilePath
  *                      really need to change it, please use ClusterConfigSource(filePath) to
  *                      construct the object, while filePath points to the .conf file.
  */
-case class AppDescription(
-    name: String, appMaster: String, userConfig: UserConfig,
+case class AppDescription(name: String, appMaster: String, userConfig: UserConfig,
     clusterConfig: Config = ConfigFactory.empty())
 
 /**
@@ -96,8 +96,6 @@ abstract class ApplicationMaster extends Actor
  * @param appJar application Jar. If the jar is already in classpath, then it can be None.
  * @param masterProxy The proxy to master actor, it bridges the messages between appmaster
  *                    and master
- * @param registerData AppMaster are required to send this data to Master by when doing
- *                     RegisterAppMaster.
  */
 case class AppMasterContext(
     appId: Int,
@@ -105,8 +103,7 @@ case class AppMasterContext(
     resource: Resource,
     workerInfo: WorkerInfo,
     appJar: Option[AppJar],
-    masterProxy: ActorRef,
-    registerData: AppMasterRegisterData)
+    masterProxy: ActorRef)
 
 /**
  * Jar file container in the cluster
@@ -143,3 +140,25 @@ case class ExecutorJVMConfig(
     classPath: Array[String], jvmArguments: Array[String], mainClass: String,
     arguments: Array[String], jar: Option[AppJar], username: String,
     executorAkkaConfig: Config = ConfigFactory.empty())
+
+sealed abstract class ApplicationStatus(val status: String)
+  extends Serializable{
+  override def toString: String = status
+}
+
+sealed abstract class ApplicationTerminalStatus(override val status: String)
+  extends ApplicationStatus(status)
+
+object ApplicationStatus {
+  case object PENDING extends ApplicationStatus("pending")
+
+  case object ACTIVE extends ApplicationStatus("active")
+
+  case object SUCCEEDED extends ApplicationTerminalStatus("succeeded")
+
+  case object FAILED extends ApplicationTerminalStatus("failed")
+
+  case object TERMINATED extends ApplicationTerminalStatus("terminated")
+
+  case object NONEXIST extends ApplicationStatus("nonexist")
+}

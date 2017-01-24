@@ -21,13 +21,14 @@ package org.apache.gearpump.cluster.appmaster
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
-import org.apache.gearpump.cluster.AppMasterToMaster.{AppDataSaved, _}
+import org.apache.gearpump.cluster.AppMasterToMaster.{AppDataSaved, RegisterAppMaster, _}
 import org.apache.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication, SubmitApplication}
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterRegistered, AppMastersData, AppMastersDataRequest, _}
 import org.apache.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
-import org.apache.gearpump.cluster.master.{AppMasterLauncherFactory, AppManager}
+import org.apache.gearpump.cluster.master.{AppManager, AppMasterLauncherFactory}
 import org.apache.gearpump.cluster.master.AppManager._
 import org.apache.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVSuccess, PutKV, PutKVSuccess}
+import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.cluster.{TestUtil, _}
 import org.apache.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
@@ -51,7 +52,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     appManager = getActorSystem.actorOf(Props(new AppManager(kvService.ref,
       new DummyAppMasterLauncherFactory(appLauncher))))
     kvService.expectMsgType[GetKV]
-    kvService.reply(GetKVSuccess(MASTER_STATE, MasterState(0, Map.empty, Set.empty, Set.empty)))
+    kvService.reply(GetKVSuccess(MASTER_STATE, MasterState(0, Map.empty)))
   }
 
   override def afterEach(): Unit = {
@@ -59,14 +60,24 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
   }
 
   "AppManager" should "handle AppMaster message correctly" in {
+    val app = TestUtil.dummyApp
+    val submit = SubmitApplication(app, None, "username")
+    val client = TestProbe()(getActorSystem)
+
+    client.send(appManager, submit)
+
     val appMaster = TestProbe()(getActorSystem)
     val appId = 1
 
-    val register = RegisterAppMaster(appMaster.ref, AppMasterRuntimeInfo(appId, "appName"))
+    kvService.expectMsgType[PutKV]
+    kvService.expectMsgType[PutKV]
+    appLauncher.expectMsg(LauncherStarted(appId))
+    val register = RegisterAppMaster(appId, appMaster.ref, WorkerInfo(WorkerId(1, 0), null))
     appMaster.send(appManager, register)
     appMaster.expectMsgType[AppMasterRegistered]
 
-    appMaster.send(appManager, ActivateAppMaster(appId))
+    val active = ApplicationStatusChanged(appId, ApplicationStatus.ACTIVE, 0, null)
+    appMaster.send(appManager, active)
     appMaster.expectMsgType[AppMasterActivated]
   }
 
@@ -101,7 +112,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     assert(mockClient.receiveN(1).head.asInstanceOf[ResolveAppIdResult].appMaster.isFailure)
 
     mockClient.send(appManager, AppMasterDataRequest(1))
-    mockClient.expectMsg(AppMasterData(AppMasterNonExist))
+    mockClient.expectMsg(AppMasterData(ApplicationStatus.NONEXIST))
   }
 
   "AppManager" should "reject the application submission if the app name already existed" in {
@@ -115,9 +126,10 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     client.send(appManager, submit)
 
     kvService.expectMsgType[PutKV]
+    kvService.expectMsgType[PutKV]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref,
-      AppMasterRuntimeInfo(appId, app.name)))
+    val register = RegisterAppMaster(appId, appMaster.ref, WorkerInfo(WorkerId(1, 0), worker.ref))
+    appMaster.send(appManager, register)
     appMaster.expectMsgType[AppMasterRegistered]
 
     client.send(appManager, submit)
@@ -135,9 +147,10 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     client.send(appManager, submit)
 
     kvService.expectMsgType[PutKV]
+    kvService.expectMsgType[PutKV]
     appLauncher.expectMsg(LauncherStarted(appId))
-    appMaster.send(appManager, RegisterAppMaster(appMaster.ref,
-      AppMasterRuntimeInfo(appId, app.name)))
+    val register = RegisterAppMaster(appId, appMaster.ref, WorkerInfo(WorkerId(1, 0), worker.ref))
+    appMaster.send(appManager, register)
     kvService.expectMsgType[PutKV]
     appMaster.expectMsgType[AppMasterRegistered]
 
@@ -157,8 +170,8 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
       // Do recovery
       getActorSystem.stop(appMaster.ref)
       kvService.expectMsgType[GetKV]
-      val appState = ApplicationState(appId, "application1", 1, app, None, "username", null)
-      kvService.reply(GetKVSuccess(APP_STATE, appState))
+      val appState = ApplicationMetaData(appId, 1, app, None, "username")
+      kvService.reply(GetKVSuccess(APP_METADATA, appState))
       appLauncher.expectMsg(LauncherStarted(appId))
     }
   }

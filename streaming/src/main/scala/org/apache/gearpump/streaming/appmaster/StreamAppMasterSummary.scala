@@ -20,8 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.AppMasterSummary
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterStatus
-import org.apache.gearpump.cluster.{MasterToAppMaster, UserConfig}
+import org.apache.gearpump.cluster.{ApplicationStatus, UserConfig}
 import org.apache.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
 import org.apache.gearpump.streaming.{ExecutorId, LifeTime, ProcessorId}
 import org.apache.gearpump.util.Graph
@@ -34,7 +33,7 @@ case class StreamAppMasterSummary(
     appName: String = null,
     actorPath: String = null,
     clock: TimeStamp = 0L,
-    status: AppMasterStatus = MasterToAppMaster.AppMasterActive,
+    status: ApplicationStatus = ApplicationStatus.ACTIVE,
     startTime: TimeStamp = 0L,
     uptime: TimeStamp = 0L,
     user: String = null,

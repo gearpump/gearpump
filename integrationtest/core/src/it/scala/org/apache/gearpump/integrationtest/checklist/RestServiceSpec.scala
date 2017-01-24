@@ -18,8 +18,7 @@
 package org.apache.gearpump.integrationtest.checklist
 
 import scala.concurrent.duration._
-
-import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.cluster.{ApplicationStatus, MasterToAppMaster}
 import org.apache.gearpump.cluster.master.MasterStatus
 import org.apache.gearpump.cluster.worker.{WorkerId, WorkerSummary}
 import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
@@ -205,7 +204,7 @@ class RestServiceSpec extends TestSpecBase {
         runningWorkers.length == expectedWorkersCount
       }, "all workers running")
       runningWorkers.foreach { worker =>
-        worker.state shouldEqual MasterToAppMaster.AppMasterActive
+        worker.state shouldEqual "active"
       }
     }
 
@@ -341,7 +340,7 @@ class RestServiceSpec extends TestSpecBase {
       Util.retryUntil(() => restClient.restartApp(originAppId), "app restarted")
       val killedApp = restClient.queryApp(originAppId)
       killedApp.appId shouldEqual originAppId
-      killedApp.status shouldEqual MasterToAppMaster.AppMasterInActive
+      killedApp.status shouldEqual ApplicationStatus.TERMINATED
       val newAppId = originAppId + 1
       expectAppIsRunning(newAppId, wordCountName)
       val runningApps = restClient.listRunningApps()
@@ -360,7 +359,7 @@ class RestServiceSpec extends TestSpecBase {
 
     val actualApp = restClient.queryApp(appId)
     actualApp.appId shouldEqual appId
-    actualApp.status shouldEqual MasterToAppMaster.AppMasterInActive
+    actualApp.status shouldEqual ApplicationStatus.TERMINATED
   }
 
   private def expectMetricsAvailable(condition: => Boolean, conditionDescription: String): Unit = {

@@ -28,7 +28,7 @@ import org.apache.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, RegisterApp
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated, WorkerList}
 import org.apache.gearpump.cluster._
-import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, AppMasterRuntimeInfo}
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, ApplicationRuntimeInfo}
 import org.apache.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
@@ -49,11 +49,11 @@ class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter 
 
   "DistributedShell AppMaster" should {
     "launch one ShellTask on each worker" in {
-      val appMasterInfo = AppMasterRuntimeInfo(appId, appName = appId.toString)
-      val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar,
-        masterProxy, appMasterInfo)
+      val appMasterInfo = ApplicationRuntimeInfo(appId, appName = appId.toString)
+      val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar, masterProxy)
       TestActorRef[DistShellAppMaster](
-        AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription, appMasterContext))
+        AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription,
+          appMasterContext))
       mockMaster.expectMsgType[RegisterAppMaster]
       mockMaster.reply(AppMasterRegistered(appId))
       // The DistributedShell AppMaster asks for worker list from Master.

@@ -18,16 +18,17 @@
 
 package org.apache.gearpump.cluster.master
 
+import org.apache.gearpump.cluster.AppDescription
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
-import org.apache.gearpump.cluster.appmaster.ApplicationState
+import org.apache.gearpump.cluster.appmaster.ApplicationMetaData
 
 class ApplicationStateSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
   "ApplicationState" should "check equal with respect to only appId and attemptId" in {
-    val stateA = ApplicationState(0, "application0", 0, null, null, null, "A")
-    val stateB = ApplicationState(0, "application0", 0, null, null, null, "B")
-    val stateC = ApplicationState(0, "application1", 1, null, null, null, "A")
+    val appDescription = AppDescription("app", "AppMaster", null)
+    val stateA = ApplicationMetaData(0, 0, appDescription, null, null)
+    val stateB = ApplicationMetaData(0, 0, appDescription, null, null)
+    val stateC = ApplicationMetaData(0, 1, appDescription, null, null)
 
     assert(stateA == stateB)
     assert(stateA.hashCode == stateB.hashCode)

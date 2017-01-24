@@ -17,8 +17,8 @@
  */
 package org.apache.gearpump.integrationtest.checklist
 
-import org.apache.gearpump.cluster.MasterToAppMaster
-import org.apache.gearpump.integrationtest.{Util, TestSpecBase}
+import org.apache.gearpump.cluster.{ApplicationStatus, MasterToAppMaster}
+import org.apache.gearpump.integrationtest.{TestSpecBase, Util}
 
 /**
  * The test spec checks the command-line usage
@@ -129,7 +129,7 @@ class CommandLineSpec extends TestSpecBase {
       val actual = commandLineClient.queryApp(appId)
       actual.contains(s"application: $appId, ") &&
         actual.contains(s"name: $expectedName, ") &&
-        actual.contains(s"status: ${MasterToAppMaster.AppMasterActive}")
+        actual.contains(s"status: ${ApplicationStatus.ACTIVE.status}")
     }, "application is running")
   }
 }

@@ -18,8 +18,7 @@
 package org.apache.gearpump.integrationtest.minicluster
 
 import org.apache.log4j.Logger
-
-import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.cluster.ApplicationStatus
 import org.apache.gearpump.integrationtest.Docker
 
 /**
@@ -36,14 +35,10 @@ class CommandLineClient(host: String) {
   }
 
   def listRunningApps(): Array[String] =
-    listApps().filter(
-      _.contains(s", status: ${MasterToAppMaster.AppMasterActive}")
-    )
+    listApps().filter(_.contains(s", status: ${ApplicationStatus.ACTIVE}"))
 
   def queryApp(appId: Int): String = try {
-    listApps().filter(
-      _.startsWith(s"application: $appId")
-    ).head
+    listApps().filter(_.startsWith(s"application: $appId")).head
   } catch {
     case ex: Throwable =>
       LOG.warn(s"swallowed an exception: $ex")

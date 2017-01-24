@@ -18,8 +18,7 @@
 package org.apache.gearpump.integrationtest
 
 import org.scalatest._
-
-import org.apache.gearpump.cluster.MasterToAppMaster
+import org.apache.gearpump.cluster.{ApplicationStatus, MasterToAppMaster}
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterData
 import org.apache.gearpump.util.LogUtil
 
@@ -87,7 +86,7 @@ trait TestSpecBase
   def expectAppIsRunning(appId: Int, expectedAppName: String): Unit = {
     Util.retryUntil(() => {
       val app = restClient.queryApp(appId)
-      app.status == MasterToAppMaster.AppMasterActive && app.appName == expectedAppName
+      app.status == ApplicationStatus.ACTIVE && app.appName == expectedAppName
     }, s"$expectedAppName is running")
   }
 }

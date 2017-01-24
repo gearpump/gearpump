@@ -184,8 +184,6 @@ private[cluster] class Master extends Actor with Stash {
       scheduler forward request
     case registerAppMaster: RegisterAppMaster =>
       appManager forward registerAppMaster
-    case activateAppMaster: ActivateAppMaster =>
-      appManager forward activateAppMaster
     case save: SaveAppData =>
       appManager forward save
     case get: GetAppData =>
@@ -215,6 +213,8 @@ private[cluster] class Master extends Actor with Stash {
 
     case invalidAppMaster: InvalidAppMaster =>
       appManager forward invalidAppMaster
+    case statusChanged: ApplicationStatusChanged =>
+      appManager forward statusChanged
   }
 
   import scala.util.{Failure, Success}
@@ -257,6 +257,8 @@ private[cluster] class Master extends Actor with Stash {
       appManager forward query
     case QueryMasterConfig =>
       sender ! MasterConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
+    case register: RegisterAppResultListener =>
+      appManager forward register
   }
 
   def disassociated: Receive = {

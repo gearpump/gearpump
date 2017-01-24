@@ -18,16 +18,14 @@
 
 package org.apache.gearpump.cluster
 
-import org.apache.gearpump.cluster.worker.{WorkerSummary, WorkerId}
+import org.apache.gearpump.cluster.worker.{WorkerId, WorkerSummary}
 
 import scala.util.Try
-
 import akka.actor.ActorRef
 import com.typesafe.config.Config
-
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.MasterToAppMaster.AppMasterStatus
-import org.apache.gearpump.cluster.master.{MasterNode, MasterSummary}
+import org.apache.gearpump.cluster.appmaster.WorkerInfo
+import org.apache.gearpump.cluster.master.MasterSummary
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.metrics.Metrics.MetricType
 
@@ -114,6 +112,11 @@ object ClientToMaster {
    * Request app master for a short list of cluster app that administrators should be aware of.
    */
   case class GetLastFailure(appId: Int)
+
+  /**
+   * Register a client to wait application's result
+   */
+  case class RegisterAppResultListener(appId: Int)
 }
 
 object MasterToClient {
@@ -155,26 +158,20 @@ object MasterToClient {
 
   /** Return the last error of this streaming application job */
   case class LastFailure(time: TimeStamp, error: String)
+
+  sealed trait ApplicationResult
+
+  case class ApplicationSucceeded(appId: Int) extends ApplicationResult
+
+  case class ApplicationFailed(appId: Int, error: Throwable) extends ApplicationResult
 }
 
-trait AppMasterRegisterData
-
 object AppMasterToMaster {
-
-  /**
-   * Activate the AppMaster when an application is ready to run.
-   * @param appId application id
-   */
-  case class ActivateAppMaster(appId: Int)
   
   /**
-   * Register an AppMaster by providing a ActorRef, and registerData
-   * @param registerData The registerData is provided by Master when starting the app master.
-   *                     App master should return the registerData back to master.
-   *                     Typically registerData hold some context information for this app Master.
+   * Register an AppMaster by providing a ActorRef, and workerInfo which is running on
    */
-
-  case class RegisterAppMaster(appMaster: ActorRef, registerData: AppMasterRegisterData)
+  case class RegisterAppMaster(appId: Int, appMaster: ActorRef, workerInfo: WorkerInfo)
 
   case class InvalidAppMaster(appId: Int, appMaster: String, reason: Throwable)
 
@@ -210,7 +207,7 @@ object AppMasterToMaster {
     def appId: Int
     def appName: String
     def actorPath: String
-    def status: AppMasterStatus
+    def status: ApplicationStatus
     def startTime: TimeStamp
     def uptime: TimeStamp
     def user: String
@@ -222,7 +219,7 @@ object AppMasterToMaster {
       appType: String = "general",
       appName: String = null,
       actorPath: String = null,
-      status: AppMasterStatus = MasterToAppMaster.AppMasterActive,
+      status: ApplicationStatus = ApplicationStatus.ACTIVE,
       startTime: TimeStamp = 0L,
       uptime: TimeStamp = 0L,
       user: String = null)
@@ -242,6 +239,12 @@ object AppMasterToMaster {
 
   /** Response to GetMasterData */
   case class MasterData(masterDescription: MasterSummary)
+
+  /**
+   * Denotes the application state change of an app.
+   */
+  case class ApplicationStatusChanged(appId: Int, newStatus: ApplicationStatus,
+      timeStamp: TimeStamp, error: Throwable)
 }
 
 object MasterToAppMaster {
@@ -258,17 +261,10 @@ object MasterToAppMaster {
   /** Shutdown the application job */
   case object ShutdownAppMaster
 
-  type AppMasterStatus = String
-  val AppMasterPending: AppMasterStatus = "pending"
-  val AppMasterActive: AppMasterStatus = "active"
-  val AppMasterInActive: AppMasterStatus = "inactive"
-  val AppMasterNonExist: AppMasterStatus = "nonexist"
-
   sealed trait StreamingType
-  case class AppMasterData(
-      status: AppMasterStatus, appId: Int = 0, appName: String = null, appMasterPath: String = null,
-      workerPath: String = null, submissionTime: TimeStamp = 0, startTime: TimeStamp = 0,
-      finishTime: TimeStamp = 0, user: String = null)
+  case class AppMasterData(status: ApplicationStatus, appId: Int = 0, appName: String = null,
+      appMasterPath: String = null, workerPath: String = null, submissionTime: TimeStamp = 0,
+      startTime: TimeStamp = 0, finishTime: TimeStamp = 0, user: String = null)
 
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
 
