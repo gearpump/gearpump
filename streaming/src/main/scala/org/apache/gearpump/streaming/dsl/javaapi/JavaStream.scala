@@ -22,7 +22,7 @@ import org.apache.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunct
 import org.apache.gearpump.streaming.dsl.javaapi.functions.{FlatMapFunction => JFlatMapFunction, GroupByFunction}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.scalaapi.{Stream, WindowStream}
-import org.apache.gearpump.streaming.dsl.window.api.Window
+import org.apache.gearpump.streaming.dsl.window.api.Windows
 import org.apache.gearpump.streaming.task.Task
 
 /**
@@ -68,7 +68,7 @@ class JavaStream[T](val stream: Stream[T]) {
     new JavaStream[T](stream.groupBy(fn.apply, parallelism, description))
   }
 
-  def window(win: Window, description: String): JavaWindowStream[T] = {
+  def window(win: Windows[T], description: String): JavaWindowStream[T] = {
     new JavaWindowStream[T](stream.window(win, description))
   }
 

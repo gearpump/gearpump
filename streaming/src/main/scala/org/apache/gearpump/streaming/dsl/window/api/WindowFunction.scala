@@ -20,34 +20,43 @@ package org.apache.gearpump.streaming.dsl.window.api
 import java.time.{Duration, Instant}
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.streaming.dsl.window.impl.Bucket
+import org.apache.gearpump.streaming.dsl.window.impl.Window
 
 import scala.collection.mutable.ArrayBuffer
 
-sealed trait WindowFn {
-  def apply(timestamp: Instant): List[Bucket]
+object WindowFunction {
+
+  trait Context[T] {
+    def element: T
+    def timestamp: Instant
+  }
 }
 
-case class SlidingWindowFn(size: Duration, step: Duration)
-  extends WindowFn {
+trait WindowFunction[T] {
+  def apply(context: WindowFunction.Context[T]): Array[Window]
+}
+
+case class SlidingWindowFunction[T](size: Duration, step: Duration)
+  extends WindowFunction[T] {
 
   def this(size: Duration) = {
     this(size, size)
   }
 
-  override def apply(timestamp: Instant): List[Bucket] = {
+  override def apply(context: WindowFunction.Context[T]): Array[Window] = {
+    val timestamp = context.timestamp
     val sizeMillis = size.toMillis
     val stepMillis = step.toMillis
     val timeMillis = timestamp.toEpochMilli
-    val windows = ArrayBuffer.empty[Bucket]
+    val windows = ArrayBuffer.empty[Window]
     var start = lastStartFor(timeMillis, stepMillis)
-    windows += Bucket.ofEpochMilli(start, start + sizeMillis)
+    windows += Window.ofEpochMilli(start, start + sizeMillis)
     start -= stepMillis
     while (start >= timeMillis) {
-      windows += Bucket.ofEpochMilli(start, start + sizeMillis)
+      windows += Window.ofEpochMilli(start, start + sizeMillis)
       start -= stepMillis
     }
-    windows.toList
+    windows.toArray
   }
 
   private def lastStartFor(timestamp: TimeStamp, windowStep: Long): TimeStamp = {
@@ -55,9 +64,9 @@ case class SlidingWindowFn(size: Duration, step: Duration)
   }
 }
 
-case class CountWindowFn(size: Int) extends WindowFn {
+case class CountWindowFunction[T](size: Int) extends WindowFunction[T] {
 
-  override def apply(timestamp: Instant): List[Bucket] = {
-    List(Bucket.ofEpochMilli(0, size))
+  override def apply(context: WindowFunction.Context[T]): Array[Window] = {
+    Array(Window.ofEpochMilli(0, size))
   }
 }

@@ -23,7 +23,7 @@ import java.time.Instant
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.plan.functions.SingleInputFunction
+import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 /**
@@ -42,13 +42,13 @@ class DataSourceTask[IN, OUT] private[source](
     context: TaskContext,
     conf: UserConfig,
     source: DataSource,
-    operator: Option[SingleInputFunction[IN, OUT]])
+    operator: Option[FunctionRunner[IN, OUT]])
   extends Task(context, conf) {
 
   def this(context: TaskContext, conf: UserConfig) = {
     this(context, conf,
       conf.getValue[DataSource](GEARPUMP_STREAMING_SOURCE)(context.system).get,
-      conf.getValue[SingleInputFunction[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system)
+      conf.getValue[FunctionRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system)
     )
   }
 

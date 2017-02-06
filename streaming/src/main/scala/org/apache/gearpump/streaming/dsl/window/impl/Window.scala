@@ -28,17 +28,18 @@ import org.apache.gearpump.streaming.dsl.window.api._
 import org.apache.gearpump.streaming.dsl.task.{CountTriggerTask, EventTimeTriggerTask, ProcessingTimeTriggerTask}
 import org.apache.gearpump.streaming.task.Task
 
-object Bucket {
-  def ofEpochMilli(startTime: TimeStamp, endTime: TimeStamp): Bucket = {
-    Bucket(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(endTime))
+object Window {
+  def ofEpochMilli(startTime: TimeStamp, endTime: TimeStamp): Window = {
+    Window(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(endTime))
   }
 }
 
 /**
  * A window unit including startTime and excluding endTime.
  */
-case class Bucket(startTime: Instant, endTime: Instant) extends Comparable[Bucket] {
-  override def compareTo(o: Bucket): Int = {
+case class Window(startTime: Instant, endTime: Instant) extends Comparable[Window] {
+
+  override def compareTo(o: Window): Int = {
     val ret = startTime.compareTo(o.startTime)
     if (ret != 0) {
       ret
@@ -48,13 +49,32 @@ case class Bucket(startTime: Instant, endTime: Instant) extends Comparable[Bucke
   }
 }
 
-case class GroupAlsoByWindow[T, GROUP](groupByFn: T => GROUP, window: Window)
-  extends GroupByFn[T, (GROUP, List[Bucket])] {
+case class WindowAndGroup[GROUP](window: Window, group: GROUP)
+  extends Comparable[WindowAndGroup[GROUP]] {
 
-  override def groupBy(message: Message): (GROUP, List[Bucket]) = {
-    val group = groupByFn(message.msg.asInstanceOf[T])
-    val buckets = window.windowFn(Instant.ofEpochMilli(message.timestamp))
-    group -> buckets
+  override def compareTo(o: WindowAndGroup[GROUP]): Int = {
+    val ret = window.compareTo(o.window)
+    if (ret != 0) {
+      ret
+    } else if (group.equals(o.group)) {
+      0
+    } else {
+      -1
+    }
+  }
+}
+
+case class GroupAlsoByWindow[T, GROUP](groupByFn: T => GROUP, window: Windows[T])
+  extends GroupByFn[T, List[WindowAndGroup[GROUP]]] {
+
+  override def groupBy(message: Message): List[WindowAndGroup[GROUP]] = {
+    val ele = message.msg.asInstanceOf[T]
+    val group = groupByFn(ele)
+    val windows = window.windowFn(new WindowFunction.Context[T] {
+      override def element: T = ele
+      override def timestamp: Instant = Instant.ofEpochMilli(message.timestamp)
+    })
+    windows.map(WindowAndGroup(_, group)).toList
   }
 
   override def getProcessor(parallelism: Int, description: String,

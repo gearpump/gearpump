@@ -23,7 +23,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.streaming.dsl.scalaapi.{LoggerSink, StreamApp}
-import org.apache.gearpump.streaming.dsl.window.api.{EventTimeTrigger, FixedWindow}
+import org.apache.gearpump.streaming.dsl.window.api.{EventTimeTrigger, FixedWindows}
 import org.apache.gearpump.streaming.source.DataSource
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.AkkaApp
@@ -39,7 +39,7 @@ object WindowedWordCount extends AkkaApp with ArgumentsParser {
       // word => (word, count)
       flatMap(line => line.split("[\\s]+")).map((_, 1)).
       // fix window
-      window(FixedWindow.apply(Duration.ofMillis(5L))
+      window(FixedWindows.apply(Duration.ofMillis(5L))
         .triggering(EventTimeTrigger)).
       // (word, count1), (word, count2) => (word, count1 + count2)
       groupBy(_._1).

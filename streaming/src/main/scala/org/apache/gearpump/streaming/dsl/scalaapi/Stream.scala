@@ -25,7 +25,7 @@ import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.plan._
 import org.apache.gearpump.streaming.dsl.plan.functions._
 import org.apache.gearpump.streaming.dsl.window.api._
-import org.apache.gearpump.streaming.dsl.window.impl.{Bucket, GroupAlsoByWindow}
+import org.apache.gearpump.streaming.dsl.window.impl.{GroupAlsoByWindow, WindowAndGroup}
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
@@ -122,7 +122,7 @@ class Stream[T](
     transform(new Reducer[T](fn, description))
   }
 
-  private def transform[R](fn: SingleInputFunction[T, R]): Stream[R] = {
+  private def transform[R](fn: FunctionRunner[T, R]): Stream[R] = {
     val op = ChainableOp(fn)
     graph.addVertex(op)
     graph.addEdge(thisNode, edge.getOrElse(Direct), op)
@@ -173,7 +173,7 @@ class Stream[T](
    */
   def groupBy[GROUP](fn: T => GROUP, parallelism: Int = 1,
       description: String = "groupBy"): Stream[T] = {
-    window(CountWindow.apply(1).accumulating)
+    window(CountWindows.apply(1).accumulating)
       .groupBy[GROUP](fn, parallelism, description)
   }
 
@@ -184,7 +184,7 @@ class Stream[T](
    * @param description window description
    * @return [[WindowStream]] where groupBy could be applied
    */
-  def window(win: Window, description: String = "window"): WindowStream[T] = {
+  def window(win: Windows[T], description: String = "window"): WindowStream[T] = {
     new WindowStream[T](graph, edge, thisNode, win, description)
   }
 
@@ -206,12 +206,12 @@ class Stream[T](
 }
 
 class WindowStream[T](graph: Graph[Op, OpEdge], edge: Option[OpEdge], thisNode: Op,
-    window: Window, winDesc: String) {
+    window: Windows[T], winDesc: String) {
 
   def groupBy[GROUP](fn: T => GROUP, parallelism: Int = 1,
       description: String = "groupBy"): Stream[T] = {
-    val groupBy: GroupByFn[T, (GROUP, List[Bucket])] = GroupAlsoByWindow(fn, window)
-    val groupOp = GroupByOp[T, (GROUP, List[Bucket])](groupBy, parallelism,
+    val groupBy: GroupByFn[T, List[WindowAndGroup[GROUP]]] = GroupAlsoByWindow(fn, window)
+    val groupOp = GroupByOp[T, List[WindowAndGroup[GROUP]]](groupBy, parallelism,
       s"$winDesc.$description")
     graph.addVertex(groupOp)
     graph.addEdge(thisNode, edge.getOrElse(Shuffle), groupOp)

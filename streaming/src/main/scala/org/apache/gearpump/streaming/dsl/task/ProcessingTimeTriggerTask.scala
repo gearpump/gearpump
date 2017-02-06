@@ -25,7 +25,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.task.ProcessingTimeTriggerTask.Triggering
-import org.apache.gearpump.streaming.dsl.window.api.SlidingWindowFn
+import org.apache.gearpump.streaming.dsl.window.api.SlidingWindowFunction
 import org.apache.gearpump.streaming.dsl.window.impl.{DefaultWindowRunner, GroupAlsoByWindow, WindowRunner}
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
@@ -57,7 +57,7 @@ class ProcessingTimeTriggerTask[IN, GROUP](
       taskContext, userConfig)
   }
 
-  private val windowFn = groupBy.window.windowFn.asInstanceOf[SlidingWindowFn]
+  private val windowFn = groupBy.window.windowFn.asInstanceOf[SlidingWindowFunction[IN]]
   private val windowSizeMs = windowFn.size.toMillis
   private val windowStepMs = windowFn.step.toMillis
 

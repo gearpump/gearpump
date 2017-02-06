@@ -21,12 +21,12 @@ import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 
 /**
- * Internal function to process single input
+ * Interface to invoke SerializableFunction methods
  *
  * @param IN input value type
  * @param OUT output value type
  */
-sealed trait SingleInputFunction[IN, OUT] extends java.io.Serializable {
+sealed trait FunctionRunner[IN, OUT] extends java.io.Serializable {
 
   def setup(): Unit = {}
 
@@ -39,9 +39,9 @@ sealed trait SingleInputFunction[IN, OUT] extends java.io.Serializable {
   def description: String
 }
 
-case class AndThen[IN, MIDDLE, OUT](first: SingleInputFunction[IN, MIDDLE],
-    second: SingleInputFunction[MIDDLE, OUT])
-  extends SingleInputFunction[IN, OUT] {
+case class AndThen[IN, MIDDLE, OUT](first: FunctionRunner[IN, MIDDLE],
+    second: FunctionRunner[MIDDLE, OUT])
+  extends FunctionRunner[IN, OUT] {
 
   override def setup(): Unit = {
     first.setup()
@@ -74,7 +74,7 @@ case class AndThen[IN, MIDDLE, OUT](first: SingleInputFunction[IN, MIDDLE],
 }
 
 class FlatMapper[IN, OUT](fn: FlatMapFunction[IN, OUT], val description: String)
-  extends SingleInputFunction[IN, OUT] {
+  extends FunctionRunner[IN, OUT] {
 
   override def setup(): Unit = {
     fn.setup()
@@ -90,7 +90,7 @@ class FlatMapper[IN, OUT](fn: FlatMapFunction[IN, OUT], val description: String)
 }
 
 class Reducer[T](fn: ReduceFunction[T], val description: String)
-  extends SingleInputFunction[T, T] {
+  extends FunctionRunner[T, T] {
 
   private var state: Option[T] = None
 
@@ -117,7 +117,7 @@ class Reducer[T](fn: ReduceFunction[T], val description: String)
   }
 }
 
-class Emit[T](emit: T => Unit) extends SingleInputFunction[T, Unit] {
+class Emit[T](emit: T => Unit) extends FunctionRunner[T, Unit] {
 
   override def process(value: T): TraversableOnce[Unit] = {
     emit(value)

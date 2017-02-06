@@ -44,7 +44,7 @@ class ProcessingTimeTriggerTaskSpec extends PropSpec with PropertyChecks
     forAll(windowSizeGen, windowStepGen, startTimeGen) {
       (windowSize: Long, windowStep: Long, startTime: Instant) =>
 
-        val window = SlidingWindow.apply(Duration.ofMillis(windowSize),
+        val window = SlidingWindow.apply[Any](Duration.ofMillis(windowSize),
           Duration.ofMillis(windowStep)).triggering(ProcessingTimeTrigger)
         val groupBy = mock[GroupAlsoByWindow[Any, Any]]
         val windowRunner = mock[WindowRunner]

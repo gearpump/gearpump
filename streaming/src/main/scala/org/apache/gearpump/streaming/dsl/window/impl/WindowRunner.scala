@@ -26,9 +26,8 @@ import com.gs.collections.api.block.procedure.Procedure
 import com.gs.collections.impl.list.mutable.FastList
 import com.gs.collections.impl.map.mutable.UnifiedMap
 import com.gs.collections.impl.map.sorted.mutable.TreeSortedMap
-import com.gs.collections.impl.set.mutable.UnifiedSet
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.plan.functions.{AndThen, Emit, SingleInputFunction}
+import org.apache.gearpump.streaming.dsl.plan.functions.{AndThen, Emit, FunctionRunner}
 import org.apache.gearpump.streaming.dsl.window.api.Discarding
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.LogUtil
@@ -45,36 +44,32 @@ object DefaultWindowRunner {
 
   private val LOG: Logger = LogUtil.getLogger(classOf[DefaultWindowRunner[_, _, _]])
 
-  case class WindowGroup[GROUP](bucket: Bucket, group: GROUP)
+  case class InputsAndFn[IN, OUT](inputs: FastList[IN], fn: FunctionRunner[IN, OUT])
 }
 
 class DefaultWindowRunner[IN, GROUP, OUT](
     taskContext: TaskContext, userConfig: UserConfig,
     groupBy: GroupAlsoByWindow[IN, GROUP])(implicit system: ActorSystem)
   extends WindowRunner {
-  import org.apache.gearpump.streaming.dsl.window.impl.DefaultWindowRunner._
 
-  private val windows = new TreeSortedMap[Bucket, UnifiedSet[WindowGroup[GROUP]]]
-  private val windowGroups = new UnifiedMap[WindowGroup[GROUP], FastList[IN]]
-  private val groupFns = new UnifiedMap[GROUP, SingleInputFunction[IN, OUT]]
+  private val groupedInputs = new TreeSortedMap[WindowAndGroup[GROUP], FastList[IN]]
+  private val groupedFnRunners = new UnifiedMap[GROUP, FunctionRunner[IN, OUT]]
 
   override def process(message: Message): Unit = {
-    val (group, buckets) = groupBy.groupBy(message)
-    buckets.foreach { bucket =>
-      val wg = WindowGroup(bucket, group)
-      val wgs = windows.getOrDefault(bucket, new UnifiedSet[WindowGroup[GROUP]](1))
-      wgs.add(wg)
-      windows.put(bucket, wgs)
+    val wgs = groupBy.groupBy(message)
+    wgs.foreach { wg =>
+      if (!groupedInputs.containsKey(wg)) {
+        val inputs = new FastList[IN](1)
+        groupedInputs.put(wg, inputs)
+      }
+      groupedInputs.get(wg).add(message.msg.asInstanceOf[IN])
+      if (!groupedFnRunners.containsKey(wg.group)) {
+        val fn = userConfig.getValue[FunctionRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR).get
+        fn.setup()
+        groupedFnRunners.put(wg.group, fn)
+      }
+    }
 
-      val inputs = windowGroups.getOrDefault(wg, new FastList[IN](1))
-      inputs.add(message.msg.asInstanceOf[IN])
-      windowGroups.put(wg, inputs)
-    }
-    if (!groupFns.containsKey(group)) {
-      val fn = userConfig.getValue[SingleInputFunction[IN, OUT]](GEARPUMP_STREAMING_OPERATOR).get
-      fn.setup()
-      groupFns.put(group, fn)
-    }
   }
 
   override def trigger(time: Instant): Unit = {
@@ -82,29 +77,28 @@ class DefaultWindowRunner[IN, GROUP, OUT](
 
     @annotation.tailrec
     def onTrigger(): Unit = {
-      if (windows.notEmpty()) {
-        val first = windows.firstKey
-        if (!time.isBefore(first.endTime)) {
-          val wgs = windows.remove(first)
-          wgs.forEach(new Procedure[WindowGroup[GROUP]] {
-            override def value(each: WindowGroup[GROUP]): Unit = {
-              val inputs = windowGroups.remove(each)
-              val reduceFn = AndThen(groupFns.get(each.group), new Emit[OUT](emitResult(_, time)))
-              inputs.forEach(new Procedure[IN] {
-                override def value(t: IN): Unit = {
-                  // .toList forces eager evaluation
-                  reduceFn.process(t).toList
-                }
-              })
-              // .toList forces eager evaluation
-              reduceFn.finish().toList
-              if (groupBy.window.accumulationMode == Discarding) {
-                reduceFn.teardown()
+      if (groupedInputs.notEmpty()) {
+        val first = groupedInputs.firstKey
+        if (!time.isBefore(first.window.endTime)) {
+          val inputs = groupedInputs.remove(first)
+          if (groupedFnRunners.containsKey(first.group)) {
+            val reduceFn = AndThen(groupedFnRunners.get(first.group),
+              new Emit[OUT](output => emitResult(output, time)))
+            inputs.forEach(new Procedure[IN] {
+              override def value(t: IN): Unit = {
+                // .toList forces eager evaluation
+                reduceFn.process(t).toList
               }
+            })
+            // .toList forces eager evaluation
+            reduceFn.finish().toList
+            if (groupBy.window.accumulationMode == Discarding) {
+              reduceFn.teardown()
             }
-          })
-
-          onTrigger()
+            onTrigger()
+          } else {
+            throw new RuntimeException(s"FunctionRunner not found for group ${first.group}")
+          }
         }
       }
     }

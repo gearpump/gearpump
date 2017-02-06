@@ -25,40 +25,40 @@ import java.time.Duration
  * @param trigger
  * @param accumulationMode
  */
-case class Window(
-    windowFn: WindowFn,
+case class Windows[T](
+    windowFn: WindowFunction[T],
     trigger: Trigger = EventTimeTrigger,
     accumulationMode: AccumulationMode = Discarding) {
 
-  def triggering(trigger: Trigger): Window = {
-    Window(windowFn, trigger)
+  def triggering(trigger: Trigger): Windows[T] = {
+    Windows(windowFn, trigger)
   }
 
-  def accumulating: Window = {
-    Window(windowFn, trigger, Accumulating)
+  def accumulating: Windows[T] = {
+    Windows(windowFn, trigger, Accumulating)
   }
 
-  def discarding: Window = {
-    Window(windowFn, trigger, Discarding)
-  }
-}
-
-object CountWindow {
-
-  def apply(size: Int): Window = {
-    Window(CountWindowFn(size), CountTrigger)
+  def discarding: Windows[T] = {
+    Windows(windowFn, trigger, Discarding)
   }
 }
 
-object FixedWindow {
+object CountWindows {
+
+  def apply[T](size: Int): Windows[T] = {
+    Windows(CountWindowFunction(size), CountTrigger)
+  }
+}
+
+object FixedWindows {
 
   /**
    * Defines a FixedWindow.
    * @param size window size
    * @return a Window definition
    */
-  def apply(size: Duration): Window = {
-    Window(SlidingWindowFn(size, size))
+  def apply[T](size: Duration): Windows[T] = {
+    Windows(SlidingWindowFunction(size, size))
   }
 }
 
@@ -70,8 +70,8 @@ object SlidingWindow {
    * @param step window step to slide forward
    * @return a Window definition
    */
-  def apply(size: Duration, step: Duration): Window = {
-    Window(SlidingWindowFn(size, step))
+  def apply[T](size: Duration, step: Duration): Windows[T] = {
+    Windows(SlidingWindowFunction(size, step))
   }
 }
 

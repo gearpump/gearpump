@@ -29,7 +29,7 @@ import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
 import org.apache.gearpump.streaming.dsl.scalaapi.CollectionDataSource
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.task.{CountTriggerTask, TransformTask}
-import org.apache.gearpump.streaming.dsl.window.api.CountWindow
+import org.apache.gearpump.streaming.dsl.window.api.CountWindows
 import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
 import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
@@ -40,13 +40,13 @@ import org.scalatest.mock.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
-  import org.apache.gearpump.streaming.dsl.plan.functions.SingleInputFunctionSpec._
+class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
+  import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunnerSpec._
 
   "AndThen" should {
 
-    val first = mock[SingleInputFunction[R, S]]
-    val second = mock[SingleInputFunction[S, T]]
+    val first = mock[FunctionRunner[R, S]]
+    val second = mock[FunctionRunner[S, T]]
     val andThen = AndThen(first, second)
 
     "chain first and second functions when processing input value" in {
@@ -285,12 +285,13 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
         left + right}), "concat")
 
       implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
-      val config = UserConfig.empty.withValue[SingleInputFunction[String, String]](
+      val config = UserConfig.empty.withValue[FunctionRunner[String, String]](
         GEARPUMP_STREAMING_OPERATOR, concat)
 
       val taskContext = MockUtil.mockTaskContext
 
-      val groupBy = GroupAlsoByWindow((input: String) => input, CountWindow.apply(1).accumulating)
+      val groupBy = GroupAlsoByWindow((input: String) => input,
+        CountWindows.apply[String](1).accumulating)
       val task = new CountTriggerTask[String, String](groupBy, taskContext, config)
       task.onStart(Instant.EPOCH)
 
@@ -332,7 +333,7 @@ class SingleInputFunctionSpec extends WordSpec with Matchers with MockitoSugar {
   }
 }
 
-object SingleInputFunctionSpec {
+object FunctionRunnerSpec {
   type R = AnyRef
   type S = AnyRef
   type T = AnyRef

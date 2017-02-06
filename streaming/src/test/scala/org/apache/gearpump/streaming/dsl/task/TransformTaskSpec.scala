@@ -22,7 +22,7 @@ import java.time.Instant
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.plan.functions.SingleInputFunction
+import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
 import org.mockito.Mockito.{verify, when}
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
@@ -36,7 +36,7 @@ class TransformTaskSpec extends PropSpec with PropertyChecks with Matchers with 
       val taskContext = MockUtil.mockTaskContext
       implicit val system = MockUtil.system
       val config = UserConfig.empty
-      val operator = mock[SingleInputFunction[Any, Any]]
+      val operator = mock[FunctionRunner[Any, Any]]
       val sourceTask = new TransformTask[Any, Any](Some(operator), taskContext, config)
 
       sourceTask.onStart(startTime)
@@ -50,7 +50,7 @@ class TransformTaskSpec extends PropSpec with PropertyChecks with Matchers with 
       val taskContext = MockUtil.mockTaskContext
       implicit val system = MockUtil.system
       val config = UserConfig.empty
-      val operator = mock[SingleInputFunction[Any, Any]]
+      val operator = mock[FunctionRunner[Any, Any]]
       val task = new TransformTask[Any, Any](Some(operator), taskContext, config)
       val msg = Message(str)
       when(operator.process(str)).thenReturn(Some(str))
@@ -65,7 +65,7 @@ class TransformTaskSpec extends PropSpec with PropertyChecks with Matchers with 
     val taskContext = MockUtil.mockTaskContext
     implicit val system = MockUtil.system
     val config = UserConfig.empty
-    val operator = mock[SingleInputFunction[Any, Any]]
+    val operator = mock[FunctionRunner[Any, Any]]
     val task = new TransformTask[Any, Any](Some(operator), taskContext, config)
 
     task.onStop()

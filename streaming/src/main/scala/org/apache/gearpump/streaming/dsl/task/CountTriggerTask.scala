@@ -22,7 +22,7 @@ import java.time.Instant
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.window.api.CountWindowFn
+import org.apache.gearpump.streaming.dsl.window.api.CountWindowFunction
 import org.apache.gearpump.streaming.dsl.window.impl.{DefaultWindowRunner, GroupAlsoByWindow, WindowRunner}
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
@@ -48,7 +48,7 @@ class CountTriggerTask[IN, GROUP](
       taskContext, userConfig)
   }
 
-  private val windowSize = groupBy.window.windowFn.asInstanceOf[CountWindowFn].size
+  private val windowSize = groupBy.window.windowFn.asInstanceOf[CountWindowFunction[IN]].size
   private var num = 0
 
   override def onNext(msg: Message): Unit = {

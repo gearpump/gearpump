@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.Processor
 import org.apache.gearpump.streaming.Processor.DefaultProcessor
 import org.apache.gearpump.streaming.dsl.plan.OpSpec.{AnySink, AnySource, AnyTask}
-import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapper, SingleInputFunction}
+import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapper, FunctionRunner}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.window.api.GroupByFn
 import org.apache.gearpump.streaming.sink.DataSink
@@ -65,7 +65,7 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
       val dataSource = new AnySource
       val dataSourceOp = DataSourceOp(dataSource)
       val chainableOp = mock[ChainableOp[Any, Any]]
-      val fn = mock[SingleInputFunction[Any, Any]]
+      val fn = mock[FunctionRunner[Any, Any]]
 
       val chainedOp = dataSourceOp.chain(chainableOp)
 
@@ -138,10 +138,10 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
   "ChainableOp" should {
 
     "chain ChainableOp" in {
-      val fn1 = mock[SingleInputFunction[Any, Any]]
+      val fn1 = mock[FunctionRunner[Any, Any]]
       val chainableOp1 = ChainableOp[Any, Any](fn1)
 
-      val fn2 = mock[SingleInputFunction[Any, Any]]
+      val fn2 = mock[FunctionRunner[Any, Any]]
       val chainableOp2 = ChainableOp[Any, Any](fn2)
 
       val chainedOp = chainableOp1.chain(chainableOp2)
@@ -171,7 +171,7 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
     "chain ChainableOp" in {
       val groupByFn = mock[GroupByFn[Any, Any]]
       val groupByOp = GroupByOp[Any, Any](groupByFn)
-      val fn = mock[SingleInputFunction[Any, Any]]
+      val fn = mock[FunctionRunner[Any, Any]]
       val chainableOp = mock[ChainableOp[Any, Any]]
       when(chainableOp.fn).thenReturn(fn)
 
@@ -199,7 +199,7 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
     val mergeOp = MergeOp("merge")
 
     "chain ChainableOp" in {
-      val fn = mock[SingleInputFunction[Any, Any]]
+      val fn = mock[FunctionRunner[Any, Any]]
       val chainableOp = mock[ChainableOp[Any, Any]]
       when(chainableOp.fn).thenReturn(fn)
 

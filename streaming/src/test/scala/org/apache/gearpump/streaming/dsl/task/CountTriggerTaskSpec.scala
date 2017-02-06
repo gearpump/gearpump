@@ -22,7 +22,7 @@ import java.time.Instant
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.window.api.CountWindow
+import org.apache.gearpump.streaming.dsl.window.api.CountWindows
 import org.apache.gearpump.streaming.dsl.window.impl.{GroupAlsoByWindow, WindowRunner}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -42,7 +42,7 @@ class CountTriggerTaskSpec extends PropSpec with PropertyChecks
     forAll(numGen, numGen) { (windowSize: Int, msgNum: Int) =>
 
       val groupBy = mock[GroupAlsoByWindow[Any, Any]]
-      val window = CountWindow.apply(windowSize)
+      val window = CountWindows.apply[Any](windowSize)
       when(groupBy.window).thenReturn(window)
       val windowRunner = mock[WindowRunner]
       val userConfig = UserConfig.empty
