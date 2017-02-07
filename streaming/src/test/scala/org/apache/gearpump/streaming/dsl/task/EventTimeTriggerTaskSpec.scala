@@ -22,7 +22,7 @@ import java.time.{Duration, Instant}
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.window.api.{EventTimeTrigger, SlidingWindow}
+import org.apache.gearpump.streaming.dsl.window.api.{EventTimeTrigger, SlidingWindows}
 import org.apache.gearpump.streaming.dsl.window.impl.{GroupAlsoByWindow, WindowRunner}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -43,7 +43,7 @@ class EventTimeTriggerTaskSpec extends PropSpec with PropertyChecks
     forAll(windowSizeGen, windowStepGen, watermarkGen) {
       (windowSize: Long, windowStep: Long, watermark: Instant) =>
 
-        val window = SlidingWindow.apply[Any](Duration.ofMillis(windowSize),
+        val window = SlidingWindows.apply[Any](Duration.ofMillis(windowSize),
           Duration.ofMillis(windowStep)).triggering(EventTimeTrigger)
         val groupBy = mock[GroupAlsoByWindow[Any, Any]]
         val windowRunner = mock[WindowRunner]

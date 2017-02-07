@@ -33,11 +33,19 @@ object WindowFunction {
 }
 
 trait WindowFunction[T] {
+
   def apply(context: WindowFunction.Context[T]): Array[Window]
+
+  def isNonMerging: Boolean
+}
+
+abstract class NonMergingWindowFunction[T] extends WindowFunction[T] {
+
+  override def isNonMerging: Boolean = true
 }
 
 case class SlidingWindowFunction[T](size: Duration, step: Duration)
-  extends WindowFunction[T] {
+  extends NonMergingWindowFunction[T] {
 
   def this(size: Duration) = {
     this(size, size)
@@ -64,9 +72,19 @@ case class SlidingWindowFunction[T](size: Duration, step: Duration)
   }
 }
 
-case class CountWindowFunction[T](size: Int) extends WindowFunction[T] {
+case class CountWindowFunction[T](size: Int) extends NonMergingWindowFunction[T] {
 
   override def apply(context: WindowFunction.Context[T]): Array[Window] = {
     Array(Window.ofEpochMilli(0, size))
   }
+}
+
+case class SessionWindowFunction[T](gap: Duration) extends WindowFunction[T] {
+
+  override def apply(context: WindowFunction.Context[T]): Array[Window] = {
+    Array(Window(context.timestamp, context.timestamp.plus(gap)))
+  }
+
+  override def isNonMerging: Boolean = false
+
 }

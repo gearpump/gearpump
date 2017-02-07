@@ -39,6 +39,22 @@ object Window {
  */
 case class Window(startTime: Instant, endTime: Instant) extends Comparable[Window] {
 
+  /**
+   * Returns whether this window intersects the given window.
+   */
+  def intersects(other: Window): Boolean = {
+    startTime.isBefore(other.endTime) && endTime.isAfter(other.startTime)
+  }
+
+  /**
+   * Returns the minimal window that includes both this window and
+   * the given window.
+   */
+  def span(other: Window): Window = {
+    Window(Instant.ofEpochMilli(Math.min(startTime.toEpochMilli, other.startTime.toEpochMilli)),
+      Instant.ofEpochMilli(Math.max(endTime.toEpochMilli, other.endTime.toEpochMilli)))
+  }
+
   override def compareTo(o: Window): Int = {
     val ret = startTime.compareTo(o.startTime)
     if (ret != 0) {
@@ -52,14 +68,16 @@ case class Window(startTime: Instant, endTime: Instant) extends Comparable[Windo
 case class WindowAndGroup[GROUP](window: Window, group: GROUP)
   extends Comparable[WindowAndGroup[GROUP]] {
 
+  def intersects(other: WindowAndGroup[GROUP]): Boolean = {
+    window.intersects(other.window) && group.equals(other.group)
+  }
+
   override def compareTo(o: WindowAndGroup[GROUP]): Int = {
     val ret = window.compareTo(o.window)
     if (ret != 0) {
       ret
-    } else if (group.equals(o.group)) {
-      0
     } else {
-      -1
+      group.hashCode() - o.group.hashCode()
     }
   }
 }

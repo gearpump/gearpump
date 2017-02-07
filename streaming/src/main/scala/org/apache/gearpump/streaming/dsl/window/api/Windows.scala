@@ -21,9 +21,11 @@ import java.time.Duration
 
 /**
  *
- * @param windowFn
- * @param trigger
- * @param accumulationMode
+ * Defines how to apply window functions.
+ *
+ * @param windowFn how to divide windows
+ * @param trigger when to trigger window result
+ * @param accumulationMode whether to accumulate results across windows
  */
 case class Windows[T](
     windowFn: WindowFunction[T],
@@ -54,6 +56,7 @@ object FixedWindows {
 
   /**
    * Defines a FixedWindow.
+   *
    * @param size window size
    * @return a Window definition
    */
@@ -62,16 +65,30 @@ object FixedWindows {
   }
 }
 
-object SlidingWindow {
+object SlidingWindows {
 
   /**
-   * Defines a SlidingWindow
+   * Defines a SlidingWindow.
+   *
    * @param size window size
    * @param step window step to slide forward
    * @return a Window definition
    */
   def apply[T](size: Duration, step: Duration): Windows[T] = {
     Windows(SlidingWindowFunction(size, step))
+  }
+}
+
+object SessionWindows {
+
+  /**
+   * Defines a SessionWindow.
+   *
+   * @param gap session gap
+   * @return a Window definition
+   */
+  def apply[T](gap: Duration): Windows[T] = {
+    Windows(SessionWindowFunction(gap))
   }
 }
 

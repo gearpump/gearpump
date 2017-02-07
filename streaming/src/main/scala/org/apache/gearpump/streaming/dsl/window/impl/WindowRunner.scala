@@ -20,6 +20,7 @@ package org.apache.gearpump.streaming.dsl.window.impl
 import java.time.Instant
 
 import akka.actor.ActorSystem
+import com.gs.collections.api.block.predicate.Predicate
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import com.gs.collections.api.block.procedure.Procedure
@@ -33,6 +34,7 @@ import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
+
 trait WindowRunner {
 
   def process(message: Message): Unit
@@ -43,8 +45,6 @@ trait WindowRunner {
 object DefaultWindowRunner {
 
   private val LOG: Logger = LogUtil.getLogger(classOf[DefaultWindowRunner[_, _, _]])
-
-  case class InputsAndFn[IN, OUT](inputs: FastList[IN], fn: FunctionRunner[IN, OUT])
 }
 
 class DefaultWindowRunner[IN, GROUP, OUT](
@@ -52,22 +52,46 @@ class DefaultWindowRunner[IN, GROUP, OUT](
     groupBy: GroupAlsoByWindow[IN, GROUP])(implicit system: ActorSystem)
   extends WindowRunner {
 
+  private val windowFn = groupBy.window.windowFn
   private val groupedInputs = new TreeSortedMap[WindowAndGroup[GROUP], FastList[IN]]
   private val groupedFnRunners = new UnifiedMap[GROUP, FunctionRunner[IN, OUT]]
 
   override def process(message: Message): Unit = {
+    val input = message.msg.asInstanceOf[IN]
     val wgs = groupBy.groupBy(message)
     wgs.foreach { wg =>
-      if (!groupedInputs.containsKey(wg)) {
-        val inputs = new FastList[IN](1)
-        groupedInputs.put(wg, inputs)
+      if (windowFn.isNonMerging) {
+        if (!groupedInputs.containsKey(wg)) {
+          val inputs = new FastList[IN](1)
+          groupedInputs.put(wg, inputs)
+        }
+        groupedInputs.get(wg).add(input)
+      } else {
+        merge(wg, input)
       }
-      groupedInputs.get(wg).add(message.msg.asInstanceOf[IN])
+
       if (!groupedFnRunners.containsKey(wg.group)) {
         val fn = userConfig.getValue[FunctionRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR).get
         fn.setup()
         groupedFnRunners.put(wg.group, fn)
       }
+    }
+
+    def merge(wg: WindowAndGroup[GROUP], input: IN): Unit = {
+      val intersected = groupedInputs.keySet.select(new Predicate[WindowAndGroup[GROUP]] {
+        override def accept(each: WindowAndGroup[GROUP]): Boolean = {
+          wg.intersects(each)
+        }
+      })
+      var mergedWin = wg.window
+      val mergedInputs = FastList.newListWith(input)
+      intersected.forEach(new Procedure[WindowAndGroup[GROUP]] {
+        override def value(each: WindowAndGroup[GROUP]): Unit = {
+          mergedWin = mergedWin.span(each.window)
+          mergedInputs.addAll(groupedInputs.remove(each))
+        }
+      })
+      groupedInputs.put(WindowAndGroup(mergedWin, wg.group), mergedInputs)
     }
 
   }
