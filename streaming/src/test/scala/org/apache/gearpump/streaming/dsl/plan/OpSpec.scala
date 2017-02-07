@@ -27,7 +27,7 @@ import org.apache.gearpump.streaming.Processor.DefaultProcessor
 import org.apache.gearpump.streaming.dsl.plan.OpSpec.{AnySink, AnySource, AnyTask}
 import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapper, FunctionRunner}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import org.apache.gearpump.streaming.dsl.window.api.GroupByFn
+import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.source.DataSource
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
@@ -169,8 +169,8 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
   "GroupByOp" should {
 
     "chain ChainableOp" in {
-      val groupByFn = mock[GroupByFn[Any, Any]]
-      val groupByOp = GroupByOp[Any, Any](groupByFn)
+      val groupBy = mock[GroupAlsoByWindow[Any, Any]]
+      val groupByOp = GroupByOp[Any, Any](groupBy)
       val fn = mock[FunctionRunner[Any, Any]]
       val chainableOp = mock[ChainableOp[Any, Any]]
       when(chainableOp.fn).thenReturn(fn)
@@ -186,11 +186,11 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
     }
 
     "delegate to groupByFn on getProcessor" in {
-      val groupByFn = mock[GroupByFn[Any, Any]]
-      val groupByOp = GroupByOp[Any, Any](groupByFn)
+      val groupBy = mock[GroupAlsoByWindow[Any, Any]]
+      val groupByOp = GroupByOp[Any, Any](groupBy)
 
       groupByOp.getProcessor
-      verify(groupByFn).getProcessor(anyInt, anyString, any[UserConfig])(any[ActorSystem])
+      verify(groupBy).getProcessor(anyInt, anyString, any[UserConfig])(any[ActorSystem])
     }
   }
 

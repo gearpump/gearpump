@@ -25,7 +25,7 @@ import org.apache.gearpump.streaming.Processor.DefaultProcessor
 import org.apache.gearpump.streaming.dsl.plan.functions.{AndThen, FunctionRunner}
 import org.apache.gearpump.streaming.{Constants, Processor}
 import org.apache.gearpump.streaming.dsl.task.TransformTask
-import org.apache.gearpump.streaming.dsl.window.api.GroupByFn
+import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
 import org.apache.gearpump.streaming.sink.{DataSink, DataSinkProcessor}
 import org.apache.gearpump.streaming.source.{DataSource, DataSourceTask}
 import org.apache.gearpump.streaming.task.Task
@@ -149,7 +149,7 @@ case class ChainableOp[IN, OUT](
  * This represents a Processor with window aggregation
  */
 case class GroupByOp[IN, GROUP](
-    groupByFn: GroupByFn[IN, GROUP],
+    groupBy: GroupAlsoByWindow[IN, GROUP],
     parallelism: Int = 1,
     description: String = "groupBy",
     override val userConfig: UserConfig = UserConfig.empty)
@@ -158,7 +158,7 @@ case class GroupByOp[IN, GROUP](
   override def chain(other: Op)(implicit system: ActorSystem): Op = {
     other match {
       case op: ChainableOp[_, _] =>
-        GroupByOp(groupByFn, parallelism, description,
+        GroupByOp(groupBy, parallelism, description,
           userConfig.withValue(Constants.GEARPUMP_STREAMING_OPERATOR, op.fn))
       case _ =>
         throw new OpChainException(this, other)
@@ -166,7 +166,7 @@ case class GroupByOp[IN, GROUP](
   }
 
   override def getProcessor(implicit system: ActorSystem): Processor[_ <: Task] = {
-    groupByFn.getProcessor(parallelism, description, userConfig)
+    groupBy.getProcessor(parallelism, description, userConfig)
   }
 }
 

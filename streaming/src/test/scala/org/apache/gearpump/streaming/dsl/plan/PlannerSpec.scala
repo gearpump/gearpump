@@ -29,7 +29,8 @@ import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.streaming.dsl.plan.PlannerSpec._
 import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapper, Reducer}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import org.apache.gearpump.streaming.dsl.window.api.GroupByFn
+import org.apache.gearpump.streaming.dsl.window.api.CountWindows
+import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.source.DataSource
 import org.apache.gearpump.streaming.{MockUtil, Processor}
@@ -57,7 +58,8 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
   "Planner" should "chain operations" in {
     val graph = Graph.empty[Op, OpEdge]
     val sourceOp = DataSourceOp(new AnySource)
-    val groupByOp = GroupByOp(new AnyGroupByFn)
+    val groupBy = GroupAlsoByWindow((any: Any) => any, CountWindows.apply[Any](1))
+    val groupByOp = GroupByOp(groupBy)
     val flatMapOp = ChainableOp[Any, Any](anyFlatMapper)
     val reduceOp = ChainableOp[Any, Any](anyReducer)
     val processorOp = new ProcessorOp[AnyTask]
@@ -93,7 +95,6 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
 
 object PlannerSpec {
 
-  private val anyParallelism = 1
   private val anyFlatMapper = new FlatMapper[Any, Any](
     FlatMapFunction(Option(_)), "flatMap")
   private val anyReducer = new Reducer[Any](
@@ -119,17 +120,5 @@ object PlannerSpec {
     override def write(message: Message): Unit = {}
 
     override def close(): Unit = {}
-  }
-
-  class AnyGroupByFn extends GroupByFn[Any, Any] {
-
-    override def groupBy(message: Message): Any = message.msg
-
-    override def getProcessor(
-        parallelism: Int,
-        description: String,
-        userConfig: UserConfig)(implicit system: ActorSystem): Processor[_ <: Task] = {
-      Processor[AnyTask](anyParallelism, description)
-    }
   }
 }

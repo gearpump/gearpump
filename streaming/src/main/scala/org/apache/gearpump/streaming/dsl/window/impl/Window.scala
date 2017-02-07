@@ -64,10 +64,9 @@ case class WindowAndGroup[GROUP](window: Window, group: GROUP)
   }
 }
 
-case class GroupAlsoByWindow[T, GROUP](groupByFn: T => GROUP, window: Windows[T])
-  extends GroupByFn[T, List[WindowAndGroup[GROUP]]] {
+case class GroupAlsoByWindow[T, GROUP](groupByFn: T => GROUP, window: Windows[T]) {
 
-  override def groupBy(message: Message): List[WindowAndGroup[GROUP]] = {
+  def groupBy(message: Message): List[WindowAndGroup[GROUP]] = {
     val ele = message.msg.asInstanceOf[T]
     val group = groupByFn(ele)
     val windows = window.windowFn(new WindowFunction.Context[T] {
@@ -77,7 +76,7 @@ case class GroupAlsoByWindow[T, GROUP](groupByFn: T => GROUP, window: Windows[T]
     windows.map(WindowAndGroup(_, group)).toList
   }
 
-  override def getProcessor(parallelism: Int, description: String,
+  def getProcessor(parallelism: Int, description: String,
       userConfig: UserConfig)(implicit system: ActorSystem): Processor[_ <: Task] = {
     val config = userConfig.withValue(GEARPUMP_STREAMING_GROUPBY_FUNCTION, this)
     window.trigger match {

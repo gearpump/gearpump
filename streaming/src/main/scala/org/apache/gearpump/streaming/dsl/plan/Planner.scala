@@ -40,8 +40,8 @@ class Planner {
       edge match {
         case Shuffle =>
           node2 match {
-            case groupBy: GroupByOp[_, _] =>
-              new GroupByPartitioner(groupBy.groupByFn)
+            case op: GroupByOp[_, _] =>
+              new GroupByPartitioner(op.groupBy.groupByFn)
             case _ => new HashPartitioner
           }
         case Direct =>

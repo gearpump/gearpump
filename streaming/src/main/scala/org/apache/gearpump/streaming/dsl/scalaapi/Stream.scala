@@ -25,7 +25,7 @@ import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.plan._
 import org.apache.gearpump.streaming.dsl.plan.functions._
 import org.apache.gearpump.streaming.dsl.window.api._
-import org.apache.gearpump.streaming.dsl.window.impl.{GroupAlsoByWindow, WindowAndGroup}
+import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
@@ -210,8 +210,8 @@ class WindowStream[T](graph: Graph[Op, OpEdge], edge: Option[OpEdge], thisNode: 
 
   def groupBy[GROUP](fn: T => GROUP, parallelism: Int = 1,
       description: String = "groupBy"): Stream[T] = {
-    val groupBy: GroupByFn[T, List[WindowAndGroup[GROUP]]] = GroupAlsoByWindow(fn, window)
-    val groupOp = GroupByOp[T, List[WindowAndGroup[GROUP]]](groupBy, parallelism,
+    val groupBy = GroupAlsoByWindow(fn, window)
+    val groupOp = GroupByOp[T, GROUP](groupBy, parallelism,
       s"$winDesc.$description")
     graph.addVertex(groupOp)
     graph.addEdge(thisNode, edge.getOrElse(Shuffle), groupOp)

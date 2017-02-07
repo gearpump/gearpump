@@ -18,13 +18,9 @@
 
 package org.apache.gearpump.streaming.dsl.partitioner
 
-import java.time.Duration
-
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitionerSpec.People
-import org.apache.gearpump.streaming.dsl.window.api.{FixedWindows, GroupByFn}
-import org.apache.gearpump.streaming.dsl.window.impl.{GroupAlsoByWindow, WindowAndGroup}
 
 class GroupByPartitionerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 
@@ -34,15 +30,10 @@ class GroupByPartitionerSpec extends FlatSpec with Matchers with BeforeAndAfterA
     val michelle = People("Michelle", "female")
 
     val partitionNum = 10
-    val groupByFn: GroupByFn[People, List[WindowAndGroup[String]]] =
-      GroupAlsoByWindow[People, String](_.gender,
-        FixedWindows.apply[People](Duration.ofMillis(5)))
-    val groupBy = new GroupByPartitioner[People, List[WindowAndGroup[String]]](groupByFn)
+
+    val groupBy = new GroupByPartitioner[People, String](_.gender)
     groupBy.getPartition(Message(mark, 1L), partitionNum) shouldBe
       groupBy.getPartition(Message(tom, 2L), partitionNum)
-
-    groupBy.getPartition(Message(mark, 1L), partitionNum) should not be
-      groupBy.getPartition(Message(tom, 6L), partitionNum)
 
     groupBy.getPartition(Message(mark, 2L), partitionNum) should not be
       groupBy.getPartition(Message(michelle, 3L), partitionNum)

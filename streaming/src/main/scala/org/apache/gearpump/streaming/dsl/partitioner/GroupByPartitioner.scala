@@ -20,7 +20,6 @@ package org.apache.gearpump.streaming.dsl.partitioner
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.streaming.partitioner.UnicastPartitioner
-import org.apache.gearpump.streaming.dsl.window.api.GroupByFn
 
 /**
  * Partition messages by applying group by function first.
@@ -39,10 +38,10 @@ import org.apache.gearpump.streaming.dsl.window.api.GroupByFn
  * @param fn First apply message with groupBy function, then pick the hashCode of the output
  *   to do the partitioning. You must define hashCode() for output type of groupBy function.
  */
-class GroupByPartitioner[T, Group](fn: GroupByFn[T, Group])
-  extends UnicastPartitioner {
+class GroupByPartitioner[T, GROUP](fn: T => GROUP) extends UnicastPartitioner {
+
   override def getPartition(message: Message, partitionNum: Int, currentPartitionId: Int): Int = {
-    val hashCode = fn.groupBy(message).hashCode()
+    val hashCode = fn(message.msg.asInstanceOf[T]).hashCode()
     (hashCode & Integer.MAX_VALUE) % partitionNum
   }
 }
