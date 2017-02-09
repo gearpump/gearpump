@@ -64,7 +64,7 @@ class SourceBridgeTask(taskContext : TaskContext, userConf : UserConfig)
       LOG.error("the stream has error", ex)
     case AkkaStreamMessage(msg) =>
       LOG.info("we have received message from akka stream source: " + msg)
-      taskContext.output(Message(msg, System.currentTimeMillis()))
+      taskContext.output(Message(msg, Instant.now()))
     case Complete(description) =>
       LOG.info("the stream is completed: " + description)
     case msg =>

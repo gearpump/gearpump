@@ -18,6 +18,8 @@
 
 package org.apache.gearpump.streaming.kafka.lib.source
 
+import java.time.Instant
+
 import com.twitter.bijection.Injection
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
@@ -29,14 +31,12 @@ class DefaultKafkaMessageDecoderSpec extends PropSpec with PropertyChecks with M
     forAll(Gen.chooseNum[Int](0, 100), Gen.alphaStr) { (k: Int, v: String) =>
       val kbytes = Injection[Int, Array[Byte]](k)
       val vbytes = Injection[String, Array[Byte]](v)
-      val timestamp = System.currentTimeMillis()
       val msgAndWmk = decoder.fromBytes(kbytes, vbytes)
       val message = msgAndWmk.message
       val watermark = msgAndWmk.watermark
       message.msg shouldBe vbytes
       // processing time as message timestamp and watermark
-      message.timestamp shouldBe watermark.toEpochMilli
-      message.timestamp should be >= timestamp
+      message.timestamp shouldBe watermark
     }
   }
 }

@@ -128,7 +128,7 @@ class DefaultWindowRunner[IN, GROUP, OUT](
     }
 
     def emitResult(result: OUT, time: Instant): Unit = {
-      taskContext.output(Message(result, time.toEpochMilli))
+      taskContext.output(Message(result, time))
     }
   }
 }

@@ -27,7 +27,7 @@ class DefaultKafkaMessageDecoder extends KafkaMessageDecoder {
 
   override def fromBytes(key: Array[Byte], value: Array[Byte]): MessageAndWatermark = {
     val time = Instant.now()
-    MessageAndWatermark(Message(value, time.toEpochMilli), time)
+    MessageAndWatermark(Message(value, time), time)
   }
 
 }

@@ -79,7 +79,7 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
   }
 
   final override def onNext(message: Message): Unit = {
-    checkpointManager.update(message.timestamp)
+    checkpointManager.update(message.timeInMillis)
       .foreach(state.setNextCheckpointTime)
     processMessage(state, message)
   }

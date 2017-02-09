@@ -79,7 +79,7 @@ public class WordCount {
 
     @Override
     public Message read() {
-      return Message.apply(str, Instant.now().toEpochMilli());
+      return Message.apply(str, Instant.now());
     }
 
     @Override

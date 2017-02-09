@@ -56,7 +56,7 @@ trait ExpressTransport {
           msg match {
             case message: Message =>
               val bytes = serializerPool.get().serialize(message.msg)
-              serializedMessage = SerializedMessage(message.timestamp, bytes)
+              serializedMessage = SerializedMessage(message.timeInMillis, bytes)
             case _ => serializedMessage = msg
           }
         }

@@ -39,7 +39,7 @@ class DelayInitialTask[T](context: TaskContext, userConf : UserConfig)
 
   override def onStart(startTime: Instant): Unit = {
     context.scheduleOnce(delayInitial)(
-      self ! Message(DelayInitialTime, System.currentTimeMillis())
+      self ! Message(DelayInitialTime, Instant.now())
     )
   }
   override def onNext(msg : Message) : Unit = {

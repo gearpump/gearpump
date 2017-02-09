@@ -217,7 +217,7 @@ object GearpumpStormComponent {
     }
 
     override def next(message: Message): Unit = {
-      val timestamp = message.timestamp
+      val timestamp = message.timestamp.toEpochMilli
       collector.setTimestamp(timestamp)
       bolt.execute(message.msg.asInstanceOf[GearpumpTuple].toTuple(generalTopologyContext,
         timestamp))

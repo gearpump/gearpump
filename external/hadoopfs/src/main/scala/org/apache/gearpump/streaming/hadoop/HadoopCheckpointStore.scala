@@ -18,10 +18,11 @@
 
 package org.apache.gearpump.streaming.hadoop
 
+import java.time.Instant
+
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.slf4j.Logger
-
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.streaming.hadoop.lib.rotation.Rotation
 import org.apache.gearpump.streaming.hadoop.lib.{HadoopCheckpointStoreReader, HadoopCheckpointStoreWriter}
@@ -82,7 +83,7 @@ class HadoopCheckpointStore(
 
     curWriter.foreach { w =>
       val offset = w.write(timestamp, checkpoint)
-      rotation.mark(timestamp, offset)
+      rotation.mark(Instant.ofEpochMilli(timestamp), offset)
     }
 
     if (rotation.shouldRotate) {

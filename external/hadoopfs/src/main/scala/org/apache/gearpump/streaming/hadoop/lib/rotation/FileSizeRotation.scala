@@ -18,13 +18,13 @@
 
 package org.apache.gearpump.streaming.hadoop.lib.rotation
 
-import org.apache.gearpump.TimeStamp
+import java.time.Instant
 
 case class FileSizeRotation(maxBytes: Long) extends Rotation {
 
   private var bytesWritten = 0L
 
-  override def mark(timestamp: TimeStamp, offset: Long): Unit = {
+  override def mark(timestamp: Instant, offset: Long): Unit = {
     bytesWritten = offset
   }
 

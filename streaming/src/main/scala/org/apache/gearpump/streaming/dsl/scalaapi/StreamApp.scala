@@ -97,7 +97,7 @@ class CollectionDataSource[T](seq: Seq[T]) extends DataSource {
 
   override def read(): Message = {
     if (iterator.hasNext) {
-      Message(iterator.next(), Instant.now().toEpochMilli)
+      Message(iterator.next(), Instant.now())
     } else {
       null
     }

@@ -37,7 +37,7 @@ class CountProcessor(taskContext: TaskContext, conf: UserConfig)
   }
 
   override def processMessage(state: PersistentState[Int], message: Message): Unit = {
-    state.update(message.timestamp, 1)
+    state.update(message.timestamp.toEpochMilli, 1)
     state.get.foreach(s => taskContext.output(Message(serializer.serialize(s), message.timestamp)))
   }
 }

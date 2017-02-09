@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.cluster.client
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import org.apache.gearpump.cluster.ClientToMaster.{RegisterAppResultListener, ResolveAppId, ShutdownApplication}

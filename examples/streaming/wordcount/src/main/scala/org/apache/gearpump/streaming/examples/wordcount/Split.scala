@@ -43,10 +43,10 @@ class Split extends DataSource {
 
     if (item < result.size - 1) {
       item += 1
-      Message(result(item), System.currentTimeMillis())
+      Message(result(item), Instant.now())
     } else {
       item = 0
-      Message(result(item), System.currentTimeMillis())
+      Message(result(item), Instant.now())
     }
 
   }

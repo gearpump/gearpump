@@ -49,6 +49,6 @@ class WindowAverageProcessor(taskContext: TaskContext, conf: UserConfig)
   override def processMessage(state: PersistentState[AveragedValue],
       message: Message): Unit = {
     val value = AveragedValue(message.msg.asInstanceOf[String].toLong)
-    state.update(message.timestamp, value)
+    state.update(message.timestamp.toEpochMilli, value)
   }
 }

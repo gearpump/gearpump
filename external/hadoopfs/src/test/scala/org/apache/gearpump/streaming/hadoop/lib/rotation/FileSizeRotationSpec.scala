@@ -18,10 +18,11 @@
 
 package org.apache.gearpump.streaming.hadoop.lib.rotation
 
+import java.time.Instant
+
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-
 import org.apache.gearpump.TimeStamp
 
 class FileSizeRotationSpec extends PropSpec with PropertyChecks with Matchers {
@@ -33,9 +34,9 @@ class FileSizeRotationSpec extends PropSpec with PropertyChecks with Matchers {
     forAll(timestampGen, fileSizeGen) { (timestamp: TimeStamp, fileSize: Long) =>
       val rotation = new FileSizeRotation(fileSize)
       rotation.shouldRotate shouldBe false
-      rotation.mark(timestamp, rotation.maxBytes / 2)
+      rotation.mark(Instant.ofEpochMilli(timestamp), rotation.maxBytes / 2)
       rotation.shouldRotate shouldBe false
-      rotation.mark(timestamp, rotation.maxBytes)
+      rotation.mark(Instant.ofEpochMilli(timestamp), rotation.maxBytes)
       rotation.shouldRotate shouldBe true
       rotation.rotate
       rotation.shouldRotate shouldBe false

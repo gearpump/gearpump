@@ -40,7 +40,7 @@ class TickSourceTask[T](context: TaskContext, userConf : UserConfig)
 
   override def onStart(startTime: Instant): Unit = {
     context.schedule(initialDelay, interval)(
-      self ! Message(tick, System.currentTimeMillis())
+      self ! Message(tick, Instant.now())
     )
   }
 

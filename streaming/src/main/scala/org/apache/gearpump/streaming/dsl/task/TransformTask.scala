@@ -43,10 +43,10 @@ class TransformTask[IN, OUT](operator: Option[FunctionRunner[IN, OUT]],
     operator match {
       case Some(op) =>
         op.process(msg.msg.asInstanceOf[IN]).foreach { msg =>
-          taskContext.output(new Message(msg, time))
+          taskContext.output(Message(msg, time))
         }
       case None =>
-        taskContext.output(new Message(msg.msg, time))
+        taskContext.output(Message(msg.msg, time))
     }
   }
 

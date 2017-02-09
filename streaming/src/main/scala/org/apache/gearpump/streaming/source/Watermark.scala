@@ -25,5 +25,5 @@ import org.apache.gearpump.Message
  * message used by source task to report source watermark.
  */
 case class Watermark(instant: Instant) {
-  def toMessage: Message = Message("watermark", instant.toEpochMilli)
+  def toMessage: Message = Message("watermark", instant)
 }

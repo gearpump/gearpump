@@ -18,10 +18,10 @@
 
 package org.apache.gearpump.streaming.hadoop.lib.rotation
 
-import org.apache.gearpump.TimeStamp
+import java.time.Instant
 
 trait Rotation extends Serializable {
-  def mark(timestamp: TimeStamp, offset: Long): Unit
+  def mark(timestamp: Instant, offset: Long): Unit
   def shouldRotate: Boolean
   def rotate(): Unit
 }

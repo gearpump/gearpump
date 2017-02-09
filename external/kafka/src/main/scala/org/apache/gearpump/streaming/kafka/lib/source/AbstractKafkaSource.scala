@@ -130,8 +130,9 @@ abstract class AbstractKafkaSource(
     msg
   }
 
-  private def checkpointOffsets(tp: TopicAndPartition, time: TimeStamp, offset: Long): Unit = {
-    checkpointStores.get(tp).foreach(_.persist(time, Injection[Long, Array[Byte]](offset)))
+  private def checkpointOffsets(tp: TopicAndPartition, time: Instant, offset: Long): Unit = {
+    checkpointStores.get(tp).foreach(_.persist(time.toEpochMilli,
+      Injection[Long, Array[Byte]](offset)))
   }
 
   private def maybeSetupCheckpointStores(tps: Array[TopicAndPartition]): Unit = {

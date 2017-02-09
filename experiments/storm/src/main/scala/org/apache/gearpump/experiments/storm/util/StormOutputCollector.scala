@@ -18,16 +18,16 @@
 
 package org.apache.gearpump.experiments.storm.util
 
+import java.time.Instant
 import java.util.{ArrayList => JArrayList, Iterator => JIterator, List => JList, Map => JMap}
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import backtype.storm.generated.{GlobalStreamId, Grouping, JavaObject}
 import backtype.storm.grouping.CustomStreamGrouping
 import backtype.storm.task.TopologyContext
 import backtype.storm.tuple.Fields
 import backtype.storm.utils.Utils
 import org.slf4j.Logger
-
 import org.apache.gearpump._
 import org.apache.gearpump.experiments.storm.topology.GearpumpTuple
 import org.apache.gearpump.experiments.storm.util.StormUtil._
@@ -182,7 +182,7 @@ class StormOutputCollector(
     if (targets.containsKey(streamId)) {
       val (targetPartitions, targetStormTaskIds) = getTargetPartitionsFn(streamId, values)
       val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
-      taskContext.output(Message(tuple, timestamp))
+      taskContext.output(Message(tuple, Instant.ofEpochMilli(timestamp)))
       targetStormTaskIds
     } else {
       EMPTY_LIST
@@ -206,7 +206,7 @@ class StormOutputCollector(
       val partition = stormTaskIdToGearpump(id).index
       val targetPartitions = Map(target -> Array(partition))
       val tuple = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
-      taskContext.output(Message(tuple, timestamp))
+      taskContext.output(Message(tuple, Instant.ofEpochMilli(timestamp)))
     }
   }
 

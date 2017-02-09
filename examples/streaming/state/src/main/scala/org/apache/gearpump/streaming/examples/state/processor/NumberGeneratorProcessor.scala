@@ -36,7 +36,7 @@ class NumberGeneratorProcessor(taskContext: TaskContext, conf: UserConfig)
   }
 
   override def onNext(msg: Message): Unit = {
-    output(Message(num + "", num))
+    output(Message(num + "", Instant.ofEpochMilli(num)))
     num += 1
 
     import scala.concurrent.duration._

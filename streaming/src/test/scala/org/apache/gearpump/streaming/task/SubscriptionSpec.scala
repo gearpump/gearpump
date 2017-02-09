@@ -18,12 +18,12 @@
 
 package org.apache.gearpump.streaming.task
 
+import java.time.Instant
 import java.util.Random
 
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
@@ -66,13 +66,13 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 
   it should "send message and handle ack correctly" in {
     val (subscription, transport) = prepare
-    val msg1 = new Message("1", timestamp = 70)
+    val msg1 = new Message("1", timestamp = Instant.ofEpochMilli(70))
     subscription.sendMessage(msg1)
 
     verify(transport, times(1)).transport(msg1, TaskId(1, 1))
     assert(subscription.minClock == 70)
 
-    val msg2 = new Message("0", timestamp = 50)
+    val msg2 = new Message("0", timestamp = Instant.ofEpochMilli(50))
     subscription.sendMessage(msg2)
     verify(transport, times(1)).transport(msg2, TaskId(1, 0))
 
@@ -120,7 +120,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 
   it should "report minClock as Long.MaxValue when there is no pending message" in {
     val (subscription, transport) = prepare
-    val msg1 = new Message("1", timestamp = 70)
+    val msg1 = new Message("1", timestamp = Instant.ofEpochMilli(70))
     subscription.sendMessage(msg1)
     assert(subscription.minClock == 70)
     subscription.receiveAck(Ack(TaskId(1, 1), 1, 1, session))

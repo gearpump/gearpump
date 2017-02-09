@@ -40,7 +40,7 @@ class StatefulMapConcatTask[IN, OUT](context: TaskContext, userConf : UserConfig
     val iterator = out.iterator
     while(iterator.hasNext) {
       val nextValue = iterator.next
-      context.output(Message(nextValue, System.currentTimeMillis()))
+      context.output(Message(nextValue, Instant.now()))
     }
   }
 }

@@ -52,12 +52,12 @@ object WindowedWordCount extends AkkaApp with ArgumentsParser {
   private class TimedDataSource extends DataSource {
 
     private var data = List(
-      Message("foo", 1L),
-      Message("bar", 2L),
-      Message("foo", 3L),
-      Message("foo", 5L),
-      Message("bar", 7L),
-      Message("bar", 8L)
+      Message("foo", Instant.ofEpochMilli(1L)),
+      Message("bar", Instant.ofEpochMilli(2L)),
+      Message("foo", Instant.ofEpochMilli(3L)),
+      Message("foo", Instant.ofEpochMilli(5L)),
+      Message("bar", Instant.ofEpochMilli(7L)),
+      Message("bar", Instant.ofEpochMilli(8L))
     )
 
     private var watermark: Instant = Instant.ofEpochMilli(0)
@@ -66,7 +66,7 @@ object WindowedWordCount extends AkkaApp with ArgumentsParser {
       if (data.nonEmpty) {
         val msg = data.head
         data = data.tail
-        watermark = Instant.ofEpochMilli(msg.timestamp)
+        watermark = msg.timestamp
         msg
       } else {
         null

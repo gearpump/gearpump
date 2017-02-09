@@ -103,13 +103,14 @@ class Subscription(
 
     var count = 0
     // Only sends message whose timestamp matches the lifeTime
-    if (partition != Partitioner.UNKNOWN_PARTITION_ID && life.contains(msg.timestamp)) {
+    if (partition != Partitioner.UNKNOWN_PARTITION_ID && life.contains(msg.timeInMillis)) {
 
       val targetTask = TaskId(processorId, partition)
       transport.transport(msg, targetTask)
 
-      this.minClockValue(partition) = Math.min(this.minClockValue(partition), msg.timestamp)
-      this.candidateMinClock(partition) = Math.min(this.candidateMinClock(partition), msg.timestamp)
+      this.minClockValue(partition) = Math.min(this.minClockValue(partition), msg.timeInMillis)
+      this.candidateMinClock(partition) =
+        Math.min(this.candidateMinClock(partition), msg.timeInMillis)
 
       incrementMessageCount(partition, 1)
 

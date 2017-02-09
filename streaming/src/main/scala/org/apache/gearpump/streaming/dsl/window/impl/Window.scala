@@ -89,7 +89,7 @@ case class GroupAlsoByWindow[T, GROUP](groupByFn: T => GROUP, window: Windows[T]
     val group = groupByFn(ele)
     val windows = window.windowFn(new WindowFunction.Context[T] {
       override def element: T = ele
-      override def timestamp: Instant = Instant.ofEpochMilli(message.timestamp)
+      override def timestamp: Instant = message.timestamp
     })
     windows.map(WindowAndGroup(_, group)).toList
   }

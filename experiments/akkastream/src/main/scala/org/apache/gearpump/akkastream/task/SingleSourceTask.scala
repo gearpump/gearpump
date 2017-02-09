@@ -18,15 +18,9 @@
 
 package org.apache.gearpump.akkastream.task
 
-import java.time.Instant
-import java.util.Date
-import java.util.concurrent.TimeUnit
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.TaskContext
-
-import scala.concurrent.duration.FiniteDuration
 
 class SingleSourceTask[T](context: TaskContext, userConf : UserConfig)
   extends GraphTask(context, userConf) {

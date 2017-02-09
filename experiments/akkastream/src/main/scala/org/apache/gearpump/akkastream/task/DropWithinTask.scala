@@ -38,7 +38,7 @@ class DropWithinTask[T](context: TaskContext, userConf : UserConfig)
 
   override def onStart(startTime: Instant): Unit = {
     context.scheduleOnce(timeout)(
-      self ! Message(DropWithinTimeout, System.currentTimeMillis())
+      self ! Message(DropWithinTimeout, Instant.now())
     )
   }
 
