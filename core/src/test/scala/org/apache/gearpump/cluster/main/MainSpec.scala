@@ -168,22 +168,5 @@ class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with Maste
       local.destroy()
     }
   }
-
-  "Gear" should "support app|info|kill|shell|replay" in {
-
-    val commands = Array("app", "info", "kill", "shell", "replay")
-
-    assert(Try(Gear.main(Array.empty)).isSuccess, "print help, no throw")
-
-    for (command <- commands) {
-      assert(Try(Gear.main(Array("-noexist"))).isFailure,
-        "pass unknown option, throw, command: " + command)
-    }
-
-    assert(Try(Gear.main(Array("unknownCommand"))).isFailure, "unknown command, throw ")
-
-    val tryThis = Try(Gear.main(Array("unknownCommand", "-noexist")))
-    assert(tryThis.isFailure, "unknown command, throw")
-  }
 }
 

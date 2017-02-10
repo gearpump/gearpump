@@ -25,8 +25,6 @@ import org.slf4j.Logger
 /** Tool to query master info */
 object Info extends AkkaApp with ArgumentsParser {
 
-  private val LOG: Logger = LogUtil.getLogger(getClass)
-
   override val options: Array[(String, CLIOption[Any])] = Array(
     // For document purpose only, OPTION_CONFIG option is not used here.
     // OPTION_CONFIG is parsed by parent shell command "Gear" transparently.

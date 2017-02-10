@@ -25,8 +25,6 @@ import org.slf4j.Logger
 /** Tool to kill an App */
 object Kill extends AkkaApp with ArgumentsParser {
 
-  private val LOG: Logger = LogUtil.getLogger(getClass)
-
   override val options: Array[(String, CLIOption[Any])] = Array(
     "appid" -> CLIOption("<application id>", required = true),
     // For document purpose only, OPTION_CONFIG option is not used here.
@@ -41,7 +39,6 @@ object Kill extends AkkaApp with ArgumentsParser {
 
     if (null != config) {
       val client = ClientContext(akkaConf)
-      LOG.info("Client ")
       client.shutdown(config.getInt("appid"))
       client.close()
     }

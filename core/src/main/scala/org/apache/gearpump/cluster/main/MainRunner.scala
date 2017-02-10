@@ -23,7 +23,6 @@ import org.slf4j.Logger
 
 /** Tool to run any main class by providing a jar */
 object MainRunner extends AkkaApp with ArgumentsParser {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     // For document purpose only, OPTION_CONFIG option is not used here.

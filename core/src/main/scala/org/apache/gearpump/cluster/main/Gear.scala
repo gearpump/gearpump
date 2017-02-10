@@ -17,19 +17,18 @@
  */
 package org.apache.gearpump.cluster.main
 
+import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.util.LogUtil.ProcessType
 import org.apache.gearpump.util.{Constants, LogUtil}
-import org.slf4j.Logger
 
 object Gear {
 
   val OPTION_CONFIG = "conf"
 
-  private val LOG: Logger = LogUtil.getLogger(getClass)
-
   val commands = Map("app" -> AppSubmitter, "kill" -> Kill,
     "info" -> Info, "replay" -> Replay, "main" -> MainRunner)
 
-  def usage(): Unit = {
+  def printUsage(): Unit = {
     val keys = commands.keys.toList.sorted
     // scalastyle:off println
     Console.err.println("Usage: " + "<" + keys.mkString("|") + ">")
@@ -37,10 +36,13 @@ object Gear {
   }
 
   private def executeCommand(command: String, commandArgs: Array[String]) = {
-    commands.get(command).map(_.main(commandArgs))
-    if (!commands.contains(command)) {
-      val allArgs = (command +: commandArgs.toList).toArray
-      MainRunner.main(allArgs)
+    commands.get(command) match {
+      case Some(runner) =>
+        val akkaConfig = ClusterConfig.default()
+        LogUtil.loadConfiguration(akkaConfig, ProcessType.CLIENT)
+        runner.main(akkaConfig, commandArgs)
+      case None =>
+        printUsage()
     }
   }
 
@@ -52,7 +54,7 @@ object Gear {
     }
 
     if (args.length == 0) {
-      usage()
+      printUsage()
     } else {
       val command = args(0)
       val commandArgs = args.drop(1)

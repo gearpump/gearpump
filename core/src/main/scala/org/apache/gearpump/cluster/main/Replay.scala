@@ -24,8 +24,6 @@ import org.slf4j.Logger
 // Internal tool to restart an application
 object Replay extends AkkaApp with ArgumentsParser {
 
-  private val LOG: Logger = LogUtil.getLogger(getClass)
-
   override val options: Array[(String, CLIOption[Any])] = Array(
     "appid" -> CLIOption("<application id>", required = true),
     // For document purpose only, OPTION_CONFIG option is not used here.

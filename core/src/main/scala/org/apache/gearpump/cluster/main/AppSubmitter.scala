@@ -22,11 +22,9 @@ import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 
 import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
-import org.slf4j.Logger
 
 /** Tool to submit an application jar to cluster */
 object AppSubmitter extends AkkaApp with ArgumentsParser {
-  val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val ignoreUnknownArgument = true
 

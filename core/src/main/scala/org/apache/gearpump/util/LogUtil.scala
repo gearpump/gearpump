@@ -30,7 +30,7 @@ import org.slf4j.{Logger, LoggerFactory}
 object LogUtil {
   object ProcessType extends Enumeration {
     type ProcessType = Value
-    val MASTER, WORKER, LOCAL, APPLICATION, UI = Value
+    val MASTER, WORKER, LOCAL, APPLICATION, UI, CLIENT = Value
   }
 
   def getLogger[T](
