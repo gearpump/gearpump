@@ -44,7 +44,7 @@ class RunningApplication(val appId: Int, master: ActorRef, timeout: Timeout) {
   }
 
   /**
-   * This funtion will block until the application finished or failed.
+   * This function will block until the application finished or failed.
    * If failed, an exception will be thrown out
    */
   def waitUntilFinish(): Unit = {

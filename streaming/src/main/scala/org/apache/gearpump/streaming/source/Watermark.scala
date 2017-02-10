@@ -27,3 +27,9 @@ import org.apache.gearpump.Message
 case class Watermark(instant: Instant) {
   def toMessage: Message = Message("watermark", instant)
 }
+
+object Watermark {
+
+  // maximum time won't overflow when converted to milli-seconds
+  val MAX = Instant.ofEpochMilli(Long.MaxValue)
+}

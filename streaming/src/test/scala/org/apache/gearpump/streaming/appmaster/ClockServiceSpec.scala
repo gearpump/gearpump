@@ -41,6 +41,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
   val task1 = ProcessorDescription(id = 0, taskClass = classOf[TaskActor].getName, parallelism = 1)
   val task2 = ProcessorDescription(id = 1, taskClass = classOf[TaskActor].getName, parallelism = 1)
   val dag = DAG(Graph(task1 ~ hash ~> task2))
+  private val appMaster = TestProbe().ref
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -51,7 +52,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val store = new Store()
       val startClock = 100L
       store.put(ClockService.START_CLOCK, startClock)
-      val clockService = system.actorOf(Props(new ClockService(dag, store)))
+      val clockService = system.actorOf(Props(new ClockService(dag, appMaster, store)))
       clockService ! GetLatestMinClock
       expectMsg(LatestMinClock(startClock))
 
@@ -77,7 +78,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val store = new Store()
       val startClock = 100L
       store.put(ClockService.START_CLOCK, startClock)
-      val clockService = system.actorOf(Props(new ClockService(dag, store)))
+      val clockService = system.actorOf(Props(new ClockService(dag, appMaster, store)))
       val task = TestProbe()
       clockService.tell(UpdateClock(TaskId(0, 0), 200), task.ref)
 
@@ -116,7 +117,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val store = new Store()
       val startClock = 100L
       store.put(ClockService.START_CLOCK, startClock)
-      val clockService = system.actorOf(Props(new ClockService(dag, store)))
+      val clockService = system.actorOf(Props(new ClockService(dag, appMaster, store)))
       clockService ! UpdateClock(TaskId(0, 0), 200L)
       clockService ! UpdateClock(TaskId(1, 0), 200L)
       expectMsgType[UpstreamMinClock]

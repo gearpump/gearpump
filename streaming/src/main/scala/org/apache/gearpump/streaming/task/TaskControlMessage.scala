@@ -62,6 +62,8 @@ case object GetStartClock
 
 case class StartClock(clock: TimeStamp)
 
+case object EndingClock
+
 /** Probe the latency between two upstream to downstream tasks. */
 case class LatencyProbe(timestamp: Long)
 

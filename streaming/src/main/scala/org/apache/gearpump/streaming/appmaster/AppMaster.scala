@@ -128,7 +128,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       ActorPathUtil.executorManagerActorName)
 
   for (dag <- getDAG) {
-    clockService = Some(context.actorOf(Props(new ClockService(dag, store))))
+    clockService = Some(context.actorOf(Props(new ClockService(dag, self, store))))
     val jarScheduler = new JarScheduler(appId, app.name, systemConfig, context)
 
     taskManager = Some(context.actorOf(Props(new TaskManager(appContext.appId, dagManager,
@@ -296,6 +296,9 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
         System.currentTimeMillis(), null)
     case AppMasterActivated(id) =>
       LOG.info(s"AppMaster for app$id is activated")
+    case EndingClock =>
+      masterProxy ! ApplicationStatusChanged(appId, ApplicationStatus.SUCCEEDED,
+        System.currentTimeMillis(), null)
   }
 
   /** Error handling */

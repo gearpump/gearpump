@@ -39,7 +39,8 @@ object WordCount extends AkkaApp with ArgumentsParser {
       // (word, count1), (word, count2) => (word, count1 + count2)
       groupByKey().sum.log
 
-    val appId = context.submit(app)
+    val application = context.submit(app)
+    application.waitUntilFinish()
     context.close()
   }
 }

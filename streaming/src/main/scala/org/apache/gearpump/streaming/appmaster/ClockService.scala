@@ -18,11 +18,12 @@
 
 package org.apache.gearpump.streaming.appmaster
 
+import java.time.Instant
 import java.util
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{Actor, Cancellable, Stash}
+import akka.actor.{Actor, ActorRef, Cancellable, Stash}
 import com.google.common.primitives.Longs
 import org.apache.gearpump.TimeStamp
 import org.apache.gearpump.cluster.ClientToMaster.GetStallingTasks
@@ -30,6 +31,7 @@ import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.streaming.appmaster.ClockService.HealthChecker.ClockValue
 import org.apache.gearpump.streaming.appmaster.ClockService._
+import org.apache.gearpump.streaming.source.Watermark
 import org.apache.gearpump.streaming.storage.AppDataStore
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.util.LogUtil
@@ -42,7 +44,10 @@ import scala.language.implicitConversions
 /**
  * Maintains a global view of message timestamp in the application
  */
-class ClockService(private var dag: DAG, store: AppDataStore) extends Actor with Stash {
+class ClockService(
+    private var dag: DAG,
+    appMaster: ActorRef,
+    store: AppDataStore) extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   import context.dispatcher
@@ -210,14 +215,19 @@ class ClockService(private var dag: DAG, store: AppDataStore) extends Actor with
     case GetUpstreamMinClock(task) =>
       getUpStreamMinClock(task.processorId).foreach(sender ! UpstreamMinClock(_))
 
-    case update@UpdateClock(task, clock) =>
+    case UpdateClock(task, clock) =>
       val processorClock = clocks.get(task.processorId)
       if (processorClock.isDefined) {
         processorClock.get.updateMinClock(task.index, clock)
       } else {
         LOG.error(s"Cannot updateClock for task $task")
       }
-      getUpStreamMinClock(task.processorId).foreach(sender ! UpstreamMinClock(_))
+      if (Instant.ofEpochMilli(minClock).equals(Watermark.MAX)) {
+        healthCheckScheduler.cancel()
+        appMaster ! EndingClock
+      } else {
+        getUpStreamMinClock(task.processorId).foreach(sender ! UpstreamMinClock(_))
+      }
 
     case GetLatestMinClock =>
       sender ! LatestMinClock(minClock)

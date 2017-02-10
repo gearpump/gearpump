@@ -70,9 +70,8 @@ trait DataSource extends java.io.Serializable {
   def close(): Unit
 
   /**
-   * Returns a watermark
-   * no timestamp earlier than the watermark
-   * should enter the system
+   * Returns a watermark such that no timestamp earlier than the watermark should enter the system
+   * Watermark.MAX mark the end of source data
    */
   def getWatermark: Instant
 }

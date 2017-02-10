@@ -26,7 +26,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.streaming.StreamApplication
 import org.apache.gearpump.streaming.dsl.plan._
-import org.apache.gearpump.streaming.source.DataSource
+import org.apache.gearpump.streaming.source.{DataSource, Watermark}
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.Graph
 
@@ -105,5 +105,11 @@ class CollectionDataSource[T](seq: Seq[T]) extends DataSource {
 
   override def close(): Unit = {}
 
-  override def getWatermark: Instant = Instant.now()
+  override def getWatermark: Instant = {
+    if (iterator.hasNext) {
+      Instant.now()
+    } else {
+      Watermark.MAX
+    }
+  }
 }

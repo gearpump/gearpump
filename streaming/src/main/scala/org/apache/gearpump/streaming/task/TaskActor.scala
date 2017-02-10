@@ -247,6 +247,7 @@ class TaskActor(
         updateUpstreamMinClock(instant.toEpochMilli)
         minClockReported = false
       }
+
       receiveMessage(watermark.toMessage, sender)
 
     case upstream@UpstreamMinClock(upstreamClock) =>
