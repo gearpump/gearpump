@@ -9,11 +9,11 @@ The name Gearpump is a reference to the engineering term "gear pump", which is a
 
 We model streaming within the Akka actor hierarchy.
 
-![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/docs/img/actor_hierarchy.png)
+![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/contents/img/actor_hierarchy.png)
 
 Per initial benchmarks we are able to process near 18 million messages/second (100 bytes per message) with a 8ms latency on a 4-node cluster.
 
-![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/docs/img/dashboard.png)
+![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/contents/img/dashboard.png)
 
 For steps to reproduce the performance test, please check [Performance benchmark](http://gearpump.apache.org/releases/latest/performance-report.html).
 
