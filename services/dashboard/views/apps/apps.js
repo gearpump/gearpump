@@ -109,7 +109,7 @@ angular.module('dashboard')
               },
               config: {href: app.configLink, target: '_blank', text: 'Config', class: 'btn-xs'},
               kill: {
-                text: 'Kill', class: 'btn-xs', disabled: app.isKilled,
+                text: 'Kill', class: 'btn-xs', disabled: app.isDead,
                 click: function () {
                   $dialogs.confirm('Are you sure to kill this application?', function () {
                     app.terminate();
