@@ -147,11 +147,10 @@ class TaskActor(
     subscriptions.forall(_._2.allowSendingMoreMessages())
   }
 
-  private def doHandleMessage(): Unit = {
+  private def doHandleMessage(): Int = {
     var done = false
 
     var count = 0
-    val start = System.currentTimeMillis()
 
     while (allowSendingMoreMessages() && !done) {
       val msg = queue.poll()
@@ -171,10 +170,7 @@ class TaskActor(
       }
     }
 
-    receiveThroughput.mark(count)
-    if (count > 0) {
-      processTime.update((System.currentTimeMillis() - start) / count)
-    }
+    count
   }
 
   private def onStartClock(): Unit = {
@@ -296,7 +292,14 @@ class TaskActor(
     messageAfterCheck match {
       case Some(m) =>
         queue.add(m)
-        doHandleMessage()
+        val start = System.currentTimeMillis()
+        val count = doHandleMessage()
+        if (!self.eq(sender)) {
+          receiveThroughput.mark(count)
+        }
+        if (count > 0) {
+          processTime.update((System.currentTimeMillis() - start) / count)
+        }
       case None =>
       // TODO: Indicate the error and avoid the LOG flood
       // LOG.error(s"Task $taskId drop message $msg")
