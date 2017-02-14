@@ -24,13 +24,13 @@ case class CLIOption[+T](
     description: String = "", required: Boolean = false, defaultValue: Option[T] = None)
 
 class ParseResult(optionMap: Map[String, String], remainArguments: Array[String]) {
-  def getInt(key: String): Int = optionMap.get(key).get.toInt
+  def getInt(key: String): Int = optionMap(key).toInt
 
-  def getString(key: String): String = optionMap.get(key).get
+  def getString(key: String): String = optionMap(key)
 
-  def getBoolean(key: String): Boolean = optionMap.get(key).get.toBoolean
+  def getBoolean(key: String): Boolean = optionMap(key).toBoolean
 
-  def exists(key: String): Boolean = !(optionMap.getOrElse(key, "").isEmpty)
+  def exists(key: String): Boolean = !optionMap.getOrElse(key, "").isEmpty
 
   def remainArgs: Array[String] = this.remainArguments
 }
@@ -47,15 +47,13 @@ trait ArgumentsParser {
   // scalastyle:off println
   def help(): Unit = {
     Console.println(s"\nHelp: $description")
-    var usage = List.empty[String]
-    options.map(kv => if (kv._2.required) {
-      usage = usage :+ s"-${kv._1} (required:${kv._2.required})${kv._2.description}"
+    val usage = options.map(kv => if (kv._2.required) {
+      s"-${kv._1} (required:${kv._2.required})${kv._2.description}"
     } else {
-      usage = usage :+ s"-${kv._1} (required:${kv._2.required}, " +
+      s"-${kv._1} (required:${kv._2.required}, " +
         s"default:${kv._2.defaultValue.getOrElse("")})${kv._2.description}"
-    })
-    usage :+= remainArgs.map(k => s"<$k>").mkString(" ")
-    usage.foreach(Console.println(_))
+    }) ++ remainArgs.map(k => s"<$k>").mkString(" ")
+    usage.foreach(Console.println)
   }
   // scalastyle:on println
 
@@ -72,14 +70,16 @@ trait ArgumentsParser {
 object ArgumentsParser {
 
   case class Syntax(
-      val options: Array[(String, CLIOption[Any])], val remainArgs: Array[String],
-      val ignoreUnknownArgument: Boolean)
+      options: Array[(String, CLIOption[Any])],
+      remainArgs: Array[String],
+      ignoreUnknownArgument: Boolean)
 
   def parse(syntax: Syntax, args: Array[String]): ParseResult = {
     import syntax.{ignoreUnknownArgument, options, remainArgs}
     var config = Map.empty[String, String]
     var remain = Array.empty[String]
 
+    @annotation.tailrec
     def doParse(argument: List[String]): Unit = {
       argument match {
         case Nil => Unit // true if everything processed successfully
@@ -107,9 +107,6 @@ object ArgumentsParser {
           doParse(rest)
 
         case value :: rest =>
-          // scalastyle:off println
-          Console.err.println(s"Warning: get unknown argument $value, maybe it is a main class")
-          // scalastyle:on println
           remain ++= value :: rest
           doParse(Nil)
       }
@@ -123,10 +120,9 @@ object ArgumentsParser {
       }
     }
 
-    options.foreach { pair =>
-      val (key, value) = pair
+    options.foreach { case (key, _) =>
       if (config.get(key).isEmpty) {
-        throw new Exception(s"Missing option ${key}...")
+        throw new Exception(s"Missing option $key...")
       }
     }
 

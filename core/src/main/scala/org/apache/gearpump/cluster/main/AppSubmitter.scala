@@ -23,6 +23,8 @@ import java.util.jar.JarFile
 
 import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 
+import scala.util.{Failure, Success, Try}
+
 /** Tool to submit an application jar to cluster */
 object AppSubmitter extends AkkaApp with ArgumentsParser {
 
@@ -86,18 +88,25 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
     }
   }
 
-  private def parseMain(jar: File, remainArgs: Array[String], classLoader: ClassLoader)
-    : (String, Array[String]) = {
-    val mainInManifest = Option(new JarFile(jar).getManifest.getMainAttributes.
-      getValue("Main-Class")).getOrElse("")
-
-    if (remainArgs.length > 0) {
-      classLoader.loadClass(remainArgs(0))
-      (remainArgs(0), remainArgs.drop(1))
-    } else if (mainInManifest.nonEmpty) {
-      (mainInManifest, remainArgs)
+  private def parseMain(jar: File, remainArgs: Array[String],
+      classLoader: ClassLoader): (String, Array[String]) = {
+    if (remainArgs.nonEmpty && Try(classLoader.loadClass(remainArgs.head)).isSuccess) {
+      (remainArgs.head, remainArgs.tail)
     } else {
-      throw new Exception("No main class specified")
+      val mainInManifest =
+        new JarFile(jar).getManifest.getMainAttributes.getValue("Main-Class")
+      Try(classLoader.loadClass(mainInManifest)) match {
+        case Success(_) =>
+          // scalastyle:off println
+          Console.println(
+            s"""Can't load main class ${remainArgs.head} in arguments;
+              |Loading $mainInManifest in manifest""".stripMargin)
+          // scalastyle:on println
+          (mainInManifest, remainArgs)
+        case Failure(_) =>
+          throw new IllegalArgumentException(
+            s"Can't load main class ${remainArgs.head} in arguments or $mainInManifest in manifest")
+      }
     }
   }
 }
