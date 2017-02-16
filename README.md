@@ -102,6 +102,7 @@ Before submitting a PR, you should always run style check first:
 * [Tomasz Targonski](https://github.com/TomaszT)
 * [Sun Kewei](https://github.com/skw1992)
 * [Gong Yu](https://github.com/pangolulu)
+* [Karol Brejna](https://github.com/karol-brejna-i)
 
 ## Contacts
 
