@@ -1,5 +1,4 @@
 language:
-- java
 - scala
 sudo: false
 jdk:
