@@ -20,10 +20,8 @@ package org.apache.gearpump.streaming
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-
 import akka.actor.ActorSystem
-
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.{MAX_TIME_MILLIS, MIN_TIME_MILLIS, TimeStamp}
 import org.apache.gearpump.cluster._
 import org.apache.gearpump.streaming.partitioner.{HashPartitioner, Partitioner, PartitionerDescription, PartitionerObject}
 import org.apache.gearpump.streaming.appmaster.AppMaster
@@ -115,7 +113,7 @@ case class LifeTime(birth: TimeStamp, death: TimeStamp) {
 }
 
 object LifeTime {
-  val Immortal = LifeTime(0L, Long.MaxValue)
+  val Immortal = LifeTime(MIN_TIME_MILLIS, MAX_TIME_MILLIS)
 }
 
 /**

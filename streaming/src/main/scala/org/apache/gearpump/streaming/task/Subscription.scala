@@ -26,7 +26,7 @@ import org.apache.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import org.apache.gearpump.streaming.LifeTime
 import org.apache.gearpump.streaming.task.Subscription._
 import org.apache.gearpump.util.LogUtil
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.{MAX_TIME_MILLIS, Message, MIN_TIME_MILLIS, TimeStamp}
 
 /**
  * Manges the output and message clock for single downstream processor
@@ -58,8 +58,8 @@ class Subscription(
   private val pendingMessageCount: Array[Short] = new Array[Short](parallelism)
   private val candidateMinClockSince: Array[Short] = new Array[Short](parallelism)
 
-  private val minClockValue: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
-  private val candidateMinClock: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
+  private val minClockValue: Array[TimeStamp] = Array.fill(parallelism)(MAX_TIME_MILLIS)
+  private val candidateMinClock: Array[TimeStamp] = Array.fill(parallelism)(MAX_TIME_MILLIS)
 
   private var maxPendingCount: Short = 0
 
@@ -133,7 +133,7 @@ class Subscription(
     }
   }
 
-  private var lastFlushTime: Long = 0L
+  private var lastFlushTime: Long = MIN_TIME_MILLIS
   private val FLUSH_INTERVAL = 5 * 1000 // ms
   private def needFlush: Boolean = {
     System.currentTimeMillis() - lastFlushTime > FLUSH_INTERVAL &&

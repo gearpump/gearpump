@@ -20,5 +20,10 @@ package org.apache
 
 package object gearpump {
   type TimeStamp = Long
-  val LatestTime = -1
+
+  // maximum time won't overflow when converted to milli-seconds
+  val MAX_TIME_MILLIS: Long = Long.MaxValue
+
+  // minimum time won't overflow when converted to milli-seconds
+  val MIN_TIME_MILLIS: Long = Long.MinValue
 }

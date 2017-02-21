@@ -28,17 +28,17 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import org.apache.gearpump._
+import org.apache.gearpump.{Message, MIN_TIME_MILLIS, TimeStamp}
 import org.apache.gearpump.experiments.storm.topology.GearpumpTuple
 import org.apache.gearpump.streaming.MockUtil
 
 class StormOutputCollectorSpec
   extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
-  val stormTaskId = 0
-  val streamIdGen = Gen.alphaStr
-  val valuesGen = Gen.listOf[String](Gen.alphaStr).map(_.asJava.asInstanceOf[JList[AnyRef]])
-  val timestampGen = Gen.chooseNum[Long](0L, 1000L)
+  private val stormTaskId = 0
+  private val streamIdGen = Gen.alphaStr
+  private val valuesGen = Gen.listOf[String](Gen.alphaStr).map(_.asJava.asInstanceOf[JList[AnyRef]])
+  private val timestampGen = Gen.chooseNum[Long](0L, 1000L)
 
   property("StormOutputCollector emits tuple values into a stream") {
     forAll(timestampGen, streamIdGen, valuesGen) {
@@ -53,7 +53,7 @@ class StormOutputCollectorSpec
           targetStormTaskIds))
         val taskContext = MockUtil.mockTaskContext
         val stormOutputCollector = new StormOutputCollector(stormTaskId, taskToComponent,
-          targets, getTargetPartitionsFn, taskContext, LatestTime)
+          targets, getTargetPartitionsFn, taskContext, MIN_TIME_MILLIS)
 
         when(targets.containsKey(streamId)).thenReturn(false)
         stormOutputCollector.emit(streamId, values) shouldBe StormOutputCollector.EMPTY_LIST
@@ -86,7 +86,7 @@ class StormOutputCollectorSpec
           targetStormTaskIds))
         val taskContext = MockUtil.mockTaskContext
         val stormOutputCollector = new StormOutputCollector(stormTaskId, taskToComponent,
-          targets, getTargetPartitionsFn, taskContext, LatestTime)
+          targets, getTargetPartitionsFn, taskContext, MIN_TIME_MILLIS)
 
         when(targets.containsKey(streamId)).thenReturn(false)
         verify(taskContext, times(0)).output(anyObject[Message])

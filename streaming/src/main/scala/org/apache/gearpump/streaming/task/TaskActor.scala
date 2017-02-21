@@ -33,7 +33,7 @@ import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.ProcessorId
 import org.apache.gearpump.util.{LogUtil, TimeOutScheduler}
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.{MAX_TIME_MILLIS, Message, MIN_TIME_MILLIS, TimeStamp}
 
 /**
  *
@@ -46,8 +46,8 @@ class TaskActor(
     val task: TaskWrapper,
     inputSerializerPool: SerializationFramework)
     extends Actor with ExpressTransport with TimeOutScheduler {
-  var upstreamMinClock: TimeStamp = 0L
-  private var _minClock: TimeStamp = 0L
+  private var upstreamMinClock: TimeStamp = MIN_TIME_MILLIS
+  private var _minClock: TimeStamp = MIN_TIME_MILLIS
   private var minClockReported: Boolean = true
 
   def serializerPool: SerializationFramework = inputSerializerPool
@@ -246,7 +246,7 @@ class TaskActor(
 
       receiveMessage(watermark.toMessage, sender)
 
-    case upstream@UpstreamMinClock(upstreamClock) =>
+    case UpstreamMinClock(upstreamClock) =>
       updateUpstreamMinClock(upstreamClock)
 
     case ChangeTask(_, dagVersion, life, subscribers) =>
@@ -316,7 +316,7 @@ class TaskActor(
       task.onWatermarkProgress(Instant.ofEpochMilli(this.upstreamMinClock))
     }
 
-    val subMinClock = subscriptions.foldLeft(Long.MaxValue) { (min, sub) =>
+    val subMinClock = subscriptions.foldLeft(MAX_TIME_MILLIS) { (min, sub) =>
       val subMin = sub._2.minClock
       // A subscription is holding back the _minClock;
       // we send AckRequest to its tasks to push _minClock forward

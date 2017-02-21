@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorRef, Cancellable, Stash}
 import com.google.common.primitives.Longs
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.{MIN_TIME_MILLIS, TimeStamp}
 import org.apache.gearpump.cluster.ClientToMaster.GetStallingTasks
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
 import org.apache.gearpump.streaming._
@@ -53,8 +53,8 @@ class ClockService(
   import context.dispatcher
 
   private val healthChecker = new HealthChecker(stallingThresholdSeconds = 60)
-  private var healthCheckScheduler: Cancellable = null
-  private var snapshotScheduler: Cancellable = null
+  private var healthCheckScheduler: Cancellable = _
+  private var snapshotScheduler: Cancellable = _
 
   override def receive: Receive = null
 
@@ -88,7 +88,7 @@ class ClockService(
   // We use Array instead of List for Performance consideration
   private var processorClocks = Array.empty[ProcessorClock]
 
-  private var checkpointClocks: Map[TaskId, Vector[TimeStamp]] = null
+  private var checkpointClocks: Map[TaskId, Vector[TimeStamp]] = _
 
   private var minCheckpointClock: Option[TimeStamp] = None
 
@@ -337,7 +337,8 @@ object ClockService {
   case object HealthCheck
 
   class ProcessorClock(val processorId: ProcessorId, val life: LifeTime, val parallelism: Int,
-      private var _min: TimeStamp = 0L, private var _taskClocks: Array[TimeStamp] = null) {
+      private var _min: TimeStamp = MIN_TIME_MILLIS,
+      private var _taskClocks: Array[TimeStamp] = null) {
 
     def copy(life: LifeTime): ProcessorClock = {
       new ProcessorClock(processorId, life, parallelism, _min, _taskClocks)
@@ -370,7 +371,7 @@ object ClockService {
   class HealthChecker(stallingThresholdSeconds: Int) {
     private val LOG: Logger = LogUtil.getLogger(getClass)
 
-    private var minClock: ClockValue = null
+    private var minClock: ClockValue = _
     private val stallingThresholdMilliseconds = stallingThresholdSeconds * 1000
     // 60 seconds
     private var stallingTasks = Array.empty[TaskId]

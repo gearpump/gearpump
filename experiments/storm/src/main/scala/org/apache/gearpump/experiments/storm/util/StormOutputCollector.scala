@@ -28,7 +28,7 @@ import backtype.storm.task.TopologyContext
 import backtype.storm.tuple.Fields
 import backtype.storm.utils.Utils
 import org.slf4j.Logger
-import org.apache.gearpump._
+import org.apache.gearpump.{MIN_TIME_MILLIS, Message, TimeStamp}
 import org.apache.gearpump.experiments.storm.topology.GearpumpTuple
 import org.apache.gearpump.experiments.storm.util.StormUtil._
 import org.apache.gearpump.streaming.ProcessorId
@@ -56,7 +56,7 @@ object StormOutputCollector {
         streamGroupers, componentToProcessorId, values)
     }
     new StormOutputCollector(stormTaskId, taskToComponent, targets, getTargetPartitionsFn,
-      taskContext, LatestTime)
+      taskContext, MIN_TIME_MILLIS)
   }
 
   /**
