@@ -60,8 +60,10 @@ class ClockService(
 
   override def preStart(): Unit = {
     LOG.info("Initializing Clock service, get snapshotted StartClock ....")
-    store.get(START_CLOCK).asInstanceOf[Future[TimeStamp]].map { clock =>
-      val startClock = Option(clock).getOrElse(0L)
+    store.get(START_CLOCK).map { clock =>
+      // check for null first since
+      // (null).asInstanceOf[TimeStamp] is zero
+      val startClock = if (clock != null) clock.asInstanceOf[TimeStamp] else MIN_TIME_MILLIS
 
       minCheckpointClock = Some(startClock)
 
