@@ -95,17 +95,18 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
     } else {
       val mainInManifest =
         new JarFile(jar).getManifest.getMainAttributes.getValue("Main-Class")
+      val args = remainArgs.mkString(" ")
       Try(classLoader.loadClass(mainInManifest)) match {
         case Success(_) =>
           // scalastyle:off println
           Console.println(
-            s"""Can't load main class ${remainArgs.head} in arguments;
+            s"""Can't load main class in arguments $args
               |Loading $mainInManifest in manifest""".stripMargin)
           // scalastyle:on println
           (mainInManifest, remainArgs)
         case Failure(_) =>
           throw new IllegalArgumentException(
-            s"Can't load main class ${remainArgs.head} in arguments or $mainInManifest in manifest")
+            s"Can't load main class in arguments $args or $mainInManifest in manifest")
       }
     }
   }
