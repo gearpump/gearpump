@@ -34,8 +34,6 @@ object BuildExamples extends sbt.Build {
     fsio,
     pagerank,
     sol,
-    stockcrawler,
-    transport,
     wordcount,
     wordcountJava,
     example_hbase
@@ -83,20 +81,6 @@ object BuildExamples extends sbt.Build {
     id = "gearpump-examples-complexdag",
     base = file("examples/streaming/complexdag"),
     settings = exampleSettings("org.apache.gearpump.streaming.examples.complexdag.Dag")
-  ).dependsOn(core % "provided", streaming % "test->test; provided")
-
-  lazy val transport = Project(
-    id = "gearpump-examples-transport",
-    base = file("examples/streaming/transport"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.transport.Transport") ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "io.spray" %% "spray-can" % sprayVersion,
-          "io.spray" %% "spray-routing-shapeless2" % sprayVersion,
-          "io.spray" %% "spray-json" % sprayJsonVersion,
-          "com.lihaoyi" %% "upickle" % upickleVersion
-        )
-      )
   ).dependsOn(core % "provided", streaming % "test->test; provided")
 
   lazy val distributedshell = Project(
@@ -153,24 +137,6 @@ object BuildExamples extends sbt.Build {
     settings =
       exampleSettings("org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount")
   ).dependsOn(core % "provided", streaming % "test->test; provided", external_kafka)
-
-  lazy val stockcrawler = Project(
-    id = "gearpump-examples-stockcrawler",
-    base = file("examples/streaming/stockcrawler"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.stock.main.Stock") ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "io.spray" %% "spray-can" % sprayVersion,
-          "io.spray" %% "spray-routing-shapeless2" % sprayVersion,
-          "com.lihaoyi" %% "upickle" % upickleVersion,
-          "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
-          "net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
-          "joda-time" % "joda-time" % "2.7",
-          "org.joda" % "joda-convert" % "1.2",
-          "io.spray" %% "spray-json" % sprayJsonVersion
-        )
-      )
-  ).dependsOn(core % "provided", streaming % "test->test; provided", external_kafka % "test->test")
 
   lazy val examples_state = Project(
     id = "gearpump-examples-state",
