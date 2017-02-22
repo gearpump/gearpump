@@ -18,19 +18,22 @@
 
 package org.apache.gearpump.util
 
-/**
- * When one executor or task fails, Gearpump will try to start. However, if it fails after
- * multiple retries, then we abort.
- *
- * @param totalNrOfRetries The total number of times is allowed to be restarted, negative value
- *                         means no limit, if the limit is exceeded the policy will not allow
- *                         to restart
- */
-class RestartPolicy(totalNrOfRetries: Int) {
-  private var historicalRetries: Int = 0
+import org.scalatest.{FlatSpec, Matchers}
 
-  def allowRestart: Boolean = {
-    historicalRetries += 1
-    totalNrOfRetries < 0 || historicalRetries <= totalNrOfRetries
+import scala.concurrent.duration._
+
+class RestartPolicySpec extends FlatSpec with Matchers {
+
+  "RestartPolicy" should "forbid too many restarts" in {
+    val policy = new RestartPolicy(2)
+    assert(policy.allowRestart)
+    assert(policy.allowRestart)
+    assert(!policy.allowRestart)
+  }
+
+  "RestartPolicy" should "forbid too many restarts in a window duration" in {
+    val policy = new RestartPolicy(-1)
+    assert(policy.allowRestart)
+    assert(policy.allowRestart)
   }
 }

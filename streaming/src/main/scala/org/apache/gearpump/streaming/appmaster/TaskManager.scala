@@ -32,10 +32,9 @@ import org.apache.gearpump.streaming.appmaster.ExecutorManager.{ExecutorStarted,
 import org.apache.gearpump.streaming.appmaster.TaskManager._
 import org.apache.gearpump.streaming.appmaster.TaskRegistry.{Accept, TaskLocation}
 import org.apache.gearpump.streaming.executor.Executor.RestartTasks
-import org.apache.gearpump.streaming.executor.ExecutorRestartPolicy
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.streaming.util.ActorPathUtil
-import org.apache.gearpump.util.{Constants, LogUtil}
+import org.apache.gearpump.util.{Constants, LogUtil, RestartPolicy}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
@@ -76,15 +75,8 @@ private[appmaster] class TaskManager(
 
   private val ids = new SessionIdFactory()
 
-  import org.apache.gearpump.streaming.Constants.GEARPUMP_STREAMING_EXECUTOR_RESTART_TIME_WINDOW
-  // the default 20 seconds is too small for tests
-  // so that executor will be restarted infinitely
-  private val executorRestartPolicy = new ExecutorRestartPolicy(maxNrOfRetries = 5,
-    withinTimeRange = if (systemConfig.hasPath(GEARPUMP_STREAMING_EXECUTOR_RESTART_TIME_WINDOW)) {
-      systemConfig.getInt(GEARPUMP_STREAMING_EXECUTOR_RESTART_TIME_WINDOW).seconds
-    } else {
-      20.seconds
-    })
+  private val appTotalRetries: Int = systemConfig.getInt(Constants.APPLICATION_TOTAL_RETRIES)
+  private val appRestartPolicy = new RestartPolicy(appTotalRetries)
 
   private implicit val timeout = Constants.FUTURE_TIMEOUT
   private implicit val actorSystem = context.system
@@ -142,7 +134,7 @@ private[appmaster] class TaskManager(
         }
       case MessageLoss(executorId, taskId, cause) =>
         if (state.taskRegistry.isTaskRegisteredForExecutor(executorId) &&
-          executorRestartPolicy.allowRestartExecutor(executorId)) {
+          appRestartPolicy.allowRestart) {
           context.become(recovery(recoverState))
         } else {
           val errorMsg = s"Task $taskId fails too many times to recover"
@@ -223,11 +215,11 @@ private[appmaster] class TaskManager(
     LOG.info(s"DynamicDag transit to dag version: ${state.dag.version}...")
 
     val onMessageLoss: Receive = {
-      case executorStopped@ExecutorStopped(executorId) =>
+      case ExecutorStopped(executorId) =>
         context.become(recovery(recoverState))
       case MessageLoss(executorId, taskId, cause) =>
         if (state.taskRegistry.isTaskRegisteredForExecutor(executorId) &&
-          executorRestartPolicy.allowRestartExecutor(executorId)) {
+          appRestartPolicy.allowRestart) {
           context.become(recovery(recoverState))
         } else {
           val errorMsg = s"Task $taskId fails too many times to recover"
@@ -261,7 +253,6 @@ private[appmaster] class TaskManager(
           LOG.info(s"Start tasks on Executor($executorId), tasks: " + tasks)
           val launchTasks = LaunchTasks(tasks, state.dag.version, processorDescription, subscribers)
           executorManager ! UniCast(executorId, launchTasks)
-          tasks.foreach(executorRestartPolicy.addTaskToExecutor(executorId, _))
         case ChangeTasksOnExecutor(executorId, tasks) =>
           LOG.info("change Task on executor: " + executorId + ", tasks: " + tasks)
           val changeTasks = ChangeTasks(tasks, state.dag.version, processorDescription.life,
@@ -321,7 +312,7 @@ private[appmaster] class TaskManager(
 
   def onExecutorError: Receive = {
     case ExecutorStopped(executorId) =>
-      if (executorRestartPolicy.allowRestartExecutor(executorId)) {
+      if (appRestartPolicy.allowRestart) {
         jarScheduler.executorFailed(executorId).foreach { resourceRequestDetail =>
           if (resourceRequestDetail.isDefined) {
             executorManager ! StartExecutors(resourceRequestDetail.get.requests,

@@ -18,13 +18,12 @@
 package org.apache.gearpump.streaming.appmaster
 
 
-import akka.actor.{ActorSystem, ActorRef, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.{TestActorRef, TestProbe}
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
-import org.apache.gearpump.cluster.ClientToMaster.{GetLastFailure, ShutdownApplication}
+import org.apache.gearpump.cluster.ClientToMaster.GetLastFailure
 import org.apache.gearpump.cluster.MasterToAppMaster._
 import org.apache.gearpump.cluster.MasterToClient.LastFailure
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
@@ -37,21 +36,18 @@ import org.apache.gearpump.jarstore.FilePath
 import org.apache.gearpump.streaming.partitioner.HashPartitioner
 import org.apache.gearpump.streaming.AppMasterToExecutor.StopTask
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, UnRegisterTask}
-import org.apache.gearpump.streaming.appmaster.AppMaster.{TaskActorRef, LookupTaskActorRef}
+import org.apache.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
 import org.apache.gearpump.streaming.task.{TaskContext, _}
-import org.apache.gearpump.streaming.{Constants, DAG, Processor, StreamApplication}
+import org.apache.gearpump.streaming.{DAG, Processor, StreamApplication}
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
-import org.apache.gearpump.util.{ActorUtil, Graph}
+import org.apache.gearpump.util.{ActorUtil, Constants, Graph}
 import org.apache.gearpump.util.Graph._
 import org.scalatest._
 
 import scala.concurrent.duration._
 
 class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
-  protected override def config = {
-    ConfigFactory.parseString(s"${Constants.GEARPUMP_STREAMING_EXECUTOR_RESTART_TIME_WINDOW} = 60")
-      .withFallback(TestUtil.DEFAULT_CONFIG)
-  }
+  protected override def config = TestUtil.DEFAULT_CONFIG
 
   var appMaster: ActorRef = null
 

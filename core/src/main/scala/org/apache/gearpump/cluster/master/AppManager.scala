@@ -20,7 +20,7 @@ package org.apache.gearpump.cluster.master
 
 import akka.actor._
 import akka.pattern.ask
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.AppMasterToMaster.{AppDataSaved, SaveAppDataFailed, _}
 import org.apache.gearpump.cluster.AppMasterToWorker._
@@ -49,8 +49,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  private val appMasterMaxRetries: Int = 5
-  private val appMasterRetryTimeRange: Duration = 20.seconds
+  private val appTotalRetries: Int = 5
 
   implicit val timeout = FUTURE_TIMEOUT
   implicit val executionContext = context.dispatcher
@@ -102,8 +101,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
       } else {
         context.actorOf(launcher.props(nextAppId, APPMASTER_DEFAULT_EXECUTOR_ID, app, jar, username,
           context.parent, Some(client)), s"launcher${nextAppId}_${Util.randInt()}")
-        appMasterRestartPolicies += nextAppId ->
-          new RestartPolicy(appMasterMaxRetries, appMasterRetryTimeRange)
+        appMasterRestartPolicies += nextAppId -> new RestartPolicy(appTotalRetries)
 
         val appRuntimeInfo = ApplicationRuntimeInfo(nextAppId, app.name,
           user = username,
