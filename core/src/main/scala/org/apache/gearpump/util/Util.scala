@@ -67,13 +67,8 @@ object Util {
       arguments: Array[String]): RichProcess = {
     val java = System.getProperty("java.home") + "/bin/java"
 
-    val command = List(java) ++
-      // java.lang.VerifyError will be caused without "-noverify"
-      // TODO: investigate the cause and remove this
-      Array("-noverify") ++
-      options ++
-      List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++
-      arguments
+    val command = List(java) ++ options ++
+      List("-cp", classPath.mkString(File.pathSeparator), mainClass) ++ arguments
     LOG.info(s"Starting executor process java $mainClass ${arguments.mkString(" ")} " +
       s"\n ${options.mkString(" ")}")
     val logger = new ProcessLogRedirector()
