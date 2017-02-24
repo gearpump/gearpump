@@ -25,6 +25,8 @@ import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.cluster.client.RunningApplication._
 import org.apache.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -48,8 +50,12 @@ class RunningApplication(val appId: Int, master: ActorRef, timeout: Timeout) {
    * If failed, an exception will be thrown out
    */
   def waitUntilFinish(): Unit = {
+    this.waitUntilFinish(INF_DURATION)
+  }
+
+  def waitUntilFinish(duration: Duration): Unit = {
     val result = ActorUtil.askActor[ApplicationResult](master,
-      RegisterAppResultListener(appId), INF_TIMEOUT)
+      RegisterAppResultListener(appId), new Timeout(duration.getSeconds, TimeUnit.SECONDS))
     result match {
       case failed: ApplicationFailed =>
         throw failed.error
@@ -71,6 +77,6 @@ class RunningApplication(val appId: Int, master: ActorRef, timeout: Timeout) {
 object RunningApplication {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   // This magic number is derived from Akka's configuration, which is the maximum delay
-  private val INF_TIMEOUT = new Timeout(2147482 seconds)
+  private val INF_DURATION = Duration.ofSeconds(2147482)
 }
 
