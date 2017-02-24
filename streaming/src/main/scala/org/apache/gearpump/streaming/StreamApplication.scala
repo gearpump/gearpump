@@ -113,7 +113,8 @@ case class LifeTime(birth: TimeStamp, death: TimeStamp) {
 }
 
 object LifeTime {
-  val Immortal = LifeTime(MIN_TIME_MILLIS, MAX_TIME_MILLIS)
+  // MAX_TIME_MILLIS is Long.MaxValue - 1
+  val Immortal = LifeTime(MIN_TIME_MILLIS, MAX_TIME_MILLIS + 1)
 }
 
 /**

@@ -22,7 +22,7 @@ package object gearpump {
   type TimeStamp = Long
 
   // maximum time won't overflow when converted to milli-seconds
-  val MAX_TIME_MILLIS: Long = Long.MaxValue
+  val MAX_TIME_MILLIS: Long = Long.MaxValue - 1
 
   // minimum time won't overflow when converted to milli-seconds
   val MIN_TIME_MILLIS: Long = Long.MinValue

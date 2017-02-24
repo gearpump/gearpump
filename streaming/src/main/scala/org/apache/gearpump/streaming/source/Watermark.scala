@@ -31,9 +31,7 @@ case class Watermark(instant: Instant) {
 
 object Watermark {
 
-  // maximum time won't overflow when converted to milli-seconds
   val MAX: Instant = Instant.ofEpochMilli(MAX_TIME_MILLIS)
 
-  // minimum time won't overflow when converted to milli-seconds
   val MIN: Instant = Instant.ofEpochMilli(MIN_TIME_MILLIS)
 }
