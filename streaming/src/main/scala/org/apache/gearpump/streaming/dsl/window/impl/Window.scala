@@ -65,33 +65,16 @@ case class Window(startTime: Instant, endTime: Instant) extends Comparable[Windo
   }
 }
 
-case class WindowAndGroup[GROUP](window: Window, group: GROUP)
-  extends Comparable[WindowAndGroup[GROUP]] {
-
-  def intersects(other: WindowAndGroup[GROUP]): Boolean = {
-    window.intersects(other.window) && group.equals(other.group)
-  }
-
-  override def compareTo(o: WindowAndGroup[GROUP]): Int = {
-    val ret = window.compareTo(o.window)
-    if (ret != 0) {
-      ret
-    } else {
-      group.hashCode() - o.group.hashCode()
-    }
-  }
-}
-
 case class GroupAlsoByWindow[T, GROUP](groupByFn: T => GROUP, window: Windows[T]) {
 
-  def groupBy(message: Message): List[WindowAndGroup[GROUP]] = {
+  def groupBy(message: Message): (GROUP, List[Window]) = {
     val ele = message.msg.asInstanceOf[T]
     val group = groupByFn(ele)
     val windows = window.windowFn(new WindowFunction.Context[T] {
       override def element: T = ele
       override def timestamp: Instant = message.timestamp
     })
-    windows.map(WindowAndGroup(_, group)).toList
+    group -> windows.toList
   }
 
   def getProcessor(parallelism: Int, description: String,

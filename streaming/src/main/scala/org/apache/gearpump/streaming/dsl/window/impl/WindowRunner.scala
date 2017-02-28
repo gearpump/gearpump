@@ -23,7 +23,7 @@ import akka.actor.ActorSystem
 import com.gs.collections.api.block.predicate.Predicate
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import com.gs.collections.api.block.procedure.Procedure
+import com.gs.collections.api.block.procedure.{Procedure, Procedure2}
 import com.gs.collections.impl.list.mutable.FastList
 import com.gs.collections.impl.map.mutable.UnifiedMap
 import com.gs.collections.impl.map.sorted.mutable.TreeSortedMap
@@ -53,60 +53,68 @@ class DefaultWindowRunner[IN, GROUP, OUT](
   extends WindowRunner {
 
   private val windowFn = groupBy.window.windowFn
-  private val groupedInputs = new TreeSortedMap[WindowAndGroup[GROUP], FastList[IN]]
+  private val groupedWindowInputs = new UnifiedMap[GROUP, TreeSortedMap[Window, FastList[IN]]]
   private val groupedFnRunners = new UnifiedMap[GROUP, FunctionRunner[IN, OUT]]
 
   override def process(message: Message): Unit = {
     val input = message.msg.asInstanceOf[IN]
-    val wgs = groupBy.groupBy(message)
-    wgs.foreach { wg =>
+    val (group, windows) = groupBy.groupBy(message)
+    if (!groupedWindowInputs.containsKey(group)) {
+      groupedWindowInputs.put(group, new TreeSortedMap[Window, FastList[IN]]())
+    }
+    val windowInputs = groupedWindowInputs.get(group)
+    windows.foreach { win =>
       if (windowFn.isNonMerging) {
-        if (!groupedInputs.containsKey(wg)) {
+        if (!windowInputs.containsKey(win)) {
           val inputs = new FastList[IN](1)
-          groupedInputs.put(wg, inputs)
+          windowInputs.put(win, inputs)
         }
-        groupedInputs.get(wg).add(input)
+        windowInputs.get(win).add(input)
       } else {
-        merge(wg, input)
-      }
-
-      if (!groupedFnRunners.containsKey(wg.group)) {
-        val fn = userConfig.getValue[FunctionRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR).get
-        fn.setup()
-        groupedFnRunners.put(wg.group, fn)
+        merge(windowInputs, win, input)
       }
     }
 
-    def merge(wg: WindowAndGroup[GROUP], input: IN): Unit = {
-      val intersected = groupedInputs.keySet.select(new Predicate[WindowAndGroup[GROUP]] {
-        override def accept(each: WindowAndGroup[GROUP]): Boolean = {
-          wg.intersects(each)
+    if (!groupedFnRunners.containsKey(group)) {
+      val fn = userConfig.getValue[FunctionRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR).get
+      fn.setup()
+      groupedFnRunners.put(group, fn)
+    }
+
+    def merge(windowInputs: TreeSortedMap[Window, FastList[IN]], win: Window, input: IN): Unit = {
+      val intersected = windowInputs.keySet.select(new Predicate[Window] {
+        override def accept(each: Window): Boolean = {
+          win.intersects(each)
         }
       })
-      var mergedWin = wg.window
+      var mergedWin = win
       val mergedInputs = FastList.newListWith(input)
-      intersected.forEach(new Procedure[WindowAndGroup[GROUP]] {
-        override def value(each: WindowAndGroup[GROUP]): Unit = {
-          mergedWin = mergedWin.span(each.window)
-          mergedInputs.addAll(groupedInputs.remove(each))
+      intersected.forEach(new Procedure[Window] {
+        override def value(each: Window): Unit = {
+          mergedWin = mergedWin.span(each)
+          mergedInputs.addAll(windowInputs.remove(each))
         }
       })
-      groupedInputs.put(WindowAndGroup(mergedWin, wg.group), mergedInputs)
+      windowInputs.put(mergedWin, mergedInputs)
     }
 
   }
 
   override def trigger(time: Instant): Unit = {
-    onTrigger()
+    groupedWindowInputs.forEachKeyValue(new Procedure2[GROUP, TreeSortedMap[Window, FastList[IN]]] {
+      override def value(group: GROUP, windowInputs: TreeSortedMap[Window, FastList[IN]]): Unit = {
+        onTrigger(group, windowInputs)
+      }
+    })
 
     @annotation.tailrec
-    def onTrigger(): Unit = {
-      if (groupedInputs.notEmpty()) {
-        val first = groupedInputs.firstKey
-        if (!time.isBefore(first.window.endTime)) {
-          val inputs = groupedInputs.remove(first)
-          if (groupedFnRunners.containsKey(first.group)) {
-            val reduceFn = AndThen(groupedFnRunners.get(first.group),
+    def onTrigger(group: GROUP, windowInputs: TreeSortedMap[Window, FastList[IN]]): Unit = {
+      if (windowInputs.notEmpty()) {
+        val firstWin = windowInputs.firstKey
+        if (!time.isBefore(firstWin.endTime)) {
+          val inputs = windowInputs.remove(firstWin)
+          if (groupedFnRunners.containsKey(group)) {
+            val reduceFn = AndThen(groupedFnRunners.get(group),
               new Emit[OUT](output => emitResult(output, time)))
             inputs.forEach(new Procedure[IN] {
               override def value(t: IN): Unit = {
@@ -119,9 +127,9 @@ class DefaultWindowRunner[IN, GROUP, OUT](
             if (groupBy.window.accumulationMode == Discarding) {
               reduceFn.teardown()
             }
-            onTrigger()
+            onTrigger(group, windowInputs)
           } else {
-            throw new RuntimeException(s"FunctionRunner not found for group ${first.group}")
+            throw new RuntimeException(s"FunctionRunner not found for group $group")
           }
         }
       }
