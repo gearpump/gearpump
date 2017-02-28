@@ -132,7 +132,7 @@ private[appmaster] class TaskManager(
           self ! executorStopped
           context.become(recovery(recoverState))
         }
-      case MessageLoss(executorId, taskId, cause) =>
+      case MessageLoss(executorId, taskId, _, _) =>
         if (state.taskRegistry.isTaskRegisteredForExecutor(executorId) &&
           appRestartPolicy.allowRestart) {
           context.become(recovery(recoverState))
@@ -217,7 +217,7 @@ private[appmaster] class TaskManager(
     val onMessageLoss: Receive = {
       case ExecutorStopped(executorId) =>
         context.become(recovery(recoverState))
-      case MessageLoss(executorId, taskId, cause) =>
+      case MessageLoss(executorId, taskId, cause, _) =>
         if (state.taskRegistry.isTaskRegisteredForExecutor(executorId) &&
           appRestartPolicy.allowRestart) {
           context.become(recovery(recoverState))

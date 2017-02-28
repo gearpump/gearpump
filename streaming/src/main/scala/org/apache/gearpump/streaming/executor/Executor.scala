@@ -124,7 +124,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           s" MessageLoss, so that the system will replay all lost message"
         LOG.error(errorMsg, ex)
         val detailErrorMsg = errorMsg + "\n" + ExceptionUtils.getStackTrace(ex)
-        taskId.foreach(appMaster ! MessageLoss(executorId, _, detailErrorMsg))
+        taskId.foreach(appMaster ! MessageLoss(executorId, _, detailErrorMsg, Some(ex)))
         Resume
     }
 

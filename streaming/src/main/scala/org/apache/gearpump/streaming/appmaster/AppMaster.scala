@@ -82,7 +82,8 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
   private var taskManager: Option[ActorRef] = None
   private var clockService: Option[ActorRef] = None
   private val systemConfig = context.system.settings.config
-  private var lastFailure = LastFailure(0L, null)
+  // TODO: Consolidate failure and exception into one which requires refactoring of MessageLoss
+  private var lastFailure: (LastFailure, Option[Throwable]) = (LastFailure(0L, null), None)
 
   private val appMasterBrief = ExecutorBrief(APPMASTER_DEFAULT_EXECUTOR_ID,
     self.path.toString,
@@ -160,8 +161,8 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       } else {
         LOG.error(s"replay for invalid appId ${replay.appId}")
       }
-    case messageLoss: MessageLoss =>
-      lastFailure = LastFailure(System.currentTimeMillis(), messageLoss.cause)
+    case messageLoss@MessageLoss(_, _, cause, ex) =>
+      lastFailure = LastFailure(System.currentTimeMillis(), cause) -> ex
       taskManager.foreach(_ forward messageLoss)
     case lookupTask: LookupTaskActorRef =>
       taskManager.foreach(_ forward lookupTask)
@@ -259,7 +260,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       dagManager forward replaceDAG
     case GetLastFailure(id) =>
       if (id == appId) {
-        sender ! lastFailure
+        sender ! lastFailure._1
       } else {
         LOG.error(s"GetLastFailure for invalid appId $id")
       }
@@ -306,15 +307,17 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
     case FailedToRecover(errorMsg) =>
       if (context.children.toList.contains(sender())) {
         LOG.error(errorMsg)
-        val failed = ApplicationStatusChanged(appId, ApplicationStatus.FAILED, lastFailure.time,
-          new Exception(lastFailure.error))
+        val (failure, exception) = lastFailure
+        val failed = ApplicationStatusChanged(appId, ApplicationStatus.FAILED, failure.time,
+          exception.getOrElse(new Exception(failure.error)))
         masterProxy ! failed
       }
     case AllocateResourceTimeOut =>
       val errorMsg = s"Failed to allocate resource in time, shutdown application $appId"
       LOG.error(errorMsg)
+      val (failure, exception) = lastFailure
       val failed = ApplicationStatusChanged(appId, ApplicationStatus.FAILED,
-        System.currentTimeMillis(), new Exception(lastFailure.error))
+        System.currentTimeMillis(), exception.getOrElse(new Exception(failure.error)))
       masterProxy ! failed
       context.stop(self)
   }

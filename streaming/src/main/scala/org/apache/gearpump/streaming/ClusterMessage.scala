@@ -77,7 +77,8 @@ object ExecutorToAppMaster {
   case class RegisterTask(taskId: TaskId, executorId: Int, task: HostPort)
   case class UnRegisterTask(taskId: TaskId, executorId: Int)
 
-  case class MessageLoss(executorId: Int, taskId: TaskId, cause: String)
+  case class MessageLoss(executorId: Int, taskId: TaskId,
+      cause: String, ex: Option[Throwable] = None)
 }
 
 object AppMasterToMaster {
