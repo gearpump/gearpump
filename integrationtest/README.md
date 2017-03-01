@@ -3,10 +3,10 @@
 To run the integration test, you need a Linux with Kernel version >= 3.10 and Docker 1.7 (or higher). The test framework will use several Docker images.
 These docker image **NEED** to be prepared **BEFOREHAND** to avoid timeout during testing:
 
- * [The Gearpump Cluster Launcher and Storm Client](https://hub.docker.com/r/stanleyxu2005/gearpump-launcher/)
-   `docker pull stanleyxu2005/gearpump-launcher`
- * [The standalone single node Kafka cluster with Zookeeper](https://hub.docker.com/r/spotify/kafka/)
-   `docker pull spotify/kafka`
+ * [The Gearpump Cluster Launcher and Storm Client](https://hub.docker.com/r/grubykarol/gearpump-launcher/)
+   `docker pull grubykarol/gearpump-launcher`
+ * [The standalone single node Kafka cluster with Zookeeper](https://hub.docker.com/r/grubykarol/kafka/)
+   `docker pull grubykarol/kafka:0.8.2.1`
  * [The Hadoop image](https://hub.docker.com/r/sequenceiq/hadoop-docker/)
    `docker pull sequenceiq/hadoop-docker:2.6.0`
 
@@ -69,15 +69,15 @@ You can launch as many worker containers as you wish, but only one master for th
 export GEARPUMP_HOME=/path/to/gearpump/dist
 
 ## Start Master node
-docker run -d -h master0 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --name master0 stanleyxu2005/gearpump-launcher master -ip master0 -port 3000
+docker run -d -h master0 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --name master0 grubykarol/gearpump-launcher master -ip master0 -port 3000
 
 ## Start Worker0 node
-docker run -d -h worker0 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --link master0 --name worker0 stanleyxu2005/gearpump-launcher worker
+docker run -d -h worker0 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --link master0 --name worker0 grubykarol/gearpump-launcher worker
 
 ## ...
 
 ## Start Worker1 node
-docker run -d -h worker1 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --link master0 --name worker0 stanleyxu2005/gearpump-launcher worker
+docker run -d -h worker1 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --link master0 --name worker0 grubykarol/gearpump-launcher worker
 
 ```
 

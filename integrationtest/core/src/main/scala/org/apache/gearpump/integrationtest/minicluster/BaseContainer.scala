@@ -28,7 +28,7 @@ class BaseContainer(val host: String, command: String,
     masterAddrs: List[(String, Int)],
     tunnelPorts: Set[Int] = Set.empty) {
 
-  private val IMAGE_NAME = "stanleyxu2005/gearpump-launcher"
+  private val IMAGE_NAME = "grubykarol/gearpump-launcher"
   private val DOCKER_IMAGE_GEARPUMP_HOME = "/opt/gearpump"
   private val DOCKER_IMAGE_LOG_HOME = "/var/log/gearpump"
   private val HOST_GEARPUMP_HOME = "pwd".!!.trim + "/output/target/pack"

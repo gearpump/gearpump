@@ -155,9 +155,10 @@ object Docker {
 
   final def getNetworkGateway(container: String): String = {
     trace(container, s"Get gateway of container...") {
-      doExecute(container, "ip route").split("\\s+")(2)
+      Docker.inspect(container, "--format={{.NetworkSettings.Gateway}}")
     }
   }
+
   final def killProcess(container: String, pid: Int, signal: String = "SIGKILL"): Boolean = {
     trace(container, s"Kill process pid: $pid") {
       doExecuteSilently(container, s"kill -$signal $pid")

@@ -53,7 +53,7 @@ object KafkaCluster {
 class KafkaCluster(val advertisedHost: String, zkChroot: String = "") {
 
   private val LOG = Logger.getLogger(getClass)
-  private val KAFKA_DOCKER_IMAGE = "spotify/kafka"
+  private val KAFKA_DOCKER_IMAGE = "grubykarol/kafka:0.8.2.1"
   private val KAFKA_HOST = "kafka0"
   private val KAFKA_HOME = "/opt/kafka_2.11-0.8.2.1/"
   private val ZOOKEEPER_PORT = 2181
