@@ -20,7 +20,7 @@ import sbt.Keys._
 import sbt._
 import BuildGearpump._
 import BuildDashboard.services
-import BuildExperiments.{cgroup, storm, yarn}
+import BuildExperiments.{cgroup, storm, yarn, akkastream}
 import xerial.sbt.Pack._
 
 object Pack extends sbt.Build {
@@ -55,6 +55,10 @@ object Pack extends sbt.Build {
     "${PROG_HOME}/lib/storm/*"
   )
 
+  val akkaStreamsClassPath = daemonClassPath ++ Seq(
+    "${PROG_HOME}/lib/akkastream/*"
+  )
+
   lazy val packProject = Project(
     id = "gearpump-pack",
     base = file(s"$distDirectory"),
@@ -68,7 +72,8 @@ object Pack extends sbt.Build {
           "worker" -> "org.apache.gearpump.cluster.main.Worker",
           "services" -> "org.apache.gearpump.services.main.Services",
           "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client",
-          "storm" -> "org.apache.gearpump.experiments.storm.StormRunner"
+          "storm" -> "org.apache.gearpump.experiments.storm.StormRunner",
+          "akkastream" -> "org.apache.gearpump.akkastream.example.Test"
         ),
         packJvmOpts := Map(
           "gear" -> Seq(
@@ -111,13 +116,20 @@ object Pack extends sbt.Build {
           "storm" -> Seq(
             "-server",
             "-Djava.net.preferIPv4Stack=true",
+            "-Dgearpump.home=${PROG_HOME}"),
+
+          "akkastream" -> Seq(
+            "-server",
+            "-noverify",
+            "-Djava.net.preferIPv4Stack=true",
             "-Dgearpump.home=${PROG_HOME}")
         ),
         packLibDir := Map(
           "lib/yarn" -> new ProjectsToPack(gearpumpHadoop.id, yarn.id).
             exclude(services.id, core.id),
           "lib/services" -> new ProjectsToPack(services.id).exclude(core.id),
-          "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id)
+          "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id),
+          "lib/akkastream" -> new ProjectsToPack(akkastream.id)
         ),
         packExclude := Seq(thisProjectRef.value.project),
 
@@ -144,13 +156,14 @@ object Pack extends sbt.Build {
           "worker" -> applicationClassPath,
           "services" -> serviceClassPath,
           "yarnclient" -> yarnClassPath,
-          "storm" -> stormClassPath
+          "storm" -> stormClassPath,
+          "akkastream" -> akkaStreamsClassPath
         ),
 
         packArchivePrefix := projectName + "-" + scalaBinaryVersion.value,
         packArchiveExcludes := Seq("integrationtest")
 
       )
-  ).dependsOn(core, streaming, services, yarn, storm, cgroup).
+  ).dependsOn(core, streaming, services, yarn, storm, akkastream, cgroup).
     disablePlugins(sbtassembly.AssemblyPlugin)
 }

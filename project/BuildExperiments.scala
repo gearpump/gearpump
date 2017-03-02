@@ -53,14 +53,16 @@ object BuildExperiments extends sbt.Build {
   lazy val akkastream = Project(
     id = "gearpump-experiments-akkastream",
     base = file("experiments/akkastream"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+    settings = commonSettings ++ noPublish ++ 
       Seq(
         libraryDependencies ++= Seq(
-          "org.json4s" %% "json4s-jackson" % "3.2.11"
+          "org.json4s" %% "json4s-jackson" % "3.2.11",
+          "com.typesafe.akka" %% "akka-stream" % akkaVersion
         ),
         mainClass in(Compile, packageBin) := Some("akka.stream.gearpump.example.Test")
       ))
-    .dependsOn(core % "provided", streaming % "test->test; provided")
+    .dependsOn (core % "provided", streaming % "test->test; provided")
+    .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val redis = Project(
     id = "gearpump-experiments-redis",
