@@ -24,6 +24,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
+import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
@@ -32,7 +33,7 @@ import org.scalatest.prop.PropertyChecks
 
 class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
-  property("DataSourceTask.onStart should call DataSource.open") {
+  property("DataSourceTask should setup data source and Transform") {
     forAll(Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) { (startTime: Instant) =>
       val taskContext = MockUtil.mockTaskContext
       implicit val system = MockUtil.system
@@ -40,7 +41,8 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
       val config = UserConfig.empty
         .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
       val operator = mock[FunctionRunner[Any, Any]]
-      val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, Some(operator))
+      val transform = new Transform[Any, Any](taskContext, Some(operator))
+      val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, transform)
 
       sourceTask.onStart(startTime)
 
@@ -49,31 +51,33 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
     }
   }
 
-  property("DataSourceTask.onNext should call DataSource.read") {
+  property("DataSourceTask should read from DataSource and transform inputs") {
     forAll(Gen.alphaStr) { (str: String) =>
       val taskContext = MockUtil.mockTaskContext
       implicit val system = MockUtil.system
       val dataSource = mock[DataSource]
       val config = UserConfig.empty
         .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
-
-      val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, None)
+      val transform = new Transform[Any, Any](taskContext, None)
+      val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, transform)
       val msg = Message(str)
       when(dataSource.read()).thenReturn(msg)
 
       sourceTask.onNext(Message("next"))
-      verify(taskContext).output(msg)
+      sourceTask.onWatermarkProgress(Watermark.MAX)
+      verify(taskContext).output(Message(str, Watermark.MAX))
     }
   }
 
-  property("DataSourceTask.onStop should call DataSource.close") {
+  property("DataSourceTask should teardown DataSource and Transform") {
     val taskContext = MockUtil.mockTaskContext
     implicit val system = MockUtil.system
     val dataSource = mock[DataSource]
     val config = UserConfig.empty
       .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
     val operator = mock[FunctionRunner[Any, Any]]
-    val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, Some(operator))
+    val transform = new Transform[Any, Any](taskContext, Some(operator))
+    val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, transform)
 
     sourceTask.onStop()
 

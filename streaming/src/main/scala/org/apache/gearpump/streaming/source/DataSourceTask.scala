@@ -24,6 +24,7 @@ import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
+import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 /**
@@ -42,49 +43,42 @@ class DataSourceTask[IN, OUT] private[source](
     context: TaskContext,
     conf: UserConfig,
     source: DataSource,
-    operator: Option[FunctionRunner[IN, OUT]])
+    transform: Transform[IN, OUT])
   extends Task(context, conf) {
 
   def this(context: TaskContext, conf: UserConfig) = {
     this(context, conf,
       conf.getValue[DataSource](GEARPUMP_STREAMING_SOURCE)(context.system).get,
-      conf.getValue[FunctionRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system)
+      new Transform[IN, OUT](context,
+        conf.getValue[FunctionRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system))
     )
   }
 
   private val batchSize = conf.getInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE).getOrElse(1000)
 
-  private val processMessage: Message => Unit =
-    operator match {
-      case Some(op) =>
-        (message: Message) => {
-          op.process(message.msg.asInstanceOf[IN]).foreach { m: OUT =>
-            context.output(Message(m, message.timestamp))
-          }
-        }
-      case None =>
-        (message: Message) => context.output(message)
-    }
-
   override def onStart(startTime: Instant): Unit = {
     LOG.info(s"opening data source at $startTime")
     source.open(context, startTime)
-    operator.foreach(_.setup())
+    transform.onStart(startTime)
 
     self ! Watermark(source.getWatermark)
   }
 
   override def onNext(m: Message): Unit = {
     0.until(batchSize).foreach { _ =>
-      Option(source.read()).foreach(processMessage)
+      Option(source.read()).foreach(transform.onNext)
     }
 
     self ! Watermark(source.getWatermark)
   }
 
+  override def onWatermarkProgress(watermark: Instant): Unit = {
+    transform.onWatermarkProgress(watermark)
+  }
+
   override def onStop(): Unit = {
-    operator.foreach(_.teardown())
     LOG.info("closing data source...")
+    transform.onStop()
     source.close()
   }
 

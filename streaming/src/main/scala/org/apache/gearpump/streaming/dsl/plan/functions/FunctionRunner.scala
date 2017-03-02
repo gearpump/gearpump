@@ -20,6 +20,13 @@ package org.apache.gearpump.streaming.dsl.plan.functions
 import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 
+object FunctionRunner {
+  def withEmitFn[IN, OUT](runner: FunctionRunner[IN, OUT],
+      fn: OUT => Unit): FunctionRunner[IN, Unit] = {
+    AndThen(runner, new Emit(fn))
+  }
+}
+
 /**
  * Interface to invoke SerializableFunction methods
  *
@@ -126,3 +133,4 @@ class Emit[T](emit: T => Unit) extends FunctionRunner[T, Unit] {
 
   override def description: String = ""
 }
+

@@ -23,6 +23,8 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
+import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
+import org.apache.gearpump.streaming.source.Watermark
 import org.mockito.Mockito.{verify, when}
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
@@ -31,13 +33,14 @@ import org.scalatest.prop.PropertyChecks
 
 class TransformTaskSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
-  property("TransformTask.onStart should call SingleInputFunction.setup") {
+  property("TransformTask should setup functions") {
     forAll(Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) { (startTime: Instant) =>
       val taskContext = MockUtil.mockTaskContext
       implicit val system = MockUtil.system
       val config = UserConfig.empty
       val operator = mock[FunctionRunner[Any, Any]]
-      val sourceTask = new TransformTask[Any, Any](Some(operator), taskContext, config)
+      val transform = new Transform[Any, Any](taskContext, Some(operator))
+      val sourceTask = new TransformTask[Any, Any](transform, taskContext, config)
 
       sourceTask.onStart(startTime)
 
@@ -45,28 +48,32 @@ class TransformTaskSpec extends PropSpec with PropertyChecks with Matchers with 
     }
   }
 
-  property("TransformTask.onNext should call SingleInputFunction.process") {
+  property("TransformTask should process inputs") {
     forAll(Gen.alphaStr) { (str: String) =>
       val taskContext = MockUtil.mockTaskContext
       implicit val system = MockUtil.system
       val config = UserConfig.empty
       val operator = mock[FunctionRunner[Any, Any]]
-      val task = new TransformTask[Any, Any](Some(operator), taskContext, config)
+      val transform = new Transform[Any, Any](taskContext, Some(operator))
+      val task = new TransformTask[Any, Any](transform, taskContext, config)
       val msg = Message(str)
       when(operator.process(str)).thenReturn(Some(str))
+      when(operator.finish()).thenReturn(None)
 
       task.onNext(msg)
+      task.onWatermarkProgress(Watermark.MAX)
 
-      verify(taskContext).output(msg)
+      verify(taskContext).output(Message(str, Watermark.MAX))
     }
   }
 
-  property("DataSourceTask.onStop should call SingleInputFunction.setup") {
+  property("TransformTask should teardown functions") {
     val taskContext = MockUtil.mockTaskContext
     implicit val system = MockUtil.system
     val config = UserConfig.empty
     val operator = mock[FunctionRunner[Any, Any]]
-    val task = new TransformTask[Any, Any](Some(operator), taskContext, config)
+    val transform = new Transform[Any, Any](taskContext, Some(operator))
+    val task = new TransformTask[Any, Any](transform, taskContext, config)
 
     task.onStop()
 

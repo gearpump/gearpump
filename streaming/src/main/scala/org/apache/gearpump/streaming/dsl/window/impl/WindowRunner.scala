@@ -28,7 +28,7 @@ import com.gs.collections.impl.list.mutable.FastList
 import com.gs.collections.impl.map.mutable.UnifiedMap
 import com.gs.collections.impl.map.sorted.mutable.TreeSortedMap
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.plan.functions.{AndThen, Emit, FunctionRunner}
+import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
 import org.apache.gearpump.streaming.dsl.window.api.Discarding
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.LogUtil
@@ -114,8 +114,8 @@ class DefaultWindowRunner[IN, GROUP, OUT](
         if (!time.isBefore(firstWin.endTime)) {
           val inputs = windowInputs.remove(firstWin)
           if (groupedFnRunners.containsKey(group)) {
-            val reduceFn = AndThen(groupedFnRunners.get(group),
-              new Emit[OUT](output => emitResult(output, time)))
+            val reduceFn = FunctionRunner.withEmitFn(groupedFnRunners.get(group),
+              (output: OUT) => taskContext.output(Message(output, time)))
             inputs.forEach(new Procedure[IN] {
               override def value(t: IN): Unit = {
                 // .toList forces eager evaluation
@@ -133,10 +133,6 @@ class DefaultWindowRunner[IN, GROUP, OUT](
           }
         }
       }
-    }
-
-    def emitResult(result: OUT, time: Instant): Unit = {
-      taskContext.output(Message(result, time))
     }
   }
 }

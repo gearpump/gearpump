@@ -23,11 +23,12 @@ import akka.actor.ActorSystem
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.source.DataSourceTask
+import org.apache.gearpump.streaming.source.{DataSourceTask, Watermark}
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
 import org.apache.gearpump.streaming.dsl.scalaapi.CollectionDataSource
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
+import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
 import org.apache.gearpump.streaming.dsl.task.{CountTriggerTask, TransformTask}
 import org.apache.gearpump.streaming.dsl.window.api.CountWindows
 import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
@@ -255,6 +256,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
         taskContext, conf)
       source.onStart(Instant.EPOCH)
       source.onNext(Message("next"))
+      source.onWatermarkProgress(Watermark.MAX)
       data.foreach { s =>
         verify(taskContext, times(1)).output(MockUtil.argMatch[Message](
           message => message.msg == s))
@@ -268,6 +270,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
         conf.withValue(GEARPUMP_STREAMING_OPERATOR, double))
       another.onStart(Instant.EPOCH)
       another.onNext(Message("next"))
+      another.onWatermarkProgress(Watermark.MAX)
       data.foreach { s =>
         verify(anotherTaskContext, times(2)).output(MockUtil.argMatch[Message](
           message => message.msg == s))
@@ -311,7 +314,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
     }
   }
 
-  "MergeTask" should {
+  "TransformTask" should {
     "accept two stream and apply the attached operator" in {
 
       // Source with transformer
@@ -319,7 +322,8 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       val conf = UserConfig.empty
       val double = new FlatMapper[String, String](FlatMapFunction(
         word => List(word, word)), "double")
-      val task = new TransformTask[String, String](Some(double), taskContext, conf)
+      val transform = new Transform[String, String](taskContext, Some(double))
+      val task = new TransformTask[String, String](transform, taskContext, conf)
       task.onStart(Instant.EPOCH)
 
       val data = "1 2  2  3 3  3".split("\\s+")
@@ -327,6 +331,8 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       data.foreach { input =>
         task.onNext(Message(input))
       }
+
+      task.onWatermarkProgress(Watermark.MAX)
 
       verify(taskContext, times(data.length * 2)).output(anyObject())
     }

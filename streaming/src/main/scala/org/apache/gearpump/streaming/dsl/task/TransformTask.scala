@@ -23,34 +23,74 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
+import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
-class TransformTask[IN, OUT](operator: Option[FunctionRunner[IN, OUT]],
-    taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+object TransformTask {
 
-  def this(taskContext: TaskContext, userConf: UserConfig) = {
-    this(userConf.getValue[FunctionRunner[IN, OUT]](
-      GEARPUMP_STREAMING_OPERATOR)(taskContext.system), taskContext, userConf)
-  }
+  class Transform[IN, OUT](taskContext: TaskContext,
+      operator: Option[FunctionRunner[IN, OUT]],
+      private var buffer: Vector[Message] = Vector.empty[Message]) {
 
-  override def onStart(startTime: Instant): Unit = {
-    operator.foreach(_.setup())
-  }
+    def onStart(startTime: Instant): Unit = {
+      operator.foreach(_.setup())
+    }
 
-  override def onNext(msg: Message): Unit = {
-    val time = msg.timestamp
+    def onNext(msg: Message): Unit = {
+      buffer +:= msg
+    }
 
-    operator match {
-      case Some(op) =>
-        op.process(msg.msg.asInstanceOf[IN]).foreach { msg =>
-          taskContext.output(Message(msg, time))
+    def onStop(): Unit = {
+      operator.foreach(_.teardown())
+    }
+
+    def onWatermarkProgress(watermark: Instant): Unit = {
+      val watermarkTime = watermark.toEpochMilli
+      var nextBuffer = Vector.empty[Message]
+      val processor = operator.map(FunctionRunner.withEmitFn(_,
+        (out: OUT) => taskContext.output(Message(out, watermarkTime))))
+      buffer.foreach { case message@Message(in, time) =>
+        if (time <= watermarkTime) {
+          processor match {
+            case Some(p) =>
+              // .toList forces eager evaluation
+              p.process(in.asInstanceOf[IN]).toList
+            case None =>
+              taskContext.output(Message(in, watermarkTime))
+          }
+        } else {
+          nextBuffer +:= message
         }
-      case None =>
-        taskContext.output(Message(msg.msg, time))
+      }
+      // .toList forces eager evaluation
+      processor.map(_.finish())
+      buffer = nextBuffer
     }
   }
 
+}
+
+class TransformTask[IN, OUT](transform: Transform[IN, OUT],
+    taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+
+  def this(taskContext: TaskContext, userConf: UserConfig) = {
+    this(new Transform(taskContext, userConf.getValue[FunctionRunner[IN, OUT]](
+      GEARPUMP_STREAMING_OPERATOR)(taskContext.system)), taskContext, userConf)
+  }
+
+  override def onStart(startTime: Instant): Unit = {
+    transform.onStart(startTime)
+  }
+
+  override def onNext(msg: Message): Unit = {
+    transform.onNext(msg)
+  }
+
   override def onStop(): Unit = {
-    operator.foreach(_.teardown())
+    transform.onStop()
+  }
+
+  override def onWatermarkProgress(watermark: Instant): Unit = {
+    transform.onWatermarkProgress(watermark)
   }
 }
