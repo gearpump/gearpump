@@ -318,8 +318,12 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
    * http://www.drdobbs.com/database/topological-sorting/184410262
    */
   def topologicalOrderWithCirclesIterator: Iterator[N] = {
-    val topo = getAcyclicCopy().topologicalOrderIterator
-    topo.flatMap(_.sortBy(_indexs(_)).iterator)
+    if (hasCycle()) {
+      val topo = getAcyclicCopy().topologicalOrderIterator
+      topo.flatMap(_.sortBy(_indexs(_)).iterator)
+    } else {
+      topologicalOrderIterator
+    }
   }
 
   private def getAcyclicCopy(): Graph[mutable.MutableList[N], E] = {
