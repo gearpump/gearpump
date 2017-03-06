@@ -15,18 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.dsl.javaapi.functions
+
+package org.apache.gearpump.streaming.dsl.api.functions
 
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.SerializableFunction
 
 /**
- * Transforms one input into zero or more outputs of possibly different types.
- * This Java version of FlatMapFunction returns a java.util.Iterator.
+ * Combines input into an accumulator.
  *
- * @param T Input value type
- * @param R Output value type
+ * @param A type of accumulator
+ * @param T Type of input
  */
-abstract class FlatMapFunction[T, R] extends SerializableFunction {
+abstract class FoldFunction[T, A] extends SerializableFunction {
 
-  def flatMap(t: T): java.util.Iterator[R]
+  def init: A
+
+  def fold(accumulator: A, t: T): A
 }

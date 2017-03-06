@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.dsl.scalaapi
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunction, ReduceFunction}
+import org.apache.gearpump.streaming.dsl.api.functions.{FilterFunction, FoldFunction, MapFunction, ReduceFunction}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.plan._
 import org.apache.gearpump.streaming.dsl.plan.functions._
@@ -100,6 +100,17 @@ class Stream[T](
   def filter(fn: FilterFunction[T], description: String): Stream[T] = {
     this.flatMap(FlatMapFunction(fn), description)
   }
+
+  /**
+   * Returns a new stream by applying a fold function over all the elements
+   *
+   * @param fn fold function
+   * @return a new stream after fold
+   */
+  def fold[A](fn: FoldFunction[T, A], description: String): Stream[A] = {
+    transform(new FoldRunner(fn, description))
+  }
+
   /**
    * Returns a new stream by applying a reduce function over all the elements.
    *
@@ -119,7 +130,7 @@ class Stream[T](
    * @return a new stream after reduce
    */
   def reduce(fn: ReduceFunction[T], description: String): Stream[T] = {
-    transform(new Reducer[T](fn, description))
+    fold(fn, description).map(_.get)
   }
 
   private def transform[R](fn: FunctionRunner[T, R]): Stream[R] = {

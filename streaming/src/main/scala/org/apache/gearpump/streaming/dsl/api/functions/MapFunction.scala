@@ -23,7 +23,7 @@ object MapFunction {
 
   def apply[T, R](fn: T => R): MapFunction[T, R] = {
     new MapFunction[T, R] {
-      override def apply(t: T): R = {
+      override def map(t: T): R = {
         fn(t)
       }
     }
@@ -38,6 +38,6 @@ object MapFunction {
  */
 abstract class MapFunction[T, R] extends SerializableFunction {
 
-  def apply(t: T): R
+  def map(t: T): R
 
 }

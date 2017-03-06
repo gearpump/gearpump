@@ -25,7 +25,7 @@ import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.source.{DataSourceTask, Watermark}
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
+import org.apache.gearpump.streaming.dsl.api.functions.{FoldFunction, ReduceFunction}
 import org.apache.gearpump.streaming.dsl.scalaapi.CollectionDataSource
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
@@ -102,7 +102,8 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
 
       val map = new FlatMapper[String, Int](FlatMapFunction(word => Some(1)), "map")
 
-      val sum = new Reducer[Int](ReduceFunction({(left, right) => left + right}), "sum")
+      val sum = new FoldRunner[Int, Option[Int]](
+        ReduceFunction({(left, right) => left + right}), "sum")
 
       val all = AndThen(split, AndThen(filter, AndThen(map, sum)))
 
@@ -116,11 +117,14 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       five  four
       five
         """
+
+      all.setup()
       // force eager evaluation
       all.process(data).toList
-      val result = all.finish().toList
+      val result = all.finish().toList.map(_.get)
       assert(result.nonEmpty)
       assert(result.last == 15)
+      all.teardown()
     }
   }
 
@@ -132,7 +136,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
     "call flatMap function when processing input value" in {
       val input = mock[R]
       flatMapper.process(input)
-      verify(flatMapFunction).apply(input)
+      verify(flatMapFunction).flatMap(input)
     }
 
     "return passed in description" in {
@@ -156,54 +160,59 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
     }
   }
 
-  "ReduceFunction" should {
+  "FoldRunner" should {
 
-    "call reduce function when processing input value" in {
-      val reduceFunction = mock[ReduceFunction[T]]
-      val reducer = new Reducer[T](reduceFunction, "reduce")
+    "call fold function when processing input value" in {
+      val foldFunction = mock[FoldFunction[T, List[T]]]
+      val foldRunner = new FoldRunner[T, List[T]](foldFunction, "fold")
       val input1 = mock[T]
       val input2 = mock[T]
-      val output = mock[T]
 
-      when(reduceFunction.apply(input1, input2)).thenReturn(output, output)
+      when(foldFunction.init).thenReturn(Nil)
+      when(foldFunction.fold(Nil, input1)).thenReturn(List(input1))
+      when(foldFunction.fold(Nil, input2)).thenReturn(List(input2))
+      when(foldFunction.fold(List(input1), input2)).thenReturn(List(input1, input2))
 
-      reducer.process(input1) shouldBe List.empty[T]
-      reducer.process(input2) shouldBe List.empty[T]
-      reducer.finish() shouldBe List(output)
+      foldRunner.setup()
+      foldRunner.process(input1) shouldBe List.empty[T]
+      foldRunner.process(input2) shouldBe List.empty[T]
+      foldRunner.finish() shouldBe List(List(input1, input2))
+      foldRunner.teardown()
 
-      reducer.teardown()
-      reducer.process(input1) shouldBe List.empty[T]
-      reducer.teardown()
-      reducer.process(input2) shouldBe List.empty[T]
-      reducer.finish() shouldBe List(input2)
+      foldRunner.setup()
+      foldRunner.process(input1) shouldBe List.empty[T]
+      foldRunner.teardown()
+      foldRunner.setup()
+      foldRunner.process(input2) shouldBe List.empty[T]
+      foldRunner.finish() shouldBe List(List(input2))
     }
 
     "return passed in description" in {
-      val reduceFunction = mock[ReduceFunction[T]]
-      val reducer = new Reducer[T](reduceFunction, "reduce")
-      reducer.description shouldBe "reduce"
+      val foldFunction = mock[FoldFunction[S, T]]
+      val foldRunner = new FoldRunner[S, T](foldFunction, "fold")
+      foldRunner.description shouldBe "fold"
     }
 
     "return None on finish" in {
-      val reduceFunction = mock[ReduceFunction[T]]
-      val reducer = new Reducer[T](reduceFunction, "reduce")
-      reducer.finish() shouldBe List.empty[T]
+      val foldFunction = mock[FoldFunction[S, T]]
+      val foldRunner = new FoldRunner[S, T](foldFunction, "fold")
+      foldRunner.finish() shouldBe List.empty[T]
     }
 
-    "set up reduce function on setup" in {
-      val reduceFunction = mock[ReduceFunction[T]]
-      val reducer = new Reducer[T](reduceFunction, "reduce")
-      reducer.setup()
+    "set up fold function on setup" in {
+      val foldFunction = mock[FoldFunction[S, T]]
+      val foldRunner = new FoldRunner[S, T](foldFunction, "fold")
+      foldRunner.setup()
 
-      verify(reduceFunction).setup()
+      verify(foldFunction).setup()
     }
 
-    "tear down reduce function on teardown" in {
-      val reduceFunction = mock[ReduceFunction[T]]
-      val reducer = new Reducer[T](reduceFunction, "reduce")
-      reducer.teardown()
+    "tear down fold function on teardown" in {
+      val foldFunction = mock[FoldFunction[S, T]]
+      val foldRunner = new FoldRunner[S, T](foldFunction, "fold")
+      foldRunner.teardown()
 
-      verify(reduceFunction).teardown()
+      verify(foldFunction).teardown()
     }
   }
 
@@ -284,11 +293,11 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
 
       val data = "1 2  2  3 3  3"
 
-      val concat = new Reducer[String](ReduceFunction({ (left, right) =>
+      val concat = new FoldRunner[String, Option[String]](ReduceFunction({ (left, right) =>
         left + right}), "concat")
 
       implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
-      val config = UserConfig.empty.withValue[FunctionRunner[String, String]](
+      val config = UserConfig.empty.withValue[FunctionRunner[String, Option[String]]](
         GEARPUMP_STREAMING_OPERATOR, concat)
 
       val taskContext = MockUtil.mockTaskContext
@@ -307,7 +316,8 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
 
       import scala.collection.JavaConverters._
 
-      val values = peopleCaptor.getAllValues.asScala.map(input => input.msg.asInstanceOf[String])
+      val values = peopleCaptor.getAllValues.asScala.map(input =>
+        input.msg.asInstanceOf[Option[String]].get)
       assert(values.mkString(",") == "1,2,22,3,33,333")
       system.terminate()
       Await.result(system.whenTerminated, Duration.Inf)

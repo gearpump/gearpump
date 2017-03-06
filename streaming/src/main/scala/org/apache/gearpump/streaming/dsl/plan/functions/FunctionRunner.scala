@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.streaming.dsl.plan.functions
 
-import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
+import org.apache.gearpump.streaming.dsl.api.functions.{FoldFunction, ReduceFunction}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 
 object FunctionRunner {
@@ -88,7 +88,7 @@ class FlatMapper[IN, OUT](fn: FlatMapFunction[IN, OUT], val description: String)
   }
 
   override def process(value: IN): TraversableOnce[OUT] = {
-    fn(value)
+    fn.flatMap(value)
   }
 
   override def teardown(): Unit = {
@@ -96,25 +96,22 @@ class FlatMapper[IN, OUT](fn: FlatMapFunction[IN, OUT], val description: String)
   }
 }
 
-class Reducer[T](fn: ReduceFunction[T], val description: String)
-  extends FunctionRunner[T, T] {
+class FoldRunner[T, A](fn: FoldFunction[T, A], val description: String)
+  extends FunctionRunner[T, A] {
 
-  private var state: Option[T] = None
+  private var state: Option[A] = None
 
   override def setup(): Unit = {
     fn.setup()
+    state = Option(fn.init)
   }
 
-  override def process(value: T): TraversableOnce[T] = {
-    if (state.isEmpty) {
-      state = Option(value)
-    } else {
-      state = state.map(fn(_, value))
-    }
+  override def process(value: T): TraversableOnce[A] = {
+    state = state.map(fn.fold(_, value))
     None
   }
 
-  override def finish(): TraversableOnce[T] = {
+  override def finish(): TraversableOnce[A] = {
     state
   }
 

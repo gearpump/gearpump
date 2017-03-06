@@ -27,13 +27,13 @@ import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
 import org.apache.gearpump.streaming.partitioner.CoLocationPartitioner
 import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.streaming.dsl.plan.PlannerSpec._
-import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapper, Reducer}
+import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapper, FoldRunner}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.window.api.CountWindows
 import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.source.DataSource
-import org.apache.gearpump.streaming.{MockUtil, Processor}
+import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
 import org.scalatest.mock.MockitoSugar
@@ -61,7 +61,7 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
     val groupBy = GroupAlsoByWindow((any: Any) => any, CountWindows.apply[Any](1))
     val groupByOp = GroupByOp(groupBy)
     val flatMapOp = ChainableOp[Any, Any](anyFlatMapper)
-    val reduceOp = ChainableOp[Any, Any](anyReducer)
+    val reduceOp = ChainableOp[Any, Option[Any]](anyReducer)
     val processorOp = new ProcessorOp[AnyTask]
     val sinkOp = DataSinkOp(new AnySink)
     val directEdge = Direct
@@ -97,7 +97,7 @@ object PlannerSpec {
 
   private val anyFlatMapper = new FlatMapper[Any, Any](
     FlatMapFunction(Option(_)), "flatMap")
-  private val anyReducer = new Reducer[Any](
+  private val anyReducer = new FoldRunner[Any, Option[Any]](
     ReduceFunction((left: Any, right: Any) => (left, right)), "reduce")
 
   class AnyTask(context: TaskContext, config: UserConfig) extends Task(context, config)

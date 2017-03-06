@@ -17,13 +17,11 @@
  */
 package org.apache.gearpump.streaming.dsl.api.functions
 
-import org.apache.gearpump.streaming.dsl.scalaapi.functions.SerializableFunction
-
 object ReduceFunction {
 
   def apply[T](fn: (T, T) => T): ReduceFunction[T] = {
     new ReduceFunction[T] {
-      override def apply(t1: T, t2: T): T = {
+      override def reduce(t1: T, t2: T): T = {
         fn(t1, t2)
       }
     }
@@ -35,8 +33,17 @@ object ReduceFunction {
  *
  * @param T Type of both inputs and output
  */
-abstract class ReduceFunction[T] extends SerializableFunction {
+abstract class ReduceFunction[T] extends FoldFunction[T, Option[T]] {
 
-  def apply(t1: T, t2: T): T
+  override def init: Option[T] = None
 
+  override def fold(accumulator: Option[T], t: T): Option[T] = {
+    if (accumulator.isEmpty) {
+      Option(t)
+    } else {
+      accumulator.map(reduce(_, t))
+    }
+  }
+
+  def reduce(t1: T, t2: T): T
 }

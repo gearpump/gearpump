@@ -31,8 +31,8 @@ object FlatMapFunction {
         fn.setup()
       }
 
-      override def apply(t: T): TraversableOnce[R] = {
-        fn.apply(t).asScala
+      override def flatMap(t: T): TraversableOnce[R] = {
+        fn.flatMap(t).asScala
       }
 
 
@@ -44,7 +44,7 @@ object FlatMapFunction {
 
   def apply[T, R](fn: T => TraversableOnce[R]): FlatMapFunction[T, R] = {
     new FlatMapFunction[T, R] {
-      override def apply(t: T): TraversableOnce[R] = {
+      override def flatMap(t: T): TraversableOnce[R] = {
         fn(t)
       }
     }
@@ -57,8 +57,8 @@ object FlatMapFunction {
         fn.setup()
       }
 
-      override def apply(t: T): TraversableOnce[R] = {
-        Option(fn(t))
+      override def flatMap(t: T): TraversableOnce[R] = {
+        Option(fn.map(t))
       }
 
       override def teardown(): Unit = {
@@ -74,8 +74,8 @@ object FlatMapFunction {
         fn.setup()
       }
 
-      override def apply(t: T): TraversableOnce[T] = {
-        if (fn(t)) {
+      override def flatMap(t: T): TraversableOnce[T] = {
+        if (fn.filter(t)) {
           Option(t)
         } else {
           None
@@ -98,6 +98,6 @@ object FlatMapFunction {
  */
 abstract class FlatMapFunction[T, R] extends SerializableFunction {
 
-  def apply(t: T): TraversableOnce[R]
+  def flatMap(t: T): TraversableOnce[R]
 
 }

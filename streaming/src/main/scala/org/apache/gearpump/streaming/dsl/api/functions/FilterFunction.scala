@@ -23,7 +23,7 @@ object FilterFunction {
 
   def apply[T](fn: T => Boolean): FilterFunction[T] = {
     new FilterFunction[T] {
-      override def apply(t: T): Boolean = {
+      override def filter(t: T): Boolean = {
         fn(t)
       }
     }
@@ -37,6 +37,6 @@ object FilterFunction {
  */
 abstract class FilterFunction[T] extends SerializableFunction {
 
-  def apply(t: T): Boolean
+  def filter(t: T): Boolean
 
 }

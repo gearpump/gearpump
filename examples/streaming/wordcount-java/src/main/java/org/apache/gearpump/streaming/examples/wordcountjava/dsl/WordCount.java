@@ -95,7 +95,7 @@ public class WordCount {
   private static class Split extends FlatMapFunction<String, String> {
 
     @Override
-    public Iterator<String> apply(String s) {
+    public Iterator<String> flatMap(String s) {
       return Arrays.asList(s.split("\\s+")).iterator();
     }
   }
@@ -103,7 +103,7 @@ public class WordCount {
   private static class Ones extends MapFunction<String, Tuple2<String, Integer>> {
 
     @Override
-    public Tuple2<String, Integer> apply(String s) {
+    public Tuple2<String, Integer> map(String s) {
       return new Tuple2<>(s, 1);
     }
   }
@@ -111,7 +111,7 @@ public class WordCount {
   private static class Count extends ReduceFunction<Tuple2<String, Integer>> {
 
     @Override
-    public Tuple2<String, Integer> apply(Tuple2<String, Integer> t1, Tuple2<String, Integer> t2) {
+    public Tuple2<String, Integer> reduce(Tuple2<String, Integer> t1, Tuple2<String, Integer> t2) {
       return new Tuple2<>(t1._1(), t1._2() + t2._2());
     }
   }
@@ -119,7 +119,7 @@ public class WordCount {
   private static class TupleKey extends GroupByFunction<Tuple2<String, Integer>, String> {
 
     @Override
-    public String apply(Tuple2<String, Integer> tuple) {
+    public String groupBy(Tuple2<String, Integer> tuple) {
       return tuple._1();
     }
   }

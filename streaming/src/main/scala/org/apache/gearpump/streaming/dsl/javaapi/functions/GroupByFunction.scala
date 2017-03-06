@@ -25,4 +25,11 @@ import org.apache.gearpump.streaming.dsl.api.functions.MapFunction
  * @param T Input value type
  * @param GROUP Group value type
  */
-abstract class GroupByFunction[T, GROUP] extends MapFunction[T, GROUP]
+abstract class GroupByFunction[T, GROUP] extends MapFunction[T, GROUP] {
+
+  override def map(t: T): GROUP = {
+    groupBy(t)
+  }
+
+  def groupBy(t: T): GROUP
+}
