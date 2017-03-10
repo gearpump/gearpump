@@ -53,11 +53,13 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val startClock = 100L
       store.put(ClockService.START_CLOCK, startClock)
       val clockService = system.actorOf(Props(new ClockService(dag, appMaster, store)))
+
       clockService ! GetLatestMinClock
       expectMsg(LatestMinClock(startClock))
 
       // task(0,0): clock(101); task(1,0): clock(100)
       clockService ! UpdateClock(TaskId(0, 0), 101)
+      expectMsg(UpstreamMinClock(None))
 
       // Min clock is updated
       clockService ! GetLatestMinClock
@@ -67,7 +69,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       clockService ! UpdateClock(TaskId(1, 0), 101)
 
       // Upstream is Task(0, 0), 101
-      expectMsg(UpstreamMinClock(101))
+      expectMsg(UpstreamMinClock(Some(101)))
 
       // Min clock is updated
       clockService ! GetLatestMinClock
@@ -120,6 +122,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val clockService = system.actorOf(Props(new ClockService(dag, appMaster, store)))
       clockService ! UpdateClock(TaskId(0, 0), 200L)
       clockService ! UpdateClock(TaskId(1, 0), 200L)
+      expectMsgType[UpstreamMinClock]
       expectMsgType[UpstreamMinClock]
 
       clockService ! GetStartClock

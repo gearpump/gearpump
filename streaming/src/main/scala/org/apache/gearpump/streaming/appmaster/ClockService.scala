@@ -37,7 +37,6 @@ import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.language.implicitConversions
 
@@ -194,7 +193,7 @@ class ClockService(
   private def getUpstreamClocks(
       clocks: Map[ProcessorId, ProcessorClock]): Map[ProcessorId, Array[ProcessorClock]] = {
     clocks.foldLeft(Map.empty[ProcessorId, Array[ProcessorClock]]) {
-      case (accum, (processorId, clock)) =>
+      case (accum, (processorId, _)) =>
         val upstreams = dag.graph.incomingEdgesOf(processorId).map(_._1)
         if (upstreams.nonEmpty) {
           val upstreamClocks = upstreams.collect(clocks)
@@ -215,7 +214,7 @@ class ClockService(
 
   def clockService: Receive = {
     case GetUpstreamMinClock(task) =>
-      getUpStreamMinClock(task.processorId).foreach(sender ! UpstreamMinClock(_))
+      sendBackUpstreamMinClock(sender, task)
 
     case UpdateClock(task, clock) =>
       val processorClock = clocks.get(task.processorId)
@@ -225,10 +224,9 @@ class ClockService(
         LOG.error(s"Cannot updateClock for task $task")
       }
       if (Instant.ofEpochMilli(minClock).equals(Watermark.MAX)) {
-        healthCheckScheduler.cancel()
         appMaster ! EndingClock
       } else {
-        getUpStreamMinClock(task.processorId).foreach(sender ! UpstreamMinClock(_))
+        sendBackUpstreamMinClock(sender, task)
       }
 
     case GetLatestMinClock =>
@@ -263,7 +261,7 @@ class ClockService(
     case GetCheckpointClock =>
       sender ! CheckpointClock(minCheckpointClock)
 
-    case getStalling: GetStallingTasks =>
+    case GetStallingTasks =>
       sender ! StallingTasks(healthChecker.getReport.stallingTasks)
 
     case ChangeToNewDAG(newDag) =>
@@ -280,6 +278,10 @@ class ClockService(
         val (id, clock) = pair
         (id, clock.min)
       })
+  }
+
+  private def sendBackUpstreamMinClock(sender: ActorRef, task: TaskId): Unit = {
+    sender ! UpstreamMinClock(getUpStreamMinClock(task.processorId))
   }
 
   private def removeProcessor(processorId: ProcessorId): Unit = {

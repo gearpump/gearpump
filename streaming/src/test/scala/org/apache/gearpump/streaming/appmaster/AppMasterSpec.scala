@@ -154,6 +154,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
       // clock status: task(0,0) -> 1, task(0,1)->0, task(1,0)->0, task(1,1)->0
       appMaster.tell(UpdateClock(TaskId(0, 0), 1), mockTask.ref)
+      mockTask.expectMsg(UpstreamMinClock(None))
 
       // check min clock
       appMaster.tell(GetLatestMinClock, mockTask.ref)
@@ -161,6 +162,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
 
       // clock status: task(0,0) -> 1, task(0,1)->1, task(1, 0)->0, task(1,1)->0
       appMaster.tell(UpdateClock(TaskId(0, 1), 1), mockTask.ref)
+      mockTask.expectMsg(UpstreamMinClock(None))
 
       // check min clock
       appMaster.tell(GetLatestMinClock, mockTask.ref)
@@ -170,7 +172,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       appMaster.tell(UpdateClock(TaskId(1, 0), 1), mockTask.ref)
 
       // Min clock of processor 0 (Task(0, 0) and Task(0, 1))
-      mockTask.expectMsg(UpstreamMinClock(1))
+      mockTask.expectMsg(UpstreamMinClock(Some(1)))
 
       // check min clock
       appMaster.tell(GetLatestMinClock, mockTask.ref)
@@ -180,7 +182,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       appMaster.tell(UpdateClock(TaskId(1, 1), 1), mockTask.ref)
 
       // min clock of processor 0 (Task(0, 0) and Task(0, 1))
-      mockTask.expectMsg(UpstreamMinClock(1))
+      mockTask.expectMsg(UpstreamMinClock(Some(1)))
 
       // check min clock
       appMaster.tell(GetLatestMinClock, mockTask.ref)
@@ -228,6 +230,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       for (i <- 1 to 5) {
         val taskId = TaskId(0, 0)
         appMaster.tell(UpdateClock(taskId, i), mockTask.ref)
+        mockTask.expectMsgType[UpstreamMinClock]
 
         val cause = s"message loss $i from $taskId"
         appMaster.tell(MessageLoss(0, taskId, cause), mockTask.ref)

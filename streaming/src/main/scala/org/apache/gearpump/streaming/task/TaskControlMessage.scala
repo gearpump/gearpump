@@ -54,7 +54,7 @@ case object GetCheckpointClock extends ClockEvent
 
 case class CheckpointClock(clock: Option[TimeStamp])
 
-case class UpstreamMinClock(latestMinClock: TimeStamp)
+case class UpstreamMinClock(latestMinClock: Option[TimeStamp])
 
 case class LatestMinClock(clock: TimeStamp)
 
@@ -67,7 +67,7 @@ case object EndingClock
 /** Probe the latency between two upstream to downstream tasks. */
 case class LatencyProbe(timestamp: Long)
 
-case class SendMessageLoss()
+case object SendMessageLoss
 
 case object GetDAG
 
