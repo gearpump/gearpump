@@ -144,15 +144,29 @@ case class ExecutorJVMConfig(
 sealed abstract class ApplicationStatus(val status: String)
   extends Serializable{
   override def toString: String = status
+
+  def canTransitTo(newStatus: ApplicationStatus): Boolean
+
 }
 
 sealed abstract class ApplicationTerminalStatus(override val status: String)
-  extends ApplicationStatus(status)
+  extends ApplicationStatus(status) {
+
+  override def canTransitTo(newStatus: ApplicationStatus): Boolean = false
+}
 
 object ApplicationStatus {
-  case object PENDING extends ApplicationStatus("pending")
+  case object PENDING extends ApplicationStatus("pending") {
+    override def canTransitTo(newStatus: ApplicationStatus): Boolean = {
+      !newStatus.equals(NONEXIST)
+    }
+  }
 
-  case object ACTIVE extends ApplicationStatus("active")
+  case object ACTIVE extends ApplicationStatus("active") {
+    override def canTransitTo(newStatus: ApplicationStatus): Boolean = {
+      !newStatus.equals(NONEXIST) && !newStatus.equals(ACTIVE)
+    }
+  }
 
   case object SUCCEEDED extends ApplicationTerminalStatus("succeeded")
 
@@ -160,5 +174,7 @@ object ApplicationStatus {
 
   case object TERMINATED extends ApplicationTerminalStatus("terminated")
 
-  case object NONEXIST extends ApplicationStatus("nonexist")
+  case object NONEXIST extends ApplicationStatus("nonexist") {
+    override def canTransitTo(newStatus: ApplicationStatus): Boolean = false
+  }
 }

@@ -231,35 +231,40 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
       timeStamp: TimeStamp, error: Throwable): Unit = {
     applicationRegistry.get(appId) match {
       case Some(appRuntimeInfo) =>
-        var updatedStatus: ApplicationRuntimeInfo = null
-        LOG.info(s"Application $appId change to ${newStatus.toString} at $timeStamp")
-        newStatus match {
-          case ApplicationStatus.ACTIVE =>
-            updatedStatus = appRuntimeInfo.onAppMasterActivated(timeStamp)
-            sender ! AppMasterActivated(appId)
-          case succeeded@ApplicationStatus.SUCCEEDED =>
-            killAppMaster(appId, appRuntimeInfo.worker)
-            updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, succeeded)
-            appResultListeners.getOrElse(appId, List.empty).foreach{ client =>
-              client ! ApplicationSucceeded(appId)
-            }
-          case failed@ApplicationStatus.FAILED =>
-            killAppMaster(appId, appRuntimeInfo.worker)
-            updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, failed)
-            appResultListeners.getOrElse(appId, List.empty).foreach{ client =>
-              client ! ApplicationFailed(appId, error)
-            }
-          case terminated@ApplicationStatus.TERMINATED =>
-            updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, terminated)
-          case status =>
-            LOG.error(s"App $appId should not change it's status to $status")
-        }
+        if (appRuntimeInfo.status.canTransitTo(newStatus)) {
+          var updatedStatus: ApplicationRuntimeInfo = null
+          LOG.info(s"Application $appId change to ${newStatus.toString} at $timeStamp")
+          newStatus match {
+            case ApplicationStatus.ACTIVE =>
+              updatedStatus = appRuntimeInfo.onAppMasterActivated(timeStamp)
+              sender ! AppMasterActivated(appId)
+            case succeeded@ApplicationStatus.SUCCEEDED =>
+              killAppMaster(appId, appRuntimeInfo.worker)
+              updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, succeeded)
+              appResultListeners.getOrElse(appId, List.empty).foreach { client =>
+                client ! ApplicationSucceeded(appId)
+              }
+            case failed@ApplicationStatus.FAILED =>
+              killAppMaster(appId, appRuntimeInfo.worker)
+              updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, failed)
+              appResultListeners.getOrElse(appId, List.empty).foreach { client =>
+                client ! ApplicationFailed(appId, error)
+              }
+            case terminated@ApplicationStatus.TERMINATED =>
+              updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, terminated)
+            case status =>
+              LOG.error(s"App $appId should not change it's status to $status")
+          }
 
-        if (newStatus.isInstanceOf[ApplicationTerminalStatus]) {
-          kvService ! DeleteKVGroup(appId.toString)
+          if (newStatus.isInstanceOf[ApplicationTerminalStatus]) {
+            kvService ! DeleteKVGroup(appId.toString)
+          }
+          applicationRegistry += appId -> updatedStatus
+          kvService ! PutKV(MASTER_GROUP, MASTER_STATE, MasterState(nextAppId, applicationRegistry))
+        } else {
+          LOG.error(s"Application $appId tries to switch status ${appRuntimeInfo.status} " +
+            s"to $newStatus")
         }
-        applicationRegistry += appId -> updatedStatus
-        kvService ! PutKV(MASTER_GROUP, MASTER_STATE, MasterState(nextAppId, applicationRegistry))
       case None =>
         LOG.error(s"Can not find application runtime info for appId $appId when it's " +
           s"status changed to ${newStatus.toString}")
