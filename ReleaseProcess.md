@@ -11,7 +11,7 @@ Step0: Function verification Checklist
 
 Step1: Pre-release
 ===================
-1. Modify CHANGELOG.md to add JIRA's for the release
+1. Review release notes in JIRA
 2. Update version in docs/version.yml
 3. Bump the gearpump version in version.sbt 
    ```scala
