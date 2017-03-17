@@ -61,7 +61,7 @@ public class WordCount {
 
     wordcount.log();
 
-    app.submit();
+    app.submit().waitUntilFinish();
     context.close();
   }
 
