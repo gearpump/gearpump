@@ -148,7 +148,7 @@ class TaskActor(
     var done = false
 
     var count = 0
-    val start = System.currentTimeMillis()
+    val start = System.nanoTime()
 
     while (allowSendingMoreMessages() && !done) {
       val msg = queue.poll()
@@ -170,7 +170,8 @@ class TaskActor(
 
     receiveThroughput.mark(count)
     if (count > 0) {
-      processTime.update((System.currentTimeMillis() - start) / count)
+      // average and convert nanoseconds to milliseconds
+      processTime.update((System.nanoTime() - start) / count / 1000)
     }
   }
 
