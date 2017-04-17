@@ -60,6 +60,7 @@ class Subscription(
 
   private val minClockValue: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
   private val candidateMinClock: Array[TimeStamp] = Array.fill(parallelism)(Long.MaxValue)
+  private val receivedAck: Array[Boolean] = Array.fill(parallelism)(false)
 
   private var maxPendingCount: Short = 0
 
@@ -161,6 +162,7 @@ class Subscription(
 
     val index = ack.taskId.index
 
+    receivedAck(index) = true
     if (ack.sessionId == sessionId) {
       if (ack.actualReceivedNum == ack.seq) {
         if ((ack.seq - candidateMinClockSince(index)).toShort >= 0) {
@@ -185,7 +187,28 @@ class Subscription(
   }
 
   def minClock: TimeStamp = {
-    minClockValue.min
+    if (minClockValue.isEmpty) {
+      throw new UnsupportedOperationException("empty.min")
+    } else {
+      var min = Long.MaxValue
+      var i = 0
+      while (i < minClockValue.length) {
+        if (receivedAck(i)) {
+          receivedAck(i) = false
+        } else if (pendingMessageCount(i) > 0 &&
+            pendingMessageCount(i) < maxPendingMessageCount) {
+          val targetTask = TaskId(processorId, i)
+          val ackRequest = AckRequest(taskId, messageCount(i), sessionId)
+          transport.transport(ackRequest, targetTask)
+        }
+        val clock = minClockValue(i)
+        if (clock < min) {
+          min = clock
+        }
+        i += 1
+      }
+      min
+    }
   }
 
   def allowSendingMoreMessages(): Boolean = {
