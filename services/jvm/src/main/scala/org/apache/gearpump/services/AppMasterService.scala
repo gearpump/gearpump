@@ -92,7 +92,7 @@ class AppMasterService(val master: ActorRef,
         }
       } ~
       path("stallingtasks") {
-        onComplete(askAppMaster[StallingTasks](master, appId, GetStallingTasks(appId))) {
+        onComplete(askAppMaster[StallingTasks](master, appId, GetStallingTasks)) {
           case Success(value) =>
             complete(write(value))
           case Failure(ex) => failWith(ex)

@@ -106,7 +106,7 @@ object ClientToMaster {
    * pin-point which task has stalling clock value, and usually it means something wrong on
    * that machine.
    */
-  case class GetStallingTasks(appId: Int)
+  case object GetStallingTasks
 
   /**
    * Request app master for a short list of cluster app that administrators should be aware of.

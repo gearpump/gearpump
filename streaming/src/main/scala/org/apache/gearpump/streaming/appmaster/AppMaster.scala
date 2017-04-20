@@ -254,7 +254,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       } else {
         historyMetricsService.get forward query
       }
-    case getStalling: GetStallingTasks =>
+    case getStalling@GetStallingTasks =>
       clockService.foreach(_ forward getStalling)
     case replaceDAG: ReplaceProcessor =>
       dagManager forward replaceDAG
