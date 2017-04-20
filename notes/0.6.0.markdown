@@ -1,9 +1,0 @@
-## Highlight: 
-
-new UI dashboard
-
-## Change log:
-
-- #606, ui v2
-- #1352, return appmaster config
-- #1344, fix Master HA bug

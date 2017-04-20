@@ -1,8 +1,0 @@
-## Hihglights:
-
-Rename package name to io.gearpump
-
-## Change log:
-
-- #1341, Cannot submit application in UI if one master is killed and another master started
-- #910, replace package name from "org.apache.gearpump" to "io.gearpump"
