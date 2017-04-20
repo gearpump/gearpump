@@ -1,7 +1,6 @@
 # Gearpump has moved to Apache. The official Gearpump repo is now hosted by Apache and mirrored to https://github.com/apache/incubator-gearpump. Issues are tracked at https://issues.apache.org/jira/browse/GEARPUMP
 
-
--
+--------
 
 ## Gearpump  [![GitHub release](https://img.shields.io/github/release/gearpump/gearpump.svg)](http://www.gearpump.io/download.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](https://github.com/gearpump/gearpump/blob/master/LICENSE) [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
 
