@@ -3,10 +3,10 @@ This folder contains docker images definitions used in integration tests of Gear
 
 These include:
 
- * [The standalone single node Kafka cluster with Zookeeper](/kafka)
- * [The Hadoop image](/hadoop)
- * [The Gearpump Cluster Launcher and Storm Client](/gearpump)
- * [Java 8 JRE image](/java)
+ * [The standalone single node Kafka cluster with Zookeeper](kafka)
+ * [The Hadoop image](hadoop)
+ * [The Gearpump Cluster Launcher and Storm Client](gearpump)
+ * [Java 8 JRE image](java)
 
 
 We decided to fork spotify/kafka image, because the project does not maintain proper tagging. 
