@@ -32,8 +32,7 @@ The default username and password is "admin:admin", you can check
 
 **NOTE:** the UI port setting can be defined in configuration, please check section [Configuration](../deployment/deployment-configuration).
 
-## A quick Look at the Web UI
-TBD
-
 ## Other Application Examples
-Besides wordcount, there are several other example applications. Please check the source tree examples/ for detail information.
+Besides wordcount, there are several other example applications. Please check the source tree `examples/` for detail information.
+
+

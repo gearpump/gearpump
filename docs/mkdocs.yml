@@ -19,7 +19,6 @@ pages:
     - 'Technical Highlights': 'introduction/features.md'
     - 'Reliable Message Delivery': 'introduction/message-delivery.md'
     - 'Performance': 'introduction/performance-report.md'
-    - 'Gearpump Internals': 'introduction/gearpump-internals.md'
 - Deployment:
     - 'Local Mode': 'deployment/deployment-local.md'
     - 'Standalone Mode': 'deployment/deployment-standalone.md'
@@ -43,6 +42,8 @@ pages:
     - 'REST API': 'dev/dev-rest-api.md'
     - 'Scala API': 'api/scala.md'
     - 'Java API': 'api/java.md'
+- Internals:
+    - 'Gearpump Internals': 'internals/gearpump-internals.md'
 
 theme: readthedocs
 

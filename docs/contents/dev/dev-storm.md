@@ -146,13 +146,13 @@ fall back to the Storm way by setting `gearpump.task-dispatcher` to `"gearpump.s
 
 Storm tracks the lineage of each message with ackers to guarantee at-least-once message delivery. Failed messages are re-sent from spout.
 
-Gearpump [tracks messages between a sender and receiver in an efficient way](../introduction/gearpump-internals#how-do-we-detect-message-loss). Message loss causes the whole application to replay from the [minimum timestamp of all pending messages in the system](../introduction/gearpump-internals#application-clock-and-global-clock-service). 
+Gearpump [tracks messages between a sender and receiver in an efficient way](../internals/gearpump-internals#how-do-we-detect-message-loss). Message loss causes the whole application to replay from the [minimum timestamp of all pending messages in the system](../internals/gearpump-internals#application-clock-and-global-clock-service). 
 
 ### Flow control
 
 Storm throttles flow rate at spout, which stops sending messages if the number of unacked messages exceeds `topology.max.spout.pending`. 
 
-Gearpump has flow control between tasks such that [sender cannot flood receiver](../introduction/gearpump-internals#how-do-we-do-flow-control), which is backpressured till the source.
+Gearpump has flow control between tasks such that [sender cannot flood receiver](../internals/gearpump-internals#how-do-we-do-flow-control), which is backpressured till the source.
 
 ### Configurations
 
