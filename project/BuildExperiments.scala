@@ -29,7 +29,8 @@ object BuildExperiments extends sbt.Build {
     cgroup,
     redis,
     storm,
-    yarn
+    yarn,
+    rabbitmq
   )
 
   lazy val yarn = Project(
@@ -117,5 +118,17 @@ object BuildExperiments extends sbt.Build {
     base = file("experiments/cgroup"),
     settings = commonSettings ++ noPublish)
     .dependsOn (core % "provided")
+    .disablePlugins(sbtassembly.AssemblyPlugin)
+
+  lazy val rabbitmq = Project(
+    id = "gearpump-experimentals-rabbitmq",
+    base = file("experiments/rabbitmq"),
+    settings = commonSettings ++ noPublish ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "com.rabbitmq" % "amqp-client" % rabbitmqVersion
+        )
+      ))
+    .dependsOn(core % "provided", streaming % "test->test; provided")
     .disablePlugins(sbtassembly.AssemblyPlugin)
 }

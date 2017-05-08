@@ -53,6 +53,7 @@ object Dependencies {
   val algebirdVersion = "0.9.0"
   val chillVersion = "0.6.0"
   val jedisVersion = "2.9.0"
+  val rabbitmqVersion = "3.5.3"
 
   val coreDependencies = Seq(
     libraryDependencies ++= Seq(
