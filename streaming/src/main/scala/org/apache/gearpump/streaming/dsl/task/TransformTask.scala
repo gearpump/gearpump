@@ -32,16 +32,8 @@ object TransformTask {
       operator: Option[FunctionRunner[IN, OUT]],
       private var buffer: Vector[Message] = Vector.empty[Message]) {
 
-    def onStart(startTime: Instant): Unit = {
-      operator.foreach(_.setup())
-    }
-
     def onNext(msg: Message): Unit = {
       buffer +:= msg
-    }
-
-    def onStop(): Unit = {
-      operator.foreach(_.teardown())
     }
 
     def onWatermarkProgress(watermark: Instant): Unit = {
@@ -49,8 +41,9 @@ object TransformTask {
       var nextBuffer = Vector.empty[Message]
       val processor = operator.map(FunctionRunner.withEmitFn(_,
         (out: OUT) => taskContext.output(Message(out, watermarkTime))))
+      processor.foreach(_.setup())
       buffer.foreach { case message@Message(in, time) =>
-        if (time <= watermarkTime) {
+        if (time < watermarkTime) {
           processor match {
             case Some(p) =>
               // .toList forces eager evaluation
@@ -63,7 +56,8 @@ object TransformTask {
         }
       }
       // .toList forces eager evaluation
-      processor.map(_.finish())
+      processor.map(_.finish().toList)
+      processor.foreach(_.teardown())
       buffer = nextBuffer
     }
   }
@@ -78,16 +72,8 @@ class TransformTask[IN, OUT](transform: Transform[IN, OUT],
       GEARPUMP_STREAMING_OPERATOR)(taskContext.system)), taskContext, userConf)
   }
 
-  override def onStart(startTime: Instant): Unit = {
-    transform.onStart(startTime)
-  }
-
   override def onNext(msg: Message): Unit = {
     transform.onNext(msg)
-  }
-
-  override def onStop(): Unit = {
-    transform.onStop()
   }
 
   override def onWatermarkProgress(watermark: Instant): Unit = {

@@ -25,7 +25,8 @@ import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
 import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
 import org.apache.gearpump.streaming.source.Watermark
-import org.mockito.Mockito.{verify, when}
+import org.mockito.{Matchers => MockitoMatchers}
+import org.mockito.Mockito.{times, verify, when}
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
@@ -33,50 +34,44 @@ import org.scalatest.prop.PropertyChecks
 
 class TransformTaskSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
-  property("TransformTask should setup functions") {
-    forAll(Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) { (startTime: Instant) =>
-      val taskContext = MockUtil.mockTaskContext
-      implicit val system = MockUtil.system
-      val config = UserConfig.empty
-      val operator = mock[FunctionRunner[Any, Any]]
-      val transform = new Transform[Any, Any](taskContext, Some(operator))
-      val sourceTask = new TransformTask[Any, Any](transform, taskContext, config)
+  private val timeGen = Gen.chooseNum[Long](Watermark.MIN.toEpochMilli,
+    Watermark.MAX.toEpochMilli - 1).map(Instant.ofEpochMilli)
+  private val runnerGen = {
+    val runner = mock[FunctionRunner[Any, Any]]
+    Gen.oneOf(Some(runner), None)
+  }
 
-      sourceTask.onStart(startTime)
+  property("TransformTask should emit on watermark") {
+    val msgGen = for {
+      str <- Gen.alphaStr.suchThat(!_.isEmpty)
+      t <- timeGen
+    } yield Message(s"$str:$t", t)
+    val msgsGen = Gen.listOfN(10, msgGen)
 
-      verify(operator).setup()
+    forAll(runnerGen, msgsGen) {
+      (runner: Option[FunctionRunner[Any, Any]], msgs: List[Message]) =>
+        val taskContext = MockUtil.mockTaskContext
+        implicit val system = MockUtil.system
+        val config = UserConfig.empty
+        val transform = new Transform[Any, Any](taskContext, runner)
+        val task = new TransformTask[Any, Any](transform, taskContext, config)
+
+        msgs.foreach(task.onNext)
+
+        runner.foreach(r => when(r.finish()).thenReturn(None))
+        task.onWatermarkProgress(Watermark.MIN)
+        verify(taskContext, times(0)).output(MockitoMatchers.any[Message])
+
+        msgs.foreach { msg =>
+          runner.foreach(r =>
+            when(r.process(msg.msg)).thenReturn(Some(msg.msg)))
+        }
+        task.onWatermarkProgress(Watermark.MAX)
+
+        msgs.foreach { msg =>
+          verify(taskContext).output(MockitoMatchers.eq(Message(msg.msg, Watermark.MAX)))
+        }
     }
   }
 
-  property("TransformTask should process inputs") {
-    forAll(Gen.alphaStr) { (str: String) =>
-      val taskContext = MockUtil.mockTaskContext
-      implicit val system = MockUtil.system
-      val config = UserConfig.empty
-      val operator = mock[FunctionRunner[Any, Any]]
-      val transform = new Transform[Any, Any](taskContext, Some(operator))
-      val task = new TransformTask[Any, Any](transform, taskContext, config)
-      val msg = Message(str)
-      when(operator.process(str)).thenReturn(Some(str))
-      when(operator.finish()).thenReturn(None)
-
-      task.onNext(msg)
-      task.onWatermarkProgress(Watermark.MAX)
-
-      verify(taskContext).output(Message(str, Watermark.MAX))
-    }
-  }
-
-  property("TransformTask should teardown functions") {
-    val taskContext = MockUtil.mockTaskContext
-    implicit val system = MockUtil.system
-    val config = UserConfig.empty
-    val operator = mock[FunctionRunner[Any, Any]]
-    val transform = new Transform[Any, Any](taskContext, Some(operator))
-    val task = new TransformTask[Any, Any](transform, taskContext, config)
-
-    task.onStop()
-
-    verify(operator).teardown()
-  }
 }
