@@ -42,8 +42,8 @@ class TakeWithinTask[T](context: TaskContext, userConf : UserConfig)
     )
   }
 
-  override def onNext(msg : Message) : Unit = {
-    msg.msg match {
+  override def onNext(msg: Message) : Unit = {
+    msg.value match {
       case DropWithinTimeout =>
         timeoutActive = true
       case _ =>

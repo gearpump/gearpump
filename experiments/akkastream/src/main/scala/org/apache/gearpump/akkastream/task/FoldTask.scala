@@ -38,13 +38,13 @@ class FoldTask[In, Out](context: TaskContext, userConf : UserConfig)
     })
   }
 
-  override def onNext(msg : Message) : Unit = {
-    val data = msg.msg.asInstanceOf[In]
+  override def onNext(msg: Message) : Unit = {
+    val data = msg.value.asInstanceOf[In]
     val time = msg.timestamp
     aggregator.foreach(func => {
       aggregated = func(aggregated, data)
       LOG.info(s"aggregated = $aggregated")
-      val msg = new Message(aggregated, time)
+      val msg = Message(aggregated, time)
       context.output(msg)
     })
   }

@@ -291,7 +291,7 @@ class LoggerSink[T] extends DataSink {
   }
 
   override def write(message: Message): Unit = {
-    logger.info("logging message " + message.msg)
+    logger.info("logging message " + message.value)
   }
 
   override def close(): Unit = Unit

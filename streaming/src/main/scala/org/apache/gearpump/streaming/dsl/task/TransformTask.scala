@@ -42,18 +42,19 @@ object TransformTask {
       val processor = operator.map(FunctionRunner.withEmitFn(_,
         (out: OUT) => taskContext.output(Message(out, watermarkTime))))
       processor.foreach(_.setup())
-      buffer.foreach { case message@Message(in, time) =>
-        if (time < watermarkTime) {
-          processor match {
-            case Some(p) =>
-              // .toList forces eager evaluation
-              p.process(in.asInstanceOf[IN]).toList
-            case None =>
-              taskContext.output(Message(in, watermarkTime))
+      buffer.foreach {
+        message: Message =>
+          if (message.timestamp.toEpochMilli < watermarkTime) {
+            processor match {
+              case Some(p) =>
+                // .toList forces eager evaluation
+                p.process(message.value.asInstanceOf[IN]).toList
+              case None =>
+                taskContext.output(Message(message.value, watermarkTime))
+            }
+          } else {
+            nextBuffer +:= message
           }
-        } else {
-          nextBuffer +:= message
-        }
       }
       // .toList forces eager evaluation
       processor.map(_.finish().toList)

@@ -53,7 +53,7 @@ class SourceBridgeTask(taskContext : TaskContext, userConf : UserConfig)
 
   override def onStart(startTime : Instant) : Unit = {}
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message) : Unit = {
     LOG.info("AkkaStreamSource receiving message " + msg)
   }
 

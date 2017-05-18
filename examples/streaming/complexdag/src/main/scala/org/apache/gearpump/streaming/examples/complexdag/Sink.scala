@@ -35,7 +35,7 @@ class Sink(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext,
   }
 
   override def onNext(msg: Message): Unit = {
-    val l = msg.msg.asInstanceOf[Vector[String]]
+    val l = msg.value.asInstanceOf[Vector[String]]
     list.size match {
       case 1 =>
         l.foreach(f => {

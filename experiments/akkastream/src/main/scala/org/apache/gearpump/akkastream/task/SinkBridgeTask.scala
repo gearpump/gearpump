@@ -61,7 +61,7 @@ class SinkBridgeTask(taskContext : TaskContext, userConf : UserConfig)
 
   override def onStart(startTime : Instant) : Unit = {}
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message) : Unit = {
     queue.add(msg)
     trySendingData()
   }
@@ -71,7 +71,7 @@ class SinkBridgeTask(taskContext : TaskContext, userConf : UserConfig)
   private def trySendingData(): Unit = {
     if (subscriber != null) {
       (0 to request).map(_ => queue.poll()).filter(_ != null).foreach { msg =>
-        subscriber ! msg.msg
+        subscriber ! msg.value
         request -= 1
       }
     }

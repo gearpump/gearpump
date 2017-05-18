@@ -27,7 +27,7 @@ class SingleSourceTask[T](context: TaskContext, userConf : UserConfig)
 
   val elem = userConf.getValue[T](SingleSourceTask.ELEMENT).get
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message) : Unit = {
     context.output(Message(elem, msg.timestamp))
   }
 }

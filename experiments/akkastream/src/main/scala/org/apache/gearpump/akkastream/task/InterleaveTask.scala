@@ -29,7 +29,7 @@ class InterleaveTask(context: TaskContext, userConf : UserConfig)
   var index = 0
 
   // TODO access upstream and pull
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message) : Unit = {
     output(index, msg)
     index += 1
     if (index == sizeOfInputs) {

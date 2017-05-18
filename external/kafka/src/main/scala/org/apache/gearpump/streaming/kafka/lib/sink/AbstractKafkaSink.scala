@@ -68,7 +68,7 @@ abstract class AbstractKafkaSink private[kafka](
   }
 
   override def write(message: Message): Unit = {
-    message.msg match {
+    message.value match {
       case (k: Array[Byte], v: Array[Byte]) =>
         val record = new ProducerRecord[Array[Byte], Array[Byte]](topic, k, v)
         producer.send(record)

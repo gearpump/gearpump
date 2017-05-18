@@ -35,7 +35,7 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.ProcessorId
 import org.apache.gearpump.streaming.task.TaskActor._
 import org.apache.gearpump.util.{LogUtil, TimeOutScheduler}
-import org.apache.gearpump.{MAX_TIME_MILLIS, Message, MIN_TIME_MILLIS, TimeStamp}
+import org.apache.gearpump.{MAX_TIME_MILLIS, MIN_TIME_MILLIS, Message, TimeStamp}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._

@@ -19,7 +19,6 @@
 package org.apache.gearpump.streaming.task
 
 import akka.actor.{ActorRef, ExtendedActorSystem}
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.transport.netty.TaskMessage
 import org.apache.gearpump.transport.{Express, HostPort}
@@ -55,8 +54,8 @@ trait ExpressTransport {
         if (null == serializedMessage) {
           msg match {
             case message: Message =>
-              val bytes = serializerPool.get().serialize(message.msg)
-              serializedMessage = SerializedMessage(message.timeInMillis, bytes)
+              val bytes = serializerPool.get().serialize(message.value)
+              serializedMessage = SerializedMessage(message.timestamp.toEpochMilli, bytes)
             case _ => serializedMessage = msg
           }
         }

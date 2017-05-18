@@ -28,7 +28,7 @@ class FlattenMergeTask(context: TaskContext, userConf : UserConfig)
   val sizeOfOutputs = sizeOfOutPorts
   var index = 0
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message) : Unit = {
     output(index, msg)
     index += 1
     if (index == sizeOfOutputs) {

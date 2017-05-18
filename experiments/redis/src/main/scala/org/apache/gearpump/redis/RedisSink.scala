@@ -59,7 +59,7 @@ class RedisSink(
   }
 
   override def write(message: Message): Unit = {
-    message.msg match {
+    message.value match {
       // GEO
       case msg: GEOADD => client.geoadd(msg.key, msg.longitude, msg.latitude, msg.member)
 

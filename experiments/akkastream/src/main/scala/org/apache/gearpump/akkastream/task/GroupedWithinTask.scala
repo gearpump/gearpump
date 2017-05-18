@@ -33,7 +33,7 @@ class GroupedWithinTask[T](context: TaskContext, userConf : UserConfig)
   val timeWindow = userConf.getValue[FiniteDuration](GroupedWithinTask.TIME_WINDOW)
   val batchSize = userConf.getInt(GroupedWithinTask.BATCH_SIZE)
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message) : Unit = {
 
   }
 }

@@ -27,6 +27,6 @@ import org.apache.gearpump.Message
  */
 class HashPartitioner extends UnicastPartitioner {
   override def getPartition(msg: Message, partitionNum: Int, currentPartitionId: Int): Int = {
-    (msg.msg.hashCode() & Integer.MAX_VALUE) % partitionNum
+    (msg.value.hashCode() & Integer.MAX_VALUE) % partitionNum
   }
 }

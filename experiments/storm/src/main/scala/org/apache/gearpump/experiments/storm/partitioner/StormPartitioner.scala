@@ -42,7 +42,7 @@ private[storm] class StormPartitioner(target: String) extends MulticastPartition
 
   override def getPartitions(msg: Message, partitionNum: Int, currentPartitionId: Int)
     : Array[Int] = {
-    val stormTuple = msg.msg.asInstanceOf[GearpumpTuple]
+    val stormTuple = msg.value.asInstanceOf[GearpumpTuple]
     stormTuple.targetPartitions.getOrElse(target, Array(Partitioner.UNKNOWN_PARTITION_ID))
   }
 }

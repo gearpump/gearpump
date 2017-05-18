@@ -29,7 +29,7 @@ import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
 import org.apache.gearpump.streaming.examples.state.MessageCountApp._
 
-class MessageCountAppSpec
+class DefaultMessageCountAppSpec
   extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
 
   before {

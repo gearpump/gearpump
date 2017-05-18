@@ -30,15 +30,15 @@ class MapAsyncTask[In, Out](context: TaskContext, userConf : UserConfig)
   val f = userConf.getValue[In => Future[Out]](MapAsyncTask.MAPASYNC_FUNC)
   implicit val ec = context.system.dispatcher
 
-  override def onNext(msg : Message) : Unit = {
-    val data = msg.msg.asInstanceOf[In]
+  override def onNext(msg: Message) : Unit = {
+    val data = msg.value.asInstanceOf[In]
     val time = msg.timestamp
     f match {
       case Some(func) =>
         val fout = func(data)
         fout.onComplete(value => {
           value.foreach(out => {
-            val msg = new Message(out, time)
+            val msg = Message(out, time)
             context.output(msg)
           })
         })

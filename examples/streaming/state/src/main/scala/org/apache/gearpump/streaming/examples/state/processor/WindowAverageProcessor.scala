@@ -19,10 +19,8 @@
 package org.apache.gearpump.streaming.examples.state.processor
 
 import scala.collection.immutable.TreeMap
-
 import com.twitter.algebird.{AveragedGroup, AveragedValue}
 import org.slf4j.Logger
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.monoid.AlgebirdGroup
@@ -48,7 +46,7 @@ class WindowAverageProcessor(taskContext: TaskContext, conf: UserConfig)
 
   override def processMessage(state: PersistentState[AveragedValue],
       message: Message): Unit = {
-    val value = AveragedValue(message.msg.asInstanceOf[String].toLong)
+    val value = AveragedValue(message.value.asInstanceOf[String].toLong)
     state.update(message.timestamp.toEpochMilli, value)
   }
 }

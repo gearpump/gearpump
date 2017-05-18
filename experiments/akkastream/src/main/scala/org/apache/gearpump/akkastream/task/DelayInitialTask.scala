@@ -25,7 +25,6 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.TaskContext
 
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 case object DelayInitialTime
@@ -42,8 +41,8 @@ class DelayInitialTask[T](context: TaskContext, userConf : UserConfig)
       self ! Message(DelayInitialTime, Instant.now())
     )
   }
-  override def onNext(msg : Message) : Unit = {
-    msg.msg match {
+  override def onNext(msg: Message) : Unit = {
+    msg.value match {
       case DelayInitialTime =>
         delayInitialActive = false
       case _ =>

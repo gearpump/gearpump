@@ -24,7 +24,6 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.TaskContext
 
-import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 class ThrottleTask[T](context: TaskContext, userConf : UserConfig)
@@ -38,8 +37,8 @@ class ThrottleTask[T](context: TaskContext, userConf : UserConfig)
   val interval = timePeriod.toNanos / cost
 
   // TODO control rate from TaskActor
-  override def onNext(msg : Message) : Unit = {
-    val data = msg.msg.asInstanceOf[T]
+  override def onNext(msg: Message) : Unit = {
+    val data = msg.value.asInstanceOf[T]
     val time = msg.timestamp
     context.output(msg)
   }

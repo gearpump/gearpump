@@ -61,7 +61,7 @@ class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
 
   override def onNext(msg: Message): Unit = {
     val message = messages(rand.nextInt(messages.length))
-    output(new Message(message, System.currentTimeMillis()))
+    output(Message(message, System.currentTimeMillis()))
     messageCount = messageCount + 1L
     self ! Watermark(Instant.now)
   }

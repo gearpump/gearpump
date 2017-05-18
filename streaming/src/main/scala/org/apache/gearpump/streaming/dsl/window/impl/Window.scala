@@ -68,7 +68,7 @@ case class Window(startTime: Instant, endTime: Instant) extends Comparable[Windo
 case class GroupAlsoByWindow[T, GROUP](groupByFn: T => GROUP, window: Windows[T]) {
 
   def groupBy(message: Message): (GROUP, List[Window]) = {
-    val ele = message.msg.asInstanceOf[T]
+    val ele = message.value.asInstanceOf[T]
     val group = groupByFn(ele)
     val windows = window.windowFn(new WindowFunction.Context[T] {
       override def element: T = ele

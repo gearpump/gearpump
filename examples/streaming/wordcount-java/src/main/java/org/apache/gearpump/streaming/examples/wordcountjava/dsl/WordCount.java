@@ -19,6 +19,7 @@
 package org.apache.gearpump.streaming.examples.wordcountjava.dsl;
 
 import com.typesafe.config.Config;
+import org.apache.gearpump.DefaultMessage;
 import org.apache.gearpump.Message;
 import org.apache.gearpump.cluster.ClusterConfig;
 import org.apache.gearpump.cluster.UserConfig;
@@ -79,7 +80,7 @@ public class WordCount {
 
     @Override
     public Message read() {
-      return Message.apply(str, Instant.now());
+      return new DefaultMessage(str, Instant.now());
     }
 
     @Override

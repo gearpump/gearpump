@@ -41,7 +41,7 @@ import org.apache.gearpump.experiments.storm.util.StormConstants._
 import org.apache.gearpump.experiments.storm.util.StormUtil._
 import org.apache.gearpump.experiments.storm.util.{StormOutputCollector, StormUtil}
 import org.apache.gearpump.streaming.DAG
-import org.apache.gearpump.streaming.task.{GetDAG, TaskId, TaskContext}
+import org.apache.gearpump.streaming.task.{GetDAG, TaskContext, TaskId}
 import org.apache.gearpump.util.{Constants, LogUtil}
 import org.apache.gearpump.{Message, TimeStamp}
 import org.slf4j.Logger
@@ -219,7 +219,7 @@ object GearpumpStormComponent {
     override def next(message: Message): Unit = {
       val timestamp = message.timestamp.toEpochMilli
       collector.setTimestamp(timestamp)
-      bolt.execute(message.msg.asInstanceOf[GearpumpTuple].toTuple(generalTopologyContext,
+      bolt.execute(message.value.asInstanceOf[GearpumpTuple].toTuple(generalTopologyContext,
         timestamp))
     }
 

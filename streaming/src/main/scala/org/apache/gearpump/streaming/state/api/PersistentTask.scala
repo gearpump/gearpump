@@ -22,7 +22,7 @@ import java.time.Instant
 
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.state.impl.{CheckpointManager, PersistentStateConfig}
-import org.apache.gearpump.streaming.task.{UpdateCheckpointClock, Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext, UpdateCheckpointClock}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import org.apache.gearpump.util.LogUtil
 import org.apache.gearpump.{Message, TimeStamp}
@@ -79,7 +79,7 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
   }
 
   final override def onNext(message: Message): Unit = {
-    checkpointManager.update(message.timeInMillis)
+    checkpointManager.update(message.timestamp.toEpochMilli)
       .foreach(state.setNextCheckpointTime)
     processMessage(state, message)
   }

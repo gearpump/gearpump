@@ -38,7 +38,8 @@ class SourceSpec extends WordSpec with Matchers {
       val source = new Source(context, UserConfig.empty)
       source.onNext(Message("start"))
 
-      verify(context).output(argMatch[Message](Vector(classOf[Source].getCanonicalName) == _.msg))
+      verify(context).output(argMatch[Message](
+        Vector(classOf[Source].getCanonicalName) == _.value))
     }
   }
 }

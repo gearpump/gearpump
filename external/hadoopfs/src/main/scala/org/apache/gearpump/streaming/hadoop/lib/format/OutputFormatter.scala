@@ -18,7 +18,6 @@
 package org.apache.gearpump.streaming.hadoop.lib.format
 
 import org.apache.hadoop.io.Writable
-
 import org.apache.gearpump.Message
 
 trait OutputFormatter extends Serializable {

@@ -36,6 +36,6 @@ class NodeSpec extends PropSpec with PropertyChecks with Matchers with BeforeAnd
     val list = Vector(classOf[Node].getCanonicalName)
     val expected = Vector(classOf[Node].getCanonicalName, classOf[Node].getCanonicalName)
     node.onNext(Message(list))
-    verify(context).output(argMatch[Message](_.msg == expected))
+    verify(context).output(argMatch[Message](_.value == expected))
   }
 }

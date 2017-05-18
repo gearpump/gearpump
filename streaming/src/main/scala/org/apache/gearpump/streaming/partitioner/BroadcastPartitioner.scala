@@ -25,8 +25,8 @@ class BroadcastPartitioner extends MulticastPartitioner {
   private var lastPartitionNum = -1
   private var partitions = Array.empty[Int]
 
-  override def getPartitions(
-      msg: Message, partitionNum: Int, currentPartitionId: Int): Array[Int] = {
+  override def getPartitions(msg: Message, partitionNum: Int,
+      currentPartitionId: Int): Array[Int] = {
     if (partitionNum != lastPartitionNum) {
       partitions = (0 until partitionNum).toArray
       lastPartitionNum = partitionNum

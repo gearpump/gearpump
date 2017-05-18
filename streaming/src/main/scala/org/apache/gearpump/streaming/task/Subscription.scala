@@ -19,14 +19,13 @@
 package org.apache.gearpump.streaming.task
 
 import org.slf4j.Logger
-
 import com.google.common.primitives.Shorts
 import org.apache.gearpump.streaming.partitioner.{MulticastPartitioner, Partitioner, UnicastPartitioner}
 import org.apache.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import org.apache.gearpump.streaming.LifeTime
 import org.apache.gearpump.streaming.task.Subscription._
 import org.apache.gearpump.util.LogUtil
-import org.apache.gearpump.{MAX_TIME_MILLIS, Message, MIN_TIME_MILLIS, TimeStamp}
+import org.apache.gearpump.{MAX_TIME_MILLIS, MIN_TIME_MILLIS, Message, TimeStamp}
 
 /**
  * Manges the output and message clock for single downstream processor
@@ -103,14 +102,16 @@ class Subscription(
 
     var count = 0
     // Only sends message whose timestamp matches the lifeTime
-    if (partition != Partitioner.UNKNOWN_PARTITION_ID && life.contains(msg.timeInMillis)) {
+    if (partition != Partitioner.UNKNOWN_PARTITION_ID && life.contains(
+      msg.timestamp.toEpochMilli)) {
 
       val targetTask = TaskId(processorId, partition)
       transport.transport(msg, targetTask)
 
-      this.minClockValue(partition) = Math.min(this.minClockValue(partition), msg.timeInMillis)
+      this.minClockValue(partition) = Math.min(this.minClockValue(partition),
+        msg.timestamp.toEpochMilli)
       this.candidateMinClock(partition) =
-        Math.min(this.candidateMinClock(partition), msg.timeInMillis)
+        Math.min(this.candidateMinClock(partition), msg.timestamp.toEpochMilli)
 
       incrementMessageCount(partition, 1)
 

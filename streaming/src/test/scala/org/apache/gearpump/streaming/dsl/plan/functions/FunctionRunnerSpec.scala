@@ -268,7 +268,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       source.onWatermarkProgress(Watermark.MAX)
       data.foreach { s =>
         verify(taskContext, times(1)).output(MockUtil.argMatch[Message](
-          message => message.msg == s))
+          message => message.value == s))
       }
 
       // Source with transformer
@@ -282,7 +282,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       another.onWatermarkProgress(Watermark.MAX)
       data.foreach { s =>
         verify(anotherTaskContext, times(2)).output(MockUtil.argMatch[Message](
-          message => message.msg == s))
+          message => message.value == s))
       }
     }
   }
@@ -317,7 +317,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       import scala.collection.JavaConverters._
 
       val values = peopleCaptor.getAllValues.asScala.map(input =>
-        input.msg.asInstanceOf[Option[String]].get)
+        input.value.asInstanceOf[Option[String]].get)
       assert(values.mkString(",") == "1,2,22,3,33,333")
       system.terminate()
       Await.result(system.whenTerminated, Duration.Inf)

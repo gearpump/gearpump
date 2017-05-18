@@ -26,7 +26,7 @@ import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import org.slf4j.Logger
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.util.LogUtil
-import org.apache.gearpump.{TimeStamp, Message}
+import org.apache.gearpump.{Message, TimeStamp}
 
 /**
  * This provides TaskContext for user defined tasks

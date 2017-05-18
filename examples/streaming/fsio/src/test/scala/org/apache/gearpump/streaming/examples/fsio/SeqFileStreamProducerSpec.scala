@@ -79,7 +79,7 @@ class SeqFileStreamProducerSpec
 
     val expected = kvPairs.map(kv => kv._1 + "++" + kv._2).toSet
     verify(context).output(argMatch[Message](msg =>
-      expected.contains(msg.msg.asInstanceOf[String])))
+      expected.contains(msg.value.asInstanceOf[String])))
   }
 
   after {

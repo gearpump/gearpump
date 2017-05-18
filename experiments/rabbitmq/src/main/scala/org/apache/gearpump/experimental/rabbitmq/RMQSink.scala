@@ -49,7 +49,7 @@ class RMQSink(userConfig: UserConfig,
   }
 
   override def write(message: Message): Unit = {
-    publish(message.msg)
+    publish(message.value)
   }
 
   override def close(): Unit = {

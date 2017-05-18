@@ -33,10 +33,10 @@ class Sum(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, 
   override def onStart(startTime: Instant): Unit = {}
 
   override def onNext(message: Message): Unit = {
-    val word = message.msg.asInstanceOf[String]
+    val word = message.value.asInstanceOf[String]
     val count = wordcount.getOrElse(word, 0L) + 1
     wordcount += word -> count
-    output(new Message(
+    output(Message(
       Injection[String, Array[Byte]](word) ->
         Injection[Long, Array[Byte]](count),
       message.timestamp))

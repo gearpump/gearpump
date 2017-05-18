@@ -28,7 +28,7 @@ import org.apache.gearpump.streaming.kafka.lib.KafkaMessageDecoder
 import org.apache.gearpump.streaming.kafka.lib.source.consumer.FetchThread.FetchThreadFactory
 import org.apache.gearpump.streaming.kafka.lib.util.KafkaClient
 import KafkaClient.KafkaClientFactory
-import org.apache.gearpump.streaming.kafka.lib.source.consumer.{KafkaMessage, FetchThread}
+import org.apache.gearpump.streaming.kafka.lib.source.consumer.{FetchThread, KafkaMessage}
 import org.apache.gearpump.streaming.kafka.lib.source.grouper.PartitionGrouper
 import org.apache.gearpump.streaming.kafka.lib.util.KafkaClient
 import org.apache.gearpump.streaming.kafka.util.KafkaConfig
@@ -97,6 +97,7 @@ abstract class AbstractKafkaSource(
   /**
    * Reads a record from incoming queue, decodes, filters and checkpoints offsets
    * before returns a Message. Message can be null if the incoming queue is empty.
+ *
    * @return a [[org.apache.gearpump.Message]] or null
    */
   override def read(): Message = {

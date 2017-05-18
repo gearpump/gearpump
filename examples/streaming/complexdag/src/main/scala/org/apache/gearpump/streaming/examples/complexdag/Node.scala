@@ -30,7 +30,7 @@ class Node(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext,
   override def onStart(startTime: Instant): Unit = {}
 
   override def onNext(msg: Message): Unit = {
-    val list = msg.msg.asInstanceOf[Vector[String]]
-    output(new Message(list :+ getClass.getCanonicalName, System.currentTimeMillis()))
+    val list = msg.value.asInstanceOf[Vector[String]]
+    output(Message(list :+ getClass.getCanonicalName, System.currentTimeMillis()))
   }
 }

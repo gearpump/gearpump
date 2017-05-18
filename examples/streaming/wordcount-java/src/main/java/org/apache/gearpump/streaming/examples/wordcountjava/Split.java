@@ -18,6 +18,7 @@
 
 package org.apache.gearpump.streaming.examples.wordcountjava;
 
+import org.apache.gearpump.DefaultMessage;
 import org.apache.gearpump.Message;
 import org.apache.gearpump.cluster.UserConfig;
 import org.apache.gearpump.streaming.javaapi.Task;
@@ -45,7 +46,7 @@ public class Split extends Task {
     // Split the TEXT to words
     String[] words = TEXT.split(" ");
     for (int i = 0; i < words.length; i++) {
-      context.output(new Message(words[i], Instant.now().toEpochMilli()));
+      context.output(DefaultMessage.apply(words[i], Instant.now().toEpochMilli()));
     }
     self().tell(new Watermark(Instant.now()), self());
   }

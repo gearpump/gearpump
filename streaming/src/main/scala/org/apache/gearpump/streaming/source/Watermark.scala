@@ -19,8 +19,7 @@ package org.apache.gearpump.streaming.source
 
 import java.time.Instant
 
-import org.apache.gearpump.Message
-import org.apache.gearpump.{MAX_TIME_MILLIS, MIN_TIME_MILLIS}
+import org.apache.gearpump.{MAX_TIME_MILLIS, MIN_TIME_MILLIS, Message}
 
 /**
  * message used by source task to report source watermark.

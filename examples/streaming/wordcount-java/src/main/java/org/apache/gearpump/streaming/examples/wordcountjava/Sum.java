@@ -42,8 +42,8 @@ public class Sum extends Task {
   }
 
   @Override
-  public void onNext(Message messagePayLoad) {
-    String word = (String) (messagePayLoad.msg());
+  public void onNext(Message message) {
+    String word = (String) (message.value());
     Integer current = wordCount.get(word);
     if (current == null) {
       current = 0;

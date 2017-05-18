@@ -20,11 +20,10 @@ package org.apache.gearpump.streaming.examples.wordcount
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.Cancellable
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
@@ -45,9 +44,9 @@ class Sum(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, 
 
   override def onNext(msg: Message): Unit = {
     if (null != msg) {
-      val current = map.getOrElse(msg.msg.asInstanceOf[String], 0L)
+      val current = map.getOrElse(msg.value.asInstanceOf[String], 0L)
       wordCount += 1
-      map.put(msg.msg.asInstanceOf[String], current + 1)
+      map.put(msg.value.asInstanceOf[String], current + 1)
     }
   }
 

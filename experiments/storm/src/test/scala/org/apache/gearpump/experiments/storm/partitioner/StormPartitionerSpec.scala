@@ -52,7 +52,8 @@ class StormPartitionerSpec extends PropSpec with PropertyChecks with Matchers {
         targetPartitions.foreach {
           case (target, ps) => {
             val partitioner = new StormPartitioner(target)
-            ps shouldBe partitioner.getPartitions(Message(tuple), ps.last + 1, currentPartitionId)
+            ps shouldBe partitioner.getPartitions(Message(tuple), ps.last + 1,
+              currentPartitionId)
           }
         }
         val partitionNum = id

@@ -28,7 +28,7 @@ class MergeTask(context: TaskContext, userConf : UserConfig)
   val eagerComplete = userConf.getBoolean(MergeTask.EAGER_COMPLETE)
   val inputPorts = userConf.getInt(MergeTask.INPUT_PORTS)
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message) : Unit = {
     context.output(msg)
   }
 }

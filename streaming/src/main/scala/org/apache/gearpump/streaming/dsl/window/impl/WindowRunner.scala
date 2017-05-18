@@ -58,7 +58,7 @@ class DefaultWindowRunner[IN, GROUP, OUT](
   private val groupedRunnerSetups = new UnifiedMap[GROUP, Boolean]
 
   override def process(message: Message): Unit = {
-    val input = message.msg.asInstanceOf[IN]
+    val input = message.value.asInstanceOf[IN]
     val (group, windows) = groupBy.groupBy(message)
     if (!groupedWindowInputs.containsKey(group)) {
       groupedWindowInputs.put(group, new TreeSortedMap[Window, FastList[IN]]())

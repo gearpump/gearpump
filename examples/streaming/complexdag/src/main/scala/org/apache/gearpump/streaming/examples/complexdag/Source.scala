@@ -35,7 +35,7 @@ class Source(taskContext: TaskContext, conf: UserConfig) extends Task(taskContex
   override def onNext(msg: Message): Unit = {
     val list = Vector(getClass.getCanonicalName)
     val now = Instant.now
-    output(new Message(list, now.toEpochMilli))
+    output(Message(list, now.toEpochMilli))
     self ! Watermark(now)
   }
 }

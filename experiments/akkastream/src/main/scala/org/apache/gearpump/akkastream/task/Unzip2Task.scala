@@ -29,10 +29,10 @@ class Unzip2Task[In, A1, A2](context: TaskContext, userConf : UserConfig)
   val unzip = userConf.
     getValue[UnZipFunction[In, A1, A2]](Unzip2Task.UNZIP2_FUNCTION)(context.system).get.unzip
 
-  override def onNext(msg : Message) : Unit = {
-    val message = msg.msg
+  override def onNext(msg: Message) : Unit = {
+    val value = msg.value
     val time = msg.timestamp
-    val pair = unzip(message.asInstanceOf[In])
+    val pair = unzip(value.asInstanceOf[In])
     val (a, b) = pair
     output(0, Message(a.asInstanceOf[AnyRef], time))
     output(1, Message(b.asInstanceOf[AnyRef], time))

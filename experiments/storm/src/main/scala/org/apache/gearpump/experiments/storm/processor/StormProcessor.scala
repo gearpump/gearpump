@@ -20,8 +20,8 @@ package org.apache.gearpump.experiments.storm.processor
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.Duration
 
+import scala.concurrent.duration.Duration
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.experiments.storm.topology.GearpumpStormComponent.GearpumpBolt

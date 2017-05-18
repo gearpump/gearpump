@@ -22,7 +22,6 @@ import java.text.SimpleDateFormat
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.HdfsConfiguration
 import org.apache.hadoop.io.SequenceFile
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.hadoop.lib.HadoopUtil

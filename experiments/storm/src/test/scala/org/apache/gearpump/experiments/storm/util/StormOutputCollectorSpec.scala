@@ -18,8 +18,8 @@
 package org.apache.gearpump.experiments.storm.util
 
 import java.util.{List => JList, Map => JMap}
-import scala.collection.JavaConverters._
 
+import scala.collection.JavaConverters._
 import backtype.storm.generated.Grouping
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -27,8 +27,7 @@ import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-
-import org.apache.gearpump.{Message, MIN_TIME_MILLIS, TimeStamp}
+import org.apache.gearpump.{MIN_TIME_MILLIS, Message, TimeStamp}
 import org.apache.gearpump.experiments.storm.topology.GearpumpTuple
 import org.apache.gearpump.streaming.MockUtil
 
@@ -63,9 +62,9 @@ class StormOutputCollectorSpec
         stormOutputCollector.setTimestamp(timestamp)
         stormOutputCollector.emit(streamId, values) shouldBe targetStormTaskIds
         verify(taskContext, times(1)).output(MockUtil.argMatch[Message]({
-          case Message(tuple: GearpumpTuple, t) =>
+          message: Message =>
             val expected = new GearpumpTuple(values, stormTaskId, streamId, targetPartitions)
-            tuple == expected && t == timestamp
+            message.value == expected && message.timestamp.toEpochMilli == timestamp
         }))
     }
   }
@@ -96,11 +95,11 @@ class StormOutputCollectorSpec
         stormOutputCollector.emitDirect(id, streamId, values)
         val partitions = Array(StormUtil.stormTaskIdToGearpump(id).index)
         verify(taskContext, times(1)).output(MockUtil.argMatch[Message]({
-          case Message(tuple: GearpumpTuple, t) => {
+          message: Message => {
             val expected = new GearpumpTuple(values, stormTaskId, streamId,
             Map(target -> partitions))
 
-            val result = tuple == expected && t == timestamp
+            val result = message.value == expected && message.timestamp.toEpochMilli == timestamp
             result
           }
         }))

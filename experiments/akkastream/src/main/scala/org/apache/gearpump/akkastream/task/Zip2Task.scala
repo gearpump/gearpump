@@ -31,8 +31,8 @@ class Zip2Task[A1, A2, OUT](context: TaskContext, userConf : UserConfig)
   var a1: Option[A1] = None
   var a2: Option[A2] = None
 
-  override def onNext(msg : Message) : Unit = {
-    val message = msg.msg
+  override def onNext(msg: Message) : Unit = {
+    val message = msg.value
     val time = msg.timestamp
     a1 match {
       case Some(x) =>

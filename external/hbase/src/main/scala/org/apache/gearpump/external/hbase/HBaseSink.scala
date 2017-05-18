@@ -84,7 +84,7 @@ class HBaseSink(userConfig: UserConfig, tableName: String,
   }
 
   override def write(message: Message): Unit = {
-    put(message.msg)
+    put(message.value)
   }
 
   def close(): Unit = {

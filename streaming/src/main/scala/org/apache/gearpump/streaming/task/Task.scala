@@ -24,7 +24,6 @@ import scala.concurrent.duration.FiniteDuration
 import akka.actor.Actor.Receive
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import org.slf4j.Logger
-
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.util.LogUtil
 import org.apache.gearpump.{Message, TimeStamp}

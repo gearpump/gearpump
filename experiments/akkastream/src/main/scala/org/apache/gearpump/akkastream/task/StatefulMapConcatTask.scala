@@ -34,8 +34,8 @@ class StatefulMapConcatTask[IN, OUT](context: TaskContext, userConf : UserConfig
     f = func()
   }
 
-  override def onNext(msg : Message) : Unit = {
-    val in: IN = msg.msg.asInstanceOf[IN]
+  override def onNext(msg: Message) : Unit = {
+    val in: IN = msg.value.asInstanceOf[IN]
     val out: Iterable[OUT] = f(in)
     val iterator = out.iterator
     while(iterator.hasNext) {

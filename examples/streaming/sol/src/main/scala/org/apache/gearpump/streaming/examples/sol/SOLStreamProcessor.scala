@@ -20,10 +20,9 @@ package org.apache.gearpump.streaming.examples.sol
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.Cancellable
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.{Task, TaskContext}

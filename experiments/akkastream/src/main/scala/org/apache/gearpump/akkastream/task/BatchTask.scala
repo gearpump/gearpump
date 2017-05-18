@@ -18,14 +18,9 @@
 
 package org.apache.gearpump.akkastream.task
 
-import java.util.concurrent.TimeUnit
-
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.task.TaskContext
-
-import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
 class BatchTask[In, Out](context: TaskContext, userConf : UserConfig)
   extends GraphTask(context, userConf) {
@@ -35,8 +30,8 @@ class BatchTask[In, Out](context: TaskContext, userConf : UserConfig)
   val aggregate = userConf.getValue[(Out, In) => Out](BatchTask.AGGREGATE)
   val seed = userConf.getValue[In => Out](BatchTask.SEED)
 
-  override def onNext(msg : Message) : Unit = {
-    val data = msg.msg.asInstanceOf[In]
+  override def onNext(msg: Message) : Unit = {
+    val data = msg.value.asInstanceOf[In]
     val time = msg.timestamp
     context.output(msg)
   }

@@ -41,7 +41,7 @@ import org.apache.gearpump.streaming.partitioner.UnicastPartitioner
 class GroupByPartitioner[T, GROUP](fn: T => GROUP) extends UnicastPartitioner {
 
   override def getPartition(message: Message, partitionNum: Int, currentPartitionId: Int): Int = {
-    val hashCode = fn(message.msg.asInstanceOf[T]).hashCode()
+    val hashCode = fn(message.value.asInstanceOf[T]).hashCode()
     (hashCode & Integer.MAX_VALUE) % partitionNum
   }
 }

@@ -19,7 +19,6 @@
 package org.apache.gearpump.akkastream.task
 
 import java.time.Instant
-import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import org.apache.gearpump.Message
@@ -33,7 +32,6 @@ class TickSourceTask[T](context: TaskContext, userConf : UserConfig)
 
   val initialDelay = userConf.getValue[FiniteDuration](TickSourceTask.INITIAL_DELAY).
     getOrElse(FiniteDuration(0, TimeUnit.MINUTES))
-  (TickSourceTask.INITIAL_DELAY)
   val interval = userConf.getValue[FiniteDuration](TickSourceTask.INTERVAL).
     getOrElse(FiniteDuration(0, TimeUnit.MINUTES))
   val tick = userConf.getValue[T](TickSourceTask.TICK).get
@@ -44,7 +42,7 @@ class TickSourceTask[T](context: TaskContext, userConf : UserConfig)
     )
   }
 
-  override def onNext(msg : Message) : Unit = {
+  override def onNext(msg: Message) : Unit = {
     context.output(msg)
   }
 }
