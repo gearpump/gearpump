@@ -116,7 +116,9 @@ class DefaultWindowRunner[IN, GROUP, OUT](
           val inputs = windowInputs.remove(firstWin)
           if (groupedFnRunners.containsKey(group)) {
             val runner = FunctionRunner.withEmitFn(groupedFnRunners.get(group),
-              (output: OUT) => taskContext.output(Message(output, time)))
+              (output: OUT) => {
+                taskContext.output(Message(output, time))
+              })
             val setup = groupedRunnerSetups.get(group)
             if (!setup) {
               runner.setup()

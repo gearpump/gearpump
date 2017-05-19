@@ -29,7 +29,7 @@ import org.apache.gearpump.streaming.task.{Task, TaskContext}
 object TransformTask {
 
   class Transform[IN, OUT](taskContext: TaskContext,
-      operator: Option[FunctionRunner[IN, OUT]],
+      processor: Option[FunctionRunner[IN, OUT]],
       private var buffer: Vector[Message] = Vector.empty[Message]) {
 
     def onNext(msg: Message): Unit = {
@@ -37,27 +37,23 @@ object TransformTask {
     }
 
     def onWatermarkProgress(watermark: Instant): Unit = {
-      val watermarkTime = watermark.toEpochMilli
       var nextBuffer = Vector.empty[Message]
-      val processor = operator.map(FunctionRunner.withEmitFn(_,
-        (out: OUT) => taskContext.output(Message(out, watermarkTime))))
       processor.foreach(_.setup())
-      buffer.foreach {
-        message: Message =>
-          if (message.timestamp.toEpochMilli < watermarkTime) {
-            processor match {
-              case Some(p) =>
+      buffer.foreach { message: Message =>
+        if (message.timestamp.isBefore(watermark)) {
+          processor match {
+            case Some(p) =>
+              FunctionRunner
+                .withEmitFn(p, (out: OUT) => taskContext.output(Message(out, message.timestamp)))
                 // .toList forces eager evaluation
-                p.process(message.value.asInstanceOf[IN]).toList
-              case None =>
-                taskContext.output(Message(message.value, watermarkTime))
-            }
-          } else {
-            nextBuffer +:= message
+                .process(message.value.asInstanceOf[IN]).toList
+            case None =>
+              taskContext.output(message)
           }
+        } else {
+          nextBuffer +:= message
+        }
       }
-      // .toList forces eager evaluation
-      processor.map(_.finish().toList)
       processor.foreach(_.teardown())
       buffer = nextBuffer
     }

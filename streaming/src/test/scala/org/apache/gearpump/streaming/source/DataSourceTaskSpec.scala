@@ -56,8 +56,8 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
   }
 
   property("DataSourceTask should read from DataSource and transform inputs") {
-    forAll(runnerGen, Gen.alphaStr) {
-      (runner: Option[FunctionRunner[Any, Any]], str: String) =>
+    forAll(runnerGen, Gen.alphaStr, Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) {
+      (runner: Option[FunctionRunner[Any, Any]], str: String, timestamp: Instant) =>
         val taskContext = MockUtil.mockTaskContext
         implicit val system = MockUtil.system
         val dataSource = mock[DataSource]
@@ -65,7 +65,7 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
           .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
         val transform = new Transform[Any, Any](taskContext, runner)
         val sourceTask = new DataSourceTask[Any, Any](taskContext, config, dataSource, transform)
-        val msg = Message(str)
+        val msg = Message(str, timestamp)
         when(dataSource.read()).thenReturn(msg)
         runner.foreach(r => {
           when(r.process(str)).thenReturn(Some(str))
@@ -75,7 +75,7 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
         sourceTask.onNext(Message("next"))
         sourceTask.onWatermarkProgress(Watermark.MAX)
 
-        verify(taskContext).output(Message(str, Watermark.MAX))
+        verify(taskContext).output(msg)
     }
   }
 

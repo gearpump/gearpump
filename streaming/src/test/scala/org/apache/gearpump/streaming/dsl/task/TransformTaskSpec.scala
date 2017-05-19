@@ -69,7 +69,7 @@ class TransformTaskSpec extends PropSpec with PropertyChecks with Matchers with 
         task.onWatermarkProgress(Watermark.MAX)
 
         msgs.foreach { msg =>
-          verify(taskContext).output(MockitoMatchers.eq(Message(msg.value, Watermark.MAX)))
+          verify(taskContext).output(MockitoMatchers.eq(msg))
         }
     }
   }

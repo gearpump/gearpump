@@ -108,7 +108,11 @@ class Stream[T](
    * @return a new stream after fold
    */
   def fold[A](fn: FoldFunction[T, A], description: String): Stream[A] = {
-    transform(new FoldRunner(fn, description))
+    if (graph.vertices.exists(_.isInstanceOf[GroupByOp[_, _]])) {
+      transform(new FoldRunner(fn, description))
+    } else {
+      throw new UnsupportedOperationException("fold operation can only be applied on window")
+    }
   }
 
   /**
