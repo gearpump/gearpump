@@ -52,6 +52,13 @@ object CountWindows {
   }
 }
 
+object GlobalWindows {
+
+  def apply[T](): Windows[T] = {
+    Windows(GlobalWindowFunction())
+  }
+}
+
 object FixedWindows {
 
   /**

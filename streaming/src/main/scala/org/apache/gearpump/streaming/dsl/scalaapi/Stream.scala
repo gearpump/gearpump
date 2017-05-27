@@ -188,7 +188,7 @@ class Stream[T](
    */
   def groupBy[GROUP](fn: T => GROUP, parallelism: Int = 1,
       description: String = "groupBy"): Stream[T] = {
-    window(CountWindows.apply(1).accumulating)
+    window(GlobalWindows())
       .groupBy[GROUP](fn, parallelism, description)
   }
 

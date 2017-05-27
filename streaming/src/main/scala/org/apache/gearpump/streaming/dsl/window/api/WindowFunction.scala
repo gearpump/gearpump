@@ -19,7 +19,7 @@ package org.apache.gearpump.streaming.dsl.window.api
 
 import java.time.{Duration, Instant}
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.{MIN_TIME_MILLIS, MAX_TIME_MILLIS, TimeStamp}
 import org.apache.gearpump.streaming.dsl.window.impl.Window
 
 import scala.collection.mutable.ArrayBuffer
@@ -42,6 +42,15 @@ trait WindowFunction[T] {
 abstract class NonMergingWindowFunction[T] extends WindowFunction[T] {
 
   override def isNonMerging: Boolean = true
+}
+
+case class GlobalWindowFunction[T]() extends NonMergingWindowFunction[T] {
+
+  override def apply(context: WindowFunction.Context[T]): Array[Window] = {
+    Array(Window(Instant.ofEpochMilli(MIN_TIME_MILLIS),
+      Instant.ofEpochMilli(MAX_TIME_MILLIS)))
+  }
+
 }
 
 case class SlidingWindowFunction[T](size: Duration, step: Duration)
