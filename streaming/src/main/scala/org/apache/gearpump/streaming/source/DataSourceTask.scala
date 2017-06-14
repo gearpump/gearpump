@@ -23,8 +23,7 @@ import java.time.Instant
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
-import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
+import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
 /**
@@ -40,17 +39,17 @@ import org.apache.gearpump.streaming.task.{Task, TaskContext}
  *  - `DataSource.close()` in `onStop`
  */
 class DataSourceTask[IN, OUT] private[source](
-    context: TaskContext,
-    conf: UserConfig,
     source: DataSource,
-    transform: Transform[IN, OUT])
+    windowRunner: WindowRunner[IN, OUT],
+    context: TaskContext,
+    conf: UserConfig)
   extends Task(context, conf) {
 
   def this(context: TaskContext, conf: UserConfig) = {
-    this(context, conf,
+    this(
       conf.getValue[DataSource](GEARPUMP_STREAMING_SOURCE)(context.system).get,
-      new Transform[IN, OUT](context,
-        conf.getValue[FunctionRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system))
+      conf.getValue[WindowRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system).get,
+      context, conf
     )
   }
 
@@ -65,14 +64,19 @@ class DataSourceTask[IN, OUT] private[source](
 
   override def onNext(m: Message): Unit = {
     0.until(batchSize).foreach { _ =>
-      Option(source.read()).foreach(transform.onNext)
+      Option(source.read()).foreach(
+        msg => windowRunner.process(
+          TimestampedValue(msg.value.asInstanceOf[IN], msg.timestamp)))
     }
 
     self ! Watermark(source.getWatermark)
   }
 
   override def onWatermarkProgress(watermark: Instant): Unit = {
-    transform.onWatermarkProgress(watermark)
+    windowRunner.trigger(watermark).foreach {
+      result =>
+        context.output(Message(result.value, result.timestamp))
+    }
   }
 
   override def onStop(): Unit = {

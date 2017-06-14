@@ -25,7 +25,6 @@ import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.plan._
 import org.apache.gearpump.streaming.dsl.plan.functions._
 import org.apache.gearpump.streaming.dsl.window.api._
-import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
@@ -35,7 +34,8 @@ import scala.language.implicitConversions
 
 class Stream[T](
     private val graph: Graph[Op, OpEdge], private val thisNode: Op,
-    private val edge: Option[OpEdge] = None) {
+    private val edge: Option[OpEdge] = None,
+    private val windows: Windows = GlobalWindows()) {
 
   /**
    * Returns a new stream by applying a flatMap function to each element
@@ -108,11 +108,7 @@ class Stream[T](
    * @return a new stream after fold
    */
   def fold[A](fn: FoldFunction[T, A], description: String): Stream[A] = {
-    if (graph.vertices.exists(_.isInstanceOf[GroupByOp[_, _]])) {
-      transform(new FoldRunner(fn, description))
-    } else {
-      throw new UnsupportedOperationException("fold operation can only be applied on window")
-    }
+    transform(new FoldRunner(fn, description))
   }
 
   /**
@@ -138,10 +134,10 @@ class Stream[T](
   }
 
   private def transform[R](fn: FunctionRunner[T, R]): Stream[R] = {
-    val op = ChainableOp(fn)
+    val op = TransformOp(fn)
     graph.addVertex(op)
     graph.addEdge(thisNode, edge.getOrElse(Direct), op)
-    new Stream(graph, op)
+    new Stream(graph, op, None, windows)
   }
 
   /**
@@ -160,12 +156,13 @@ class Stream[T](
    * @param other the other stream
    * @return  the merged stream
    */
-  def merge(other: Stream[T], description: String = "merge"): Stream[T] = {
-    val mergeOp = MergeOp(description, UserConfig.empty)
+  def merge(other: Stream[T], parallelism: Int = 1, description: String = "merge"): Stream[T] = {
+    val mergeOp = MergeOp(parallelism, description, UserConfig.empty)
     graph.addVertex(mergeOp)
     graph.addEdge(thisNode, edge.getOrElse(Direct), mergeOp)
     graph.addEdge(other.thisNode, other.edge.getOrElse(Shuffle), mergeOp)
-    new Stream[T](graph, mergeOp)
+    val winOp = Stream.addWindowOp(graph, mergeOp, windows)
+    new Stream[T](graph, winOp, None, windows)
   }
 
   /**
@@ -184,23 +181,26 @@ class Stream[T](
    * @param fn  Group by function
    * @param parallelism  Parallelism level
    * @param description  The description
-   * @return  the grouped stream
+   * @return the grouped stream
    */
   def groupBy[GROUP](fn: T => GROUP, parallelism: Int = 1,
       description: String = "groupBy"): Stream[T] = {
-    window(GlobalWindows())
-      .groupBy[GROUP](fn, parallelism, description)
+    val gbOp = GroupByOp(fn, parallelism, description)
+    graph.addVertex(gbOp)
+    graph.addEdge(thisNode, edge.getOrElse(Shuffle), gbOp)
+    val winOp = Stream.addWindowOp(graph, gbOp, windows)
+    new Stream(graph, winOp, None, windows)
   }
 
   /**
    * Window function
    *
-   * @param win window definition
-   * @param description window description
-   * @return [[WindowStream]] where groupBy could be applied
+   * @param windows window definition
+   * @return the windowed [[Stream]]
    */
-  def window(win: Windows[T], description: String = "window"): WindowStream[T] = {
-    new WindowStream[T](graph, edge, thisNode, win, description)
+  def window(windows: Windows): Stream[T] = {
+    val winOp = Stream.addWindowOp(graph, thisNode, windows)
+    new Stream(graph, winOp, None, windows)
   }
 
   /**
@@ -216,22 +216,10 @@ class Stream[T](
     val processorOp = ProcessorOp(processor, parallelism, conf, description)
     graph.addVertex(processorOp)
     graph.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
-    new Stream[R](graph, processorOp, Some(Shuffle))
+    new Stream[R](graph, processorOp, Some(Shuffle), windows)
   }
-}
 
-class WindowStream[T](graph: Graph[Op, OpEdge], edge: Option[OpEdge], thisNode: Op,
-    window: Windows[T], winDesc: String) {
 
-  def groupBy[GROUP](fn: T => GROUP, parallelism: Int = 1,
-      description: String = "groupBy"): Stream[T] = {
-    val groupBy = GroupAlsoByWindow(fn, window)
-    val groupOp = GroupByOp[T, GROUP](groupBy, parallelism,
-      s"$winDesc.$description")
-    graph.addVertex(groupOp)
-    graph.addEdge(thisNode, edge.getOrElse(Shuffle), groupOp)
-    new Stream[T](graph, groupOp)
-  }
 }
 
 class KVStream[K, V](stream: Stream[Tuple2[K, V]]) {
@@ -263,14 +251,22 @@ class KVStream[K, V](stream: Stream[Tuple2[K, V]]) {
 
 object Stream {
 
-  def apply[T](graph: Graph[Op, OpEdge], node: Op, edge: Option[OpEdge]): Stream[T] = {
-    new Stream[T](graph, node, edge)
+  def apply[T](graph: Graph[Op, OpEdge], node: Op, edge: Option[OpEdge],
+      windows: Windows): Stream[T] = {
+    new Stream[T](graph, node, edge, windows)
   }
 
   def getTupleKey[K, V](tuple: Tuple2[K, V]): K = tuple._1
 
   def sumByKey[K, V](numeric: Numeric[V]): (Tuple2[K, V], Tuple2[K, V]) => Tuple2[K, V]
   = (tuple1, tuple2) => Tuple2(tuple1._1, numeric.plus(tuple1._2, tuple2._2))
+
+  def addWindowOp(graph: Graph[Op, OpEdge], op: Op, win: Windows): Op = {
+    val winOp = WindowOp(win)
+    graph.addVertex(winOp)
+    graph.addEdge(op, Direct, winOp)
+    winOp
+  }
 
   implicit def streamToKVStream[K, V](stream: Stream[Tuple2[K, V]]): KVStream[K, V] = {
     new KVStream(stream)
@@ -279,10 +275,10 @@ object Stream {
   implicit class Sink[T](stream: Stream[T]) extends java.io.Serializable {
     def sink(dataSink: DataSink, parallelism: Int = 1,
         conf: UserConfig = UserConfig.empty, description: String = "sink"): Stream[T] = {
-      implicit val sink = DataSinkOp(dataSink, parallelism, conf, description)
+      implicit val sink = DataSinkOp(dataSink, parallelism, description, conf)
       stream.graph.addVertex(sink)
       stream.graph.addEdge(stream.thisNode, Shuffle, sink)
-      new Stream[T](stream.graph, sink)
+      new Stream[T](stream.graph, sink, None, stream.windows)
     }
   }
 }

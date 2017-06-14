@@ -20,42 +20,35 @@ package org.apache.gearpump.streaming.dsl.window.api
 import java.time.Duration
 
 /**
- *
  * Defines how to apply window functions.
  *
  * @param windowFn how to divide windows
  * @param trigger when to trigger window result
  * @param accumulationMode whether to accumulate results across windows
  */
-case class Windows[T](
-    windowFn: WindowFunction[T],
+case class Windows(
+    windowFn: WindowFunction,
     trigger: Trigger = EventTimeTrigger,
-    accumulationMode: AccumulationMode = Discarding) {
+    accumulationMode: AccumulationMode = Discarding,
+    description: String) {
 
-  def triggering(trigger: Trigger): Windows[T] = {
-    Windows(windowFn, trigger)
+  def triggering(trigger: Trigger): Windows = {
+    Windows(windowFn, trigger, accumulationMode, description)
   }
 
-  def accumulating: Windows[T] = {
-    Windows(windowFn, trigger, Accumulating)
+  def accumulating: Windows = {
+    Windows(windowFn, trigger, Accumulating, description)
   }
 
-  def discarding: Windows[T] = {
-    Windows(windowFn, trigger, Discarding)
-  }
-}
-
-object CountWindows {
-
-  def apply[T](size: Int): Windows[T] = {
-    Windows(CountWindowFunction(size), CountTrigger)
+  def discarding: Windows = {
+    Windows(windowFn, trigger, Discarding, description)
   }
 }
 
 object GlobalWindows {
 
-  def apply[T](): Windows[T] = {
-    Windows(GlobalWindowFunction())
+  def apply(): Windows = {
+    Windows(GlobalWindowFunction(), description = "globalWindows")
   }
 }
 
@@ -67,8 +60,8 @@ object FixedWindows {
    * @param size window size
    * @return a Window definition
    */
-  def apply[T](size: Duration): Windows[T] = {
-    Windows(SlidingWindowFunction(size, size))
+  def apply(size: Duration): Windows = {
+    Windows(SlidingWindowFunction(size, size), description = "fixedWindows")
   }
 }
 
@@ -81,8 +74,8 @@ object SlidingWindows {
    * @param step window step to slide forward
    * @return a Window definition
    */
-  def apply[T](size: Duration, step: Duration): Windows[T] = {
-    Windows(SlidingWindowFunction(size, step))
+  def apply(size: Duration, step: Duration): Windows = {
+    Windows(SlidingWindowFunction(size, step), description = "slidingWindows")
   }
 }
 
@@ -94,8 +87,8 @@ object SessionWindows {
    * @param gap session gap
    * @return a Window definition
    */
-  def apply[T](gap: Duration): Windows[T] = {
-    Windows(SessionWindowFunction(gap))
+  def apply(gap: Duration): Windows = {
+    Windows(SessionWindowFunction(gap), description = "sessionWindows")
   }
 }
 

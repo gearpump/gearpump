@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.dsl.partitioner
+package org.apache.gearpump.streaming.partitioner
 
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitionerSpec.People
+import org.apache.gearpump.streaming.partitioner.GroupByPartitionerSpec.People
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 class GroupByPartitionerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
 

@@ -30,7 +30,7 @@ case class Watermark(instant: Instant) {
 
 object Watermark {
 
-  val MAX: Instant = Instant.ofEpochMilli(MAX_TIME_MILLIS)
+  val MAX: Instant = Instant.ofEpochMilli(MAX_TIME_MILLIS + 1)
 
   val MIN: Instant = Instant.ofEpochMilli(MIN_TIME_MILLIS)
 }

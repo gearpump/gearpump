@@ -24,9 +24,10 @@ import java.util.Random
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-import org.apache.gearpump.{MAX_TIME_MILLIS, Message}
+import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
+import org.apache.gearpump.streaming.source.Watermark
 import org.apache.gearpump.streaming.task.SubscriptionSpec.NextTask
 import org.apache.gearpump.streaming.{LifeTime, ProcessorDescription}
 
@@ -115,7 +116,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
       subscription.sendMessage(Message(randomMessage, clock))
     }
 
-    assert(subscription.allowSendingMoreMessages() == false)
+    assert(!subscription.allowSendingMoreMessages())
   }
 
   it should "report minClock as Long.MaxValue when there is no pending message" in {
@@ -124,7 +125,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
     subscription.sendMessage(msg1)
     assert(subscription.minClock == 70)
     subscription.receiveAck(Ack(TaskId(1, 1), 1, 1, session))
-    assert(subscription.minClock == MAX_TIME_MILLIS)
+    assert(subscription.minClock == Watermark.MAX.toEpochMilli)
   }
 
   private def randomMessage: String = new Random().nextInt.toString

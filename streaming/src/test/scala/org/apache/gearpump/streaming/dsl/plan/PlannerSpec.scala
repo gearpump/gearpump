@@ -24,16 +24,14 @@ import akka.actor.ActorSystem
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
-import org.apache.gearpump.streaming.partitioner.CoLocationPartitioner
-import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
+import org.apache.gearpump.streaming.partitioner.{CoLocationPartitioner, GroupByPartitioner}
 import org.apache.gearpump.streaming.dsl.plan.PlannerSpec._
 import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapper, FoldRunner}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import org.apache.gearpump.streaming.dsl.window.api.CountWindows
-import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.source.DataSource
 import org.apache.gearpump.streaming.MockUtil
+import org.apache.gearpump.streaming.dsl.window.api.GlobalWindows
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 import org.apache.gearpump.util.Graph
 import org.scalatest.mock.MockitoSugar
@@ -58,10 +56,11 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
   "Planner" should "chain operations" in {
     val graph = Graph.empty[Op, OpEdge]
     val sourceOp = DataSourceOp(new AnySource)
-    val groupBy = GroupAlsoByWindow((any: Any) => any, CountWindows.apply[Any](1))
+    val groupBy = (any: Any) => any
     val groupByOp = GroupByOp(groupBy)
-    val flatMapOp = ChainableOp[Any, Any](anyFlatMapper)
-    val reduceOp = ChainableOp[Any, Option[Any]](anyReducer)
+    val windowOp = WindowOp(GlobalWindows())
+    val flatMapOp = TransformOp[Any, Any](anyFlatMapper)
+    val reduceOp = TransformOp[Any, Option[Any]](anyReducer)
     val processorOp = new ProcessorOp[AnyTask]
     val sinkOp = DataSinkOp(new AnySink)
     val directEdge = Direct
@@ -70,8 +69,10 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
     graph.addVertex(sourceOp)
     graph.addVertex(groupByOp)
     graph.addEdge(sourceOp, shuffleEdge, groupByOp)
+    graph.addVertex(windowOp)
+    graph.addEdge(groupByOp, directEdge, windowOp)
     graph.addVertex(flatMapOp)
-    graph.addEdge(groupByOp, directEdge, flatMapOp)
+    graph.addEdge(windowOp, directEdge, flatMapOp)
     graph.addVertex(reduceOp)
     graph.addEdge(flatMapOp, directEdge, reduceOp)
     graph.addVertex(processorOp)
@@ -86,9 +87,11 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
       .mapVertex(_.description)
 
     plan.vertices.toSet should contain theSameElementsAs
-      Set("source", "groupBy", "processor", "sink")
-    plan.outgoingEdgesOf("source").iterator.next()._2 shouldBe a[GroupByPartitioner[_, _]]
-    plan.outgoingEdgesOf("groupBy").iterator.next()._2 shouldBe a[CoLocationPartitioner]
+      Set("source.globalWindows", "groupBy.globalWindows.flatMap.reduce", "processor", "sink")
+    plan.outgoingEdgesOf("source.globalWindows").iterator.next()._2 shouldBe
+      a[GroupByPartitioner[_, _]]
+    plan.outgoingEdgesOf("groupBy.globalWindows.flatMap.reduce").iterator.next()._2 shouldBe
+      a[CoLocationPartitioner]
     plan.outgoingEdgesOf("processor").iterator.next()._2 shouldBe a[CoLocationPartitioner]
   }
 }

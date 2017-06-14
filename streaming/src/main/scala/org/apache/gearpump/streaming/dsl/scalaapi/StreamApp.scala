@@ -78,7 +78,7 @@ object StreamApp {
 
     def source[T](dataSource: DataSource, parallelism: Int = 1,
         conf: UserConfig = UserConfig.empty, description: String = "source"): Stream[T] = {
-      implicit val sourceOp = DataSourceOp(dataSource, parallelism, conf, description)
+      implicit val sourceOp = DataSourceOp(dataSource, parallelism, description, conf)
       app.graph.addVertex(sourceOp)
       new Stream[T](app.graph, sourceOp)
     }

@@ -22,58 +22,28 @@ import java.time.Instant
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
-import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
+import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
 
-object TransformTask {
-
-  class Transform[IN, OUT](taskContext: TaskContext,
-      processor: Option[FunctionRunner[IN, OUT]],
-      private var buffer: Vector[Message] = Vector.empty[Message]) {
-
-    def onNext(msg: Message): Unit = {
-      buffer +:= msg
-    }
-
-    def onWatermarkProgress(watermark: Instant): Unit = {
-      var nextBuffer = Vector.empty[Message]
-      processor.foreach(_.setup())
-      buffer.foreach { message: Message =>
-        if (message.timestamp.isBefore(watermark)) {
-          processor match {
-            case Some(p) =>
-              FunctionRunner
-                .withEmitFn(p, (out: OUT) => taskContext.output(Message(out, message.timestamp)))
-                // .toList forces eager evaluation
-                .process(message.value.asInstanceOf[IN]).toList
-            case None =>
-              taskContext.output(message)
-          }
-        } else {
-          nextBuffer +:= message
-        }
-      }
-      processor.foreach(_.teardown())
-      buffer = nextBuffer
-    }
-  }
-
-}
-
-class TransformTask[IN, OUT](transform: Transform[IN, OUT],
+class TransformTask[IN, OUT](
+    runner: WindowRunner[IN, OUT],
     taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
 
-  def this(taskContext: TaskContext, userConf: UserConfig) = {
-    this(new Transform(taskContext, userConf.getValue[FunctionRunner[IN, OUT]](
-      GEARPUMP_STREAMING_OPERATOR)(taskContext.system)), taskContext, userConf)
+  def this(context: TaskContext, conf: UserConfig) = {
+    this(
+      conf.getValue[WindowRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system).get,
+      context, conf
+    )
   }
 
   override def onNext(msg: Message): Unit = {
-    transform.onNext(msg)
+    runner.process(TimestampedValue(msg.value.asInstanceOf[IN], msg.timestamp))
   }
 
   override def onWatermarkProgress(watermark: Instant): Unit = {
-    transform.onWatermarkProgress(watermark)
+    runner.trigger(watermark).foreach {
+      result =>
+        taskContext.output(Message(result.value, result.timestamp))
+    }
   }
 }

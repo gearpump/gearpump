@@ -21,7 +21,3 @@ sealed trait Trigger
 
 case object EventTimeTrigger extends Trigger
 
-case object ProcessingTimeTrigger extends Trigger
-
-case object CountTrigger extends Trigger
-

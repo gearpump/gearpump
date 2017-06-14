@@ -16,10 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.streaming.dsl.partitioner
+package org.apache.gearpump.streaming.partitioner
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.partitioner.UnicastPartitioner
 
 /**
  * Partition messages by applying group by function first.

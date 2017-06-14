@@ -17,15 +17,8 @@
  */
 package org.apache.gearpump.streaming.dsl.plan.functions
 
-import org.apache.gearpump.streaming.dsl.api.functions.{FoldFunction, ReduceFunction}
+import org.apache.gearpump.streaming.dsl.api.functions.FoldFunction
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-
-object FunctionRunner {
-  def withEmitFn[IN, OUT](runner: FunctionRunner[IN, OUT],
-      fn: OUT => Unit): FunctionRunner[IN, Unit] = {
-    AndThen(runner, new Emit(fn))
-  }
-}
 
 /**
  * Interface to invoke SerializableFunction methods
@@ -121,12 +114,9 @@ class FoldRunner[T, A](fn: FoldFunction[T, A], val description: String)
   }
 }
 
-class Emit[T](emit: T => Unit) extends FunctionRunner[T, Unit] {
+class DummyRunner[T] extends FunctionRunner[T, T] {
 
-  override def process(value: T): TraversableOnce[Unit] = {
-    emit(value)
-    None
-  }
+  override def process(value: T): TraversableOnce[T] = Option(value)
 
   override def description: String = ""
 }

@@ -25,7 +25,6 @@ import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.Processor
 import org.apache.gearpump.{Message, TimeStamp}
 import org.apache.gearpump.streaming.dsl.window.api._
-import org.apache.gearpump.streaming.dsl.task.{CountTriggerTask, EventTimeTriggerTask, ProcessingTimeTriggerTask}
 import org.apache.gearpump.streaming.task.Task
 
 object Window {
@@ -63,33 +62,6 @@ case class Window(startTime: Instant, endTime: Instant) extends Comparable[Windo
       endTime.compareTo(o.endTime)
     }
   }
-}
-
-case class GroupAlsoByWindow[T, GROUP](groupByFn: T => GROUP, window: Windows[T]) {
-
-  def groupBy(message: Message): (GROUP, List[Window]) = {
-    val ele = message.value.asInstanceOf[T]
-    val group = groupByFn(ele)
-    val windows = window.windowFn(new WindowFunction.Context[T] {
-      override def element: T = ele
-      override def timestamp: Instant = message.timestamp
-    })
-    group -> windows.toList
-  }
-
-  def getProcessor(parallelism: Int, description: String,
-      userConfig: UserConfig)(implicit system: ActorSystem): Processor[_ <: Task] = {
-    val config = userConfig.withValue(GEARPUMP_STREAMING_GROUPBY_FUNCTION, this)
-    window.trigger match {
-      case CountTrigger =>
-        Processor[CountTriggerTask[T, GROUP]](parallelism, description, config)
-      case ProcessingTimeTrigger =>
-        Processor[ProcessingTimeTriggerTask[T, GROUP]](parallelism, description, config)
-      case EventTimeTrigger =>
-        Processor[EventTimeTriggerTask[T, GROUP]](parallelism, description, config)
-    }
-  }
-
 }
 
 

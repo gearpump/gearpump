@@ -21,7 +21,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.dsl.api.functions.{FilterFunction, FoldFunction, MapFunction, ReduceFunction}
 import org.apache.gearpump.streaming.dsl.javaapi.functions.{GroupByFunction, FlatMapFunction => JFlatMapFunction}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import org.apache.gearpump.streaming.dsl.scalaapi.{Stream, WindowStream}
+import org.apache.gearpump.streaming.dsl.scalaapi.Stream
 import org.apache.gearpump.streaming.dsl.window.api.Windows
 import org.apache.gearpump.streaming.task.Task
 
@@ -59,8 +59,8 @@ class JavaStream[T](val stream: Stream[T]) {
   }
 
   /** Merges streams of same type together */
-  def merge(other: JavaStream[T], description: String): JavaStream[T] = {
-    new JavaStream[T](stream.merge(other.stream, description))
+  def merge(other: JavaStream[T], parallelism: Int, description: String): JavaStream[T] = {
+    new JavaStream[T](stream.merge(other.stream, parallelism, description))
   }
 
   /**
@@ -72,8 +72,8 @@ class JavaStream[T](val stream: Stream[T]) {
     new JavaStream[T](stream.groupBy(fn.groupBy, parallelism, description))
   }
 
-  def window(win: Windows[T], description: String): JavaWindowStream[T] = {
-    new JavaWindowStream[T](stream.window(win, description))
+  def window(win: Windows): JavaStream[T] = {
+    new JavaStream[T](stream.window(win))
   }
 
   /** Add a low level Processor to process messages */
@@ -84,10 +84,3 @@ class JavaStream[T](val stream: Stream[T]) {
   }
 }
 
-class JavaWindowStream[T](stream: WindowStream[T]) {
-
-  def groupBy[GROUP](fn: GroupByFunction[T, GROUP], parallelism: Int,
-      description: String): JavaStream[T] = {
-    new JavaStream[T](stream.groupBy(fn.groupBy, parallelism, description))
-  }
-}

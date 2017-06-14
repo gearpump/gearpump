@@ -19,10 +19,8 @@
 package org.apache.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
-
-import org.apache.gearpump.streaming.partitioner.{CoLocationPartitioner, HashPartitioner, Partitioner}
+import org.apache.gearpump.streaming.partitioner.{CoLocationPartitioner, GroupByPartitioner, HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.Processor
-import org.apache.gearpump.streaming.dsl.partitioner.GroupByPartitioner
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.util.Graph
 
@@ -36,18 +34,18 @@ class Planner {
     (implicit system: ActorSystem): Graph[Processor[_ <: Task], _ <: Partitioner] = {
 
     val graph = optimize(dag)
-    graph.mapEdge { (node1, edge, node2) =>
+    graph.mapEdge { (_, edge, node2) =>
       edge match {
         case Shuffle =>
           node2 match {
             case op: GroupByOp[_, _] =>
-              new GroupByPartitioner(op.groupBy.groupByFn)
+              new GroupByPartitioner(op.groupBy)
             case _ => new HashPartitioner
           }
         case Direct =>
           new CoLocationPartitioner
       }
-    }.mapVertex(_.getProcessor)
+    }.mapVertex(_.toProcessor)
   }
 
   private def optimize(dag: Graph[Op, OpEdge])

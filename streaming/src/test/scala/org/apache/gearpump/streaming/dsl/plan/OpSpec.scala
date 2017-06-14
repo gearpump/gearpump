@@ -25,13 +25,13 @@ import org.apache.gearpump.cluster.{TestUtil, UserConfig}
 import org.apache.gearpump.streaming.Processor
 import org.apache.gearpump.streaming.Processor.DefaultProcessor
 import org.apache.gearpump.streaming.dsl.plan.OpSpec.{AnySink, AnySource, AnyTask}
-import org.apache.gearpump.streaming.dsl.plan.functions.{FlatMapper, FunctionRunner}
+import org.apache.gearpump.streaming.dsl.plan.functions.{DummyRunner, FlatMapper, FunctionRunner}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
+import org.apache.gearpump.streaming.dsl.window.api.GlobalWindows
+import org.apache.gearpump.streaming.dsl.window.impl.{DefaultWindowRunner, WindowRunner}
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.source.DataSource
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
-import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import org.scalatest.mock.MockitoSugar
@@ -61,16 +61,16 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
 
   "DataSourceOp" should {
 
-    "chain ChainableOp" in {
+    "chain TransformOp" in {
       val dataSource = new AnySource
       val dataSourceOp = DataSourceOp(dataSource)
-      val chainableOp = mock[ChainableOp[Any, Any]]
+      val transformOp = mock[TransformOp[Any, Any]]
       val fn = mock[FunctionRunner[Any, Any]]
+      when(transformOp.fn).thenReturn(fn)
 
-      val chainedOp = dataSourceOp.chain(chainableOp)
+      val chainedOp = dataSourceOp.chain(transformOp)
 
       chainedOp shouldBe a[DataSourceOp]
-      verify(chainableOp).fn
 
       unchainableOps.foreach { op =>
         intercept[OpChainException] {
@@ -79,13 +79,13 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
       }
     }
 
-    "get Processor of DataSource" in {
+    "be translated into processor" in {
       val dataSource = new AnySource
       val dataSourceOp = DataSourceOp(dataSource)
-      val processor = dataSourceOp.getProcessor
+      val processor = dataSourceOp.toProcessor
       processor shouldBe a[Processor[_]]
       processor.parallelism shouldBe dataSourceOp.parallelism
-      processor.description shouldBe dataSourceOp.description
+      processor.description shouldBe s"${dataSourceOp.description}.globalWindows"
     }
   }
 
@@ -94,7 +94,7 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
     "not chain any Op" in {
       val dataSink = new AnySink
       val dataSinkOp = DataSinkOp(dataSink)
-      val chainableOp = mock[ChainableOp[Any, Any]]
+      val chainableOp = mock[TransformOp[Any, Any]]
       val ops = chainableOp +: unchainableOps
       ops.foreach { op =>
         intercept[OpChainException] {
@@ -103,10 +103,10 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
       }
     }
 
-    "get Processor of DataSink" in {
+    "be translated to processor" in {
       val dataSink = new AnySink
       val dataSinkOp = DataSinkOp(dataSink)
-      val processor = dataSinkOp.getProcessor
+      val processor = dataSinkOp.toProcessor
       processor shouldBe a[Processor[_]]
       processor.parallelism shouldBe dataSinkOp.parallelism
       processor.description shouldBe dataSinkOp.description
@@ -117,7 +117,7 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
 
     "not chain any Op" in {
       val processorOp = new ProcessorOp[AnyTask]
-      val chainableOp = mock[ChainableOp[Any, Any]]
+      val chainableOp = mock[TransformOp[Any, Any]]
       val ops = chainableOp +: unchainableOps
       ops.foreach { op =>
         intercept[OpChainException] {
@@ -126,41 +126,41 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
       }
     }
 
-    "get Processor" in {
+    "be translated into processor" in {
       val processorOp = new ProcessorOp[AnyTask]
-      val processor = processorOp.getProcessor
+      val processor = processorOp.toProcessor
       processor shouldBe a [DefaultProcessor[_]]
       processor.parallelism shouldBe processorOp.parallelism
       processor.description shouldBe processorOp.description
     }
   }
 
-  "ChainableOp" should {
+  "TransformOp" should {
 
-    "chain ChainableOp" in {
+    "chain TransformOp" in {
       val fn1 = mock[FunctionRunner[Any, Any]]
-      val chainableOp1 = ChainableOp[Any, Any](fn1)
+      val transformOp1 = TransformOp[Any, Any](fn1)
 
       val fn2 = mock[FunctionRunner[Any, Any]]
-      val chainableOp2 = ChainableOp[Any, Any](fn2)
+      val transformOp2 = TransformOp[Any, Any](fn2)
 
-      val chainedOp = chainableOp1.chain(chainableOp2)
+      val chainedOp = transformOp1.chain(transformOp2)
 
-      chainedOp shouldBe a[ChainableOp[_, _]]
+      chainedOp shouldBe a[TransformOp[_, _]]
 
       unchainableOps.foreach { op =>
         intercept[OpChainException] {
-          chainableOp1.chain(op)
+          transformOp1.chain(op)
         }
       }
     }
 
-    "get Processor" in {
+    "be translated to processor" in {
       val fn = mock[FlatMapFunction[Any, Any]]
       val flatMapper = new FlatMapper(fn, "flatMap")
-      val chainableOp = ChainableOp[Any, Any](flatMapper)
+      val transformOp = TransformOp[Any, Any](flatMapper)
 
-      val processor = chainableOp.getProcessor
+      val processor = transformOp.toProcessor
       processor shouldBe a[Processor[_]]
       processor.parallelism shouldBe 1
     }
@@ -168,14 +168,16 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
 
   "GroupByOp" should {
 
-    "chain ChainableOp" in {
-      val groupBy = mock[GroupAlsoByWindow[Any, Any]]
-      val groupByOp = GroupByOp[Any, Any](groupBy)
-      val fn = mock[FunctionRunner[Any, Any]]
-      val chainableOp = mock[ChainableOp[Any, Any]]
-      when(chainableOp.fn).thenReturn(fn)
+    val groupBy = (any: Any) => any
+    val groupByOp = GroupByOp[Any, Any](groupBy)
 
-      val chainedOp = groupByOp.chain(chainableOp)
+    "chain WindowTransformOp" in {
+
+      val runner = new DefaultWindowRunner[Any, Any](GlobalWindows(), new DummyRunner())
+      val windowTransformOp = mock[WindowTransformOp[Any, Any]]
+      when(windowTransformOp.windowRunner).thenReturn(runner)
+
+      val chainedOp = groupByOp.chain(windowTransformOp)
       chainedOp shouldBe a[GroupByOp[_, _]]
 
       unchainableOps.foreach { op =>
@@ -185,25 +187,23 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
       }
     }
 
-    "delegate to groupByFn on getProcessor" in {
-      val groupBy = mock[GroupAlsoByWindow[Any, Any]]
-      val groupByOp = GroupByOp[Any, Any](groupBy)
-
-      groupByOp.getProcessor
-      verify(groupBy).getProcessor(anyInt, anyString, any[UserConfig])(any[ActorSystem])
+    "be translated to processor" in {
+      val processor = groupByOp.toProcessor
+      processor shouldBe a[Processor[_]]
+      processor.parallelism shouldBe 1
     }
   }
 
   "MergeOp" should {
 
-    val mergeOp = MergeOp("merge")
+    val mergeOp = MergeOp()
 
-    "chain ChainableOp" in {
-      val fn = mock[FunctionRunner[Any, Any]]
-      val chainableOp = mock[ChainableOp[Any, Any]]
-      when(chainableOp.fn).thenReturn(fn)
+    "chain WindowTransformOp" in {
+      val runner = mock[WindowRunner[Any, Any]]
+      val windowTransformOp = mock[WindowTransformOp[Any, Any]]
+      when(windowTransformOp.windowRunner).thenReturn(runner)
 
-      val chainedOp = mergeOp.chain(chainableOp)
+      val chainedOp = mergeOp.chain(windowTransformOp)
       chainedOp shouldBe a [MergeOp]
 
       unchainableOps.foreach { op =>
@@ -213,8 +213,8 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
       }
     }
 
-    "get Processor" in {
-      val processor = mergeOp.getProcessor
+    "be translated to processor" in {
+      val processor = mergeOp.toProcessor
       processor shouldBe a[Processor[_]]
       processor.parallelism shouldBe 1
     }

@@ -32,35 +32,39 @@ object WindowFunction {
   }
 }
 
-trait WindowFunction[T] {
+trait WindowFunction {
 
-  def apply(context: WindowFunction.Context[T]): Array[Window]
+  def apply[T](context: WindowFunction.Context[T]): Array[Window]
 
   def isNonMerging: Boolean
 }
 
-abstract class NonMergingWindowFunction[T] extends WindowFunction[T] {
+abstract class NonMergingWindowFunction extends WindowFunction {
 
   override def isNonMerging: Boolean = true
 }
 
-case class GlobalWindowFunction[T]() extends NonMergingWindowFunction[T] {
+object GlobalWindowFunction {
 
-  override def apply(context: WindowFunction.Context[T]): Array[Window] = {
-    Array(Window(Instant.ofEpochMilli(MIN_TIME_MILLIS),
-      Instant.ofEpochMilli(MAX_TIME_MILLIS)))
-  }
-
+  val globalWindow = Array(Window(Instant.ofEpochMilli(MIN_TIME_MILLIS),
+    Instant.ofEpochMilli(MAX_TIME_MILLIS)))
 }
 
-case class SlidingWindowFunction[T](size: Duration, step: Duration)
-  extends NonMergingWindowFunction[T] {
+case class GlobalWindowFunction() extends NonMergingWindowFunction {
+
+  override def apply[T](context: WindowFunction.Context[T]): Array[Window] = {
+    GlobalWindowFunction.globalWindow
+  }
+}
+
+case class SlidingWindowFunction(size: Duration, step: Duration)
+  extends NonMergingWindowFunction {
 
   def this(size: Duration) = {
     this(size, size)
   }
 
-  override def apply(context: WindowFunction.Context[T]): Array[Window] = {
+  override def apply[T](context: WindowFunction.Context[T]): Array[Window] = {
     val timestamp = context.timestamp
     val sizeMillis = size.toMillis
     val stepMillis = step.toMillis
@@ -81,16 +85,9 @@ case class SlidingWindowFunction[T](size: Duration, step: Duration)
   }
 }
 
-case class CountWindowFunction[T](size: Int) extends NonMergingWindowFunction[T] {
+case class SessionWindowFunction(gap: Duration) extends WindowFunction {
 
-  override def apply(context: WindowFunction.Context[T]): Array[Window] = {
-    Array(Window.ofEpochMilli(0, size))
-  }
-}
-
-case class SessionWindowFunction[T](gap: Duration) extends WindowFunction[T] {
-
-  override def apply(context: WindowFunction.Context[T]): Array[Window] = {
+  override def apply[T](context: WindowFunction.Context[T]): Array[Window] = {
     Array(Window(context.timestamp, context.timestamp.plus(gap)))
   }
 

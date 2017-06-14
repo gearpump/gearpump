@@ -21,17 +21,14 @@ package org.apache.gearpump.streaming.dsl.window.impl
 import java.time.{Duration, Instant}
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction
-import org.apache.gearpump.streaming.{Constants, MockUtil}
+import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.dsl.plan.functions.FoldRunner
 import org.apache.gearpump.streaming.dsl.window.api.SessionWindows
 import org.apache.gearpump.streaming.source.Watermark
-import org.mockito.Mockito.{times, verify}
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
-
 
 class DefaultWindowRunnerSpec extends PropSpec with PropertyChecks
   with Matchers with MockitoSugar {
@@ -40,34 +37,25 @@ class DefaultWindowRunnerSpec extends PropSpec with PropertyChecks
 
     val data = List(
       Message(("foo", 1L), Instant.ofEpochMilli(1L)),
-      Message(("bar", 1L), Instant.ofEpochMilli(8L)),
       Message(("foo", 1L), Instant.ofEpochMilli(15L)),
-      Message(("bar", 1L), Instant.ofEpochMilli(17L)),
-      Message(("bar", 1L), Instant.ofEpochMilli(18L)),
       Message(("foo", 1L), Instant.ofEpochMilli(25L)),
-      Message(("foo", 1L), Instant.ofEpochMilli(26L)),
-      Message(("bar", 1L), Instant.ofEpochMilli(30L)),
-      Message(("bar", 1L), Instant.ofEpochMilli(31L))
+      Message(("foo", 1L), Instant.ofEpochMilli(26L))
     )
 
     type KV = (String, Long)
-    val taskContext = MockUtil.mockTaskContext
     implicit val system = MockUtil.system
     val reduce = ReduceFunction[KV]((kv1, kv2) => (kv1._1, kv1._2 + kv2._2))
-    val operator = new FoldRunner(reduce, "reduce")
-    val userConfig = UserConfig.empty.withValue(
-      Constants.GEARPUMP_STREAMING_OPERATOR, operator)
-    val windows = SessionWindows.apply[KV](Duration.ofMillis(4L))
-    val groupBy = GroupAlsoByWindow[KV, String](_._1, windows)
-    val windowRunner = new DefaultWindowRunner(taskContext, userConfig, groupBy)
+    val windows = SessionWindows.apply(Duration.ofMillis(4L))
+    val windowRunner = new DefaultWindowRunner[KV, Option[KV]](windows,
+      new FoldRunner[KV, Option[KV]](reduce, "reduce"))
 
-    data.foreach(windowRunner.process)
-    windowRunner.trigger(Watermark.MAX)
-
-    verify(taskContext, times(2)).output(Message(Some(("foo", 1)), Watermark.MAX))
-    verify(taskContext).output(Message(Some(("foo", 2)), Watermark.MAX))
-    verify(taskContext, times(2)).output(Message(Some(("bar", 2)), Watermark.MAX))
-    verify(taskContext).output(Message(Some(("bar", 1)), Watermark.MAX))
+    data.foreach(m => windowRunner.process(TimestampedValue(m.value.asInstanceOf[KV], m.timestamp)))
+    windowRunner.trigger(Watermark.MAX).toList shouldBe
+      List(
+        TimestampedValue(Some(("foo", 1)), Instant.ofEpochMilli(4)),
+        TimestampedValue(Some(("foo", 1)), Instant.ofEpochMilli(18)),
+        TimestampedValue(Some(("foo", 2)), Instant.ofEpochMilli(29))
+      )
   }
 
 }

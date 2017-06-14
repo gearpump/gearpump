@@ -35,11 +35,9 @@ import org.apache.gearpump.akkastream.task.{BalanceTask, BatchTask, BroadcastTas
 import org.apache.gearpump.akkastream.task.TickSourceTask.{INITIAL_DELAY, INTERVAL, TICK}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.dsl.plan.functions.FlatMapper
-import org.apache.gearpump.streaming.dsl.plan.{ChainableOp, DataSinkOp, DataSourceOp, Direct, GroupByOp, MergeOp, Op, OpEdge, ProcessorOp, Shuffle}
+import org.apache.gearpump.streaming.dsl.plan.{TransformOp, DataSinkOp, DataSourceOp, Direct, GroupByOp, MergeOp, Op, OpEdge, ProcessorOp, Shuffle}
 import org.apache.gearpump.streaming.dsl.scalaapi.StreamApp
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import org.apache.gearpump.streaming.dsl.window.api.CountWindows
-import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
 import org.apache.gearpump.streaming.{ProcessorId, StreamApplication}
 import org.apache.gearpump.util.Graph
 import org.slf4j.LoggerFactory
@@ -152,10 +150,10 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
       val op = module match {
         case source: SourceTaskModule[_] =>
           val updatedConf = conf.withConfig(source.conf)
-          DataSourceOp(source.source, parallelism, updatedConf, "source")
+          DataSourceOp(source.source, parallelism, "source", updatedConf)
         case sink: SinkTaskModule[_] =>
           val updatedConf = conf.withConfig(sink.conf)
-          DataSinkOp(sink.sink, parallelism, updatedConf, "sink")
+          DataSinkOp(sink.sink, parallelism, "sink", updatedConf)
         case sourceBridge: SourceBridgeModule[_, _] =>
           ProcessorOp(classOf[SourceBridgeTask], parallelism = 1, conf, "source")
         case processor: ProcessorModule[_, _, _] =>
@@ -164,8 +162,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
         case sinkBridge: SinkBridgeModule[_, _] =>
           ProcessorOp(classOf[SinkBridgeTask], parallelism, conf, "sink")
         case groupBy: GroupByModule[Any, Any] =>
-          GroupByOp(GroupAlsoByWindow(groupBy.groupBy, CountWindows.apply[Any](1).accumulating),
-            parallelism, "groupBy", conf)
+          GroupByOp(groupBy.groupBy, parallelism, "groupBy", conf)
         case reduce: ReduceModule[_] =>
           reduceOp(reduce.f, conf)
         case graphStage: GraphStageModule =>
@@ -181,7 +178,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
       op
     }.mapEdge[OpEdge] { (n1, edge, n2) =>
       n2 match {
-        case chainableOp: ChainableOp[_, _]
+        case chainableOp: TransformOp[_, _]
           if !n1.isInstanceOf[ProcessorOp[_]] && !n2.isInstanceOf[ProcessorOp[_]] =>
           Direct
         case _ =>
@@ -242,8 +239,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
           withValue(FoldTask.AGGREGATOR, fold.f)
         ProcessorOp(classOf[FoldTask[_, _]], parallelism, foldConf, "fold")
       case groupBy: GroupBy[Any, Any] =>
-        GroupByOp(GroupAlsoByWindow(groupBy.keyFor, CountWindows.apply[Any](1).accumulating),
-          groupBy.maxSubstreams, "groupBy", conf)
+        GroupByOp(groupBy.keyFor, groupBy.maxSubstreams, "groupBy", conf)
       case groupedWithin: GroupedWithin[_] =>
         val diConf = conf.withValue[FiniteDuration](GroupedWithinTask.TIME_WINDOW, groupedWithin.d).
           withInt(GroupedWithinTask.BATCH_SIZE, groupedWithin.n)
@@ -285,9 +281,9 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
           withInt(MergeTask.INPUT_PORTS, merge.inputPorts)
         ProcessorOp(classOf[MergeTask], parallelism, mergeConf, "merge")
       case mergePreferred: MergePreferred[_] =>
-        MergeOp("mergePreferred", conf)
+        MergeOp()
       case mergeSorted: MergeSorted[_] =>
-        MergeOp("mergeSorted", conf)
+        MergeOp()
       case prefixAndTail: PrefixAndTail[_] =>
         // TODO
         null
@@ -480,7 +476,7 @@ object RemoteMaterializerImpl {
 
   def flatMapOp[In, Out](fun: In => TraversableOnce[Out], description: String,
       conf: UserConfig): Op = {
-    ChainableOp(new FlatMapper(FlatMapFunction[In, Out](fun), description), conf)
+    TransformOp(new FlatMapper(FlatMapFunction[In, Out](fun), description), conf)
   }
 
   def conflateOp[In, Out](seed: In => Out, aggregate: (Out, In) => Out,

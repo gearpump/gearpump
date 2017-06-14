@@ -21,35 +21,38 @@ import java.time.Instant
 
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
-import org.mockito.{Matchers => MockitoMatchers}
-import org.mockito.Mockito.{verify, when}
+import org.apache.gearpump.streaming.dsl.plan.functions.DummyRunner
+import org.apache.gearpump.streaming.dsl.window.api.GlobalWindows
+import org.apache.gearpump.streaming.{Constants, MockUtil}
+import org.apache.gearpump.streaming.dsl.window.impl.{DefaultWindowRunner, WindowRunner}
+import org.apache.gearpump.streaming.source.Watermark
+import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
-class TransformTaskSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
+class GroupByTaskSpec extends PropSpec with PropertyChecks
+  with Matchers with MockitoSugar {
 
-  property("MergeTask should trigger on watermark") {
-    val longGen = Gen.chooseNum[Long](1L, 1000L)
-    val watermarkGen = longGen.map(Instant.ofEpochMilli)
+  property("GroupByTask should trigger on watermark") {
+    val longGen = Gen.chooseNum[Long](1L, 1000L).map(Instant.ofEpochMilli)
 
-    forAll(watermarkGen) { (watermark: Instant) =>
-      val windowRunner = mock[WindowRunner[Any, Any]]
+    forAll(longGen) { (time: Instant) =>
+      val groupBy = mock[Any => Int]
+      val windowRunner = new DefaultWindowRunner[Any, Any](GlobalWindows(), new DummyRunner[Any])
       val context = MockUtil.mockTaskContext
       val config = UserConfig.empty
-      val task = new TransformTask[Any, Any](windowRunner, context, config)
-      val time = watermark.minusMillis(1L)
-      val value: Any = time
+        .withValue(
+          Constants.GEARPUMP_STREAMING_OPERATOR, windowRunner)(MockUtil.system)
+
+      val task = new GroupByTask[Any, Int, Any](groupBy, context, config)
+      val value = time
       val message = Message(value, time)
-
+      when(groupBy(time)).thenReturn(0)
       task.onNext(message)
-      verify(windowRunner).process(TimestampedValue(value, time))
 
-      when(windowRunner.trigger(watermark)).thenReturn(Some(TimestampedValue(value, time)))
-      task.onWatermarkProgress(watermark)
+      task.onWatermarkProgress(Watermark.MAX)
       verify(context).output(message)
     }
   }

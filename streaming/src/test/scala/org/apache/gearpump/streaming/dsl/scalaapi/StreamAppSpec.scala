@@ -61,9 +61,9 @@ class StreamAppSpec extends FlatSpec with Matchers with BeforeAndAfterAll with M
     dag.vertices.size shouldBe 2
     dag.vertices.foreach { processor =>
       processor.taskClass shouldBe classOf[DataSourceTask[_, _]].getName
-      if (processor.description == "A") {
+      if (processor.description == "A.globalWindows") {
         processor.parallelism shouldBe 2
-      } else if (processor.description == "B") {
+      } else if (processor.description == "B.globalWindows") {
         processor.parallelism shouldBe 3
       } else {
         fail(s"undefined source ${processor.description}")

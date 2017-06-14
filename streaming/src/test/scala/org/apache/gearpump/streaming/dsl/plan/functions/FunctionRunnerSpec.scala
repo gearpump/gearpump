@@ -19,27 +19,21 @@ package org.apache.gearpump.streaming.dsl.plan.functions
 
 import java.time.Instant
 
-import akka.actor.ActorSystem
 import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{TestUtil, UserConfig}
+import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.source.{DataSourceTask, Watermark}
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.api.functions.{FoldFunction, ReduceFunction}
 import org.apache.gearpump.streaming.dsl.scalaapi.CollectionDataSource
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import org.apache.gearpump.streaming.dsl.task.TransformTask.Transform
-import org.apache.gearpump.streaming.dsl.task.{CountTriggerTask, TransformTask}
-import org.apache.gearpump.streaming.dsl.window.api.CountWindows
-import org.apache.gearpump.streaming.dsl.window.impl.GroupAlsoByWindow
-import org.mockito.ArgumentCaptor
+import org.apache.gearpump.streaming.dsl.task.TransformTask
+import org.apache.gearpump.streaming.dsl.window.api.GlobalWindows
+import org.apache.gearpump.streaming.dsl.window.impl.{DefaultWindowRunner, WindowRunner}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mock.MockitoSugar
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
   import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunnerSpec._
@@ -216,40 +210,6 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
     }
   }
 
-  "Emit" should {
-
-    val emitFunction = mock[T => Unit]
-    val emit = new Emit[T](emitFunction)
-
-    "emit input value when processing input value" in {
-      val input = mock[T]
-
-      emit.process(input) shouldBe List.empty[Unit]
-
-      verify(emitFunction).apply(input)
-    }
-
-    "return empty description" in {
-      emit.description shouldBe ""
-    }
-
-    "return None on finish" in {
-      emit.finish() shouldBe List.empty[Unit]
-    }
-
-    "do nothing on setup" in {
-      emit.setup()
-
-      verifyZeroInteractions(emitFunction)
-    }
-
-    "do nothing on teardown" in {
-      emit.teardown()
-
-      verifyZeroInteractions(emitFunction)
-    }
-  }
-
   "Source" should {
     "iterate over input source and apply attached operator" in {
 
@@ -258,7 +218,11 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
 
       val data = "one two three".split("\\s+")
       val dataSource = new CollectionDataSource[String](data)
-      val conf = UserConfig.empty.withValue(GEARPUMP_STREAMING_SOURCE, dataSource)
+      val runner1 = new DefaultWindowRunner[String, String](
+        GlobalWindows(), new DummyRunner[String])
+      val conf = UserConfig.empty
+        .withValue(GEARPUMP_STREAMING_SOURCE, dataSource)
+        .withValue[WindowRunner[String, String]](GEARPUMP_STREAMING_OPERATOR, runner1)
 
       // Source with no transformer
       val source = new DataSourceTask[String, String](
@@ -275,8 +239,10 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       val anotherTaskContext = MockUtil.mockTaskContext
       val double = new FlatMapper[String, String](FlatMapFunction(
         word => List(word, word)), "double")
+      val runner2 = new DefaultWindowRunner[String, String](
+        GlobalWindows(), double)
       val another = new DataSourceTask(anotherTaskContext,
-        conf.withValue(GEARPUMP_STREAMING_OPERATOR, double))
+        conf.withValue(GEARPUMP_STREAMING_OPERATOR, runner2))
       another.onStart(Instant.EPOCH)
       another.onNext(Message("next"))
       another.onWatermarkProgress(Watermark.MAX)
@@ -287,44 +253,8 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
     }
   }
 
-  "CountTriggerTask" should {
-    "group input by groupBy Function and " +
-      "apply attached operator for each group" in {
 
-      val data = "1 2  2  3 3  3"
-
-      val concat = new FoldRunner[String, Option[String]](ReduceFunction({ (left, right) =>
-        left + right}), "concat")
-
-      implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
-      val config = UserConfig.empty.withValue[FunctionRunner[String, Option[String]]](
-        GEARPUMP_STREAMING_OPERATOR, concat)
-
-      val taskContext = MockUtil.mockTaskContext
-
-      val groupBy = GroupAlsoByWindow((input: String) => input,
-        CountWindows.apply[String](1).accumulating)
-      val task = new CountTriggerTask[String, String](groupBy, taskContext, config)
-      task.onStart(Instant.EPOCH)
-
-      val peopleCaptor = ArgumentCaptor.forClass(classOf[Message])
-
-      data.split("\\s+").foreach { word =>
-        task.onNext(Message(word))
-      }
-      verify(taskContext, times(6)).output(peopleCaptor.capture())
-
-      import scala.collection.JavaConverters._
-
-      val values = peopleCaptor.getAllValues.asScala.map(input =>
-        input.value.asInstanceOf[Option[String]].get)
-      assert(values.mkString(",") == "1,2,22,3,33,333")
-      system.terminate()
-      Await.result(system.whenTerminated, Duration.Inf)
-    }
-  }
-
-  "TransformTask" should {
+  "MergeTask" should {
     "accept two stream and apply the attached operator" in {
 
       // Source with transformer
@@ -332,7 +262,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       val conf = UserConfig.empty
       val double = new FlatMapper[String, String](FlatMapFunction(
         word => List(word, word)), "double")
-      val transform = new Transform[String, String](taskContext, Some(double))
+      val transform = new DefaultWindowRunner[String, String](GlobalWindows(), double)
       val task = new TransformTask[String, String](transform, taskContext, conf)
       task.onStart(Instant.EPOCH)
 
