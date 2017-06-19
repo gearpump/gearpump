@@ -111,6 +111,10 @@ class TaskWrapper(
     actor.getUpstreamMinClock
   }
 
+  override def updateWatermark(watermark: Instant): Unit = {
+    actor.updateWatermark(watermark)
+  }
+
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit): Cancellable = {
     val dispatcher = actor.context.system.dispatcher
     actor.context.system.scheduler.schedule(initialDelay, interval)(f)(dispatcher)

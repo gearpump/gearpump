@@ -116,6 +116,11 @@ trait TaskContext {
   def upstreamMinClock: TimeStamp
 
   /**
+   * Update TaskActor with the processing progress (watermark)
+   */
+  def updateWatermark(watermark: Instant): Unit
+
+  /**
    * Logger is environment dependant, it should be provided by
    * containing environment.
    */

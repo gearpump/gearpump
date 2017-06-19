@@ -26,28 +26,34 @@ import com.gs.collections.impl.map.sorted.mutable.TreeSortedMap
 import org.apache.gearpump.streaming.dsl.plan.functions.FunctionRunner
 import org.apache.gearpump.streaming.dsl.window.api.WindowFunction.Context
 import org.apache.gearpump.streaming.dsl.window.api.{Discarding, Windows}
+import org.apache.gearpump.streaming.source.Watermark
+import org.apache.gearpump.streaming.task.TaskUtil
 
 import scala.collection.mutable.ArrayBuffer
 
 case class TimestampedValue[T](value: T, timestamp: Instant)
 
+case class TriggeredOutputs[T](outputs: TraversableOnce[TimestampedValue[T]],
+    watermark: Instant)
+
 trait WindowRunner[IN, OUT] extends java.io.Serializable {
 
   def process(timestampedValue: TimestampedValue[IN]): Unit
 
-  def trigger(time: Instant): TraversableOnce[TimestampedValue[OUT]]
+  def trigger(time: Instant): TriggeredOutputs[OUT]
 }
 
 case class AndThen[IN, MIDDLE, OUT](left: WindowRunner[IN, MIDDLE],
     right: WindowRunner[MIDDLE, OUT]) extends WindowRunner[IN, OUT] {
 
-  def process(timestampedValue: TimestampedValue[IN]): Unit = {
+  override def process(timestampedValue: TimestampedValue[IN]): Unit = {
     left.process(timestampedValue)
   }
 
-  def trigger(time: Instant): TraversableOnce[TimestampedValue[OUT]] = {
-    left.trigger(time).foreach(right.process)
-    right.trigger(time)
+  override def trigger(time: Instant): TriggeredOutputs[OUT] = {
+    val lOutputs = left.trigger(time)
+    lOutputs.outputs.foreach(right.process)
+    right.trigger(lOutputs.watermark)
   }
 }
 
@@ -59,6 +65,7 @@ class DefaultWindowRunner[IN, OUT](
   private val windowFn = windows.windowFn
   private val windowInputs = new TreeSortedMap[Window, FastList[TimestampedValue[IN]]]
   private var setup = false
+  private var watermark = Watermark.MIN
 
   override def process(timestampedValue: TimestampedValue[IN]): Unit = {
     val wins = windowFn(new Context[IN] {
@@ -98,10 +105,11 @@ class DefaultWindowRunner[IN, OUT](
     }
   }
 
-  override def trigger(time: Instant): TraversableOnce[TimestampedValue[OUT]] = {
+  override def trigger(time: Instant): TriggeredOutputs[OUT] = {
     @annotation.tailrec
     def onTrigger(
-        outputs: ArrayBuffer[TimestampedValue[OUT]]): TraversableOnce[TimestampedValue[OUT]] = {
+        outputs: ArrayBuffer[TimestampedValue[OUT]],
+        wmk: Instant): TriggeredOutputs[OUT] = {
       if (windowInputs.notEmpty()) {
         val firstWin = windowInputs.firstKey
         if (!time.isBefore(firstWin.endTime)) {
@@ -118,25 +126,31 @@ class DefaultWindowRunner[IN, OUT](
             }
           })
           fnRunner.finish().foreach {
-            out: OUT => outputs += TimestampedValue(out, firstWin.endTime.minusMillis(1))
+            out: OUT =>
+              outputs += TimestampedValue(out, firstWin.endTime.minusMillis(1))
           }
+          val newWmk = TaskUtil.max(wmk, firstWin.endTime)
           if (windows.accumulationMode == Discarding) {
             fnRunner.teardown()
-            setup = false
             // discarding, setup need to be called for each window
-            onTrigger(outputs)
-          } else {
-            // accumulating, setup is only called for the first window
-            onTrigger(outputs)
+            setup = false
           }
+          onTrigger(outputs, newWmk)
         } else {
-          outputs
+          // minimum of end of last triggered window and start of first un-triggered window
+          TriggeredOutputs(outputs, TaskUtil.min(wmk, firstWin.startTime))
         }
       } else {
-        outputs
+        if (time == Watermark.MAX) {
+          TriggeredOutputs(outputs, Watermark.MAX)
+        } else {
+          TriggeredOutputs(outputs, wmk)
+        }
       }
     }
 
-    onTrigger(ArrayBuffer.empty[TimestampedValue[OUT]])
+    val triggeredOutputs = onTrigger(ArrayBuffer.empty[TimestampedValue[OUT]], watermark)
+    watermark = TaskUtil.max(watermark, triggeredOutputs.watermark)
+    TriggeredOutputs(triggeredOutputs.outputs, watermark)
   }
 }

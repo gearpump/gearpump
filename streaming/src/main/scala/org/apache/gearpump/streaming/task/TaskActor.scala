@@ -35,7 +35,7 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.ProcessorId
 import org.apache.gearpump.streaming.task.TaskActor._
 import org.apache.gearpump.util.{LogUtil, TimeOutScheduler}
-import org.apache.gearpump.{MAX_TIME_MILLIS, MIN_TIME_MILLIS, Message, TimeStamp}
+import org.apache.gearpump.{Message, TimeStamp}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -51,16 +51,14 @@ class TaskActor(
     val task: TaskWrapper,
     inputSerializerPool: SerializationFramework)
     extends Actor with ExpressTransport with TimeOutScheduler {
-  private var upstreamMinClock: TimeStamp = MIN_TIME_MILLIS
-  private var _minClock: TimeStamp = MIN_TIME_MILLIS
-
-  def serializerPool: SerializationFramework = inputSerializerPool
-
-  private val config = context.system.settings.config
-
+  final val LATENCY_PROBE_INTERVAL = FiniteDuration(1, TimeUnit.SECONDS)
+  // Clock report interval
+  final val CLOCK_REPORT_INTERVAL = FiniteDuration(100, TimeUnit.MILLISECONDS)
+  // Flush interval
+  final val FLUSH_INTERVAL = FiniteDuration(100, TimeUnit.MILLISECONDS)
   val LOG: Logger = LogUtil.getLogger(getClass,
     app = taskContextData.appId, executor = taskContextData.executorId, task = taskId)
-
+  private val config = context.system.settings.config
   // Metrics
   private val metricName =
     s"app${taskContextData.appId}.processor${taskId.processorId}.task${taskId.index}"
@@ -69,40 +67,47 @@ class TaskActor(
   private val processTime = Metrics(context.system).histogram(s"$metricName:processTime")
   private val sendThroughput = Metrics(context.system).meter(s"$metricName:sendThroughput")
   private val receiveThroughput = Metrics(context.system).meter(s"$metricName:receiveThroughput")
-
   private val maxPendingMessageCount = config.getInt(GEARPUMP_STREAMING_MAX_PENDING_MESSAGE_COUNT)
   private val ackOnceEveryMessageCount = config.getInt(
     GEARPUMP_STREAMING_ACK_ONCE_EVERY_MESSAGE_COUNT)
-
   private val executor = context.parent
-  private var life = taskContextData.life
+  private val queue = new util.LinkedList[AnyRef]()
+  // SecurityChecker will be responsible of dropping messages from
+  // unknown sources
+  private val securityChecker = new SecurityChecker(taskId, self)
+  private val stashQueue = new util.LinkedList[MessageAndSender]()
 
   // Latency probe
 
   import context.dispatcher
-  final val LATENCY_PROBE_INTERVAL = FiniteDuration(1, TimeUnit.SECONDS)
-
-  // Clock report interval
-  final val CLOCK_REPORT_INTERVAL = FiniteDuration(1, TimeUnit.SECONDS)
-
-  // Flush interval
-  final val FLUSH_INTERVAL = FiniteDuration(100, TimeUnit.MILLISECONDS)
-
-  private val queue = new util.LinkedList[AnyRef]()
-
+  private var upstreamWatermark: Instant = Watermark.MIN
+  private var processingWatermark: Instant = Watermark.MIN
+  private var watermark: Instant = Watermark.MIN
+  private var life = taskContextData.life
   private var subscriptions = List.empty[(Int, Subscription)]
-
-  // SecurityChecker will be responsible of dropping messages from
-  // unknown sources
-  private val securityChecker = new SecurityChecker(taskId, self)
   private[task] var sessionId = NONE_SESSION
 
   // Reports to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
 
-  final def receive: Receive = null
+  final override def postStop(): Unit = {
+    onStop()
+  }
 
   task.setTaskActor(this)
+
+  def onStop(): Unit = task.onStop()
+
+  final override def preStart(): Unit = {
+    val register = RegisterTask(taskId, taskContextData.executorId, local)
+    LOG.info(s"$register")
+    executor ! register
+    context.become(waitForTaskRegistered)
+  }
+
+  def serializerPool: SerializationFramework = inputSerializerPool
+
+  final def receive: Receive = null
 
   def onStart(startTime: Instant): Unit = {
     task.onStart(startTime)
@@ -111,9 +116,6 @@ class TaskActor(
   def onNext(msg: Message): Unit = task.onNext(msg)
 
   def onUnManagedMessage(msg: Any): Unit = task.receiveUnManagedMessage.apply(msg)
-
-  def onStop(): Unit = task.onStop()
-
 
   /**
    * output to a downstream by specifying a arrayIndex
@@ -133,84 +135,16 @@ class TaskActor(
     sendThroughput.mark(count)
   }
 
-  final override def postStop(): Unit = {
-    onStop()
-  }
-
-  final override def preStart(): Unit = {
-    val register = RegisterTask(taskId, taskContextData.executorId, local)
-    LOG.info(s"$register")
-    executor ! register
-    context.become(waitForTaskRegistered)
-  }
-
-  private def allowSendingMoreMessages(): Boolean = {
-    subscriptions.forall(_._2.allowSendingMoreMessages())
-  }
-
-  private def doHandleMessage(): Int = {
-    var done = false
-
-    var count = 0
-
-    while (allowSendingMoreMessages() && !done) {
-      val msg = queue.poll()
-      if (msg != null) {
-        msg match {
-          case SendAck(ack, targetTask) =>
-            transport(ack, targetTask)
-          case m: Message =>
-            count += 1
-            onNext(m)
-          case other =>
-            // un-managed message
-            onUnManagedMessage(other)
-        }
-      } else {
-        done = true
-      }
-    }
-
-    count
-  }
-
-  private def onStartClock(): Unit = {
-    LOG.info(s"received start, clock: $upstreamMinClock, sessionId: $sessionId")
-    subscriptions = taskContextData.subscribers.map { subscriber =>
-      (subscriber.processorId,
-        new Subscription(taskContextData.appId, taskContextData.executorId, taskId, subscriber,
-          sessionId, this, maxPendingMessageCount, ackOnceEveryMessageCount))
-    }.sortBy(_._1)
-
-    subscriptions.foreach(_._2.start())
-
-    stashQueue.asScala.foreach { item =>
-      handleMessages(item.sender).apply(item.msg)
-    }
-    stashQueue.clear()
-
-    // Put this as the last step so that the subscription is already initialized.
-    // Message sending in current Task before onStart will not be delivered to
-    // target
-    onStart(Instant.ofEpochMilli(_minClock))
-
-    taskContextData.appMaster ! GetUpstreamMinClock(taskId)
-    context.become(handleMessages(sender))
-  }
-
   def waitForTaskRegistered: Receive = {
     case TaskRegistered(_, id, startClock) =>
       this.sessionId = id
-      this._minClock = startClock
-      context.become(waitForStartClock)
+      context.become(waitForStartTask(startClock))
   }
 
-  private val stashQueue = new util.LinkedList[MessageAndSender]()
-
-  def waitForStartClock: Receive = {
+  def waitForStartTask(startClock: TimeStamp): Receive = {
     case start@StartTask(tid) =>
       assert(tid == this.taskId, s"$start sent to the wrong task ${this.taskId}")
-      onStartClock()
+      onStartTask(startClock)
     case other: AnyRef =>
       stashQueue.add(MessageAndSender(other, sender()))
   }
@@ -246,7 +180,7 @@ class TaskActor(
 
     case watermark@Watermark(instant) =>
       assert(sender.eq(self), "Watermark should only be sent from Task to itself")
-      onUpstreamMinClock(instant.toEpochMilli)
+      onUpstreamMinClock(instant)
       receiveMessage(watermark.toMessage, sender)
 
     case UpstreamMinClock(upstreamClock) =>
@@ -256,7 +190,7 @@ class TaskActor(
       // 3. upstreamClock is None for source task since it's reported as watermark above
       //    by external source
       // 4. this is designed to avoid flooding the ClockService
-      upstreamClock.foreach(onUpstreamMinClock)
+      upstreamClock.foreach(clock => onUpstreamMinClock(Instant.ofEpochMilli(clock)))
       reportMinClock()
 
     case ChangeTask(_, dagVersion, newLife, subscribers) =>
@@ -291,14 +225,69 @@ class TaskActor(
   }
 
   /**
-   * Returns min clock of this task
-   */
-  def minClock: TimeStamp = _minClock
-
-  /**
    * Returns min clock of upstream task
    */
-  def getUpstreamMinClock: TimeStamp = upstreamMinClock
+  def getUpstreamMinClock: TimeStamp = upstreamWatermark.toEpochMilli
+
+  def getProcessingWatermark: Instant = processingWatermark
+
+  def updateWatermark(watermark: Instant): Unit = {
+    processingWatermark = TaskUtil.max(processingWatermark, watermark)
+  }
+
+  private def allowSendingMoreMessages(): Boolean = {
+    subscriptions.forall(_._2.allowSendingMoreMessages())
+  }
+
+  private def doHandleMessage(): Int = {
+    var done = false
+
+    var count = 0
+
+    while (allowSendingMoreMessages() && !done) {
+      val msg = queue.poll()
+      if (msg != null) {
+        msg match {
+          case SendAck(ack, targetTask) =>
+            transport(ack, targetTask)
+          case m: Message =>
+            count += 1
+            onNext(m)
+          case other =>
+            // un-managed message
+            onUnManagedMessage(other)
+        }
+      } else {
+        done = true
+      }
+    }
+
+    count
+  }
+
+  private def onStartTask(startClock: TimeStamp): Unit = {
+    LOG.info(s"received start, clock: $startClock, sessionId: $sessionId")
+    subscriptions = taskContextData.subscribers.map { subscriber =>
+      (subscriber.processorId,
+        new Subscription(taskContextData.appId, taskContextData.executorId, taskId, subscriber,
+          sessionId, this, maxPendingMessageCount, ackOnceEveryMessageCount))
+    }.sortBy(_._1)
+
+    subscriptions.foreach(_._2.start())
+
+    stashQueue.asScala.foreach { item =>
+      handleMessages(item.sender).apply(item.msg)
+    }
+    stashQueue.clear()
+
+    // Put this as the last step so that the subscription is already initialized.
+    // Message sending in current Task before onStart will not be delivered to
+    // target
+    onStart(Instant.ofEpochMilli(startClock))
+
+    taskContextData.appMaster ! GetUpstreamMinClock(taskId)
+    context.become(handleMessages(sender))
+  }
 
   private def receiveMessage(msg: Message, sender: ActorRef): Unit = {
     val messageAfterCheck = securityChecker.checkMessage(msg, sender)
@@ -335,43 +324,51 @@ class TaskActor(
    *                      for other tasks, the clock comes from that reported to ClockService
    *                      by upstream tasks
    */
-  private def onUpstreamMinClock(upstreamClock: TimeStamp): Unit = {
-    if (upstreamClock > this.upstreamMinClock) {
-      this.upstreamMinClock = upstreamClock
-      task.onWatermarkProgress(Instant.ofEpochMilli(this.upstreamMinClock))
+  private def onUpstreamMinClock(upstreamClock: Instant): Unit = {
+    if (upstreamClock.isAfter(this.upstreamWatermark)) {
+      this.upstreamWatermark = upstreamClock
+      task.onWatermarkProgress(upstreamWatermark)
     }
 
-    val subMinClock = subscriptions.foldLeft(MAX_TIME_MILLIS) { (min, sub) =>
-      val subMin = sub._2.minClock
-      // A subscription is holding back the _minClock;
-      // we send AckRequest to its tasks to push _minClock forward
-      if (subMin == _minClock) {
-        sub._2.sendAckRequestOnStallingTime(_minClock)
-      }
-      Math.min(min, subMin)
-    }
+    // For Task without subscriptions, this will be Watermark.MAX
+    val subWatermark = getSubscriptionWatermark(subscriptions, watermark)
 
-    _minClock = Math.max(life.birth, Math.min(upstreamMinClock, subMinClock))
+    watermark = TaskUtil.max(Instant.ofEpochMilli(life.birth),
+      TaskUtil.min(upstreamWatermark,
+        TaskUtil.min(processingWatermark, subWatermark)))
 
     // Checks whether current task is dead.
-    if (_minClock > life.death) {
+    if (watermark.toEpochMilli > life.death) {
       // There will be no more message received...
       val unRegister = UnRegisterTask(taskId, taskContextData.executorId)
       executor ! unRegister
 
-      LOG.info(s"Sending $unRegister, current minclock: ${_minClock}, life: $life")
+      LOG.info(s"Sending $unRegister, current watermark: $watermark, life: $life")
     }
   }
 
   private def reportMinClock(): Unit = {
-    val update = UpdateClock(taskId, _minClock)
+    val update = UpdateClock(taskId, watermark.toEpochMilli)
     context.system.scheduler.scheduleOnce(CLOCK_REPORT_INTERVAL) {
       taskContextData.appMaster ! update
     }
   }
+
+  private def getSubscriptionWatermark(subs: List[(Int, Subscription)], wmk: Instant): Instant = {
+    Instant.ofEpochMilli(subs.foldLeft(Watermark.MAX.toEpochMilli) {
+      case (min, (_, sub)) =>
+        val subWmk = sub.watermark
+        if (subWmk == wmk.toEpochMilli) {
+          sub.onStallingTime(subWmk)
+        }
+        Math.min(min, subWmk)
+    })
+  }
 }
 
 object TaskActor {
+
+  val NONE_SESSION: Int = -1
 
   // If the message comes from an unknown source, securityChecker will drop it
   class SecurityChecker(task_id: TaskId, self: ActorRef) {
@@ -380,15 +377,6 @@ object TaskActor {
 
     // Uses mutable HashMap for performance optimization
     private val receivedMsgCount = new IntShortHashMap()
-
-    // Tricky performance optimization to save memory.
-    // We store the session Id in the uid of ActorPath
-    // ActorPath.hashCode is same as uid.
-    private def getSessionId(actor: ActorRef): Int = {
-      // TODO: As method uid is protected in [akka] package. We
-      // are using hashCode instead of uid.
-      actor.hashCode()
-    }
 
     def handleInitialAckRequest(ackRequest: InitialAckRequest): Ack = {
       LOG.debug(s"Handle InitialAckRequest for session $ackRequest")
@@ -431,13 +419,20 @@ object TaskActor {
         }
       }
     }
+
+    // Tricky performance optimization to save memory.
+    // We store the session Id in the uid of ActorPath
+    // ActorPath.hashCode is same as uid.
+    private def getSessionId(actor: ActorRef): Int = {
+      // TODO: As method uid is protected in [akka] package. We
+      // are using hashCode instead of uid.
+      actor.hashCode()
+    }
   }
 
   case class SendAck(ack: Ack, targetTask: TaskId)
 
-  case object FLUSH
-
-  val NONE_SESSION: Int = -1
-
   case class MessageAndSender(msg: AnyRef, sender: ActorRef)
+
+  case object FLUSH
 }

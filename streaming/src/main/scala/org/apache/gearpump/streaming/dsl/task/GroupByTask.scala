@@ -26,7 +26,8 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants.{GEARPUMP_STREAMING_GROUPBY_FUNCTION, GEARPUMP_STREAMING_OPERATOR}
 import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
-import org.apache.gearpump.streaming.task.{Task, TaskContext}
+import org.apache.gearpump.streaming.source.Watermark
+import org.apache.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
 
 /**
  * Processes messages in groups as defined by groupBy function.
@@ -61,13 +62,14 @@ class GroupByTask[IN, GROUP, OUT](
   }
 
   override def onWatermarkProgress(watermark: Instant): Unit = {
-    groups.values.forEach(new Consumer[WindowRunner[IN, OUT]] {
-      override def accept(runner: WindowRunner[IN, OUT]): Unit = {
-        runner.trigger(watermark).foreach {
-          result =>
-            taskContext.output(Message(result.value, result.timestamp))
+    if (groups.isEmpty && watermark == Watermark.MAX) {
+      taskContext.updateWatermark(Watermark.MAX)
+    } else {
+      groups.values.forEach(new Consumer[WindowRunner[IN, OUT]] {
+        override def accept(runner: WindowRunner[IN, OUT]): Unit = {
+          TaskUtil.trigger(watermark, runner, taskContext)
         }
-      }
-    })
+      })
+    }
   }
 }

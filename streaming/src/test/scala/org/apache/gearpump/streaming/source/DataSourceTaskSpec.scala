@@ -23,7 +23,7 @@ import java.time.Instant
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
+import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, TriggeredOutputs, WindowRunner}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
@@ -63,12 +63,13 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
         when(dataSource.read()).thenReturn(msg)
 
         when(runner.trigger(Watermark.MAX)).thenReturn(
-          Some(TimestampedValue(str.asInstanceOf[Any], timestamp)))
+          TriggeredOutputs(Some(TimestampedValue(str.asInstanceOf[Any], timestamp)), Watermark.MAX))
 
         sourceTask.onNext(Message("next"))
         sourceTask.onWatermarkProgress(Watermark.MAX)
 
         verify(taskContext).output(msg)
+        verify(taskContext).updateWatermark(Watermark.MAX)
     }
   }
 

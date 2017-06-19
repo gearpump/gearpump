@@ -23,7 +23,7 @@ import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
-import org.apache.gearpump.streaming.task.{Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
 
 class TransformTask[IN, OUT](
     runner: WindowRunner[IN, OUT],
@@ -41,9 +41,6 @@ class TransformTask[IN, OUT](
   }
 
   override def onWatermarkProgress(watermark: Instant): Unit = {
-    runner.trigger(watermark).foreach {
-      result =>
-        taskContext.output(Message(result.value, result.timestamp))
-    }
+    TaskUtil.trigger(watermark, runner, taskContext)
   }
 }

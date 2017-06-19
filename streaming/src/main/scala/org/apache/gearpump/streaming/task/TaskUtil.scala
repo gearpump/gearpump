@@ -18,6 +18,11 @@
 
 package org.apache.gearpump.streaming.task
 
+import java.time.Instant
+
+import org.apache.gearpump.Message
+import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
+
 object TaskUtil {
 
   /**
@@ -29,5 +34,30 @@ object TaskUtil {
   def loadClass(className: String): Class[_ <: Task] = {
     val loader = Thread.currentThread().getContextClassLoader()
     loader.loadClass(className).asSubclass(classOf[Task])
+  }
+
+  def trigger[IN, OUT](watermark: Instant, runner: WindowRunner[IN, OUT],
+      context: TaskContext): Unit = {
+    val triggeredOutputs = runner.trigger(watermark)
+    context.updateWatermark(triggeredOutputs.watermark)
+    triggeredOutputs.outputs.foreach { case TimestampedValue(v, t) =>
+      context.output(Message(v, t))
+    }
+  }
+
+  /**
+   * @return t1 if t1 is not larger than t2 and t2 otherwise
+   */
+  def min(t1: Instant, t2: Instant): Instant = {
+    if (t1.isAfter(t2)) t2
+    else t1
+  }
+
+  /**
+   * @return t1 if t1 is not smaller than t2 and t2 otherwise
+   */
+  def max(t1: Instant, t2: Instant): Instant = {
+    if (t2.isBefore(t1)) t1
+    else t2
   }
 }

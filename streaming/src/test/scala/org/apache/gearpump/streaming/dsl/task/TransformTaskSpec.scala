@@ -22,7 +22,7 @@ import java.time.Instant
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
+import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, TriggeredOutputs, WindowRunner}
 import org.mockito.{Matchers => MockitoMatchers}
 import org.mockito.Mockito.{verify, when}
 import org.scalacheck.Gen
@@ -48,9 +48,11 @@ class TransformTaskSpec extends PropSpec with PropertyChecks with Matchers with 
       task.onNext(message)
       verify(windowRunner).process(TimestampedValue(value, time))
 
-      when(windowRunner.trigger(watermark)).thenReturn(Some(TimestampedValue(value, time)))
+      when(windowRunner.trigger(watermark)).thenReturn(
+        TriggeredOutputs(Some(TimestampedValue(value, time)), watermark))
       task.onWatermarkProgress(watermark)
       verify(context).output(message)
+      verify(context).updateWatermark(watermark)
     }
   }
 

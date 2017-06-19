@@ -24,7 +24,7 @@ import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
 import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
-import org.apache.gearpump.streaming.task.{Task, TaskContext}
+import org.apache.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
 
 /**
  * Default Task container for [[org.apache.gearpump.streaming.source.DataSource]] that
@@ -56,7 +56,7 @@ class DataSourceTask[IN, OUT] private[source](
   private val batchSize = conf.getInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE).getOrElse(1000)
 
   override def onStart(startTime: Instant): Unit = {
-    LOG.info(s"opening data source at $startTime")
+    LOG.info(s"opening data source at ${startTime.toEpochMilli}")
     source.open(context, startTime)
 
     self ! Watermark(source.getWatermark)
@@ -73,10 +73,7 @@ class DataSourceTask[IN, OUT] private[source](
   }
 
   override def onWatermarkProgress(watermark: Instant): Unit = {
-    windowRunner.trigger(watermark).foreach {
-      result =>
-        context.output(Message(result.value, result.timestamp))
-    }
+    TaskUtil.trigger(watermark, windowRunner, context)
   }
 
   override def onStop(): Unit = {
