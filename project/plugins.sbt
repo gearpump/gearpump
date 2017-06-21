@@ -22,7 +22,8 @@ resolvers += Classpaths.sbtPluginReleases
 
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.8")
 
-addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.4")
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.4"
+  exclude("org.apache.maven", "maven-plugin-api"))
 
 addSbtPlugin("io.gearpump.sbt" % "sbt-pack" % "0.7.7")
 
