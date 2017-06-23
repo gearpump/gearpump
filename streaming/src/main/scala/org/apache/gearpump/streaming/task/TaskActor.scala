@@ -275,15 +275,15 @@ class TaskActor(
 
     subscriptions.foreach(_._2.start())
 
-    stashQueue.asScala.foreach { item =>
-      handleMessages(item.sender).apply(item.msg)
-    }
-    stashQueue.clear()
-
     // Put this as the last step so that the subscription is already initialized.
     // Message sending in current Task before onStart will not be delivered to
     // target
     onStart(Instant.ofEpochMilli(startClock))
+
+    stashQueue.asScala.foreach { item =>
+      handleMessages(item.sender).apply(item.msg)
+    }
+    stashQueue.clear()
 
     taskContextData.appMaster ! GetUpstreamMinClock(taskId)
     context.become(handleMessages(sender))
