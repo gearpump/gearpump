@@ -371,6 +371,99 @@ object RedisMessage {
 
   }
 
+  object SortedSets {
+    /**
+     * Adds all the specified members with the specified scores to the sorted set stored at key.
+     *
+     * @param key
+     * @param score
+     * @param member
+     */
+    case class ZADD(key: Array[Byte], score: Double, member: Array[Byte]) {
+      def this(key: String, score: Double, member: String) = {
+        this(toBytes(key), score, toBytes(member))
+      }
+    }
+
+    /**
+     * Increments the score of member in the sorted set stored at key by increment.
+     *
+     * @param key
+     * @param score
+     * @param member
+     */
+    case class ZINCRBY(key: Array[Byte], score: Double, member: Array[Byte]) {
+      def this(key: String, score: Double, member: String) = {
+        this(toBytes(key), score, toBytes(member))
+      }
+    }
+
+    /**
+     * Removes the specified members from the sorted set stored at key.
+     *
+     * @param key
+     * @param member
+     */
+    case class ZREM(key: Array[Byte], member: Array[Byte]) {
+      def this(key: String, member: String) = {
+        this(toBytes(key), toBytes(member))
+      }
+    }
+
+    /**
+     * When all the elements in a sorted set are inserted with the same score,in order to
+     * force lexicographical ordering, this command removes all elements in the sorted set
+     * stored at key between the lexicographical range specified by min and max.
+     *
+     * @param key
+     * @param min
+     * @param max
+     */
+    case class ZREMRANGEBYLEX(key: Array[Byte], min: Array[Byte], max: Array[Byte]) {
+      def this(key: String, min: String, max: String) = {
+        this(toBytes(key), toBytes(min), toBytes(max))
+      }
+    }
+
+    /**
+     * Removes all elements in the sorted set stored at key with rank between start and stop.
+     *
+     * @param key
+     * @param start
+     * @param stop
+     */
+    case class ZREMRANGEBYRANK(key: Array[Byte], start: Long, stop: Long) {
+      def this(key: String, start: Long, stop: Long) = {
+        this(toBytes(key), start, stop)
+      }
+    }
+
+    /**
+     * Removes all elements in the sorted set stored at key with a score between min and max.
+     *
+     * @param key
+     * @param min
+     * @param max
+     */
+    case class ZREMRANGEBYSCORE(key: Array[Byte], min: Double, max: Double) {
+      def this(key: String, min: Double, max: Double) = {
+        this(toBytes(key), min, max)
+      }
+    }
+
+    /**
+     * Get the score associated with the given member in a sorted set
+     *
+     * @param key
+     * @param member
+     */
+    case class ZSCORE(key: Array[Byte], member: Array[Byte]) {
+      def this(key: String, member: String) = {
+        this(toBytes(key), toBytes(member))
+      }
+    }
+  }
+
   object String {
 
     /**

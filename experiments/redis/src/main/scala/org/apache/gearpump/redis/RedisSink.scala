@@ -24,6 +24,7 @@ import org.apache.gearpump.redis.RedisMessage.HyperLogLog._
 import org.apache.gearpump.redis.RedisMessage.Keys._
 import org.apache.gearpump.redis.RedisMessage.Lists._
 import org.apache.gearpump.redis.RedisMessage.Sets._
+import org.apache.gearpump.redis.RedisMessage.SortedSets._
 import org.apache.gearpump.redis.RedisMessage.String._
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.task.TaskContext
@@ -109,6 +110,15 @@ class RedisSink(
       case msg: SETEX => client.setex(msg.key, msg.seconds, msg.value)
       case msg: SETNX => client.setnx(msg.key, msg.value)
       case msg: SETRANGE => client.setrange(msg.key, msg.offset, msg.value)
+
+      // Sorted Set
+      case msg: ZADD => client.zadd(msg.key, msg.score, msg.member)
+      case msg: ZINCRBY => client.zincrby(msg.key, msg.score, msg.member)
+      case msg: ZREM => client.zrem(msg.key, msg.member)
+      case msg: ZREMRANGEBYLEX => client.zremrangeByLex(msg.key, msg.min, msg.max)
+      case msg: ZREMRANGEBYRANK => client.zremrangeByRank(msg.key, msg.start, msg.stop)
+      case msg: ZREMRANGEBYSCORE => client.zremrangeByScore(msg.key, msg.min, msg.max)
+      case msg: ZSCORE => client.zscore(msg.key, msg.member)
     }
   }
 
