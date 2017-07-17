@@ -214,131 +214,256 @@ BSD licenses
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-com.jcraft:jsch:0.1.42 - http://www.jcraft.com/jsch/
-com.thoughtworks.paranamer:paranamer:2.3 - https://github.com/paul-hammant/paranamer
-jline:jline:0.9.94 - http://jline.sourceforge.net/
-net.sourceforge.htmlcleaner:htmlcleaner:2.2 - http://htmlcleaner.sourceforge.net/download.php
-asm.asm:3.1 - http://asm.ow2.org/
-org.ow2.asm:asm:4.0 - http://asm.ow2.org/
-org.ow2.asm:asm:5.0.3 - http://asm.ow2.org/
-org.scala-stm:scala-stm_2.11:0.7 - https://nbronson.github.io/scala-stm/releases.html
-xmlenc:xmlenc:0.52 - http://xmlenc.sourceforge.net/
+com.jcraft:jsch:0.1.42 - http://www.jcraft.com/jsch/.
+For details, see licenses/LICENSE-jsch.txt.
+
+com.thoughtworks.paranamer:paranamer:2.3 - https://github.com/paul-hammant/paranamer.
+For details, see licenses/LICENSE-paranamer.txt.
+
+jline:jline:0.9.94 - http://jline.sourceforge.net/.
+For details, see licenses/LICENSE-jline.txt.
+
+net.sourceforge.htmlcleaner:htmlcleaner:2.2 - http://htmlcleaner.sourceforge.net/download.php.
+For details, see licenses/LICENSE-htmlcleaner.txt.
+
+asm.asm:3.1 - http://asm.ow2.org/.
+For details, see licenses/LICENSE-asm.txt.
+
+org.ow2.asm:asm:4.0 - http://asm.ow2.org/.
+For details, see licenses/LICENSE-asm.txt.
+
+org.ow2.asm:asm:5.0.3 - http://asm.ow2.org/.
+For details, see licenses/LICENSE-asm.txt.
+
+org.scala-stm:scala-stm_2.11:0.7 - https://nbronson.github.io/scala-stm/releases.html.
+For details, see licenses/LICENSE-scala-stm.txt.
+
+xmlenc:xmlenc:0.52 - http://xmlenc.sourceforge.net/.
+For details, see licenses/LICENSE-xmlenc.txt.
 
 ========================================================================
 BSD 3-clause licenses
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-org.scala-lang:scala-reflect:2.11.8 - http://www.scala-lang.org/download/#License
-org.scala-lang.modules:scala-java8-compat_2.11:0.7.0 - http://www.scala-lang.org/download/#License
-org.scala-lang.modules:scala-parser-combinators_2.11:1.0.2 - http://www.scala-lang.org/download/#License
-org.scala-lang.modules:scala-parser-combinators_2.11:1.0.4 - http://www.scala-lang.org/download/#License
-org.scala-lang.modules:scala-xml_2.11:1.0.2 - http://www.scala-lang.org/download/#License
-org.webjars:d3js:3.5.6 - https://d3js.org/
+org.scala-lang:scala-reflect:2.11.8 - http://www.scala-lang.org/download/#License.
+For details, see licenses/LICENSE-scala-reflect.txt.
+
+org.scala-lang.modules:scala-java8-compat_2.11:0.7.0 - http://www.scala-lang.org/download/#License.
+For details, see licenses/LICENSE-scala-java8-compat.txt.
+
+org.scala-lang.modules:scala-parser-combinators_2.11:1.0.2 - http://www.scala-lang.org/download/#License.
+For details, see licenses/LICENSE-scala-parser-combinators.txt.
+
+org.scala-lang.modules:scala-parser-combinators_2.11:1.0.4 - http://www.scala-lang.org/download/#License.
+For details, see licenses/LICENSE-scala-parser-combinators.txt.
+
+org.scala-lang.modules:scala-xml_2.11:1.0.2 - http://www.scala-lang.org/download/#License.
+For details, see licenses/LICENSE-scala-xml.txt.
+
+org.webjars:d3js:3.5.6 - https://d3js.org/.
+For details, see licenses/LICENSE-d3js.txt.
 
 ========================================================================
 New BSD licenses
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-com.esotericsoftware.kryo:kryo:2.21 - https://github.com/EsotericSoftware/kryo/
-com.esotericsoftware.minlog:minlog:1.2 - https://github.com/EsotericSoftware/minlog
-com.esotericsoftware.reflectasm:reflectasm:1.07 - https://github.com/EsotericSoftware/reflectasm
-com.esotericsoftware:kryo:3.0.3 - https://github.com/EsotericSoftware/kryo/
-com.esotericsoftware:minlog:1.3.0 - https://github.com/EsotericSoftware/minlog
-com.esotericsoftware:reflectasm:1.10.1 - https://github.com/EsotericSoftware/reflectasm
-com.google.protobuf:protobuf-java:2.5.0 - https://developers.google.com/protocol-buffers/
+com.esotericsoftware.kryo:kryo:2.21 - https://github.com/EsotericSoftware/kryo/.
+For details, see licenses/LICENSE-kyro.txt.
+
+com.esotericsoftware.minlog:minlog:1.2 - https://github.com/EsotericSoftware/minlog.
+For details, see licenses/LICENSE-minlog.txt.
+
+com.esotericsoftware.reflectasm:reflectasm:1.07 - https://github.com/EsotericSoftware/reflectasm.
+For details, see licenses/LICENSE-reflectasm.txt.
+
+com.esotericsoftware:kryo:3.0.3 - https://github.com/EsotericSoftware/kryo/.
+For details, see licenses/LICENSE-kryo.txt.
+
+com.esotericsoftware:minlog:1.3.0 - https://github.com/EsotericSoftware/minlog.
+For details, see licenses/LICENSE-minlog.txt.
+
+com.esotericsoftware:reflectasm:1.10.1 - https://github.com/EsotericSoftware/reflectasm.
+For details, see licenses/LICENSE-reflectasm.txt.
+
+com.google.protobuf:protobuf-java:2.5.0 - https://developers.google.com/protocol-buffers/.
+For details, see licenses/LICENSE-protobuf-java.txt.
 
 ========================================================================
 CC BY 3.0 license
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-org.webjars:font-awesome:4.5.0 - http://fontawesome.io/
+org.webjars:font-awesome:4.5.0 - http://fontawesome.io/.
+For details, see licenses/LICENSE-font-awesome.txt.
  
 ========================================================================
 CC0 license
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-org.reactivestreams:reactive-streams:1.0.0 - http://www.reactive-streams.org/
+org.reactivestreams:reactive-streams:1.0.0 - http://www.reactive-streams.org/.
+For details, see licenses/LICENSE-reactive-streams.txt.
 
 ========================================================================
 CDDL 1.1 license
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-com.sun.jersey.contribs:jersey-guice:1.9 - https://jersey.java.net/
-com.sun.jersey:jersey-client:1.9 - https://jersey.java.net/
-com.sun.jersey:jersey-core:1.9 - https://jersey.java.net/
-com.sun.jersey:jersey-json:1.9 - https://jersey.java.net/
-com.sun.jersey:jersey-server:1.9 - https://jersey.java.net/
-com.sun.xml.bind:jaxb-impl:2.2.3-1 - https://jaxb.java.net/
-javax.xml.bind:jaxb-api:2.2.2 - https://jaxb.java.net/
-org.jvnet.mimepull:mimepull:1.9.4 - https://mimepull.java.net/
+com.sun.jersey.contribs:jersey-guice:1.9 - https://jersey.java.net/.
+For details, see licenses/LICENSE-jersey.txt.
+
+com.sun.jersey:jersey-client:1.9 - https://jersey.java.net/.
+For details, see licenses/LICENSE-jersey.txt.
+
+com.sun.jersey:jersey-core:1.9 - https://jersey.java.net/.
+For details, see licenses/LICENSE-jersey.txt.
+
+com.sun.jersey:jersey-json:1.9 - https://jersey.java.net/.
+For details, see licenses/LICENSE-jersey.txt.
+
+com.sun.jersey:jersey-server:1.9 - https://jersey.java.net/.
+For details, see licenses/LICENSE-jersey.txt.
+
+com.sun.xml.bind:jaxb-impl:2.2.3-1 - https://jaxb.java.net/.
+For details, see licenses/LICENSE-jaxb-impl.txt.
+
+javax.xml.bind:jaxb-api:2.2.2 - https://jaxb.java.net/.
+For details, see licenses/LICENSE-jaxb-api.txt.
+
+org.jvnet.mimepull:mimepull:1.9.4 - https://mimepull.java.net/.
+For details, see licenses/LICENSE-minepull.txt.
 
 ========================================================================
 Common Development and Distribution License (CDDL) v1.0
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-javax.activation:activation:1.1 - http://www.oracle.com/technetwork/java/index.html
-javax.servlet:servlet-api:2.5 - http://www.oracle.com/technetwork/java/index.html
-javax.xml.stream:stax-api:1.0-2 - https://sjsxp.java.net/
+javax.activation:activation:1.1 - http://www.oracle.com/technetwork/java/index.html.
+For details, see licenses/LICENSE-activation.txt.
+
+javax.servlet:servlet-api:2.5 - http://www.oracle.com/technetwork/java/index.html.
+For details, see licenses/LICENSE-servlet-api.txt.
+
+javax.xml.stream:stax-api:1.0-2 - https://sjsxp.java.net/.
+For details, see licenses/LICENSE-stax-api.txt.
+
 javax.servlet.jsp:jsp-api:2.1 - http://www.oracle.com/technetwork/java/index.html
+For details, see licenses/LICENSE-jsp-api.txt.
 
 ========================================================================
 Common Public License Version 1.0
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-junit:junit:3.8.1 - http://junit.org
+junit:junit:3.8.1 - http://junit.org.
+For details, see licenses/LICENSE-junit.txt.
 
 ========================================================================
 Eclipse Public License 1.0
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-org.clojure:clojure:1.6.0 - http://clojure.org/
+org.clojure:clojure:1.6.0 - http://clojure.org/.
+For details, see licenses/LICENSE-clojure.txt.
  
 ========================================================================
 MIT licenses
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-com.github.scribejava:scribejava-apis:2.4.0 - https://github.com/scribejava/scribejava
-com.github.scribejava:scribejava-core:2.4.0 - https://github.com/scribejava/scribejava
-com.lihaoyi:derive_2.11:0.3.4 - https://github.com/lihaoyi/upickle
-com.lihaoyi:upickle_2.11:0.3.4 - https://github.com/lihaoyi/upickle
-org.jruby.jcodings:jcodings:1.0.8 - https://github.com/jruby/jcodings
-org.jruby.joni:joni:2.1.2 - https://github.com/jruby/joni
-org.slf4j:slf4j-api:1.7.16 - http://www.slf4j.org/
-org.slf4j:slf4j-api:1.7.12 - http://www.slf4j.org/
-org.slf4j:slf4j-log4j12:1.7.16 - http://www.slf4j.org/
-org.spire-math:jawn-parser_2.11:0.7.0 - https://github.com/non/jawn/
-org.webjars:angular-ui-router:0.2.15 - https://github.com/angular-ui/ui-router
-org.webjars:angularjs:1.4.9 - https://angularjs.org
-org.webjars.bower:angular-loading-bar:0.8.0 - https://chieffancypants.github.io/angular-loading-bar/
-org.webjars.bower:angular-motion:0.4.3 - http://www.webjars.org/
-org.webjars.bower:angular-smart-table:2.1.6 - https://lorenzofox3.github.io/smart-table-website/
-org.webjars.bower:angular-strap:2.3.5 - http://mgcrea.github.io/angular-strap/
-org.webjars.bower:bootstrap:0.3.3.5 = https://getbootstrap.com/
-org.webjars.bower:bootstrap-additions:0.3.1 = https://github.com/mgcrea/bootstrap-additions
-org.webjars.bower:clipboard.js:0.1.1 - https://clipboardjs.com/
+com.github.scribejava:scribejava-apis:2.4.0 - https://github.com/scribejava/scribejava.
+For details, see licenses/LICENSE-scribejava-apis.txt.
+
+com.github.scribejava:scribejava-core:2.4.0 - https://github.com/scribejava/scribejava.
+For details, see licenses/LICENSE-scribejava-core.txt.
+
+com.lihaoyi:derive_2.11:0.3.4 - https://github.com/lihaoyi/upickle.
+For details, see licenses/LICENSE-derive.txt.
+
+com.lihaoyi:upickle_2.11:0.3.4 - https://github.com/lihaoyi/upickle.
+For details, see licenses/LICENSE-upickle.txt.
+
+org.jruby.jcodings:jcodings:1.0.8 - https://github.com/jruby/jcodings.
+For details, see licenses/LICENSE-jcodings.txt.
+
+org.jruby.joni:joni:2.1.2 - https://github.com/jruby/joni.
+For details, see licenses/LICENSE-joni.txt.
+
+org.slf4j:slf4j-api:1.7.16 - http://www.slf4j.org/.
+For details, see licenses/LICENSE-slf4j.txt.
+
+org.slf4j:slf4j-api:1.7.12 - http://www.slf4j.org/.
+For details, see licenses/LICENSE-slf4j.txt.
+
+org.slf4j:slf4j-log4j12:1.7.16 - http://www.slf4j.org/.
+For details, see licenses/LICENSE-slf4j.txt.
+
+org.spire-math:jawn-parser_2.11:0.7.0 - https://github.com/non/jawn/.
+For details, see licenses/LICENSE-jawn-parser.txt.
+
+org.webjars:angular-ui-router:0.2.15 - https://github.com/angular-ui/ui-router.
+For details, see licenses/LICENSE-angular-ui-router.txt.
+
+org.webjars:angularjs:1.4.9 - https://angularjs.org.
+For details, see licenses/LICENSE-angular.txt.
+
+org.webjars.bower:angular-loading-bar:0.8.0 - https://chieffancypants.github.io/angular-loading-bar/.
+For details, see licenses/LICENSE-angular-loading-bar.txt.
+
+org.webjars.bower:angular-motion:0.4.3 - http://www.webjars.org/.
+For details, see licenses/LICENSE-angular-motion.txt.
+
+org.webjars.bower:angular-smart-table:2.1.6 - https://lorenzofox3.github.io/smart-table-website/.
+For details, see licenses/LICENSE-angular-smart-table.txt.
+
+org.webjars.bower:angular-strap:2.3.5 - http://mgcrea.github.io/angular-strap/.
+For details, see licenses/LICENSE-angular-strap.txt.
+
+org.webjars.bower:bootstrap:0.3.3.5 - https://getbootstrap.com/.
+For details, see licenses/LICENSE-bootstrap.txt.
+
+org.webjars.bower:bootstrap-additions:0.3.1 - https://github.com/mgcrea/bootstrap-additions.
+For details, see licenses/LICENSE-bootstrap-additions.txt.
+
+org.webjars.bower:clipboard.js:0.1.1 - https://clipboardjs.com/.
+For details, see licenses/LICENSE-clipboard.js.txt.
+
 org.webjars.bower:ng-file-upload:5.0.9 - https://github.com/danialfarid/ng-file-upload
-org.webjars:lodash:3.10.1 - https://lodash.com/
-org.webjars:jquery:2.2.0 - https://jquery.com/
-org.webjars:jquery-cookie:1.4.1 - https://github.com/js-cookie/js-cookie
-org.webjars:momentjs:2.10.6 - http://momentjs.com/
-org.webjars.npm:angular-touch:1.5.0 - http://angularjs.org
-org.webjars.npm:ui-select:0.14.2 - http://angular-ui.github.io/ui-select/
-redis.clients:jedis:2.9.0 - https://github.com/xetorthio/jedis
-net.sf.jopt-simple:jopt-simple:3.2 - https://pholser.github.io/jopt-simple/
+For details, see licenses/LICENSE-ng-file-upload.txt.
+
+org.webjars:lodash:3.10.1 - https://lodash.com/.
+For details, see licenses/LICENSE-lodash.txt.
+
+org.webjars:jquery:2.2.0 - https://jquery.com/.
+For details, see licenses/LICENSE-jquery.txt.
+
+org.webjars:jquery-cookie:1.4.1 - https://github.com/js-cookie/js-cookie.
+For details, see licenses/LICENSE-jquery-cookie.txt.
+
+org.webjars:momentjs:2.10.6 - http://momentjs.com/.
+For details, see licenses/LICENSE-momentjs.txt.
+
+org.webjars.npm:angular-touch:1.5.0 - http://angularjs.org.
+For details, see licenses/LICENSE-angular-touch.txt.
+
+org.webjars.npm:ui-select:0.14.2 - http://angular-ui.github.io/ui-select/.
+For details, see licenses/LICENSE-ui-select.txt.
+
+redis.clients:jedis:2.9.0 - https://github.com/xetorthio/jedis.
+For details, see licenses/LICENSE-jedis.txt.
+
+net.sf.jopt-simple:jopt-simple:3.2 - https://pholser.github.io/jopt-simple/.
+For details, see licenses/LICENSE-jopt-simple.txt.
 
 ========================================================================
 Public Domain
 The text of each license is also included at licenses/LICENSE-[project].txt.
 See project link for details.
 ========================================================================
-[info] 	 aopalliance:aopalliance:1.0 - http://aopalliance.sourceforge.net/
-[info] 	 org.tukaani:xz:1.0 - http://tukaani.org/xz/java.html
+aopalliance:aopalliance:1.0 - http://aopalliance.sourceforge.net/
+For details, see licenses/LICENSE-aopalliance.txt.
+
+org.tukaani:xz:1.0 - http://tukaani.org/xz/java.html
+For details, see licenses/LICENSE-xz.txt.

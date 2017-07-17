@@ -208,14 +208,3 @@ Apache Gearpump subcomponents:
    separate copyright notices and license terms. Your use of the source
    code for these subcomponents is subject to the terms and
    conditions of the following licenses. 
-
-   This product bundles Bootstrap 3.3.5, copyright Twitter Inc.,
-   which is available under a MIT license.
-   For details see licenses/LICENSE-bootstrap.txt
-
-   This product bundles jquery 2.1.4, copyright jQuery Foundation, Inc.,
-   which is available under a MIT license. 
-   For details see licenses/LICENSE-jquery.txt
-
-
-
