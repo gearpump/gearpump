@@ -46,7 +46,8 @@ object BuildExperiments extends sbt.Build {
           "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion,
           "org.apache.hadoop" % "hadoop-yarn-server-resourcemanager" % hadoopVersion % "provided",
           "org.apache.hadoop" % "hadoop-yarn-server-nodemanager" % hadoopVersion % "provided"
-        )
+        ).map(_.exclude("org.slf4j", "slf4j-api"))
+          .map(_.exclude("org.slf4j", "slf4j-log4j12"))
       ))
     .dependsOn(services % "test->test;compile->compile",
       core % "provided", gearpumpHadoop).disablePlugins(sbtassembly.AssemblyPlugin)

@@ -219,7 +219,8 @@ object BuildGearpump extends sbt.Build {
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion
-        )
+        ).map(_.exclude("org.slf4j", "slf4j-api"))
+          .map(_.exclude("org.slf4j", "slf4j-log4j12"))
       )
   ).dependsOn(core % "provided").disablePlugins(sbtassembly.AssemblyPlugin)
 
