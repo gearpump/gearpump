@@ -461,8 +461,11 @@ private[cluster] object Worker {
 
         val ipv4 = List(s"-D${PREFER_IPV4}=true")
 
+        val gearpumpHome =
+          List(s"-D${Constants.GEARPUMP_HOME}=${System.getProperty(Constants.GEARPUMP_HOME)}")
+
         val options = ctx.jvmArguments ++ username ++
-          logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ ipv4 ++ configArgs
+          logArgs ++ remoteDebugConfig ++ verboseGCConfig ++ ipv4 ++ gearpumpHome ++ configArgs
 
         val process = procLauncher.createProcess(appId, executorId, resource, executorConfig,
           options, classPath, ctx.mainClass, ctx.arguments)

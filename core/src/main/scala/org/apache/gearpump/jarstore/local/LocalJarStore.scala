@@ -21,7 +21,7 @@ import java.io._
 
 import com.typesafe.config.Config
 import org.apache.gearpump.jarstore.JarStore
-import org.apache.gearpump.util.{LogUtil, FileUtils, Constants}
+import org.apache.gearpump.util.{Constants, FileUtils, LogUtil, Util}
 import org.slf4j.Logger
 
 /**
@@ -29,7 +29,7 @@ import org.slf4j.Logger
  */
 class LocalJarStore extends JarStore {
   private val LOG: Logger = LogUtil.getLogger(getClass)
-  private var rootPath: String = null
+  private var rootPath: File = _
   override val scheme: String = "file"
 
   class ClosedInputStream extends InputStream {
@@ -37,8 +37,9 @@ class LocalJarStore extends JarStore {
   }
 
   override def init(config: Config): Unit = {
-    rootPath = config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH)
-    FileUtils.forceMkdir(new File(rootPath))
+    rootPath = Util.asSubDirOfGearpumpHome(
+      config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH))
+    FileUtils.forceMkdir(rootPath)
   }
 
   /**

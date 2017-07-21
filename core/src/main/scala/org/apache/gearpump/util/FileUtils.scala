@@ -48,6 +48,6 @@ object FileUtils {
       throw new IOException(s"Failed to create directory ${directory.toString}, it already exist")
     }
     Files.createParentDirs(directory)
-    val result = directory.mkdir()
+    directory.mkdir()
   }
 }

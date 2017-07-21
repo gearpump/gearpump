@@ -1,7 +1,3 @@
-# Gearpump
-jarstore/
-logs/
-
 # Scala
 *.class
 *.log

@@ -179,4 +179,9 @@ object Util {
       JvmSetting(executorVMArgs
         .getOrElse(Array.empty[String]), executorClassPath.getOrElse(Array.empty[String])))
   }
+
+  def asSubDirOfGearpumpHome(dir: String): File = {
+    new File(System.getProperty(Constants.GEARPUMP_HOME), dir)
+
+  }
 }

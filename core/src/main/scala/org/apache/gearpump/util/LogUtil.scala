@@ -93,8 +93,7 @@ object LogUtil {
   }
 
   def daemonLogDir(config: Config): File = {
-    val dir = config.getString(Constants.GEARPUMP_LOG_DAEMON_DIR)
-    new File(dir)
+    Util.asSubDirOfGearpumpHome(config.getString(Constants.GEARPUMP_LOG_DAEMON_DIR))
   }
 
   def verboseLogToConsole(): Unit = {
@@ -114,12 +113,10 @@ object LogUtil {
   }
 
   private def jvmName: String = {
-    val hostname = Try(InetAddress.getLocalHost.getHostName).getOrElse("local")
     java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
   }
 
   def applicationLogDir(config: Config): File = {
-    val appLogDir = config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR)
-    new File(appLogDir)
+    Util.asSubDirOfGearpumpHome(config.getString(Constants.GEARPUMP_LOG_APPLICATION_DIR))
   }
 }
