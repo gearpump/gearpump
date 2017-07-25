@@ -142,7 +142,7 @@ public class KafkaConfig extends AbstractConfig implements Serializable {
             ConfigDef.Importance.LOW,
             FETCH_THRESHOLD_DOC)
         .define(FETCH_SLEEP_MS_CONFIG,
-            ConfigDef.Type.INT,
+            ConfigDef.Type.LONG,
             100,
             ConfigDef.Range.atLeast(0),
             ConfigDef.Importance.LOW,

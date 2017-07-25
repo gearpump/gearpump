@@ -36,7 +36,7 @@ object FetchThread {
   class FetchThreadFactory extends java.io.Serializable {
     def getFetchThread(config: KafkaConfig, client: KafkaClient): FetchThread = {
       val fetchThreshold = config.getInt(KafkaConfig.FETCH_THRESHOLD_CONFIG)
-      val fetchSleepMS = config.getInt(KafkaConfig.FETCH_SLEEP_MS_CONFIG)
+      val fetchSleepMS = config.getLong(KafkaConfig.FETCH_SLEEP_MS_CONFIG)
       val startOffsetTime = config.getLong(KafkaConfig.CONSUMER_START_OFFSET_CONFIG)
       FetchThread(fetchThreshold, fetchSleepMS, startOffsetTime, client)
     }
