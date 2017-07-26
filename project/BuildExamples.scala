@@ -42,7 +42,7 @@ object BuildExamples extends sbt.Build {
   lazy val example_hbase = Project(
     id = "gearpump-examples-hbase",
     base = file("examples/streaming/hbase"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
+    settings = exampleSettings("org.apache.gearpump.streaming.examples.hbase.HBaseConn") ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-common" % hadoopVersion
@@ -50,38 +50,37 @@ object BuildExamples extends sbt.Build {
             exclude("commons-beanutils", "commons-beanutils")
             exclude("asm", "asm")
             exclude("org.ow2.asm", "asm")
-        ),
-        mainClass in(Compile, packageBin) :=
-          Some("org.apache.gearpump.streaming.examples.hbase.HBaseConn"),
-
-        target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
-          CrossVersion.binaryScalaVersion(scalaVersion.value)
-      )
-  ) dependsOn(streaming % "test->test; provided", core % "provided", external_hbase)
+        )
+      ) ++ include("examples/streaming/hbase", "external/hbase")
+  ) dependsOn(core, streaming % "compile; test->test", external_hbase)
 
   lazy val wordcountJava = Project(
     id = "gearpump-examples-wordcountjava",
     base = file("examples/streaming/wordcount-java"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.wordcountjava.WordCount")
-  ).dependsOn(core % "provided", streaming % "test->test; provided")
+    settings = exampleSettings("org.apache.gearpump.streaming.examples.wordcountjava.WordCount") ++
+      include("examples/streaming/wordcount-java")
+  ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
     base = file("examples/streaming/wordcount"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.wordcount.WordCount")
-  ).dependsOn(core % "provided", streaming % "test->test; provided")
+    settings = exampleSettings("org.apache.gearpump.streaming.examples.wordcount.dsl.WordCount") ++
+      include("examples/streaming/wordcount")
+  ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",
     base = file("examples/streaming/sol"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.sol.SOL")
-  ).dependsOn(core % "provided", streaming % "test->test; provided")
+    settings = exampleSettings("org.apache.gearpump.streaming.examples.sol.SOL") ++
+      include("examples/streaming/sol")
+  ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val complexdag = Project(
     id = "gearpump-examples-complexdag",
     base = file("examples/streaming/complexdag"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.complexdag.Dag")
-  ).dependsOn(core % "provided", streaming % "test->test; provided")
+    settings = exampleSettings("org.apache.gearpump.streaming.examples.complexdag.Dag") ++
+      include("examples/streaming/complexdag")
+  ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
@@ -91,8 +90,8 @@ object BuildExamples extends sbt.Build {
         Some("org.apache.gearpump.examples.distributedshell.DistributedShell"),
       target in assembly := baseDirectory.value.getParentFile / "target" /
         CrossVersion.binaryScalaVersion(scalaVersion.value)
-    )
-  ).dependsOn(core % "test->test; provided")
+    ) ++ include("examples/distributedshell")
+  ).dependsOn(core % "compile; test->test")
 
   lazy val distributeservice = Project(
     id = "gearpump-examples-distributeservice",
@@ -109,8 +108,8 @@ object BuildExamples extends sbt.Build {
         "io.spray" %% "spray-can" % sprayVersion,
         "io.spray" %% "spray-routing-shapeless2" % sprayVersion
         )
-    )
-  ).dependsOn(core % "test->test; provided")
+    ) ++ include("examples/distributeservice")
+  ).dependsOn(core % "compile; test->test")
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
@@ -128,15 +127,16 @@ object BuildExamples extends sbt.Build {
             exclude("asm", "asm")
             exclude("org.ow2.asm", "asm")
         )
-      )
-  ).dependsOn(core % "provided", streaming % "test->test; provided")
+      ) ++ include("examples/streaming/fsio")
+  ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
     base = file("examples/streaming/kafka"),
     settings =
-      exampleSettings("org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount")
-  ).dependsOn(core % "provided", streaming % "test->test; provided", external_kafka)
+      exampleSettings("org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount") ++
+    include("examples/streaming/kafka", "external/kafka")
+  ).dependsOn(core, streaming % "compile; test->test", external_kafka)
 
   lazy val examples_state = Project(
     id = "gearpump-examples-state",
@@ -155,15 +155,18 @@ object BuildExamples extends sbt.Build {
             exclude("org.ow2.asm", "asm"),
           "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
         )
-      )
-  ).dependsOn(core % "provided", streaming % "test->test; provided",
+      ) ++ include("examples/streaming/state",
+      "external/hadoopfs", "external/monoid", "external/serializer", "external/kafka")
+  ).dependsOn(core, streaming % "compile; test->test",
     external_hadoopfs, external_monoid, external_serializer, external_kafka)
 
   lazy val pagerank = Project(
     id = "gearpump-examples-pagerank",
     base = file("examples/pagerank"),
-    settings = exampleSettings("org.apache.gearpump.experiments.pagerank.example.PageRankExample")
-  ).dependsOn(core % "provided", streaming % "test->test; provided")
+    settings =
+      exampleSettings("org.apache.gearpump.experiments.pagerank.example.PageRankExample") ++
+      include("examples/pagerank")
+  ).dependsOn(core, streaming % "compile; test->test")
 
   private def exampleSettings(className: String): Seq[Def.Setting[_]] =
     commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
@@ -172,4 +175,12 @@ object BuildExamples extends sbt.Build {
       target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
         CrossVersion.binaryScalaVersion(scalaVersion.value)
     )
+
+  private def include(files: String*): Seq[Def.Setting[_]] = Seq(
+    assemblyExcludedJars in assembly := {
+      val cp = (fullClasspath in assembly).value
+      cp.filterNot(p =>
+        files.exists(p.data.getAbsolutePath.contains))
+    }
+  )
 }

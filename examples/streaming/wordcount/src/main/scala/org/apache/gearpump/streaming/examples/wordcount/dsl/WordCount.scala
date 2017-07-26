@@ -19,6 +19,7 @@
 package org.apache.gearpump.streaming.examples.wordcount.dsl
 
 import org.apache.gearpump.cluster.client.ClientContext
+import org.apache.gearpump.cluster.embedded.EmbeddedCluster
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.streaming.dsl.scalaapi.StreamApp
 import org.apache.gearpump.streaming.dsl.scalaapi.StreamApp._
@@ -30,16 +31,19 @@ object WordCount extends AkkaApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {
-    val context = ClientContext(akkaConf)
+    val cluster = new EmbeddedCluster(akkaConf)
+    cluster.start()
+    val context: ClientContext = cluster.newClientContext
     val app = StreamApp("dsl", context)
     val data = "This is a good start, bingo!! bingo!!"
     app.source(data.lines.toList, 1, "source").
       // word => (word, count)
       flatMap(line => line.split("[\\s]+")).map((_, 1)).
       // (word, count1), (word, count2) => (word, count1 + count2)
-      groupByKey().sum.log
+      groupByKey().sum.map(print)
 
     context.submit(app).waitUntilFinish()
     context.close()
+    cluster.stop()
   }
 }

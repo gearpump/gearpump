@@ -12,7 +12,8 @@ docs_dir: tmp
 
 pages: 
 - Overview: 'index.md' 
-- Introduction: 
+- Introduction:
+    - 'Quick Start': 'introduction/quick-start.md'
     - 'Submit Your 1st Application': 'introduction/submit-your-1st-application.md'
     - 'Client Command Line': 'introduction/commandline.md'
     - 'Basic Concepts': 'introduction/basic-concepts.md'

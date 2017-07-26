@@ -74,8 +74,9 @@ object BuildExperiments extends sbt.Build {
         libraryDependencies ++= Seq(
           "redis.clients" % "jedis" % jedisVersion
         )
-      )
-  ).dependsOn(core % "provided", streaming % "test->test; provided")
+      ))
+    .dependsOn(core % "provided", streaming % "test->test; provided")
+    .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val storm = Project(
     id = "gearpump-experiments-storm",
