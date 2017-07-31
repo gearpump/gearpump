@@ -20,8 +20,8 @@ We'll use the classical [wordcount](https://github.com/apache/incubator-gearpump
 	      // (word, count1), (word, count2) => (word, count1 + count2)
 	      groupByKey().sum.log
 	
-         context.submit(app).waitUntilFinish()
-         context.close()
+        context.submit(app).waitUntilFinish()
+        context.close()
 	  }
 	}
 

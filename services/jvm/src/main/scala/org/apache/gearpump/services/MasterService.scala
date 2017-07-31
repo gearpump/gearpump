@@ -160,7 +160,7 @@ class MasterService(val master: ActorRef,
           val msg = java.net.URLDecoder.decode(request, "UTF-8")
           val submitApplicationRequest = read[SubmitApplicationRequest](msg)
           import submitApplicationRequest.{appName, dag, processors, userConfig}
-          val context = ClientContext(system.settings.config, system, master)
+          val context = new ClientContext(system.settings.config, system, master)
 
           val graph = dag.mapVertex { processorId =>
             processors(processorId)

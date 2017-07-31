@@ -37,7 +37,6 @@ public class WordCount {
   }
 
   public static void main(Config akkaConf, String[] args) throws InterruptedException {
-
     // For split task, we config to create two tasks
     int splitTaskNumber = 2;
     Processor split = new Processor(Split.class).withParallelism(splitTaskNumber);
@@ -56,36 +55,9 @@ public class WordCount {
 
     UserConfig conf = UserConfig.empty();
     StreamApplication app = new StreamApplication("wordcountJava", conf, graph);
-
-    EmbeddedCluster localCluster = null;
-
-    Boolean debugMode = System.getProperty("DEBUG") != null;
-
-    if (debugMode) {
-      localCluster = new EmbeddedCluster(akkaConf);
-      localCluster.start();
-    }
-
-    ClientContext masterClient = null;
-
-    if (localCluster != null) {
-      masterClient = localCluster.newClientContext();
-    } else {
-      // create master client
-      // It will read the master settings under gearpump.cluster.masters
-      masterClient = new ClientContext(akkaConf);
-    }
-
+    ClientContext masterClient = ClientContext.apply(akkaConf);
     masterClient.submit(app);
 
-    if (debugMode) {
-      Thread.sleep(30 * 1000); // sleep for 30 seconds.
-    }
-
     masterClient.close();
-
-    if (localCluster != null) {
-      localCluster.stop();
-    }
   }
 }

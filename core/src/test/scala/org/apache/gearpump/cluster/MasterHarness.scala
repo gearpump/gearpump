@@ -22,15 +22,15 @@ import java.io.File
 import java.net.{InetSocketAddress, Socket, SocketTimeoutException, URLClassLoader, UnknownHostException}
 import java.util.Properties
 import java.util.concurrent.{Executors, TimeUnit}
+
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
-
 import akka.actor.{Actor, ActorSystem, Address, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigValueFactory}
-
 import org.apache.gearpump.cluster.MasterHarness.MockMaster
+import org.apache.gearpump.cluster.client.{RemoteRuntimeEnvironment, RuntimeEnvironment}
 import org.apache.gearpump.util.Constants._
 import org.apache.gearpump.util.{ActorUtil, FileUtils, LogUtil}
 
@@ -63,6 +63,8 @@ trait MasterHarness {
     masterProperties.put(s"${GEARPUMP_HOSTNAME}", s"$getHost")
 
     LOG.info(s"Actor system is started, $host, $port")
+    // Make sure there will be no EmbeddedCluster created, otherwise mock master won't work
+    RuntimeEnvironment.setRuntimeEnv(new RemoteRuntimeEnvironment)
   }
 
   def shutdownActorSystem(): Unit = {
