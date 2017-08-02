@@ -19,6 +19,7 @@
 package org.apache.gearpump.cluster.client
 
 import com.typesafe.config.Config
+import org.apache.gearpump.cluster.client.RuntimeEnvironment.RemoteClientContext
 import org.apache.gearpump.cluster.embedded.EmbeddedRuntimeEnvironemnt
 
 /**
@@ -34,12 +35,14 @@ abstract class RuntimeEnvironment {
  */
 class RemoteRuntimeEnvironment extends RuntimeEnvironment {
   override def newClientContext(akkaConf: Config): ClientContext = {
-    new ClientContext(akkaConf)
+    new RemoteClientContext(akkaConf)
   }
 }
 
 object RuntimeEnvironment {
   private var envInstance: RuntimeEnvironment = _
+
+  class RemoteClientContext(akkaConf: Config) extends ClientContext(akkaConf, null, null)
 
   def get() : RuntimeEnvironment = {
     Option(envInstance).getOrElse(new EmbeddedRuntimeEnvironemnt)

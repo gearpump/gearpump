@@ -60,7 +60,7 @@ object GearpumpNimbus extends AkkaApp with ArgumentsParser {
     val akkaConf = updateClientConfig(inputAkkaConf)
     val system = ActorSystem("storm", akkaConf)
 
-    val clientContext = new ClientContext(akkaConf, system, null)
+    val clientContext = ClientContext(akkaConf, system, null)
     val stormConf = Utils.readStormConfig().asInstanceOf[JMap[AnyRef, AnyRef]]
     val thriftConf: JMap[AnyRef, AnyRef] = Map(
       Config.NIMBUS_HOST -> akkaConf.getString(Constants.GEARPUMP_HOSTNAME),

@@ -31,6 +31,7 @@ import org.apache.gearpump.streaming.dsl.api.functions.ReduceFunction;
 import org.apache.gearpump.streaming.dsl.javaapi.functions.FlatMapFunction;
 import org.apache.gearpump.streaming.dsl.javaapi.functions.GroupByFunction;
 import org.apache.gearpump.streaming.source.DataSource;
+import org.apache.gearpump.streaming.source.Watermark;
 import org.apache.gearpump.streaming.task.TaskContext;
 import scala.Tuple2;
 
@@ -46,7 +47,7 @@ public class WordCount {
   }
 
   public static void main(Config akkaConf, String[] args) throws InterruptedException {
-    ClientContext context = new ClientContext(akkaConf);
+    ClientContext context = ClientContext.apply(akkaConf);
     JavaStreamApp app = new JavaStreamApp("JavaDSL", context, UserConfig.empty());
 
     JavaStream<String> sentence = app.source(new StringSource("This is a good start, bingo!! bingo!!"),
@@ -69,6 +70,7 @@ public class WordCount {
   private static class StringSource implements DataSource {
 
     private final String str;
+    private boolean hasNext = true;
 
     StringSource(String str) {
       this.str = str;
@@ -80,7 +82,9 @@ public class WordCount {
 
     @Override
     public Message read() {
-      return new DefaultMessage(str, Instant.now());
+      Message msg = new DefaultMessage(str, Instant.now());
+      hasNext = false;
+      return msg;
     }
 
     @Override
@@ -89,7 +93,11 @@ public class WordCount {
 
     @Override
     public Instant getWatermark() {
-      return Instant.now();
+      if (hasNext) {
+        return Instant.now();
+      } else {
+        return Watermark.MAX();
+      }
     }
   }
 

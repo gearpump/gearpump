@@ -26,7 +26,6 @@ import org.apache.gearpump.akkastream.task.SinkBridgeTask.SinkBridgeTaskClient
 import org.apache.gearpump.akkastream.task.SourceBridgeTask.SourceBridgeTaskClient
 import akka.stream.impl.StreamLayout.Module
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.cluster.embedded.EmbeddedCluster
 import org.apache.gearpump.streaming.ProcessorId
 import org.apache.gearpump.util.Graph
 
@@ -48,16 +47,8 @@ object RemoteGraph {
    */
   class RemoteGraphMaterializer(useInProcessCluster: Boolean, system: ActorSystem)
     extends SubGraphMaterializer {
-    private val local = if (useInProcessCluster) {
-      Some(EmbeddedCluster())
-    } else {
-      None
-    }
 
-    private val context: ClientContext = local match {
-      case Some(l) => l.newClientContext
-      case None => ClientContext(null)
-    }
+    private val context: ClientContext = ClientContext()
 
     override def materialize(subGraph: SubGraph,
         inputMatValues: scala.collection.mutable.Map[Module, Any]):
@@ -105,7 +96,6 @@ object RemoteGraph {
 
     override def shutdown: Unit = {
       context.close()
-      local.foreach(_.stop())
     }
   }
 }
