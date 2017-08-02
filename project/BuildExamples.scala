@@ -39,21 +39,9 @@ object BuildExamples extends sbt.Build {
     example_hbase
   )
 
-  lazy val example_hbase = Project(
-    id = "gearpump-examples-hbase",
-    base = file("examples/streaming/hbase"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.hbase.HBaseConn") ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
-            exclude("commons-beanutils", "commons-beanutils-core")
-            exclude("commons-beanutils", "commons-beanutils")
-            exclude("asm", "asm")
-            exclude("org.ow2.asm", "asm")
-        )
-      ) ++ include("examples/streaming/hbase", "external/hbase")
-  ) dependsOn(core, streaming % "compile; test->test", external_hbase)
-
+  /**
+   * The follow examples can be run in IDE or with `sbt run`
+   */
   lazy val wordcountJava = Project(
     id = "gearpump-examples-wordcountjava",
     base = file("examples/streaming/wordcount-java"),
@@ -82,6 +70,17 @@ object BuildExamples extends sbt.Build {
       include("examples/streaming/complexdag")
   ).dependsOn(core, streaming % "compile; test->test")
 
+  lazy val pagerank = Project(
+    id = "gearpump-examples-pagerank",
+    base = file("examples/pagerank"),
+    settings =
+      exampleSettings("org.apache.gearpump.experiments.pagerank.example.PageRankExample") ++
+        include("examples/pagerank")
+  ).dependsOn(core % "provided", streaming % "provided; test->test")
+
+  /**
+   * The following examples must be submitted to a deployed gearpump clutser
+   */
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
     base = file("examples/distributedshell"),
@@ -90,8 +89,8 @@ object BuildExamples extends sbt.Build {
         Some("org.apache.gearpump.examples.distributedshell.DistributedShell"),
       target in assembly := baseDirectory.value.getParentFile / "target" /
         CrossVersion.binaryScalaVersion(scalaVersion.value)
-    ) ++ include("examples/distributedshell")
-  ).dependsOn(core % "compile; test->test")
+    )
+  ).dependsOn(core % "provided; test->test")
 
   lazy val distributeservice = Project(
     id = "gearpump-examples-distributeservice",
@@ -109,7 +108,18 @@ object BuildExamples extends sbt.Build {
         "io.spray" %% "spray-routing-shapeless2" % sprayVersion
         )
     ) ++ include("examples/distributeservice")
-  ).dependsOn(core % "compile; test->test")
+  ).dependsOn(core % "provided; test->test")
+
+  lazy val example_hbase = Project(
+    id = "gearpump-examples-hbase",
+    base = file("examples/streaming/hbase"),
+    settings = exampleSettings("org.apache.gearpump.streaming.examples.hbase.HBaseConn") ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided"
+        )
+      )
+  ) dependsOn(core % "provided", streaming % "provided; test->test", external_hbase)
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
@@ -117,26 +127,17 @@ object BuildExamples extends sbt.Build {
     settings = exampleSettings("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO") ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
-            exclude("org.mortbay.jetty", "jetty-util")
-            exclude("org.mortbay.jetty", "jetty")
-            exclude("org.fusesource.leveldbjni", "leveldbjni-all")
-            exclude("tomcat", "jasper-runtime")
-            exclude("commons-beanutils", "commons-beanutils-core")
-            exclude("commons-beanutils", "commons-beanutils")
-            exclude("asm", "asm")
-            exclude("org.ow2.asm", "asm")
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided"
         )
-      ) ++ include("examples/streaming/fsio")
-  ).dependsOn(core, streaming % "compile; test->test")
+      )
+  ).dependsOn(core % "provided", streaming % "provided; test->test")
 
   lazy val examples_kafka = Project(
     id = "gearpump-examples-kafka",
     base = file("examples/streaming/kafka"),
     settings =
-      exampleSettings("org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount") ++
-    include("examples/streaming/kafka", "external/kafka")
-  ).dependsOn(core, streaming % "compile; test->test", external_kafka)
+      exampleSettings("org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount")
+  ).dependsOn(core % "provided", streaming % "provided; test->test", external_kafka)
 
   lazy val examples_state = Project(
     id = "gearpump-examples-state",
@@ -144,29 +145,12 @@ object BuildExamples extends sbt.Build {
     settings = exampleSettings("org.apache.gearpump.streaming.examples.state.MessageCountApp") ++
       Seq(
         libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
-            exclude("org.mortbay.jetty", "jetty-util")
-            exclude("org.mortbay.jetty", "jetty")
-            exclude("org.fusesource.leveldbjni", "leveldbjni-all")
-            exclude("tomcat", "jasper-runtime")
-            exclude("commons-beanutils", "commons-beanutils-core")
-            exclude("commons-beanutils", "commons-beanutils")
-            exclude("asm", "asm")
-            exclude("org.ow2.asm", "asm"),
-          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion
+          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
+          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion % "provided"
         )
-      ) ++ include("examples/streaming/state",
-      "external/hadoopfs", "external/monoid", "external/serializer", "external/kafka")
-  ).dependsOn(core, streaming % "compile; test->test",
+      )
+  ).dependsOn(core % "provided", streaming % "provided; test->test",
     external_hadoopfs, external_monoid, external_serializer, external_kafka)
-
-  lazy val pagerank = Project(
-    id = "gearpump-examples-pagerank",
-    base = file("examples/pagerank"),
-    settings =
-      exampleSettings("org.apache.gearpump.experiments.pagerank.example.PageRankExample") ++
-      include("examples/pagerank")
-  ).dependsOn(core, streaming % "compile; test->test")
 
   private def exampleSettings(className: String): Seq[Def.Setting[_]] =
     commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
