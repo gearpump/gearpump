@@ -55,6 +55,14 @@ object Dependencies {
   val jedisVersion = "2.9.0"
   val rabbitmqVersion = "3.5.3"
 
+  val annotationDependencies = Seq(
+    // work around for compiler warnings like
+    // "Class javax.annotation.CheckReturnValue not found - continuing with a stub"
+    // see https://issues.scala-lang.org/browse/SI-8978
+    // marked as "provided" to be excluded from assembling
+    "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided"
+  )
+
   val coreDependencies = Seq(
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api" % slf4jVersion,
@@ -93,11 +101,12 @@ object Dependencies {
         exclude("org.slf4j", "slf4j-api"),
       "com.codahale.metrics" % "metrics-jvm" % codahaleVersion
         exclude("org.slf4j", "slf4j-api"),
+
       "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
       "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
       "org.mockito" % "mockito-core" % mockitoVersion % "test",
       "junit" % "junit" % junitVersion % "test"
-    )
+    ) ++ annotationDependencies
   )
 }

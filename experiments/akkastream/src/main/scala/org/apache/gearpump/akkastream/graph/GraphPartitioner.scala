@@ -26,7 +26,7 @@ import org.apache.gearpump.akkastream.graph.GraphPartitioner.Strategy
 import org.apache.gearpump.akkastream.module._
 import akka.stream.impl.StreamLayout.Module
 import akka.stream.impl.fusing.GraphStageModule
-import akka.stream.impl.fusing.GraphStages.{MaterializedValueSource, SimpleLinearGraphStage, SingleSource}
+import akka.stream.impl.fusing.GraphStages.{MaterializedValueSource, SingleSource}
 import akka.stream.impl.{SinkModule, SourceModule}
 import org.apache.gearpump.util.Graph
 

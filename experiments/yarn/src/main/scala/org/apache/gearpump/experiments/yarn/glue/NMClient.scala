@@ -25,7 +25,7 @@ import com.typesafe.config.Config
 import org.apache.gearpump.experiments.yarn.appmaster.YarnAppMaster.ContainerStarted
 import org.apache.gearpump.experiments.yarn.glue.Records._
 import org.apache.gearpump.util.LogUtil
-import org.apache.hadoop.yarn.api.records.{ApplicationId => YarnApplicationId, ApplicationReport => YarnApplicationReport, Container => YarnContainer, ContainerId => YarnContainerId, ContainerStatus => YarnContainerStatus, NodeId => YarnNodeId, Resource => YarnResource}
+import org.apache.hadoop.yarn.api.records.{ContainerId => YarnContainerId, ContainerStatus => YarnContainerStatus}
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync
 import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl
 /**

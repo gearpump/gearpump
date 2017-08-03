@@ -23,7 +23,6 @@ import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable._
-import akka.http.scaladsl.server.{RejectionHandler, StandardRoute}
 import akka.stream.Materializer
 import org.apache.gearpump.util.Util
 // NOTE: This cannot be removed!!!

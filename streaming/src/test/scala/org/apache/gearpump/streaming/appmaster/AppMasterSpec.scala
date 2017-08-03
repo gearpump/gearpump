@@ -17,10 +17,8 @@
  */
 package org.apache.gearpump.streaming.appmaster
 
-
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.{TestActorRef, TestProbe}
-import com.typesafe.config.ConfigFactory
 import org.apache.gearpump.cluster.AppMasterToMaster._
 import org.apache.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import org.apache.gearpump.cluster.ClientToMaster.GetLastFailure
@@ -40,7 +38,7 @@ import org.apache.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, Ta
 import org.apache.gearpump.streaming.task.{TaskContext, _}
 import org.apache.gearpump.streaming.{DAG, Processor, StreamApplication}
 import org.apache.gearpump.util.ActorSystemBooter.RegisterActorSystem
-import org.apache.gearpump.util.{ActorUtil, Constants, Graph}
+import org.apache.gearpump.util.{ActorUtil, Graph}
 import org.apache.gearpump.util.Graph._
 import org.scalatest._
 

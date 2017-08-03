@@ -23,10 +23,8 @@ import java.io.{ObjectInputStream, ObjectOutputStream}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 
-import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.hadoop.lib.HadoopUtil
 import org.apache.gearpump.streaming.hadoop.lib.rotation.{FileSizeRotation, Rotation}
-import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.{CheckpointStore, CheckpointStoreFactory}
 
 object HadoopCheckpointStoreFactory {

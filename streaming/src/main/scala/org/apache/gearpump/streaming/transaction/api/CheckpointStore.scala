@@ -19,8 +19,6 @@
 package org.apache.gearpump.streaming.transaction.api
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.TaskContext
 
 /**
  * CheckpointStore persistently stores mapping of timestamp to checkpoint

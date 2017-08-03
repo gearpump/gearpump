@@ -18,8 +18,6 @@
 
 package org.apache.gearpump.experiments.storm.processor
 
-import java.util.{List => JList}
-
 import backtype.storm.tuple.Tuple
 import backtype.storm.utils.Utils
 import org.apache.gearpump.experiments.storm.util.StormOutputCollector

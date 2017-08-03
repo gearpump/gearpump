@@ -19,8 +19,7 @@ package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.util.{AkkaApp, LogUtil}
-import org.slf4j.Logger
+import org.apache.gearpump.util.AkkaApp
 
 /** Tool to query master info */
 object Info extends AkkaApp with ArgumentsParser {

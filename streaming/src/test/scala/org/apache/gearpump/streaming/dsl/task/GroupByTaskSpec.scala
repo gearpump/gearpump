@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.dsl.plan.functions.DummyRunner
 import org.apache.gearpump.streaming.dsl.window.api.GlobalWindows
 import org.apache.gearpump.streaming.{Constants, MockUtil}
-import org.apache.gearpump.streaming.dsl.window.impl.{DefaultWindowRunner, WindowRunner}
+import org.apache.gearpump.streaming.dsl.window.impl.DefaultWindowRunner
 import org.apache.gearpump.streaming.source.Watermark
 import org.mockito.Mockito._
 import org.scalacheck.Gen

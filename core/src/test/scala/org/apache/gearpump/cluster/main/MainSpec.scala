@@ -35,7 +35,7 @@ import org.apache.gearpump.util.{Constants, LogUtil, Util}
 import org.scalatest._
 
 import scala.concurrent.Future
-import scala.util.{Success, Try}
+import scala.util.Success
 
 class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 

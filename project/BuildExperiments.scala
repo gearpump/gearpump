@@ -60,7 +60,7 @@ object BuildExperiments extends sbt.Build {
         libraryDependencies ++= Seq(
           "org.json4s" %% "json4s-jackson" % "3.2.11",
           "com.typesafe.akka" %% "akka-stream" % akkaVersion
-        ),
+        ) ++ annotationDependencies,
         mainClass in(Compile, packageBin) := Some("akka.stream.gearpump.example.Test")
       ))
     .dependsOn (core % "provided", streaming % "test->test; provided")

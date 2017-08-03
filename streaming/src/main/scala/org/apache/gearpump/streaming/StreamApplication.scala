@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.streaming
 
-import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import akka.actor.ActorSystem
 import org.apache.gearpump.{MAX_TIME_MILLIS, MIN_TIME_MILLIS, TimeStamp}

@@ -22,7 +22,6 @@ import java.lang.management.ManagementFactory
 import org.apache.gearpump.cluster.worker.WorkerId
 import org.apache.gearpump.jarstore.JarStoreServer
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 import akka.actor._

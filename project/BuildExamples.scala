@@ -106,7 +106,7 @@ object BuildExamples extends sbt.Build {
         "commons-io" % "commons-io" % commonsIOVersion,
         "io.spray" %% "spray-can" % sprayVersion,
         "io.spray" %% "spray-routing-shapeless2" % sprayVersion
-        )
+        ) ++ annotationDependencies
     ) ++ include("examples/distributeservice")
   ).dependsOn(core % "provided; test->test")
 
@@ -160,11 +160,12 @@ object BuildExamples extends sbt.Build {
         CrossVersion.binaryScalaVersion(scalaVersion.value)
     )
 
-  private def include(files: String*): Seq[Def.Setting[_]] = Seq(
-    assemblyExcludedJars in assembly := {
-      val cp = (fullClasspath in assembly).value
-      cp.filterNot(p =>
-        files.exists(p.data.getAbsolutePath.contains))
-    }
-  )
+  private def include(files: String*): Seq[Def.Setting[_]] =
+    Seq(
+      assemblyExcludedJars in assembly := {
+        val cp = (fullClasspath in assembly).value
+        cp.filterNot(p =>
+          files.exists(p.data.getAbsolutePath.contains))
+      }
+    )
 }

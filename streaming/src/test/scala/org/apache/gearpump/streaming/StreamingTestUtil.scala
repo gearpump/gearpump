@@ -20,7 +20,6 @@ package org.apache.gearpump.streaming
 import akka.actor._
 import akka.testkit.TestActorRef
 import org.apache.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
-import org.apache.gearpump.cluster.appmaster.ApplicationRuntimeInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.cluster.{AppDescription, AppMasterContext, MiniCluster, UserConfig}
 import org.apache.gearpump.streaming.appmaster.AppMaster

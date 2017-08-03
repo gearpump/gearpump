@@ -41,8 +41,6 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {
   import taskContext._
 
-  import org.apache.gearpump.streaming.state.api.PersistentTask._
-
   val checkpointStoreFactory = conf.getValue[CheckpointStoreFactory](
     PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY).get
   val checkpointStore = checkpointStoreFactory.getCheckpointStore(

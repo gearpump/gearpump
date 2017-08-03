@@ -18,8 +18,6 @@
 
 package org.apache.gearpump.streaming
 
-import scala.language.existentials
-
 import akka.actor.ActorRef
 
 import org.apache.gearpump.TimeStamp

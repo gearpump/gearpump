@@ -69,9 +69,10 @@ class GearpumpMaterializerSession(system: ActorSystem, topLevel: Module,
           enterScope(copied)
           materializedValues.put(copied, materializeModule(copied, currentAttributes))
           exitScope(copied)
-        case composite =>
+        case composite: CompositeModule =>
           materializedValues.put(composite, materializeComposite(composite, currentAttributes))
-        case EmptyModule =>
+        case _ =>
+          // ignore other modules
       }
     }
 

@@ -20,7 +20,6 @@ package org.apache.gearpump.streaming.kafka.dsl
 import java.util.Properties
 
 import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.dsl
 import org.apache.gearpump.streaming.dsl.scalaapi.{Stream, StreamApp}
 import org.apache.gearpump.streaming.kafka.{KafkaSink, KafkaSource}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory

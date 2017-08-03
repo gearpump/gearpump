@@ -161,7 +161,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
           ProcessorOp(processor.processor, parallelism, updatedConf, "source")
         case sinkBridge: SinkBridgeModule[_, _] =>
           ProcessorOp(classOf[SinkBridgeTask], parallelism, conf, "sink")
-        case groupBy: GroupByModule[Any, Any] =>
+        case groupBy: GroupByModule[_, _] =>
           GroupByOp(groupBy.groupBy, parallelism, "groupBy", conf)
         case reduce: ReduceModule[_] =>
           reduceOp(reduce.f, conf)
@@ -238,7 +238,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
         val foldConf = conf.withValue(FoldTask.ZERO, fold.zero.asInstanceOf[AnyRef]).
           withValue(FoldTask.AGGREGATOR, fold.f)
         ProcessorOp(classOf[FoldTask[_, _]], parallelism, foldConf, "fold")
-      case groupBy: GroupBy[Any, Any] =>
+      case groupBy: GroupBy[_, _] =>
         GroupByOp(groupBy.keyFor, groupBy.maxSubstreams, "groupBy", conf)
       case groupedWithin: GroupedWithin[_] =>
         val diConf = conf.withValue[FiniteDuration](GroupedWithinTask.TIME_WINDOW, groupedWithin.d).

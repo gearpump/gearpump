@@ -18,8 +18,7 @@
 
 package org.apache.gearpump.cluster.main
 
-import org.apache.gearpump.util.{AkkaApp, LogUtil}
-import org.slf4j.Logger
+import org.apache.gearpump.util.AkkaApp
 
 /** Tool to run any main class by providing a jar */
 object MainRunner extends AkkaApp with ArgumentsParser {

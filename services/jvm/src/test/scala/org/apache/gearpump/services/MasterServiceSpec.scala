@@ -40,7 +40,7 @@ import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersD
 import org.apache.gearpump.cluster.MasterToClient._
 import org.apache.gearpump.cluster.TestUtil
 import org.apache.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import org.apache.gearpump.jarstore.{JarStoreClient, JarStoreServer}
+import org.apache.gearpump.jarstore.JarStoreClient
 import org.apache.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
 // NOTE: This cannot be removed!!!
 import org.apache.gearpump.services.util.UpickleUtil._
@@ -166,7 +166,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest
 
   private def entity(file: File)(implicit ec: ExecutionContext): Future[RequestEntity] = {
     val entity = HttpEntity(MediaTypes.`application/octet-stream`, file.length(),
-      FileIO.fromFile(file, chunkSize = 100000))
+      FileIO.fromPath(file.toPath, chunkSize = 100000))
 
     val body = Source.single(
       Multipart.FormData.BodyPart(

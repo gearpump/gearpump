@@ -19,8 +19,6 @@
 package org.apache.gearpump.streaming.state.impl
 
 import org.apache.gearpump.TimeStamp
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api.{CheckpointStore, CheckpointStoreFactory}
 
 /**

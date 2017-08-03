@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.streaming.appmaster
 
-
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import org.apache.gearpump.cluster.{TestUtil, UserConfig}
@@ -28,7 +27,6 @@ import org.apache.gearpump.streaming.task.{Subscriber, TaskActor}
 import org.apache.gearpump.streaming._
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
-import org.scalatest.mock.MockitoSugar
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
 import scala.concurrent.Await

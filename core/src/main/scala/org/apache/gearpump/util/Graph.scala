@@ -449,15 +449,15 @@ object Graph {
       new Path(path :+ Right(edge))
     }
 
-    def ~>[Node >: N](node: Node): Path[Node, E] = {
+    def ~>[NodeT >: N](node: NodeT): Path[NodeT, E] = {
       new Path(path :+ Left(node))
     }
 
-    def to[Node >: N, Edge >: E](node: Node, edge: Edge): Path[Node, Edge] = {
+    def to[NodeT >: N, EdgeT >: E](node: NodeT, edge: EdgeT): Path[NodeT, EdgeT] = {
       this ~ edge ~> node
     }
 
-    private[Graph] def updategraph[Node >: N, Edge >: E](graph: Graph[Node, Edge]): Unit = {
+    private[Graph] def updategraph[NodeT >: N, EdgeT >: E](graph: Graph[NodeT, EdgeT]): Unit = {
       val nodeEdgePair: Tuple2[Option[N], Option[E]] = (None, None)
       path.foldLeft(nodeEdgePair) { (pair, either) =>
         val (lastNode, lastEdge) = pair
@@ -465,7 +465,7 @@ object Graph {
           case Left(node) =>
             graph.addVertex(node)
             if (lastNode.isDefined) {
-              graph.addEdge(lastNode.get, lastEdge.getOrElse(null.asInstanceOf[Edge]), node)
+              graph.addEdge(lastNode.get, lastEdge.getOrElse(null.asInstanceOf[EdgeT]), node)
             }
             (Some(node), None)
           case Right(edge) =>
@@ -481,29 +481,29 @@ object Graph {
 
   implicit class Node[N, E](self: N) extends Path[N, E](List(Left(self))) {
 
-    override def ~[Edge](edge: Edge): Path[N, Edge] = {
+    override def ~[EdgeT](edge: EdgeT): Path[N, EdgeT] = {
       new Path(List(Left(self), Right(edge)))
     }
 
-    override def ~>[Node >: N](node: Node): Path[Node, E] = {
+    override def ~>[NodeT >: N](node: NodeT): Path[NodeT, E] = {
       new NodeList(List(self, node))
     }
 
-    override def to[Node >: N, Edge >: E](node: Node, edge: Edge): Path[Node, Edge] = {
+    override def to[NodeT >: N, EdgeT >: E](node: NodeT, edge: EdgeT): Path[NodeT, EdgeT] = {
       this ~ edge ~> node
     }
   }
 
   class NodeList[N, E](nodes: List[N]) extends Path[N, E](nodes.map(Left(_))) {
-    override def ~[Edge](edge: Edge): Path[N, Edge] = {
+    override def ~[EdgeT](edge: EdgeT): Path[N, EdgeT] = {
       new Path(nodes.map(Left(_)) :+ Right(edge))
     }
 
-    override def ~>[Node >: N](node: Node): Path[Node, E] = {
+    override def ~>[NodeT >: N](node: NodeT): Path[NodeT, E] = {
       new NodeList(nodes :+ node)
     }
 
-    override def to[Node >: N, Edge >: E](node: Node, edge: Edge): Path[Node, Edge] = {
+    override def to[NodeT >: N, EdgeT >: E](node: NodeT, edge: EdgeT): Path[NodeT, EdgeT] = {
       this ~ edge ~> node
     }
   }

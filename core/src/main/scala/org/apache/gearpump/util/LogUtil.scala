@@ -19,9 +19,7 @@
 package org.apache.gearpump.util
 
 import java.io.File
-import java.net.InetAddress
 import java.util.Properties
-import scala.util.Try
 
 import com.typesafe.config.Config
 import org.apache.log4j.PropertyConfigurator

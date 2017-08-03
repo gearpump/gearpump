@@ -18,8 +18,6 @@
 
 package org.apache.gearpump.experiments.storm.producer
 
-import java.util.{List => JList}
-
 import backtype.storm.spout.ISpout
 import backtype.storm.utils.Utils
 import org.apache.gearpump.experiments.storm.util.StormOutputCollector

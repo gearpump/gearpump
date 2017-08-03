@@ -34,7 +34,7 @@ import org.apache.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownEx
 import org.apache.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
-import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, ApplicationRuntimeInfo, WorkerInfo}
+import org.apache.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, WorkerInfo}
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import org.apache.gearpump.cluster.{AppDescription, AppJar, _}
 import org.apache.gearpump.transport.HostPort

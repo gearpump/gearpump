@@ -19,7 +19,6 @@
 package org.apache.gearpump.cluster.appmaster
 
 import org.apache.gearpump.cluster.{AppDescription, AppJar}
-import akka.routing.MurmurHash._
 
 /**
  * The meta data of an application, which stores the crucial infomation of how to launch

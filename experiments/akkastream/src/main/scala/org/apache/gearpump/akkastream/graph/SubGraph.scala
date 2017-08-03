@@ -18,7 +18,6 @@
 
 package org.apache.gearpump.akkastream.graph
 
-import akka.actor.ActorSystem
 import org.apache.gearpump.akkastream.GearpumpMaterializer.Edge
 import akka.stream.impl.StreamLayout.Module
 import org.apache.gearpump.util.Graph

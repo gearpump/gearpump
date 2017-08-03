@@ -20,7 +20,7 @@ package org.apache.gearpump.akkastream.example
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Materializer}
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import akka.stream.scaladsl._
 import org.apache.gearpump.akkastream.GearpumpMaterializer
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}

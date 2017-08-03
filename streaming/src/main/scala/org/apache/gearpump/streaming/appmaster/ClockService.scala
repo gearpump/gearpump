@@ -38,7 +38,6 @@ import org.apache.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 import scala.concurrent.duration.FiniteDuration
-import scala.language.implicitConversions
 
 /**
  * Maintains a global view of message timestamp in the application

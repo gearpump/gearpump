@@ -19,13 +19,7 @@ package org.apache.gearpump.streaming.dsl.window.impl
 
 import java.time.Instant
 
-import akka.actor.ActorSystem
-import org.apache.gearpump.cluster.UserConfig
-import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.Processor
-import org.apache.gearpump.{Message, TimeStamp}
-import org.apache.gearpump.streaming.dsl.window.api._
-import org.apache.gearpump.streaming.task.Task
+import org.apache.gearpump.TimeStamp
 
 object Window {
   def ofEpochMilli(startTime: TimeStamp, endTime: TimeStamp): Window = {

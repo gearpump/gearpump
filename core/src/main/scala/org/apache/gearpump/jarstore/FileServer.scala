@@ -139,14 +139,14 @@ object FileServer {
       // Download file to local
       val response = Source.single(HttpRequest(uri = download)).via(httpClient).runWith(Sink.head)
       val downloaded = response.flatMap { response =>
-        response.entity.dataBytes.runWith(FileIO.toFile(saveAs))
+        response.entity.dataBytes.runWith(FileIO.toPath(saveAs.toPath))
       }
       downloaded.map(written => Unit)
     }
 
     private def entity(file: File)(implicit ec: ExecutionContext): Future[RequestEntity] = {
       val entity = HttpEntity(MediaTypes.`application/octet-stream`, file.length(),
-        FileIO.fromFile(file, chunkSize = 100000))
+        FileIO.fromPath(file.toPath, chunkSize = 100000))
       val body = Source.single(
         Multipart.FormData.BodyPart(
           "uploadfile",

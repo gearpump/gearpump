@@ -146,7 +146,7 @@ object FileDirective {
           if (p.filename.isDefined) {
             val targetPath = File.createTempFile(s"userfile_${p.name}_",
               s"${p.filename.getOrElse("")}")
-            val writtenFuture = p.entity.dataBytes.runWith(FileIO.toFile(targetPath))
+            val writtenFuture = p.entity.dataBytes.runWith(FileIO.toPath(targetPath.toPath))
             writtenFuture.map(written =>
               if (written.count > 0) {
                 Map(p.name -> Left(FileInfo(p.filename.get, targetPath, written.count)))

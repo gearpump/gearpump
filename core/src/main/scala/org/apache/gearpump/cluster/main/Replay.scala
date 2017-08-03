@@ -18,8 +18,7 @@
 package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.util.{AkkaApp, LogUtil}
-import org.slf4j.Logger
+import org.apache.gearpump.util.AkkaApp
 
 // Internal tool to restart an application
 object Replay extends AkkaApp with ArgumentsParser {

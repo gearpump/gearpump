@@ -26,7 +26,7 @@ import org.apache.gearpump.akkastream.GearpumpMaterializer
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.util.AkkaApp
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 import scala.concurrent.duration._
  
 /**
