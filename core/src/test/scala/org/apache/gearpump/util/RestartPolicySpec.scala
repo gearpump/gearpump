@@ -20,8 +20,6 @@ package org.apache.gearpump.util
 
 import org.scalatest.{FlatSpec, Matchers}
 
-import scala.concurrent.duration._
-
 class RestartPolicySpec extends FlatSpec with Matchers {
 
   "RestartPolicy" should "forbid too many restarts" in {

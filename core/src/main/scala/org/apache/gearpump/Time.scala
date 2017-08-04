@@ -15,15 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.gearpump
 
-package org.apache
+/**
+ * Types and constants of time in gearpump
+ */
+object Time {
+  type MilliSeconds = Long
 
-package object gearpump {
-  type TimeStamp = Long
-
-  // maximum time won't overflow when converted to milli-seconds
+  // maximum valid time that won't overflow when being converted to milli-seconds
+  // Long.MaxValue is reserved for unreachable time
   val MAX_TIME_MILLIS: Long = Long.MaxValue - 1
 
-  // minimum time won't overflow when converted to milli-seconds
+  // minimum valid time won't overflow when being converted to milli-seconds
   val MIN_TIME_MILLIS: Long = Long.MinValue
+
+  val UNREACHABLE: Long = Long.MaxValue
 }

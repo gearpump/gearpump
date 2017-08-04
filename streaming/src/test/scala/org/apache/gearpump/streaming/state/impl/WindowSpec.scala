@@ -23,7 +23,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 
 class WindowSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
@@ -32,7 +32,7 @@ class WindowSpec extends PropSpec with PropertyChecks with Matchers with Mockito
   val timestampGen = Gen.chooseNum[Long](0L, 1000L)
   property("Window should only slide when time passes window end") {
     forAll(timestampGen, windowSizeGen, windowStepGen) {
-      (timestamp: TimeStamp, windowSize: Long, windowStep: Long) =>
+      (timestamp: MilliSeconds, windowSize: Long, windowStep: Long) =>
         val window = new Window(windowSize, windowStep)
         window.shouldSlide shouldBe false
         window.update(timestamp)
@@ -42,7 +42,7 @@ class WindowSpec extends PropSpec with PropertyChecks with Matchers with Mockito
 
   property("Window should slide by one or to given timestamp") {
     forAll(timestampGen, windowSizeGen, windowStepGen) {
-      (timestamp: TimeStamp, windowSize: Long, windowStep: Long) =>
+      (timestamp: MilliSeconds, windowSize: Long, windowStep: Long) =>
         val window = new Window(windowSize, windowStep)
         window.range shouldBe(0L, windowSize)
 

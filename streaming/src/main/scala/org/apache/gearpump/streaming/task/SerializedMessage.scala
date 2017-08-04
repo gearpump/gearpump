@@ -19,9 +19,9 @@ package org.apache.gearpump.streaming.task
 
 import java.io.{DataInput, DataOutput}
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 
-case class SerializedMessage(timeStamp: TimeStamp, bytes: Array[Byte])
+case class SerializedMessage(timeStamp: MilliSeconds, bytes: Array[Byte])
 
 class SerializedMessageSerializer extends TaskMessageSerializer[SerializedMessage] {
   override def getLength(obj: SerializedMessage): Int = 12 + obj.bytes.length

@@ -22,7 +22,7 @@ import java.util.Properties
 import com.twitter.bijection.Injection
 import kafka.api.OffsetRequest
 import kafka.common.TopicAndPartition
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.kafka.lib.source.consumer.{KafkaMessage, KafkaConsumer}
 import org.apache.gearpump.streaming.kafka.lib.util.KafkaClient
@@ -92,7 +92,7 @@ class KafkaStoreSpec extends PropSpec with PropertyChecks with Matchers with Moc
 
   property("KafkaStore should read checkpoint from timestamp on recover") {
     forAll(Gen.alphaStr, timestampGen) {
-      (topic: String, recoverTime: TimeStamp) =>
+      (topic: String, recoverTime: MilliSeconds) =>
         val consumer = mock[KafkaConsumer]
         val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
         val kafkaStore = new KafkaStore(topic, producer, Some(consumer))
@@ -104,7 +104,7 @@ class KafkaStoreSpec extends PropSpec with PropertyChecks with Matchers with Moc
     }
 
     forAll(Gen.alphaStr, timestampGen) {
-      (topic: String, recoverTime: TimeStamp) =>
+      (topic: String, recoverTime: MilliSeconds) =>
         val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
         val kafkaStore = new KafkaStore(topic, producer, None)
 
@@ -113,12 +113,12 @@ class KafkaStoreSpec extends PropSpec with PropertyChecks with Matchers with Moc
     }
 
     forAll(Gen.alphaStr, timestampGen, timestampGen) {
-      (topic: String, recoverTime: TimeStamp, checkpointTime: TimeStamp) =>
+      (topic: String, recoverTime: MilliSeconds, checkpointTime: MilliSeconds) =>
         val consumer = mock[KafkaConsumer]
         val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
         val kafkaStore = new KafkaStore(topic, producer, Some(consumer))
 
-        val key = Injection[TimeStamp, Array[Byte]](checkpointTime)
+        val key = Injection[MilliSeconds, Array[Byte]](checkpointTime)
         val msg = key
         val kafkaMsg = KafkaMessage(TopicAndPartition(topic, 0), 0, Some(key), msg)
 
@@ -139,7 +139,7 @@ class KafkaStoreSpec extends PropSpec with PropertyChecks with Matchers with Moc
 
   property("KafkaStore persist should write checkpoint with monotonically increasing timestamp") {
     forAll(Gen.alphaStr, timestampGen, Gen.alphaStr) {
-      (topic: String, checkpointTime: TimeStamp, data: String) =>
+      (topic: String, checkpointTime: MilliSeconds, data: String) =>
         val consumer = mock[KafkaConsumer]
         val producer = mock[KafkaProducer[Array[Byte], Array[Byte]]]
         val kafkaStore = new KafkaStore(topic, producer, Some(consumer))
@@ -155,12 +155,12 @@ class KafkaStoreSpec extends PropSpec with PropertyChecks with Matchers with Moc
     }
 
     def verifyProducer(producer: Producer[Array[Byte], Array[Byte]], count: Int,
-        topic: String, partition: Int, time: TimeStamp, data: String): Unit = {
+        topic: String, partition: Int, time: MilliSeconds, data: String): Unit = {
       verify(producer, times(count)).send(
         MockUtil.argMatch[ProducerRecord[Array[Byte], Array[Byte]]](record =>
           record.topic() == topic
           && record.partition() == partition
-          && Injection.invert[TimeStamp, Array[Byte]](record.key()).get == time
+          && Injection.invert[MilliSeconds, Array[Byte]](record.key()).get == time
           && Injection.invert[String, Array[Byte]](record.value()).get == data
         ))
     }

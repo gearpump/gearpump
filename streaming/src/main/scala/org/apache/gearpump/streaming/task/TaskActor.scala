@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import com.gs.collections.impl.map.mutable.primitive.IntShortHashMap
+import org.apache.gearpump.Message
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.source.Watermark
 import org.slf4j.Logger
 import org.apache.gearpump.cluster.UserConfig
@@ -35,7 +37,6 @@ import org.apache.gearpump.streaming.ExecutorToAppMaster._
 import org.apache.gearpump.streaming.ProcessorId
 import org.apache.gearpump.streaming.task.TaskActor._
 import org.apache.gearpump.util.{LogUtil, TimeOutScheduler}
-import org.apache.gearpump.{Message, TimeStamp}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -141,7 +142,7 @@ class TaskActor(
       context.become(waitForStartTask(startClock))
   }
 
-  def waitForStartTask(startClock: TimeStamp): Receive = {
+  def waitForStartTask(startClock: MilliSeconds): Receive = {
     case start@StartTask(tid) =>
       assert(tid == this.taskId, s"$start sent to the wrong task ${this.taskId}")
       onStartTask(startClock)
@@ -227,7 +228,7 @@ class TaskActor(
   /**
    * Returns min clock of upstream task
    */
-  def getUpstreamMinClock: TimeStamp = upstreamWatermark.toEpochMilli
+  def getUpstreamMinClock: MilliSeconds = upstreamWatermark.toEpochMilli
 
   def getProcessingWatermark: Instant = processingWatermark
 
@@ -265,7 +266,7 @@ class TaskActor(
     count
   }
 
-  private def onStartTask(startClock: TimeStamp): Unit = {
+  private def onStartTask(startClock: MilliSeconds): Unit = {
     LOG.info(s"received start, clock: $startClock, sessionId: $sessionId")
     subscriptions = taskContextData.subscribers.map { subscriber =>
       (subscriber.processorId,

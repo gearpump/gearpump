@@ -21,12 +21,12 @@ package org.apache.gearpump.streaming.hadoop.lib
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 
 class HadoopCheckpointStoreWriter(path: Path, hadoopConfig: Configuration) {
   private lazy val stream = HadoopUtil.getOutputStream(path, hadoopConfig)
 
-  def write(timestamp: TimeStamp, data: Array[Byte]): Long = {
+  def write(timestamp: MilliSeconds, data: Array[Byte]): Long = {
     stream.writeLong(timestamp)
     stream.writeInt(data.length)
     stream.write(data)

@@ -41,7 +41,7 @@ import org.apache.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, Proce
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util.Graph
 import org.apache.gearpump.util.Graph._
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
@@ -238,7 +238,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // Step11: Tell ClockService to update DAG.
     clockService.expectMsgType[ChangeToNewDAG]
-    clockService.reply(ChangeToNewDAGSuccess(Map.empty[ProcessorId, TimeStamp]))
+    clockService.reply(ChangeToNewDAGSuccess(Map.empty[ProcessorId, MilliSeconds]))
 
     // Step12: start all tasks
     import scala.concurrent.duration._

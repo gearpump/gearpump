@@ -21,7 +21,7 @@ import java.util.{List => JList}
 
 import backtype.storm.task.GeneralTopologyContext
 import backtype.storm.tuple.Fields
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
@@ -40,7 +40,7 @@ class GearpumpTupleSpec extends PropSpec with PropertyChecks with Matchers with 
     } yield new GearpumpTuple(values, new Integer(sourceTaskId), sourceStreamId, null)
 
     forAll(tupleGen, Gen.alphaStr, Gen.chooseNum[Long](0, Long.MaxValue)) {
-      (gearpumpTuple: GearpumpTuple, componentId: String, timestamp: TimeStamp) =>
+      (gearpumpTuple: GearpumpTuple, componentId: String, timestamp: MilliSeconds) =>
         val topologyContext = mock[GeneralTopologyContext]
         val fields = new Fields(gearpumpTuple.values.asScala.map(_.asInstanceOf[String]): _*)
         when(topologyContext.getComponentId(gearpumpTuple.sourceTaskId)).thenReturn(componentId)

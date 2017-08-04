@@ -20,6 +20,8 @@ package org.apache.gearpump
 
 import java.time.Instant
 
+import org.apache.gearpump.Time.MilliSeconds
+
 trait Message {
 
   val value: Any
@@ -35,7 +37,7 @@ trait Message {
  *
  * @param value Accept any type except Null, Nothing and Unit
  */
-case class DefaultMessage(value: Any, timeInMillis: TimeStamp) extends Message {
+case class DefaultMessage(value: Any, timeInMillis: MilliSeconds) extends Message {
 
   /**
    * @param value Accept any type except Null, Nothing and Unit
@@ -74,7 +76,7 @@ object Message {
    * @param value Accept any type except Null, Nothing and Unit
    * @param timestamp timestamp must be smaller than Long.MaxValue
    */
-  def apply(value: Any, timestamp: TimeStamp): Message = {
+  def apply(value: Any, timestamp: MilliSeconds): Message = {
     DefaultMessage(value, timestamp)
   }
 

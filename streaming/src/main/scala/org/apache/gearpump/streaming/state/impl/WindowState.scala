@@ -22,7 +22,7 @@ import scala.collection.immutable.TreeMap
 
 import org.slf4j.Logger
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.state.api.{Group, MonoidState, Serializer}
 import org.apache.gearpump.streaming.state.impl.WindowState._
 import org.apache.gearpump.streaming.task.TaskContext
@@ -31,7 +31,7 @@ import org.apache.gearpump.util.LogUtil
 /**
  * an interval is a dynamic time range that is divided by window boundary and checkpoint time
  */
-case class Interval(startTime: TimeStamp, endTime: TimeStamp) extends Ordered[Interval] {
+case class Interval(startTime: MilliSeconds, endTime: MilliSeconds) extends Ordered[Interval] {
   override def compare(that: Interval): Int = {
     if (startTime < that.startTime) -1
     else if (startTime > that.startTime) 1
@@ -63,7 +63,7 @@ class WindowState[T](group: Group[T],
 
   private var lastCheckpointTime = 0L
 
-  override def recover(timestamp: TimeStamp, bytes: Array[Byte]): Unit = {
+  override def recover(timestamp: MilliSeconds, bytes: Array[Byte]): Unit = {
     window.slideTo(timestamp)
     serializer.deserialize(bytes)
       .foreach { states =>
@@ -74,7 +74,7 @@ class WindowState[T](group: Group[T],
       }
   }
 
-  override def update(timestamp: TimeStamp, t: T): Unit = {
+  override def update(timestamp: MilliSeconds, t: T): Unit = {
     val (startTime, endTime) = window.range
     if (timestamp >= startTime && timestamp < endTime) {
       updateState(timestamp, t)
@@ -127,7 +127,7 @@ class WindowState[T](group: Group[T],
    * upperBound2 = step * Nmin2 + size > t
    * }}}
    */
-  private[impl] def getInterval(timestamp: TimeStamp, checkpointTime: TimeStamp): Interval = {
+  private[impl] def getInterval(timestamp: MilliSeconds, checkpointTime: MilliSeconds): Interval = {
     val windowSize = window.windowSize
     val windowStep = window.windowStep
     val lowerBound1 = timestamp / windowStep * windowStep
@@ -147,8 +147,8 @@ class WindowState[T](group: Group[T],
     }
   }
 
-  private[impl] def updateIntervalStates(timestamp: TimeStamp, t: T, checkpointTime: TimeStamp)
-  : Unit = {
+  private[impl] def updateIntervalStates(timestamp: MilliSeconds, t: T,
+      checkpointTime: MilliSeconds): Unit = {
     val interval = getInterval(timestamp, checkpointTime)
     intervalStates.get(interval) match {
       case Some(st) =>
@@ -158,7 +158,7 @@ class WindowState[T](group: Group[T],
     }
   }
 
-  private[impl] def getIntervalStates(startTime: TimeStamp, endTime: TimeStamp)
+  private[impl] def getIntervalStates(startTime: MilliSeconds, endTime: MilliSeconds)
   : TreeMap[Interval, T] = {
     intervalStates.dropWhile(_._1.endTime <= startTime).takeWhile(_._1.endTime <= endTime)
   }

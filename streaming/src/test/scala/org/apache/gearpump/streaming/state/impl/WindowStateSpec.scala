@@ -18,16 +18,15 @@
 
 package org.apache.gearpump.streaming.state.impl
 
+import org.apache.gearpump.Time.MilliSeconds
+
 import scala.collection.immutable.TreeMap
 import scala.util.Success
-
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-
-import org.apache.gearpump._
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.state.api.{Group, Serializer}
 
@@ -74,7 +73,7 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
   }
 
   property("WindowState checkpoints") {
-    forAll(longGen) { (checkpointTime: TimeStamp) =>
+    forAll(longGen) { (checkpointTime: MilliSeconds) =>
       val window = mock[Window]
       val taskContext = MockUtil.mockTaskContext
       val group = mock[Group[AnyRef]]
@@ -120,7 +119,7 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
   }
 
   property("WindowState updates state") {
-    forAll(longGen) { (checkpointTime: TimeStamp) =>
+    forAll(longGen) { (checkpointTime: MilliSeconds) =>
       val window = mock[Window]
       val taskContext = MockUtil.mockTaskContext
       val group = mock[Group[AnyRef]]
@@ -205,7 +204,7 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
 
   property("WindowState gets interval for timestamp") {
     forAll(longGen, longGen, longGen, longGen) {
-      (timestamp: TimeStamp, checkpointTime: TimeStamp, windowSize: Long, windowStep: Long) =>
+      (timestamp: MilliSeconds, checkpointTime: MilliSeconds, windowSize: Long, windowStep: Long) =>
         val windowManager = new Window(windowSize, windowStep)
         val taskContext = MockUtil.mockTaskContext
         val group = mock[Group[AnyRef]]
@@ -225,8 +224,8 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
         interval.endTime shouldBe nextInterval.startTime
     }
 
-    def intervalSpec(interval: Interval, timestamp: TimeStamp,
-        checkpointTime: TimeStamp, windowSize: Long, windowStep: Long): Unit = {
+    def intervalSpec(interval: Interval, timestamp: MilliSeconds,
+        checkpointTime: MilliSeconds, windowSize: Long, windowStep: Long): Unit = {
       interval.startTime should be <= interval.endTime
       timestamp / windowStep * windowStep should (be <= interval.startTime)
       (timestamp - windowSize) / windowStep * windowStep should (be <= interval.startTime)

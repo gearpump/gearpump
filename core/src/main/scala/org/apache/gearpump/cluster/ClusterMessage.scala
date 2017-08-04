@@ -23,7 +23,7 @@ import org.apache.gearpump.cluster.worker.{WorkerId, WorkerSummary}
 import scala.util.Try
 import akka.actor.ActorRef
 import com.typesafe.config.Config
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.master.MasterSummary
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
@@ -142,7 +142,7 @@ object MasterToClient {
 
   case class MasterConfig(config: Config)
 
-  case class HistoryMetricsItem(time: TimeStamp, value: MetricType)
+  case class HistoryMetricsItem(time: MilliSeconds, value: MetricType)
 
   /**
    * History metrics returned from master, worker, or app master.
@@ -157,7 +157,7 @@ object MasterToClient {
   case class HistoryMetrics(path: String, metrics: List[HistoryMetricsItem])
 
   /** Return the last error of this streaming application job */
-  case class LastFailure(time: TimeStamp, error: String)
+  case class LastFailure(time: MilliSeconds, error: String)
 
   sealed trait ApplicationResult
 
@@ -208,8 +208,8 @@ object AppMasterToMaster {
     def appName: String
     def actorPath: String
     def status: ApplicationStatus
-    def startTime: TimeStamp
-    def uptime: TimeStamp
+    def startTime: MilliSeconds
+    def uptime: MilliSeconds
     def user: String
   }
 
@@ -220,8 +220,8 @@ object AppMasterToMaster {
       appName: String = null,
       actorPath: String = null,
       status: ApplicationStatus = ApplicationStatus.ACTIVE,
-      startTime: TimeStamp = 0L,
-      uptime: TimeStamp = 0L,
+      startTime: MilliSeconds = 0L,
+      uptime: MilliSeconds = 0L,
       user: String = null)
     extends AppMasterSummary
 
@@ -244,7 +244,7 @@ object AppMasterToMaster {
    * Denotes the application state change of an app.
    */
   case class ApplicationStatusChanged(appId: Int, newStatus: ApplicationStatus,
-      timeStamp: TimeStamp, error: Throwable)
+      timeStamp: MilliSeconds, error: Throwable)
 }
 
 object MasterToAppMaster {
@@ -263,8 +263,8 @@ object MasterToAppMaster {
 
   sealed trait StreamingType
   case class AppMasterData(status: ApplicationStatus, appId: Int = 0, appName: String = null,
-      appMasterPath: String = null, workerPath: String = null, submissionTime: TimeStamp = 0,
-      startTime: TimeStamp = 0, finishTime: TimeStamp = 0, user: String = null)
+      appMasterPath: String = null, workerPath: String = null, submissionTime: MilliSeconds = 0,
+      startTime: MilliSeconds = 0, finishTime: MilliSeconds = 0, user: String = null)
 
   case class AppMasterDataRequest(appId: Int, detail: Boolean = false)
 

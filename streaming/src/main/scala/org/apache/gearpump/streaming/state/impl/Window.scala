@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.streaming.state.impl
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 
 /**
  * Used in window applications
@@ -29,10 +29,10 @@ class Window(val windowSize: Long, val windowStep: Long) {
     this(windowConfig.windowSize, windowConfig.windowStep)
   }
 
-  private var clock: TimeStamp = 0L
+  private var clock: MilliSeconds = 0L
   private var startTime = 0L
 
-  def update(clock: TimeStamp): Unit = {
+  def update(clock: MilliSeconds): Unit = {
     this.clock = clock
   }
 
@@ -40,7 +40,7 @@ class Window(val windowSize: Long, val windowStep: Long) {
     startTime += windowStep
   }
 
-  def slideTo(timestamp: TimeStamp): Unit = {
+  def slideTo(timestamp: MilliSeconds): Unit = {
     startTime = timestamp / windowStep * windowStep
   }
 
@@ -48,7 +48,7 @@ class Window(val windowSize: Long, val windowStep: Long) {
     clock >= (startTime + windowSize)
   }
 
-  def range: (TimeStamp, TimeStamp) = {
+  def range: (MilliSeconds, MilliSeconds) = {
     startTime -> (startTime + windowSize)
   }
 }

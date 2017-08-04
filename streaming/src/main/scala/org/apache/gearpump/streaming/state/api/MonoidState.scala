@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.state.api
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 
 /**
  * MonoidState uses Algebird Monoid to aggregate state
@@ -37,11 +37,11 @@ abstract class MonoidState[T](monoid: Monoid[T]) extends PersistentState[T] {
 
   override def get: Option[T] = Option(monoid.plus(left, right))
 
-  override def setNextCheckpointTime(nextCheckpointTime: TimeStamp): Unit = {
+  override def setNextCheckpointTime(nextCheckpointTime: MilliSeconds): Unit = {
     checkpointTime = nextCheckpointTime
   }
 
-  protected def updateState(timestamp: TimeStamp, t: T): Unit = {
+  protected def updateState(timestamp: MilliSeconds, t: T): Unit = {
     if (timestamp < checkpointTime) {
       left = monoid.plus(left, t)
     } else {

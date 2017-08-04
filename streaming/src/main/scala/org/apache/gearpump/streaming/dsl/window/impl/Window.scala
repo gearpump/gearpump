@@ -19,10 +19,10 @@ package org.apache.gearpump.streaming.dsl.window.impl
 
 import java.time.Instant
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 
 object Window {
-  def ofEpochMilli(startTime: TimeStamp, endTime: TimeStamp): Window = {
+  def ofEpochMilli(startTime: MilliSeconds, endTime: MilliSeconds): Window = {
     Window(Instant.ofEpochMilli(startTime), Instant.ofEpochMilli(endTime))
   }
 }

@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.pattern.ask
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import org.apache.gearpump.streaming.AppMasterToExecutor._
 import org.apache.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterTask, UnRegisterTask}
@@ -86,11 +86,11 @@ private[appmaster] class TaskManager(
   dagManager ! WatchChange(watcher = self)
   executorManager ! SetTaskManager(self)
 
-  private def getStartClock: Future[TimeStamp] = {
+  private def getStartClock: Future[MilliSeconds] = {
     (clockService ? GetStartClock).asInstanceOf[Future[StartClock]].map(_.clock)
   }
 
-  private var startClock: Future[TimeStamp] = getStartClock
+  private var startClock: Future[MilliSeconds] = getStartClock
 
   def receive: Receive = applicationReady(DagReadyState.empty)
 

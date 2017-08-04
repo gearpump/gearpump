@@ -25,7 +25,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.transaction.api.CheckpointStore
 
 class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
@@ -34,7 +34,7 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
   val checkpointIntervalGen = Gen.chooseNum[Long](100L, 10000L)
   property("CheckpointManager should recover from CheckpointStore") {
     forAll(timestampGen, checkpointIntervalGen) {
-      (timestamp: TimeStamp, checkpointInterval: Long) =>
+      (timestamp: MilliSeconds, checkpointInterval: Long) =>
         val checkpointStore = mock[CheckpointStore]
         val checkpointManager =
           new CheckpointManager(checkpointInterval, checkpointStore)
@@ -47,7 +47,7 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
   property("CheckpointManager should write checkpoint to CheckpointStore") {
     val checkpointGen = Gen.alphaStr.map(_.getBytes("UTF-8"))
     forAll(timestampGen, checkpointIntervalGen, checkpointGen) {
-      (timestamp: TimeStamp, checkpointInterval: Long, checkpoint: Array[Byte]) =>
+      (timestamp: MilliSeconds, checkpointInterval: Long, checkpoint: Array[Byte]) =>
         val checkpointStore = mock[CheckpointStore]
         val checkpointManager =
           new CheckpointManager(checkpointInterval, checkpointStore)
@@ -70,7 +70,7 @@ class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers w
 
   property("CheckpointManager should update checkpoint time according to max message timestamp") {
     forAll(timestampGen, checkpointIntervalGen) {
-      (timestamp: TimeStamp, checkpointInterval: Long) =>
+      (timestamp: MilliSeconds, checkpointInterval: Long) =>
         val checkpointStore = mock[CheckpointStore]
         val checkpointManager =
           new CheckpointManager(checkpointInterval, checkpointStore)

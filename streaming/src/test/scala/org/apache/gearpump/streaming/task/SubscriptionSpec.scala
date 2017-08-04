@@ -24,7 +24,7 @@ import java.util.Random
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, Matchers}
-import org.apache.gearpump.{MIN_TIME_MILLIS, Message}
+import org.apache.gearpump.{Message, Time}
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import org.apache.gearpump.streaming.source.Watermark
@@ -73,14 +73,14 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
     subscription.sendMessage(msg1)
 
     verify(sender, times(1)).transport(msg1, TaskId(1, 1))
-    assert(subscription.watermark == MIN_TIME_MILLIS)
+    assert(subscription.watermark == Time.MIN_TIME_MILLIS)
 
     val msg2 = Message("0", timestamp = Instant.ofEpochMilli(50))
     when(sender.getProcessingWatermark).thenReturn(msg2.timestamp)
     subscription.sendMessage(msg2)
 
     verify(sender, times(1)).transport(msg2, TaskId(1, 0))
-    assert(subscription.watermark == MIN_TIME_MILLIS)
+    assert(subscription.watermark == Time.MIN_TIME_MILLIS)
 
     val initialMinClock = subscription.watermark
 

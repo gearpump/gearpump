@@ -20,13 +20,14 @@ package org.apache.gearpump.streaming.task
 
 import org.slf4j.Logger
 import com.google.common.primitives.Shorts
+import org.apache.gearpump.{Message, Time}
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.partitioner.{MulticastPartitioner, Partitioner, UnicastPartitioner}
 import org.apache.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import org.apache.gearpump.streaming.LifeTime
 import org.apache.gearpump.streaming.source.Watermark
 import org.apache.gearpump.streaming.task.Subscription._
 import org.apache.gearpump.util.LogUtil
-import org.apache.gearpump.{MIN_TIME_MILLIS, Message, TimeStamp}
 
 /**
  * Manages the output and message clock for single downstream processor
@@ -59,9 +60,9 @@ class Subscription(
   private val pendingMessageCount: Array[Short] = new Array[Short](parallelism)
   private val processingWatermarkSince: Array[Short] = new Array[Short](parallelism)
 
-  private val outputWatermark: Array[TimeStamp] = Array.fill(parallelism)(
+  private val outputWatermark: Array[MilliSeconds] = Array.fill(parallelism)(
     Watermark.MIN.toEpochMilli)
-  private val processingWatermark: Array[TimeStamp] = Array.fill(parallelism)(
+  private val processingWatermark: Array[MilliSeconds] = Array.fill(parallelism)(
     Watermark.MIN.toEpochMilli)
 
   private var maxPendingCount: Short = 0
@@ -135,7 +136,7 @@ class Subscription(
     }
   }
 
-  private var lastFlushTime: Long = MIN_TIME_MILLIS
+  private var lastFlushTime: Long = Time.MIN_TIME_MILLIS
   private val FLUSH_INTERVAL = 5 * 1000 // ms
   private def needFlush: Boolean = {
     System.currentTimeMillis() - lastFlushTime > FLUSH_INTERVAL &&
@@ -181,7 +182,7 @@ class Subscription(
     }
   }
 
-  def watermark: TimeStamp = {
+  def watermark: MilliSeconds = {
     outputWatermark.min
   }
 
@@ -189,7 +190,7 @@ class Subscription(
     maxPendingCount < maxPendingMessageCount
   }
 
-  def onStallingTime(stallingTime: TimeStamp): Unit = {
+  def onStallingTime(stallingTime: MilliSeconds): Unit = {
     outputWatermark.indices.foreach { i =>
       if (outputWatermark(i) == stallingTime &&
         pendingMessageCount(i) > 0 &&

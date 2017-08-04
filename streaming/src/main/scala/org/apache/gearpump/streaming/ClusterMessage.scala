@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming
 
 import akka.actor.ActorRef
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.appmaster.WorkerInfo
 import org.apache.gearpump.cluster.scheduler.Resource
 import org.apache.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
@@ -61,7 +61,7 @@ object AppMasterToExecutor {
   case class StartAllTasks(dagVersion: Int)
 
   case class StartDynamicDag(dagVersion: Int)
-  case class TaskRegistered(taskId: TaskId, sessionId: Int, startClock: TimeStamp)
+  case class TaskRegistered(taskId: TaskId, sessionId: Int, startClock: MilliSeconds)
   case class TaskRejected(taskId: TaskId)
 
   case object RestartClockService

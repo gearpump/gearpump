@@ -23,15 +23,15 @@ import java.io.EOFException
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 
 class HadoopCheckpointStoreReader(
     path: Path,
     hadoopConfig: Configuration)
-  extends Iterator[(TimeStamp, Array[Byte])] {
+  extends Iterator[(MilliSeconds, Array[Byte])] {
 
   private val stream = HadoopUtil.getInputStream(path, hadoopConfig)
-  private var nextTimeStamp: Option[TimeStamp] = None
+  private var nextTimeStamp: Option[MilliSeconds] = None
   private var nextData: Option[Array[Byte]] = None
 
   override def hasNext: Boolean = {
@@ -56,7 +56,7 @@ class HadoopCheckpointStoreReader(
     }
   }
 
-  override def next(): (TimeStamp, Array[Byte]) = {
+  override def next(): (MilliSeconds, Array[Byte]) = {
     val timeAndData = for {
       time <- nextTimeStamp
       data <- nextData

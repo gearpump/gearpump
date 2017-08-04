@@ -21,10 +21,10 @@ package org.apache.gearpump.experiments.storm.producer
 import java.util.{List => JList}
 
 import backtype.storm.spout.{ISpout, ISpoutOutputCollector}
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.experiments.storm.util.StormOutputCollector
 
-case class PendingMessage(id: Object, messageTime: TimeStamp, startTime: TimeStamp)
+case class PendingMessage(id: Object, messageTime: MilliSeconds, startTime: MilliSeconds)
 
 /**
  * this is used by Storm Spout to emit messages
@@ -57,7 +57,7 @@ private[storm] class StormSpoutOutputCollector(
     setPendingOrAck(messageId, curTime, curTime)
   }
 
-  def ackPendingMessage(checkpointClock: TimeStamp): Unit = {
+  def ackPendingMessage(checkpointClock: MilliSeconds): Unit = {
     this.checkpointClock = checkpointClock
     nextPendingMessage.foreach { case PendingMessage(_, messageTime, _) =>
       if (messageTime <= this.checkpointClock) {
@@ -83,7 +83,7 @@ private[storm] class StormSpoutOutputCollector(
     nextPendingMessage = None
   }
 
-  private def setPendingOrAck(messageId: Object, startTime: TimeStamp, messageTime: TimeStamp)
+  private def setPendingOrAck(messageId: Object, startTime: MilliSeconds, messageTime: MilliSeconds)
     : Unit = {
     if (ackEnabled) {
       val newPendingMessage = PendingMessage(messageId, messageTime, startTime)

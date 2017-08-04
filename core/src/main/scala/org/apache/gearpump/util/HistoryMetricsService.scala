@@ -25,7 +25,7 @@ import akka.actor.Actor
 import com.typesafe.config.Config
 import org.slf4j.Logger
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, ReadOption}
 import org.apache.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
 import org.apache.gearpump.metrics.Metrics._
@@ -217,7 +217,7 @@ object HistoryMetricsService {
       add(inputMetrics, System.currentTimeMillis())
     }
 
-    def add(inputMetrics: MetricType, now: TimeStamp): Unit = {
+    def add(inputMetrics: MetricType, now: MilliSeconds): Unit = {
 
       val metrics = HistoryMetricsItem(now, inputMetrics)
       latest = List(metrics)

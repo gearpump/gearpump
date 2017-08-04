@@ -21,7 +21,7 @@ package org.apache.gearpump.cluster.master
 import akka.actor._
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
-import org.apache.gearpump._
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.AppMasterToMaster.{AppDataSaved, SaveAppDataFailed, _}
 import org.apache.gearpump.cluster.AppMasterToWorker._
 import org.apache.gearpump.cluster.{ApplicationStatus, ApplicationTerminalStatus}
@@ -227,7 +227,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
   }
 
   private def onApplicationStatusChanged(appId: Int, newStatus: ApplicationStatus,
-      timeStamp: TimeStamp, error: Throwable): Unit = {
+      timeStamp: MilliSeconds, error: Throwable): Unit = {
     applicationRegistry.get(appId) match {
       case Some(appRuntimeInfo) =>
         if (appRuntimeInfo.status.canTransitTo(newStatus)) {

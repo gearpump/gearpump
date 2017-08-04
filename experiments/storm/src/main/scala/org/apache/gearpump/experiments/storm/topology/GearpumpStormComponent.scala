@@ -43,7 +43,8 @@ import org.apache.gearpump.experiments.storm.util.{StormOutputCollector, StormUt
 import org.apache.gearpump.streaming.DAG
 import org.apache.gearpump.streaming.task.{GetDAG, TaskContext, TaskId}
 import org.apache.gearpump.util.{Constants, LogUtil}
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.Message
+import org.apache.gearpump.Time.MilliSeconds
 import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
@@ -149,7 +150,7 @@ object GearpumpStormComponent {
       }
     }
 
-    def checkpoint(clock: TimeStamp): Unit = {
+    def checkpoint(clock: MilliSeconds): Unit = {
       collector.ackPendingMessage(clock)
     }
 

@@ -18,12 +18,13 @@
 
 package org.apache.gearpump.streaming.transaction.api
 
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.Message
+import org.apache.gearpump.Time.MilliSeconds
 
 /**
- * TimeStampFilter filters out messages that are obsolete.
+ * MilliSecondsFilter filters out messages that are obsolete.
  */
 trait TimeStampFilter extends java.io.Serializable {
-  def filter(msg: Message, predicate: TimeStamp): Option[Message]
+  def filter(msg: Message, predicate: MilliSeconds): Option[Message]
 }
 

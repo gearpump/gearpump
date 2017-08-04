@@ -23,7 +23,7 @@ import java.time.Instant
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 
 class FileSizeRotationSpec extends PropSpec with PropertyChecks with Matchers {
 
@@ -31,7 +31,7 @@ class FileSizeRotationSpec extends PropSpec with PropertyChecks with Matchers {
   val fileSizeGen = Gen.chooseNum[Long](1, Long.MaxValue)
 
   property("FileSize rotation rotates on file size") {
-    forAll(timestampGen, fileSizeGen) { (timestamp: TimeStamp, fileSize: Long) =>
+    forAll(timestampGen, fileSizeGen) { (timestamp: MilliSeconds, fileSize: Long) =>
       val rotation = new FileSizeRotation(fileSize)
       rotation.shouldRotate shouldBe false
       rotation.mark(Instant.ofEpochMilli(timestamp), rotation.maxBytes / 2)

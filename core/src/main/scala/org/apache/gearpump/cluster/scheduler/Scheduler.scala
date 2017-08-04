@@ -18,7 +18,7 @@
 package org.apache.gearpump.cluster.scheduler
 
 import akka.actor.{Actor, ActorRef}
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, UpdateResourceSucceed, WorkerRegistered}
 import org.apache.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import org.apache.gearpump.cluster.master.Master.WorkerTerminated
@@ -71,7 +71,7 @@ abstract class Scheduler extends Actor {
 
 object Scheduler {
   case class PendingRequest(
-      appId: Int, appMaster: ActorRef, request: ResourceRequest, timeStamp: TimeStamp)
+      appId: Int, appMaster: ActorRef, request: ResourceRequest, timeStamp: MilliSeconds)
 
   case class ApplicationFinished(appId: Int)
 }

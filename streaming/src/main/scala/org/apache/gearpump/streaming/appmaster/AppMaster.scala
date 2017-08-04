@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.appmaster
 import java.lang.management.ManagementFactory
 
 import akka.actor._
-import org.apache.gearpump._
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.AppMasterToMaster.ApplicationStatusChanged
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.MasterToAppMaster.{AppMasterActivated, AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
@@ -67,7 +67,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
   import akka.pattern.ask
   private implicit val dispatcher = context.dispatcher
 
-  private val startTime: TimeStamp = System.currentTimeMillis()
+  private val startTime: MilliSeconds = System.currentTimeMillis()
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   LOG.info(s"AppMaster[$appId] is launched by $username, app: $app xxxxxxxxxxxxxxxxx")
@@ -322,7 +322,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       context.stop(self)
   }
 
-  private def getMinClock: Future[TimeStamp] = {
+  private def getMinClock: Future[MilliSeconds] = {
     clockService match {
       case Some(service) =>
         (service ? GetLatestMinClock).asInstanceOf[Future[LatestMinClock]].map(_.clock)

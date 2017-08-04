@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.state.api
 
-import org.apache.gearpump._
+import org.apache.gearpump.Time.MilliSeconds
 
 /**
  * PersistentState is part of the transaction API
@@ -33,19 +33,19 @@ trait PersistentState[T] {
    * Recovers state to a previous checkpoint
    * usually invoked by the framework
    */
-  def recover(timestamp: TimeStamp, bytes: Array[Byte]): Unit
+  def recover(timestamp: MilliSeconds, bytes: Array[Byte]): Unit
 
   /**
    * Updates state on a new message
    * this is invoked by user
    */
-  def update(timestamp: TimeStamp, t: T): Unit
+  def update(timestamp: MilliSeconds, t: T): Unit
 
   /**
    * Sets next checkpoint time
    * should be invoked by the framework
    */
-  def setNextCheckpointTime(timeStamp: TimeStamp): Unit
+  def setNextCheckpointTime(timeStamp: MilliSeconds): Unit
 
   /**
    * Gets a binary snapshot of state

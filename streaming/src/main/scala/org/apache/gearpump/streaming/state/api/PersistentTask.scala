@@ -20,12 +20,13 @@ package org.apache.gearpump.streaming.state.api
 
 import java.time.Instant
 
+import org.apache.gearpump.Message
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.state.impl.{CheckpointManager, PersistentStateConfig}
 import org.apache.gearpump.streaming.task.{Task, TaskContext, UpdateCheckpointClock}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStoreFactory
 import org.apache.gearpump.util.LogUtil
-import org.apache.gearpump.{Message, TimeStamp}
 
 object PersistentTask {
   val LOG = LogUtil.getLogger(getClass)
@@ -97,7 +98,7 @@ abstract class PersistentTask[T](taskContext: TaskContext, conf: UserConfig)
     checkpointManager.close()
   }
 
-  private def reportCheckpointClock(timestamp: TimeStamp): Unit = {
+  private def reportCheckpointClock(timestamp: MilliSeconds): Unit = {
     appMaster ! UpdateCheckpointClock(taskContext.taskId, timestamp)
   }
 }

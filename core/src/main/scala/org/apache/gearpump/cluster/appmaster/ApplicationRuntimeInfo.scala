@@ -20,7 +20,7 @@ package org.apache.gearpump.cluster.appmaster
 
 import akka.actor.ActorRef
 import com.typesafe.config.{Config, ConfigFactory}
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.{ApplicationStatus, ApplicationTerminalStatus}
 
 /** Run time info of Application */
@@ -31,9 +31,9 @@ case class ApplicationRuntimeInfo(
     appMaster: ActorRef = ActorRef.noSender,
     worker: ActorRef = ActorRef.noSender,
     user: String = "",
-    submissionTime: TimeStamp = 0,
-    startTime: TimeStamp = 0,
-    finishTime: TimeStamp = 0,
+    submissionTime: MilliSeconds = 0,
+    startTime: MilliSeconds = 0,
+    finishTime: MilliSeconds = 0,
     config: Config = ConfigFactory.empty(),
     status: ApplicationStatus = ApplicationStatus.NONEXIST) {
 
@@ -41,11 +41,11 @@ case class ApplicationRuntimeInfo(
     this.copy(appMaster = appMaster, worker = worker)
   }
 
-  def onAppMasterActivated(timeStamp: TimeStamp): ApplicationRuntimeInfo = {
+  def onAppMasterActivated(timeStamp: MilliSeconds): ApplicationRuntimeInfo = {
     this.copy(startTime = timeStamp, status = ApplicationStatus.ACTIVE)
   }
 
-  def onFinalStatus(timeStamp: TimeStamp, finalStatus: ApplicationTerminalStatus):
+  def onFinalStatus(timeStamp: MilliSeconds, finalStatus: ApplicationTerminalStatus):
     ApplicationRuntimeInfo = {
     this.copy(finishTime = timeStamp, status = finalStatus)
   }

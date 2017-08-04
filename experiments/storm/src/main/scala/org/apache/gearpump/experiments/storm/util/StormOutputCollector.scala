@@ -28,7 +28,8 @@ import backtype.storm.task.TopologyContext
 import backtype.storm.tuple.Fields
 import backtype.storm.utils.Utils
 import org.slf4j.Logger
-import org.apache.gearpump.{MIN_TIME_MILLIS, Message, TimeStamp}
+import org.apache.gearpump.{Message, Time}
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.experiments.storm.topology.GearpumpTuple
 import org.apache.gearpump.experiments.storm.util.StormUtil._
 import org.apache.gearpump.streaming.ProcessorId
@@ -56,7 +57,7 @@ object StormOutputCollector {
         streamGroupers, componentToProcessorId, values)
     }
     new StormOutputCollector(stormTaskId, taskToComponent, targets, getTargetPartitionsFn,
-      taskContext, MIN_TIME_MILLIS)
+      taskContext, Time.MIN_TIME_MILLIS)
   }
 
   /**
@@ -164,7 +165,7 @@ class StormOutputCollector(
     targets: JMap[String, JMap[String, Grouping]],
     getTargetPartitionsFn: (String, JList[AnyRef]) => (Map[String, Array[Int]], JList[Integer]),
     val taskContext: TaskContext,
-    private var timestamp: TimeStamp) {
+    private var timestamp: MilliSeconds) {
   import org.apache.gearpump.experiments.storm.util.StormOutputCollector._
 
   /**
@@ -213,7 +214,7 @@ class StormOutputCollector(
   /**
    * set timestamp from each incoming Message if not attached.
    */
-  def setTimestamp(timestamp: TimeStamp): Unit = {
+  def setTimestamp(timestamp: MilliSeconds): Unit = {
     this.timestamp = timestamp
   }
 

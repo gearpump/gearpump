@@ -7,7 +7,7 @@ Gearpump components for interacting with HDFS file systems.
 1. File Rotation interface
 ```scala
 trait Rotation extends Serializable {
-  def mark(timestamp: TimeStamp, offset: Long): Unit
+  def mark(timestamp: MilliSeconds, offset: Long): Unit
   def shouldRotate: Boolean
   def rotate: Unit
 }

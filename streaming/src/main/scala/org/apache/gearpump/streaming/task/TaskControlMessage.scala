@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.task
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.ProcessorId
 
 /*
@@ -42,25 +42,25 @@ case class Ack(taskId: TaskId, seq: Short, actualReceivedNum: Short, sessionId: 
 
 sealed trait ClockEvent
 
-case class UpdateClock(taskId: TaskId, time: TimeStamp) extends ClockEvent
+case class UpdateClock(taskId: TaskId, time: MilliSeconds) extends ClockEvent
 
 object GetLatestMinClock extends ClockEvent
 
 case class GetUpstreamMinClock(taskId: TaskId) extends ClockEvent
 
-case class UpdateCheckpointClock(taskId: TaskId, clock: TimeStamp) extends ClockEvent
+case class UpdateCheckpointClock(taskId: TaskId, clock: MilliSeconds) extends ClockEvent
 
 case object GetCheckpointClock extends ClockEvent
 
-case class CheckpointClock(clock: Option[TimeStamp])
+case class CheckpointClock(clock: Option[MilliSeconds])
 
-case class UpstreamMinClock(latestMinClock: Option[TimeStamp])
+case class UpstreamMinClock(latestMinClock: Option[MilliSeconds])
 
-case class LatestMinClock(clock: TimeStamp)
+case class LatestMinClock(clock: MilliSeconds)
 
 case object GetStartClock
 
-case class StartClock(clock: TimeStamp)
+case class StartClock(clock: MilliSeconds)
 
 case object EndingClock
 

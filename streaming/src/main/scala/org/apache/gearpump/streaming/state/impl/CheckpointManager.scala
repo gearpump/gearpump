@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.state.impl
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.transaction.api.CheckpointStore
 
 /** Manage physical checkpoints to persitent storage like HDFS */
@@ -28,11 +28,11 @@ class CheckpointManager(checkpointInterval: Long,
   private var maxMessageTime: Long = 0L
   private var checkpointTime: Option[Long] = None
 
-  def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
+  def recover(timestamp: MilliSeconds): Option[Array[Byte]] = {
     checkpointStore.recover(timestamp)
   }
 
-  def checkpoint(timestamp: TimeStamp, checkpoint: Array[Byte]): Option[TimeStamp] = {
+  def checkpoint(timestamp: MilliSeconds, checkpoint: Array[Byte]): Option[MilliSeconds] = {
     checkpointStore.persist(timestamp, checkpoint)
     checkpointTime = checkpointTime.collect { case time if maxMessageTime > time =>
       time + (1 + (maxMessageTime - time) / checkpointInterval) * checkpointInterval
@@ -41,7 +41,7 @@ class CheckpointManager(checkpointInterval: Long,
     checkpointTime
   }
 
-  def update(messageTime: TimeStamp): Option[TimeStamp] = {
+  def update(messageTime: MilliSeconds): Option[MilliSeconds] = {
     maxMessageTime = Math.max(maxMessageTime, messageTime)
     if (checkpointTime.isEmpty) {
       checkpointTime = Some((1 + messageTime / checkpointInterval) * checkpointInterval)
@@ -50,15 +50,15 @@ class CheckpointManager(checkpointInterval: Long,
     checkpointTime
   }
 
-  def shouldCheckpoint(upstreamMinClock: TimeStamp): Boolean = {
+  def shouldCheckpoint(upstreamMinClock: MilliSeconds): Boolean = {
     checkpointTime.exists(time => upstreamMinClock >= time)
   }
 
-  def getCheckpointTime: Option[TimeStamp] = checkpointTime
+  def getCheckpointTime: Option[MilliSeconds] = checkpointTime
 
   def close(): Unit = {
     checkpointStore.close()
   }
 
-  private[impl] def getMaxMessageTime: TimeStamp = maxMessageTime
+  private[impl] def getMaxMessageTime: MilliSeconds = maxMessageTime
 }

@@ -22,7 +22,7 @@ import java.util.Properties
 
 import com.twitter.bijection.Injection
 import kafka.api.OffsetRequest
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.kafka.lib.source.consumer.KafkaConsumer
 import org.apache.gearpump.streaming.kafka.util.KafkaConfig
 import org.apache.gearpump.streaming.kafka.util.KafkaConfig.KafkaConfigFactory
@@ -82,9 +82,9 @@ class KafkaStore private[kafka](
   extends CheckpointStore {
   import org.apache.gearpump.streaming.kafka.lib.store.KafkaStore._
 
-  private var maxTime: TimeStamp = 0L
+  private var maxTime: MilliSeconds = 0L
 
-  override def persist(time: TimeStamp, checkpoint: Array[Byte]): Unit = {
+  override def persist(time: MilliSeconds, checkpoint: Array[Byte]): Unit = {
     // make sure checkpointed timestamp is monotonically increasing
     // hence (1, 1), (3, 2), (2, 3) is checkpointed as (1, 1), (3, 2), (3, 3)
     if (time > maxTime) {
@@ -98,14 +98,14 @@ class KafkaStore private[kafka](
     LOG.debug("KafkaStore persisted state ({}, {})", key, value)
   }
 
-  override def recover(time: TimeStamp): Option[Array[Byte]] = {
+  override def recover(time: MilliSeconds): Option[Array[Byte]] = {
     var checkpoint: Option[Array[Byte]] = None
     optConsumer.foreach { consumer =>
       while (consumer.hasNext && checkpoint.isEmpty) {
         val kafkaMsg = consumer.next()
         checkpoint = for {
           k <- kafkaMsg.key
-          t <- Injection.invert[TimeStamp, Array[Byte]](k).toOption
+          t <- Injection.invert[MilliSeconds, Array[Byte]](k).toOption
           c = kafkaMsg.msg if t >= time
         } yield c
       }

@@ -25,7 +25,8 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorRef, Cancellable, Stash}
 import com.google.common.primitives.Longs
-import org.apache.gearpump.{MIN_TIME_MILLIS, TimeStamp}
+import org.apache.gearpump.Time
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.ClientToMaster.GetStallingTasks
 import org.apache.gearpump.streaming.AppMasterToMaster.StallingTasks
 import org.apache.gearpump.streaming._
@@ -60,8 +61,8 @@ class ClockService(
     LOG.info("Initializing Clock service, get snapshotted StartClock ....")
     store.get(START_CLOCK).map { clock =>
       // check for null first since
-      // (null).asInstanceOf[TimeStamp] is zero
-      val startClock = if (clock != null) clock.asInstanceOf[TimeStamp] else MIN_TIME_MILLIS
+      // (null).asInstanceOf[MilliSeconds] is zero
+      val startClock = if (clock != null) clock.asInstanceOf[MilliSeconds] else Time.MIN_TIME_MILLIS
 
       minCheckpointClock = Some(startClock)
 
@@ -88,32 +89,32 @@ class ClockService(
   // We use Array instead of List for Performance consideration
   private var processorClocks = Array.empty[ProcessorClock]
 
-  private var checkpointClocks: Map[TaskId, Vector[TimeStamp]] = _
+  private var checkpointClocks: Map[TaskId, Vector[MilliSeconds]] = _
 
-  private var minCheckpointClock: Option[TimeStamp] = None
+  private var minCheckpointClock: Option[MilliSeconds] = None
 
   private def checkpointEnabled(processor: ProcessorDescription): Boolean = {
     val taskConf = processor.taskConf
     taskConf != null && taskConf.getBoolean("state.checkpoint.enable").contains(true)
   }
 
-  private def resetCheckpointClocks(dag: DAG, startClock: TimeStamp): Unit = {
+  private def resetCheckpointClocks(dag: DAG, startClock: MilliSeconds): Unit = {
     this.checkpointClocks = dag.processors.filter(startClock < _._2.life.death)
       .filter { case (_, processor) =>
         checkpointEnabled(processor)
       }.flatMap { case (id, processor) =>
-      (0 until processor.parallelism).map(TaskId(id, _) -> Vector.empty[TimeStamp])
+      (0 until processor.parallelism).map(TaskId(id, _) -> Vector.empty[MilliSeconds])
     }
     if (this.checkpointClocks.isEmpty) {
       minCheckpointClock = None
     }
   }
 
-  private def initDag(startClock: TimeStamp): Unit = {
+  private def initDag(startClock: MilliSeconds): Unit = {
     recoverDag(this.dag, startClock)
   }
 
-  private def recoverDag(dag: DAG, startClock: TimeStamp): Unit = {
+  private def recoverDag(dag: DAG, startClock: MilliSeconds): Unit = {
     this.clocks = dag.processors.filter(startClock < _._2.life.death).
       map { pair =>
         val (processorId, processor) = pair
@@ -130,7 +131,7 @@ class ClockService(
     resetCheckpointClocks(dag, startClock)
   }
 
-  private def dynamicDAG(dag: DAG, startClock: TimeStamp): Unit = {
+  private def dynamicDAG(dag: DAG, startClock: MilliSeconds): Unit = {
     val newClocks = dag.processors.filter(startClock < _._2.life.death).
       map { pair =>
         val (processorId, processor) = pair
@@ -207,7 +208,7 @@ class ClockService(
     }
   }
 
-  private def getUpStreamMinClock(processorId: ProcessorId): Option[TimeStamp] = {
+  private def getUpStreamMinClock(processorId: ProcessorId): Option[MilliSeconds] = {
     upstreamClocks.get(processorId).map(ProcessorClocks.minClock)
   }
 
@@ -303,7 +304,7 @@ class ClockService(
     }
   }
 
-  private def minClock: TimeStamp = {
+  private def minClock: MilliSeconds = {
     ProcessorClocks.minClock(processorClocks)
   }
 
@@ -313,7 +314,7 @@ class ClockService(
     healthChecker.check(minTimestamp, clocks, dag, System.currentTimeMillis())
   }
 
-  private def getStartClock: TimeStamp = {
+  private def getStartClock: MilliSeconds = {
     minCheckpointClock.getOrElse(minClock)
   }
 
@@ -321,7 +322,7 @@ class ClockService(
     store.put(START_CLOCK, getStartClock)
   }
 
-  private def updateCheckpointClocks(task: TaskId, time: TimeStamp): Unit = {
+  private def updateCheckpointClocks(task: TaskId, time: MilliSeconds): Unit = {
     val clocks = checkpointClocks(task) :+ time
     checkpointClocks += task -> clocks
 
@@ -340,17 +341,17 @@ object ClockService {
   case object HealthCheck
 
   class ProcessorClock(val processorId: ProcessorId, val life: LifeTime, val parallelism: Int,
-      private var _min: TimeStamp = MIN_TIME_MILLIS,
-      private var _taskClocks: Array[TimeStamp] = null) {
+      private var _min: MilliSeconds = Time.MIN_TIME_MILLIS,
+      private var _taskClocks: Array[MilliSeconds] = null) {
 
     def copy(life: LifeTime): ProcessorClock = {
       new ProcessorClock(processorId, life, parallelism, _min, _taskClocks)
     }
 
-    def min: TimeStamp = _min
-    def taskClocks: Array[TimeStamp] = _taskClocks
+    def min: MilliSeconds = _min
+    def taskClocks: Array[MilliSeconds] = _taskClocks
 
-    def init(startClock: TimeStamp): Unit = {
+    def init(startClock: MilliSeconds): Unit = {
       if (taskClocks == null) {
         this._min = startClock
         this._taskClocks = new Array(parallelism)
@@ -358,7 +359,7 @@ object ClockService {
       }
     }
 
-    def updateMinClock(taskIndex: Int, clock: TimeStamp): Unit = {
+    def updateMinClock(taskIndex: Int, clock: MilliSeconds): Unit = {
       taskClocks(taskIndex) = clock
       _min = Longs.min(taskClocks: _*)
     }
@@ -381,8 +382,8 @@ object ClockService {
 
     /** Check for stalling tasks */
     def check(
-        currentMinClock: TimeStamp, processorClocks: Map[ProcessorId, ProcessorClock],
-        dag: DAG, now: TimeStamp): Unit = {
+        currentMinClock: MilliSeconds, processorClocks: Map[ProcessorId, ProcessorClock],
+        dag: DAG, now: MilliSeconds): Unit = {
       var isClockStalling = false
       if (null == minClock || currentMinClock > minClock.appClock) {
         minClock = ClockValue(systemClock = now, appClock = currentMinClock)
@@ -423,7 +424,7 @@ object ClockService {
   }
 
   object HealthChecker {
-    case class ClockValue(systemClock: TimeStamp, appClock: TimeStamp) {
+    case class ClockValue(systemClock: MilliSeconds, appClock: MilliSeconds) {
       def prettyPrint: String = {
         "(system clock: " + new Date(systemClock).toString + ", app clock: " + appClock + ")"
       }
@@ -433,7 +434,7 @@ object ClockService {
   object ProcessorClocks {
 
     // Get the Min clock of all processors
-    def minClock(clock: Array[ProcessorClock]): TimeStamp = {
+    def minClock(clock: Array[ProcessorClock]): MilliSeconds = {
       var i = 0
       var min = if (clock.length == 0) 0L else clock(0).min
       while (i < clock.length) {
@@ -445,7 +446,7 @@ object ClockService {
   }
 
   case class ChangeToNewDAG(dag: DAG)
-  case class ChangeToNewDAGSuccess(clocks: Map[ProcessorId, TimeStamp])
+  case class ChangeToNewDAGSuccess(clocks: Map[ProcessorId, MilliSeconds])
 
-  case class StoredStartClock(clock: TimeStamp)
+  case class StoredStartClock(clock: MilliSeconds)
 }

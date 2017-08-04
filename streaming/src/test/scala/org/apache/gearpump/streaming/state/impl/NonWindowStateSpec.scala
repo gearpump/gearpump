@@ -26,7 +26,7 @@ import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.state.api.{Monoid, Serializer}
 
 class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
@@ -35,7 +35,7 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
 
   property("NonWindowState should recover checkpointed state at given timestamp") {
     forAll(longGen) {
-      (timestamp: TimeStamp) =>
+      (timestamp: MilliSeconds) =>
         val monoid = mock[Monoid[AnyRef]]
         val serializer = mock[Serializer[AnyRef]]
         val bytes = Array.empty[Byte]
@@ -61,7 +61,7 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
 
   property("NonWindowState checkpoints state") {
     forAll(longGen) {
-      (checkpointTime: TimeStamp) =>
+      (checkpointTime: MilliSeconds) =>
         val monoid = mock[Monoid[AnyRef]]
         val serializer = mock[Serializer[AnyRef]]
 
@@ -95,7 +95,7 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
 
   property("NonWindowState updates state") {
     forAll(longGen) {
-      (checkpointTime: TimeStamp) =>
+      (checkpointTime: MilliSeconds) =>
         val monoid = mock[Monoid[AnyRef]]
         val serializer = mock[Serializer[AnyRef]]
 

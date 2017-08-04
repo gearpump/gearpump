@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.state.impl
 
 import org.slf4j.Logger
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.state.api.{Monoid, MonoidState, Serializer}
 import org.apache.gearpump.streaming.state.impl.NonWindowState._
 import org.apache.gearpump.util.LogUtil
@@ -35,11 +35,11 @@ object NonWindowState {
 class NonWindowState[T](monoid: Monoid[T], serializer: Serializer[T])
   extends MonoidState[T](monoid) {
 
-  override def recover(timestamp: TimeStamp, bytes: Array[Byte]): Unit = {
+  override def recover(timestamp: MilliSeconds, bytes: Array[Byte]): Unit = {
     serializer.deserialize(bytes).foreach(left = _)
   }
 
-  override def update(timestamp: TimeStamp, t: T): Unit = {
+  override def update(timestamp: MilliSeconds, t: T): Unit = {
     updateState(timestamp, t)
   }
 

@@ -20,7 +20,7 @@ package org.apache.gearpump.streaming.appmaster
 import akka.actor._
 import akka.pattern.ask
 import com.typesafe.config.Config
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.AppJar
 import org.apache.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import org.apache.gearpump.cluster.worker.WorkerId
@@ -47,7 +47,7 @@ class JarScheduler(appId: Int, appName: String, config: Config, factory: ActorRe
   private implicit val timeout = Constants.FUTURE_TIMEOUT
 
   /** Set the current DAG version active */
-  def setDag(dag: DAG, startClock: Future[TimeStamp]): Unit = {
+  def setDag(dag: DAG, startClock: Future[MilliSeconds]): Unit = {
     actor ! TransitToNewDag
     startClock.map { start =>
       actor ! NewDag(dag, start)
@@ -82,7 +82,7 @@ object JarScheduler {
 
   case class ResourceRequestDetail(jar: AppJar, requests: Array[ResourceRequest])
 
-  case class NewDag(dag: DAG, startTime: TimeStamp)
+  case class NewDag(dag: DAG, startTime: MilliSeconds)
 
   case object TransitToNewDag
 

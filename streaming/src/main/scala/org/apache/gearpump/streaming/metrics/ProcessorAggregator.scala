@@ -22,7 +22,7 @@ import java.util
 
 import com.google.common.collect.Iterators
 import com.typesafe.config.Config
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.ClientToMaster.ReadOption
 import org.apache.gearpump.cluster.MasterToClient.HistoryMetricsItem
 import org.apache.gearpump.metrics.Metrics.{Histogram, Meter}
@@ -64,7 +64,7 @@ class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends Met
   }
 
   def aggregate(
-      readOption: ReadOption.ReadOption, inputs: Iterator[HistoryMetricsItem], now: TimeStamp)
+      readOption: ReadOption.ReadOption, inputs: Iterator[HistoryMetricsItem], now: MilliSeconds)
     : List[HistoryMetricsItem] = {
     val (start, end, interval) = getTimeRange(readOption, now)
     val timeSlotsCount = ((end - start - 1) / interval + 1).toInt
@@ -103,8 +103,8 @@ class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends Met
   }
 
   // Returns (start, end, interval)
-  private def getTimeRange(readOption: ReadOption.ReadOption, now: TimeStamp)
-    : (TimeStamp, TimeStamp, TimeStamp) = {
+  private def getTimeRange(readOption: ReadOption.ReadOption, now: MilliSeconds)
+    : (MilliSeconds, MilliSeconds, MilliSeconds) = {
     readOption match {
       case ReadOption.ReadRecent =>
         val end = now
@@ -229,7 +229,7 @@ object ProcessorAggregator {
     var p99: Double = 0
     var p999: Double = 0
 
-    var startTime: TimeStamp = Long.MaxValue
+    var startTime: MilliSeconds = Long.MaxValue
 
     override def aggregate(item: HistoryMetricsItem): Unit = {
       val input = item.value.asInstanceOf[Histogram]
@@ -263,7 +263,7 @@ object ProcessorAggregator {
     var m1: Double = 0
     var rateUnit: String = null
 
-    var startTime: TimeStamp = Long.MaxValue
+    var startTime: MilliSeconds = Long.MaxValue
 
     override def aggregate(item: HistoryMetricsItem): Unit = {
 

@@ -36,7 +36,8 @@ import org.apache.gearpump.streaming.kafka.util.KafkaConfig.KafkaConfigFactory
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.streaming.transaction.api._
 import org.apache.gearpump.util.LogUtil
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.Message
+import org.apache.gearpump.Time.MilliSeconds
 import org.slf4j.Logger
 
 object AbstractKafkaSource {
@@ -147,7 +148,7 @@ abstract class AbstractKafkaSource(
     }
   }
 
-  private def maybeRecover(startTime: TimeStamp): Unit = {
+  private def maybeRecover(startTime: MilliSeconds): Unit = {
     checkpointStores.foreach { case (tp, store) =>
       for {
         bytes <- store.recover(startTime)

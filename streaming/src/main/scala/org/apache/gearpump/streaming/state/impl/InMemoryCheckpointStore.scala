@@ -18,7 +18,7 @@
 
 package org.apache.gearpump.streaming.state.impl
 
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.transaction.api.{CheckpointStore, CheckpointStoreFactory}
 
 /**
@@ -26,18 +26,18 @@ import org.apache.gearpump.streaming.transaction.api.{CheckpointStore, Checkpoin
  * should not be used in real cases
  */
 class InMemoryCheckpointStore extends CheckpointStore {
-  private var checkpoints = Map.empty[TimeStamp, Array[Byte]]
+  private var checkpoints = Map.empty[MilliSeconds, Array[Byte]]
 
-  override def persist(timestamp: TimeStamp, checkpoint: Array[Byte]): Unit = {
+  override def persist(timestamp: MilliSeconds, checkpoint: Array[Byte]): Unit = {
     checkpoints += timestamp -> checkpoint
   }
 
-  override def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
+  override def recover(timestamp: MilliSeconds): Option[Array[Byte]] = {
     checkpoints.get(timestamp)
   }
 
   override def close(): Unit = {
-    checkpoints = Map.empty[TimeStamp, Array[Byte]]
+    checkpoints = Map.empty[MilliSeconds, Array[Byte]]
   }
 }
 

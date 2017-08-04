@@ -23,7 +23,7 @@ import java.time.Instant
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.slf4j.Logger
-import org.apache.gearpump.TimeStamp
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.streaming.hadoop.lib.rotation.Rotation
 import org.apache.gearpump.streaming.hadoop.lib.{HadoopCheckpointStoreReader, HadoopCheckpointStoreWriter}
 import org.apache.gearpump.streaming.transaction.api.CheckpointStore
@@ -72,7 +72,7 @@ class HadoopCheckpointStore(
    *     b. closes current writer and reset
    *     c. rotation rotates
    */
-  override def persist(timestamp: TimeStamp, checkpoint: Array[Byte]): Unit = {
+  override def persist(timestamp: MilliSeconds, checkpoint: Array[Byte]): Unit = {
     curTime = timestamp
     if (curWriter.isEmpty) {
       curStartTime = curTime
@@ -110,7 +110,7 @@ class HadoopCheckpointStore(
    *   5. looks for the checkpoint in the found store
    *   }}}
    */
-  override def recover(timestamp: TimeStamp): Option[Array[Byte]] = {
+  override def recover(timestamp: MilliSeconds): Option[Array[Byte]] = {
     var checkpoint: Option[Array[Byte]] = None
 
     if (fs.exists(dir)) {
