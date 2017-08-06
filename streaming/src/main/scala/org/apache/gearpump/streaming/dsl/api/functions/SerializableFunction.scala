@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.dsl.scalaapi.functions
+package org.apache.gearpump.streaming.dsl.api.functions
 
 /**
  * Superclass for all user defined function interfaces.
  * This ensures all functions are serializable and provides common methods
  * like setup and teardown. Users should not extend this class directly
- * but subclasses like [[FlatMapFunction]].
+ * but subclasses like [[org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction]].
  */
 abstract class SerializableFunction extends java.io.Serializable {
 

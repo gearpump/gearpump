@@ -24,12 +24,13 @@ import akka.actor.ActorRef
 import backtype.storm.spout.{ISpout, SpoutOutputCollector}
 import backtype.storm.task.{GeneralTopologyContext, IBolt, OutputCollector, TopologyContext}
 import backtype.storm.tuple.Tuple
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.experiments.storm.producer.StormSpoutOutputCollector
 import org.apache.gearpump.experiments.storm.topology.GearpumpStormComponent.{GearpumpBolt, GearpumpSpout}
 import org.apache.gearpump.experiments.storm.util.StormOutputCollector
 import org.apache.gearpump.streaming.task.{TaskContext, TaskId}
 import org.apache.gearpump.streaming.{DAG, MockUtil}
-import org.apache.gearpump.{Message, TimeStamp}
+import org.apache.gearpump.Message
 import org.mockito.Matchers.{anyObject, eq => mockitoEq}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -75,7 +76,7 @@ class GearpumpStormComponentSpec
   property("GearpumpBolt lifecycle") {
     val timestampGen = Gen.chooseNum[Long](0L, 1000L)
     val freqGen = Gen.chooseNum[Int](1, 100)
-    forAll(timestampGen, freqGen) { (timestamp: TimeStamp, freq: Int) =>
+    forAll(timestampGen, freqGen) { (timestamp: MilliSeconds, freq: Int) =>
       val config = mock[JMap[AnyRef, AnyRef]]
       val bolt = mock[IBolt]
       val taskContext = MockUtil.mockTaskContext

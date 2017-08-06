@@ -35,16 +35,29 @@ import scala.reflect.ClassTag
 
 object Op {
 
+  /**
+   * Concatenates two descriptions with "." or returns one if the other is empty.
+   */
   def concatenate(desc1: String, desc2: String): String = {
     if (desc1 == null || desc1.isEmpty) desc2
     else if (desc2 == null || desc2.isEmpty) desc1
     else desc1 + "." + desc2
   }
 
+  /**
+   * Concatenates two configs according to the following rules
+   *   1. The first config cannot be null.
+   *   2. The first config is returned if the second config is null
+   *   3. The second config takes precedence for overlapping config keys
+   */
   def concatenate(config1: UserConfig, config2: UserConfig): UserConfig = {
     config1.withConfig(config2)
   }
 
+  /**
+   * This adds a [[org.apache.gearpump.streaming.dsl.plan.functions.DummyRunner]] in
+   * [[GlobalWindows]] if a targeting [[Task]] has no executable UDF.
+   */
   def withGlobalWindowsDummyRunner(op: Op, userConfig: UserConfig,
       processor: Processor[_ <: Task])(implicit system: ActorSystem): Processor[_ <: Task] = {
     if (userConfig.getValue(Constants.GEARPUMP_STREAMING_OPERATOR).isEmpty) {
@@ -59,22 +72,37 @@ object Op {
 }
 
 /**
- * This is a vertex on the logical plan.
+ * This is a vertex on the logical Graph, representing user defined functions in
+ * [[org.apache.gearpump.streaming.dsl.scalaapi.Stream]] DSL.
  */
 sealed trait Op {
 
+  /**
+   * This comes from user function description and is used to display it on front end.
+   */
   def description: String
 
+  /**
+   * This will ship user function to [[org.apache.gearpump.streaming.task.Task]] to be executed.
+   */
   def userConfig: UserConfig
 
+  /**
+   * This creates a new Op by merging their user functions, user configs and descriptions.
+   */
   def chain(op: Op)(implicit system: ActorSystem): Op
 
+  /**
+   *  This creates a Processor after chaining.
+   */
   def toProcessor(implicit system: ActorSystem): Processor[_ <: Task]
 }
 
 /**
- * This represents a low level Processor.
+ * This represents a low level Processor. It is deprecated since it
+ * doesn't work with other Ops.
  */
+@deprecated
 case class ProcessorOp[T <: Task](
     processor: Class[T],
     parallelism: Int,
@@ -99,7 +127,8 @@ case class ProcessorOp[T <: Task](
 }
 
 /**
- * This represents a DataSource.
+ * This represents a DataSource and creates a
+ * [[org.apache.gearpump.streaming.source.DataSourceTask]]
  */
 case class DataSourceOp(
     dataSource: DataSource,
@@ -142,7 +171,7 @@ case class DataSourceOp(
 }
 
 /**
- * This represents a DataSink.
+ * This represents a DataSink and creates a [[org.apache.gearpump.streaming.sink.DataSinkTask]].
  */
 case class DataSinkOp(
     dataSink: DataSink,
@@ -163,7 +192,7 @@ case class DataSinkOp(
 /**
  * This represents operations that can be chained together
  * (e.g. flatMap, map, filter, reduce) and further chained
- * to another Op to be used
+ * to another Op to be executed
  */
 case class TransformOp[IN, OUT](
     fn: FunctionRunner[IN, OUT],
@@ -201,61 +230,7 @@ case class TransformOp[IN, OUT](
   }
 }
 
-/**
- * This is an intermediate operation, produced by chaining WindowOp and TransformOp.
- * Usually, it will be chained to a DataSourceOp, GroupByOp or MergeOp.
- * Otherwise, it will be translated to a Processor of TransformTask.
- */
-case class WindowTransformOp[IN, OUT](
-    windowRunner: WindowRunner[IN, OUT],
-    description: String,
-    userConfig: UserConfig) extends Op {
 
-  override def chain(other: Op)(implicit system: ActorSystem): Op = {
-    other match {
-      case op: WindowTransformOp[OUT, _] =>
-        WindowTransformOp(
-          WindowRunnerAT(windowRunner, op.windowRunner),
-          Op.concatenate(description, op.description),
-          Op.concatenate(userConfig, op.userConfig)
-        )
-      case _ =>
-        throw new OpChainException(this, other)
-    }
-  }
-
-  override def toProcessor(implicit system: ActorSystem): Processor[_ <: Task] = {
-    // TODO: this should be chained to DataSourceOp / GroupByOp / MergeOp
-    Processor[TransformTask[Any, Any]](1, description, userConfig.withValue(
-      Constants.GEARPUMP_STREAMING_OPERATOR, windowRunner))
-  }
-}
-
-/**
- * This is an intermediate operation, produced by chaining TransformOp and WindowOp.
- * It will later be chained to a WindowOp, which results in two WindowTransformOps.
- * Finally, they will be chained to a single WindowTransformOp.
- */
-case class TransformWindowTransformOp[IN, MIDDLE, OUT](
-    transformOp: TransformOp[IN, MIDDLE],
-    windowTransformOp: WindowTransformOp[MIDDLE, OUT]) extends Op {
-
-  override def description: String = {
-    throw new UnsupportedOperationException(s"description is not supported on $this")
-  }
-
-  override def userConfig: UserConfig = {
-    throw new UnsupportedOperationException(s"userConfig is not supported on $this")
-  }
-
-  override def chain(op: Op)(implicit system: ActorSystem): Op = {
-    throw new UnsupportedOperationException(s"chain is not supported on $this")
-  }
-
-  override def toProcessor(implicit system: ActorSystem): Processor[_ <: Task] = {
-    WindowOp(GlobalWindows()).chain(this).toProcessor
-  }
-}
 
 /**
  * This represents a window aggregation, together with a following TransformOp
@@ -290,7 +265,14 @@ case class WindowOp(
 }
 
 /**
- * This represents a Processor with groupBy and window aggregation
+ * This represents an operation with groupBy followed by window aggregation.
+ *
+ * It can only be chained with [[WindowTransformOp]] to be executed in
+ * [[org.apache.gearpump.streaming.dsl.task.GroupByTask]].
+ * However, it's possible a window function has no following aggregations. In that case,
+ * we manually tail a [[WindowOp]] with [[TransformOp]] of
+ * [[org.apache.gearpump.streaming.dsl.plan.functions.DummyRunner]] to create a
+ * [[WindowTransformOp]].
  */
 case class GroupByOp[IN, GROUP] private(
     groupBy: IN => GROUP,
@@ -325,7 +307,14 @@ case class GroupByOp[IN, GROUP] private(
 }
 
 /**
- * This represents a Processor transforming merged streams
+ * This represents an operation with merge followed by window aggregation.
+ *
+ * It can only be chained with [[WindowTransformOp]] to be executed in
+ * [[org.apache.gearpump.streaming.dsl.task.TransformTask]].
+ * However, it's possible a merge function has no following aggregations. In that case,
+ * we manually tail a [[WindowOp]] with [[TransformOp]] of
+ * [[org.apache.gearpump.streaming.dsl.plan.functions.DummyRunner]] to create a
+ * [[WindowTransformOp]].
  */
 case class MergeOp(
     parallelism: Int = 1,
@@ -357,7 +346,65 @@ case class MergeOp(
 }
 
 /**
- * This is an edge on the logical plan.
+ * This is an intermediate operation, produced by chaining [[WindowOp]] and [[TransformOp]].
+ * Usually, it will be chained to a [[DataSourceOp]], [[GroupByOp]] or [[MergeOp]]. Nonetheless,
+ * Op with more than 1 outgoing edge or incoming edge cannot be chained. In that case,
+ * it will be translated to a [[org.apache.gearpump.streaming.dsl.task.TransformTask]].
+ */
+private case class WindowTransformOp[IN, OUT](
+    windowRunner: WindowRunner[IN, OUT],
+    description: String,
+    userConfig: UserConfig) extends Op {
+
+  override def chain(other: Op)(implicit system: ActorSystem): Op = {
+    other match {
+      case op: WindowTransformOp[OUT, _] =>
+        WindowTransformOp(
+          WindowRunnerAT(windowRunner, op.windowRunner),
+          Op.concatenate(description, op.description),
+          Op.concatenate(userConfig, op.userConfig)
+        )
+      case _ =>
+        throw new OpChainException(this, other)
+    }
+  }
+
+  override def toProcessor(implicit system: ActorSystem): Processor[_ <: Task] = {
+    // TODO: this should be chained to DataSourceOp / GroupByOp / MergeOp
+    Processor[TransformTask[Any, Any]](1, description, userConfig.withValue(
+      Constants.GEARPUMP_STREAMING_OPERATOR, windowRunner))
+  }
+}
+
+/**
+ * This is an intermediate operation, produced by chaining [[TransformOp]] and
+ * [[WindowTransformOp]]. It will later be chained to a [[WindowOp]], which results in
+ * two [[WindowTransformOp]]s. Finally, they will be chained to a single WindowTransformOp.
+ */
+private case class TransformWindowTransformOp[IN, MIDDLE, OUT](
+    transformOp: TransformOp[IN, MIDDLE],
+    windowTransformOp: WindowTransformOp[MIDDLE, OUT]) extends Op {
+
+  override def description: String = {
+    throw new UnsupportedOperationException(s"description is not supported on $this")
+  }
+
+  override def userConfig: UserConfig = {
+    throw new UnsupportedOperationException(s"userConfig is not supported on $this")
+  }
+
+  override def chain(op: Op)(implicit system: ActorSystem): Op = {
+    throw new UnsupportedOperationException(s"chain is not supported on $this")
+  }
+
+  override def toProcessor(implicit system: ActorSystem): Processor[_ <: Task] = {
+    WindowOp(GlobalWindows()).chain(this).toProcessor
+  }
+}
+
+/**
+ * This is an edge on the logical plan. It defines whether data should be transported locally
+ * or shuffled remotely between [[Op]].
  */
 trait OpEdge
 

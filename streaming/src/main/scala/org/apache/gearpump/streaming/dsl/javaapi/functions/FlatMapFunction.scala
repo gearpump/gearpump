@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.streaming.dsl.javaapi.functions
 
-import org.apache.gearpump.streaming.dsl.scalaapi.functions.SerializableFunction
+import org.apache.gearpump.streaming.dsl.api.functions.SerializableFunction
 
 /**
  * Transforms one input into zero or more outputs of possibly different types.

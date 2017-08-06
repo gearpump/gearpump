@@ -17,7 +17,7 @@
  */
 package org.apache.gearpump.streaming.dsl.scalaapi.functions
 
-import org.apache.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunction}
+import org.apache.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunction, SerializableFunction}
 import org.apache.gearpump.streaming.dsl.javaapi.functions.{FlatMapFunction => JFlatMapFunction}
 
 import scala.collection.JavaConverters._

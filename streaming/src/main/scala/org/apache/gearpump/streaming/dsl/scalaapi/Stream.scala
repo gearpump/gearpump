@@ -210,6 +210,7 @@ class Stream[T](
    * @param parallelism  parallelism level
    * @return  new stream after processing with type [R]
    */
+  @deprecated
   def process[R](
       processor: Class[_ <: Task], parallelism: Int, conf: UserConfig = UserConfig.empty,
       description: String = "process"): Stream[R] = {

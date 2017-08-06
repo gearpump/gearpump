@@ -18,8 +18,6 @@
 
 package org.apache.gearpump.streaming.dsl.api.functions
 
-import org.apache.gearpump.streaming.dsl.scalaapi.functions.SerializableFunction
-
 /**
  * Combines input into an accumulator.
  *

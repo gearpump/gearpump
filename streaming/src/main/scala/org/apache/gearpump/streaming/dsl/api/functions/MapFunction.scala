@@ -17,8 +17,6 @@
  */
 package org.apache.gearpump.streaming.dsl.api.functions
 
-import org.apache.gearpump.streaming.dsl.scalaapi.functions.SerializableFunction
-
 object MapFunction {
 
   def apply[T, R](fn: T => R): MapFunction[T, R] = {

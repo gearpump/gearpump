@@ -17,8 +17,6 @@
  */
 package org.apache.gearpump.streaming.dsl.api.functions
 
-import org.apache.gearpump.streaming.dsl.scalaapi.functions.SerializableFunction
-
 object FilterFunction {
 
   def apply[T](fn: T => Boolean): FilterFunction[T] = {

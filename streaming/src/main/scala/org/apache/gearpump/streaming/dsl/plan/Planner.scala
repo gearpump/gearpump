@@ -24,11 +24,26 @@ import org.apache.gearpump.streaming.Processor
 import org.apache.gearpump.streaming.task.Task
 import org.apache.gearpump.util.Graph
 
+/**
+ * This class is responsible for turning the high level
+ * [[org.apache.gearpump.streaming.dsl.scalaapi.Stream]] DSL into low level
+ * [[org.apache.gearpump.streaming.Processor]] API.
+ */
 class Planner {
 
   /**
-   * Converts Dag of Op to Dag of TaskDescription. TaskDescription is part of the low
-   * level Graph API.
+   * This method interprets a Graph of [[Op]] and creates a Graph of
+   * [[org.apache.gearpump.streaming.Processor]].
+   *
+   * It firstly reversely traverses the Graph from a leaf Op and merges it with
+   * its downstream Op according to the following rules.
+   *
+   *   1. The Op has only one outgoing edge and the downstream Op has only one incoming edge
+   *   2. Neither Op is [[ProcessorOp]]
+   *   3. The edge is [[Direct]]
+   *
+   * Finally the vertices of the optimized Graph are translated to Processors
+   * and the edges to Partitioners.
    */
   def plan(dag: Graph[Op, OpEdge])
     (implicit system: ActorSystem): Graph[Processor[_ <: Task], _ <: Partitioner] = {
@@ -43,6 +58,7 @@ class Planner {
             case _ => new HashPartitioner
           }
         case Direct =>
+          // FIXME: This is never used
           new CoLocationPartitioner
       }
     }.mapVertex(_.toProcessor)

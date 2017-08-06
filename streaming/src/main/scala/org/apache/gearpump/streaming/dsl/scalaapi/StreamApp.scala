@@ -62,6 +62,17 @@ class StreamApp(
     val dag = planner.plan(graph)
     StreamApplication(name, dag, userConfig)
   }
+
+  def source[T](dataSource: DataSource, parallelism: Int = 1,
+      conf: UserConfig = UserConfig.empty, description: String = "source"): Stream[T] = {
+    val sourceOp = DataSourceOp(dataSource, parallelism, description, conf)
+    graph.addVertex(sourceOp)
+    new Stream[T](graph, sourceOp)
+  }
+
+  def source[T](seq: Seq[T], parallelism: Int, description: String): Stream[T] = {
+    this.source(new CollectionDataSource[T](seq), parallelism, UserConfig.empty, description)
+  }
 }
 
 object StreamApp {
@@ -72,20 +83,6 @@ object StreamApp {
 
   implicit def streamAppToApplication(streamApp: StreamApp): StreamApplication = {
     streamApp.plan()
-  }
-
-  implicit class Source(app: StreamApp) extends java.io.Serializable {
-
-    def source[T](dataSource: DataSource, parallelism: Int = 1,
-        conf: UserConfig = UserConfig.empty, description: String = "source"): Stream[T] = {
-      implicit val sourceOp = DataSourceOp(dataSource, parallelism, description, conf)
-      app.graph.addVertex(sourceOp)
-      new Stream[T](app.graph, sourceOp)
-    }
-
-    def source[T](seq: Seq[T], parallelism: Int, description: String): Stream[T] = {
-      this.source(new CollectionDataSource[T](seq), parallelism, UserConfig.empty, description)
-    }
   }
 }
 

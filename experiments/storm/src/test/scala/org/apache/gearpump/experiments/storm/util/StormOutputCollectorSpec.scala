@@ -27,7 +27,8 @@ import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
-import org.apache.gearpump.{MIN_TIME_MILLIS, Message, TimeStamp}
+import org.apache.gearpump.{Message, Time}
+import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.experiments.storm.topology.GearpumpTuple
 import org.apache.gearpump.streaming.MockUtil
 
@@ -41,7 +42,7 @@ class StormOutputCollectorSpec
 
   property("StormOutputCollector emits tuple values into a stream") {
     forAll(timestampGen, streamIdGen, valuesGen) {
-      (timestamp: TimeStamp, streamId: String, values: JList[AnyRef]) =>
+      (timestamp: MilliSeconds, streamId: String, values: JList[AnyRef]) =>
         val targets = mock[JMap[String, JMap[String, Grouping]]]
         val taskToComponent = mock[JMap[Integer, String]]
         val getTargetPartitionsFn = mock[(String, JList[AnyRef]) =>
@@ -52,7 +53,7 @@ class StormOutputCollectorSpec
           targetStormTaskIds))
         val taskContext = MockUtil.mockTaskContext
         val stormOutputCollector = new StormOutputCollector(stormTaskId, taskToComponent,
-          targets, getTargetPartitionsFn, taskContext, MIN_TIME_MILLIS)
+          targets, getTargetPartitionsFn, taskContext, Time.MIN_TIME_MILLIS)
 
         when(targets.containsKey(streamId)).thenReturn(false)
         stormOutputCollector.emit(streamId, values) shouldBe StormOutputCollector.EMPTY_LIST
@@ -85,7 +86,7 @@ class StormOutputCollectorSpec
           targetStormTaskIds))
         val taskContext = MockUtil.mockTaskContext
         val stormOutputCollector = new StormOutputCollector(stormTaskId, taskToComponent,
-          targets, getTargetPartitionsFn, taskContext, MIN_TIME_MILLIS)
+          targets, getTargetPartitionsFn, taskContext, Time.MIN_TIME_MILLIS)
 
         when(targets.containsKey(streamId)).thenReturn(false)
         verify(taskContext, times(0)).output(anyObject[Message])
