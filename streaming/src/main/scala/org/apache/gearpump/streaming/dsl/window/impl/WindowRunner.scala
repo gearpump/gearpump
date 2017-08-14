@@ -31,11 +31,23 @@ import org.apache.gearpump.streaming.task.TaskUtil
 
 import scala.collection.mutable.ArrayBuffer
 
+/**
+ * Inputs for [[WindowRunner]].
+ */
 case class TimestampedValue[T](value: T, timestamp: Instant)
 
+/**
+ * Outputs triggered by [[WindowRunner]]
+ */
 case class TriggeredOutputs[T](outputs: TraversableOnce[TimestampedValue[T]],
     watermark: Instant)
 
+/**
+ * This is responsible for executing window calculation.
+ *   1. Groups elements into windows as defined by window function
+ *   2. Applies window calculation to each group
+ *   3. Emits results on triggering
+ */
 trait WindowRunner[IN, OUT] extends java.io.Serializable {
 
   def process(timestampedValue: TimestampedValue[IN]): Unit
@@ -43,6 +55,10 @@ trait WindowRunner[IN, OUT] extends java.io.Serializable {
   def trigger(time: Instant): TriggeredOutputs[OUT]
 }
 
+/**
+ * A composite WindowRunner that first executes its left child and feeds results
+ * into result child.
+ */
 case class AndThen[IN, MIDDLE, OUT](left: WindowRunner[IN, MIDDLE],
     right: WindowRunner[MIDDLE, OUT]) extends WindowRunner[IN, OUT] {
 
@@ -57,6 +73,9 @@ case class AndThen[IN, MIDDLE, OUT](left: WindowRunner[IN, MIDDLE],
   }
 }
 
+/**
+ * Default implementation for [[WindowRunner]].
+ */
 class DefaultWindowRunner[IN, OUT](
     windows: Windows,
     fnRunner: FunctionRunner[IN, OUT])
@@ -137,11 +156,15 @@ class DefaultWindowRunner[IN, OUT](
           }
           onTrigger(outputs, newWmk)
         } else {
-          // minimum of end of last triggered window and start of first un-triggered window
+          // The output watermark is the minimum of end of last triggered window
+          // and start of first un-triggered window
           TriggeredOutputs(outputs, TaskUtil.min(wmk, firstWin.startTime))
         }
       } else {
+        // All windows have been triggered.
         if (time == Watermark.MAX) {
+          // This means there will be no more inputs
+          // so it's safe to advance to the maximum watermark.
           TriggeredOutputs(outputs, Watermark.MAX)
         } else {
           TriggeredOutputs(outputs, wmk)

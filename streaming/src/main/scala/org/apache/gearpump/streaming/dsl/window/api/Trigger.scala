@@ -17,7 +17,16 @@
  */
 package org.apache.gearpump.streaming.dsl.window.api
 
+/**
+ * Determines when window results are emitted.
+ * For now, [[EventTimeTrigger]] is used for all applications.
+ */
+// TODO: Make this a public API
 sealed trait Trigger
 
+/**
+ * Triggers emitting when watermark past the end of window on event time.
+ */
+// FIXME: This is no more than a tag now and the logic is hard corded in WindowRunner
 case object EventTimeTrigger extends Trigger
 

@@ -17,8 +17,18 @@
  */
 package org.apache.gearpump.streaming.dsl.window.api
 
+
+/**
+ * Determines relationship between multiple results for the same window.
+ */
 sealed trait AccumulationMode
 
+/**
+ * Window results are accumulated.
+ */
 case object Accumulating extends AccumulationMode
 
+/**
+ * Window results are independent.
+ */
 case object Discarding extends AccumulationMode

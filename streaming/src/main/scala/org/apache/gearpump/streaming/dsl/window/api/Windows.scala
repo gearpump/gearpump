@@ -20,11 +20,14 @@ package org.apache.gearpump.streaming.dsl.window.api
 import java.time.Duration
 
 /**
- * Defines how to apply window functions.
+ * User facing Window DSL.
+ * Defines how to apply [[WindowFunction]], [[Trigger]]
+ * and [[AccumulationMode]].
  *
  * @param windowFn how to divide windows
  * @param trigger when to trigger window result
- * @param accumulationMode whether to accumulate results across windows
+ * @param accumulationMode whether to accumulate window results
+ * @param description window description
  */
 case class Windows(
     windowFn: WindowFunction,
@@ -47,6 +50,11 @@ case class Windows(
 
 object GlobalWindows {
 
+  /**
+   * Defines a [[GlobalWindowFunction]].
+   *
+   * @return a Window definition
+   */
   def apply(): Windows = {
     Windows(GlobalWindowFunction(), description = "globalWindows")
   }
@@ -55,7 +63,7 @@ object GlobalWindows {
 object FixedWindows {
 
   /**
-   * Defines a FixedWindow.
+   * Defines a non-overlapping [[SlidingWindowFunction]].
    *
    * @param size window size
    * @return a Window definition
@@ -68,7 +76,7 @@ object FixedWindows {
 object SlidingWindows {
 
   /**
-   * Defines a SlidingWindow.
+   * Defines a overlapping [[SlidingWindowFunction]].
    *
    * @param size window size
    * @param step window step to slide forward
@@ -82,7 +90,7 @@ object SlidingWindows {
 object SessionWindows {
 
   /**
-   * Defines a SessionWindow.
+   * Defines a [[SessionWindowFunction]].
    *
    * @param gap session gap
    * @return a Window definition

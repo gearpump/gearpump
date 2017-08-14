@@ -33,8 +33,14 @@ object WindowFunction {
   }
 }
 
+/**
+ * Determines how elements are assigned to windows for calculation.
+ */
 trait WindowFunction {
 
+  /**
+   * Assigns elements into windows.
+   */
   def apply[T](context: WindowFunction.Context[T]): Array[Window]
 
   def isNonMerging: Boolean
@@ -51,6 +57,9 @@ object GlobalWindowFunction {
     Instant.ofEpochMilli(Time.MAX_TIME_MILLIS)))
 }
 
+/**
+ * All elements are assigned to the same global window for calculation.
+ */
 case class GlobalWindowFunction() extends NonMergingWindowFunction {
 
   override def apply[T](context: WindowFunction.Context[T]): Array[Window] = {
@@ -58,6 +67,12 @@ case class GlobalWindowFunction() extends NonMergingWindowFunction {
   }
 }
 
+/**
+ * Elements are assigned to non-merging sliding windows for calculation.
+ *
+ * @param size window size
+ * @param step window step to slide forward
+ */
 case class SlidingWindowFunction(size: Duration, step: Duration)
   extends NonMergingWindowFunction {
 
@@ -86,6 +101,12 @@ case class SlidingWindowFunction(size: Duration, step: Duration)
   }
 }
 
+/**
+ * Elements are assigned to merging windows for calculation. Windows are merged
+ * if their distance is within the defined gap.
+ *
+ * @param gap session gap
+ */
 case class SessionWindowFunction(gap: Duration) extends WindowFunction {
 
   override def apply[T](context: WindowFunction.Context[T]): Array[Window] = {

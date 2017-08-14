@@ -28,7 +28,7 @@ object Window {
 }
 
 /**
- * A window unit including startTime and excluding endTime.
+ * A window unit from startTime(including) to endTime(excluding).
  */
 case class Window(startTime: Instant, endTime: Instant) extends Comparable[Window] {
 
