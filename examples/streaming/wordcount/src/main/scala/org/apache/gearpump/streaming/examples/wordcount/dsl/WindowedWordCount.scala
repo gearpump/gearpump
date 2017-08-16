@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.client.ClientContext
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import org.apache.gearpump.streaming.dsl.scalaapi.{LoggerSink, StreamApp}
 import org.apache.gearpump.streaming.dsl.window.api.{EventTimeTrigger, FixedWindows}
-import org.apache.gearpump.streaming.source.DataSource
+import org.apache.gearpump.streaming.source.{DataSource, Watermark}
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.gearpump.util.AkkaApp
 
@@ -45,7 +45,7 @@ object WindowedWordCount extends AkkaApp with ArgumentsParser {
       groupBy(_._1).
       sum.sink(new LoggerSink)
 
-    context.submit(app)
+    context.submit(app).waitUntilFinish()
     context.close()
   }
 
@@ -79,7 +79,7 @@ object WindowedWordCount extends AkkaApp with ArgumentsParser {
 
     override def getWatermark: Instant = {
       if (data.isEmpty) {
-        watermark = watermark.plusMillis(1)
+        watermark = Watermark.MAX
       }
       watermark
     }

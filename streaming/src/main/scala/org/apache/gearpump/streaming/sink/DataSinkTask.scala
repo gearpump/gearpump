@@ -52,4 +52,8 @@ class DataSinkTask private[sink](context: TaskContext, conf: UserConfig, sink: D
     LOG.info("closing data sink...")
     sink.close()
   }
+
+  override def onWatermarkProgress(watermark: Instant): Unit = {
+    context.updateWatermark(watermark)
+  }
 }
