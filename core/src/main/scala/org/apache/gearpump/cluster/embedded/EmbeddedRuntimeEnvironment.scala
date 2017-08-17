@@ -19,20 +19,20 @@ package org.apache.gearpump.cluster.embedded
 
 import com.typesafe.config.Config
 import org.apache.gearpump.cluster.client.{ClientContext, RuntimeEnvironment}
-import org.apache.gearpump.cluster.embedded.EmbeddedRuntimeEnvironemnt.EmbeddedClientContext
+import org.apache.gearpump.cluster.embedded.EmbeddedRuntimeEnvironment.EmbeddedClientContext
 
 /**
- * The EmbeddedRuntimeEnvironemnt is initiated when user trying to launch their application
- * from IDE. It will create an embedded cluster and user's applcaition will run in a single
+ * The EmbeddedRuntimeEnvironment is initiated when user trying to launch their application
+ * from IDE. It will create an embedded cluster and user's application will run in a single
  * local process.
  */
-class EmbeddedRuntimeEnvironemnt extends RuntimeEnvironment {
+class EmbeddedRuntimeEnvironment extends RuntimeEnvironment {
   override def newClientContext(akkaConf: Config): ClientContext = {
     new EmbeddedClientContext(akkaConf)
   }
 }
 
-object EmbeddedRuntimeEnvironemnt {
+object EmbeddedRuntimeEnvironment {
   class EmbeddedClientContext private(cluster: EmbeddedCluster)
     extends ClientContext(cluster.config, cluster.system, cluster.master) {
 
