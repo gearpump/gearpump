@@ -18,16 +18,15 @@
 
 package org.apache.gearpump.streaming.examples.wordcountjava
 
-import scala.concurrent.Future
-import scala.util.Success
-
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-
 import org.apache.gearpump.cluster.ClientToMaster.SubmitApplication
 import org.apache.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.apache.gearpump.cluster.{MasterHarness, TestUtil}
-import org.apache.gearpump.streaming.examples.wordcountjava.WordCount
+import org.apache.gearpump.streaming.examples.wordcountjava.dsl.WordCount
+import org.scalatest.prop.PropertyChecks
+import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+
+import scala.concurrent.Future
+import scala.util.Success
 
 class WordCountSpec
   extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {

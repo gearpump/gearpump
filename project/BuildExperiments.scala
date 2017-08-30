@@ -133,4 +133,16 @@ object BuildExperiments extends sbt.Build {
       ))
     .dependsOn(core % "provided", streaming % "test->test; provided")
     .disablePlugins(sbtassembly.AssemblyPlugin)
+
+  lazy val sql = Project(
+    id = "gearpump-experiments-sql",
+    base = file("experiments/sql"),
+    settings = commonSettings ++ noPublish ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.calcite" % "calcite-core" % calciteVersion
+        )
+      ))
+    .dependsOn(core % "provided", streaming % "test->test; provided")
+    .disablePlugins(sbtassembly.AssemblyPlugin)
 }
