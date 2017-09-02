@@ -20,7 +20,7 @@ package org.apache.gearpump.cluster.master
 
 import akka.actor._
 import akka.pattern.ask
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.gearpump.Time.MilliSeconds
 import org.apache.gearpump.cluster.AppMasterToMaster.{AppDataSaved, SaveAppDataFailed, _}
 import org.apache.gearpump.cluster.AppMasterToWorker._
@@ -47,8 +47,9 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
   extends Actor with Stash with TimeOutScheduler {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
+  private val systemConfig: Config = context.system.settings.config
 
-  private val appTotalRetries: Int = 5
+  private val appTotalRetries: Int = systemConfig.getInt(Constants.APPLICATION_TOTAL_RETRIES)
 
   implicit val timeout = FUTURE_TIMEOUT
   implicit val executionContext = context.dispatcher
