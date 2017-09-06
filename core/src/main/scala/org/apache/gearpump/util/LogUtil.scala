@@ -67,6 +67,11 @@ object LogUtil {
     }
   }
 
+  /** getLogger(Class) implementation for Java */
+  def getLogger[T](clazz: Class[T]): Logger = {
+    LoggerFactory.getLogger(clazz.getSimpleName)
+  }
+
   /** Custom the log file locations by reading config from system properties */
   def loadConfiguration(config: Config, processType: ProcessType.ProcessType): Unit = {
     // Set log file name
