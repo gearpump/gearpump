@@ -150,11 +150,7 @@ object StreamApplication {
       name: String, dag: Graph[T, P], userConfig: UserConfig): StreamApplication = {
     import org.apache.gearpump.streaming.Processor._
 
-    if (dag.hasCycle()) {
-      LOG.warn(s"Detected cycles in DAG of application $name!")
-    }
-
-    val indices = dag.topologicalOrderWithCirclesIterator.toList.zipWithIndex.toMap
+    val indices = dag.topologicalOrderIterator.toList.zipWithIndex.toMap
     val graph = dag.mapVertex { processor =>
       val updatedProcessor = ProcessorToProcessorDescription(indices(processor), processor)
       updatedProcessor

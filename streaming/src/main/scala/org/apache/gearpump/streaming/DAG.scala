@@ -49,7 +49,7 @@ case class DAG(version: Int, processors : Map[ProcessorId, ProcessorDescription]
 
 object DAG {
   def apply(graph: Graph[ProcessorDescription, PartitionerDescription], version: Int = 0): DAG = {
-    val processors = graph.vertices.map { processorDescription =>
+    val processors = graph.getVertices.map { processorDescription =>
       (processorDescription.id, processorDescription)
     }.toMap
     val dag = graph.mapVertex { processor =>

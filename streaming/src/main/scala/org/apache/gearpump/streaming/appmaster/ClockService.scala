@@ -397,7 +397,7 @@ object ClockService {
       }
 
       if (isClockStalling) {
-        val processorId = dag.graph.topologicalOrderWithCirclesIterator.toList.find { processorId =>
+        val processorId = dag.graph.topologicalOrderIterator.toList.find { processorId =>
           val clock = processorClocks.get(processorId)
           if (clock.isDefined) {
             clock.get.min == minClock.appClock

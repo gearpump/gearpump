@@ -43,8 +43,8 @@ class UpickleSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     val deserialized = read[Graph[Int, String]](serialized)
 
-    graph.vertices.toSet shouldBe deserialized.vertices.toSet
-    graph.edges.toSet shouldBe deserialized.edges.toSet
+    graph.getVertices.toSet shouldBe deserialized.getVertices.toSet
+    graph.getEdges.toSet shouldBe deserialized.getEdges.toSet
   }
 
   "MetricType" should "be able to serialize/deserialize correctly" in {

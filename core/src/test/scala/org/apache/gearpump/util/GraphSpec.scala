@@ -34,7 +34,7 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
   property("Graph with no edges should be built correctly") {
     val vertexSet = Set("A", "B", "C")
     val graph = Graph(vertexSet.toSeq.map(Node): _*)
-    graph.vertices.toSet shouldBe vertexSet
+    graph.getVertices.toSet shouldBe vertexSet
   }
 
   property("Graph with vertices and edges should be built correctly") {
@@ -67,7 +67,7 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     }
 
     val graph: Graph[Vertex, Edge] = Graph(graphElements: _*)
-    graph.vertices should contain theSameElementsAs vertices
+    graph.getVertices should contain theSameElementsAs vertices
 
     0.until(vertices.size).foreach { i =>
       val v = vertices(i)
@@ -129,7 +129,7 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     val newGraph = graph.copy
     newGraph.addVertex("C")
 
-    assert(!graph.vertices.toSet.contains("C"), "Graph should be immutable")
+    assert(!graph.getVertices.toSet.contains("C"), "Graph should be immutable")
   }
 
   property("subGraph should return a sub-graph for certain vertex") {

@@ -86,7 +86,7 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
     val plan = planner.plan(graph)
       .mapVertex(_.description)
 
-    plan.vertices.toSet should contain theSameElementsAs
+    plan.getVertices.toSet should contain theSameElementsAs
       Set("source.globalWindows", "groupBy.globalWindows.flatMap.reduce", "processor", "sink")
     plan.outgoingEdgesOf("source.globalWindows").iterator.next()._2 shouldBe
       a[GroupByPartitioner[_, _]]

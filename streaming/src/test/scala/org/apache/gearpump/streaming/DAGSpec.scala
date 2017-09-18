@@ -38,7 +38,7 @@ class DAGSpec extends PropSpec with PropertyChecks with Matchers {
       dag.processors.size shouldBe 1
       assert(dag.taskCount == parallelism)
       dag.tasks.sortBy(_.index) shouldBe (0 until parallelism).map(index => TaskId(0, index))
-      dag.graph.edges shouldBe empty
+      dag.graph.getEdges shouldBe empty
     }
   }
 }

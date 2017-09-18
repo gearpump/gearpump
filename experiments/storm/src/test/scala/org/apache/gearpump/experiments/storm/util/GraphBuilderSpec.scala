@@ -45,8 +45,8 @@ class GraphBuilderSpec extends WordSpec with Matchers with MockitoSugar {
 
       val graph = GraphBuilder.build(topology)
 
-      graph.edges.size shouldBe 1
-      val (from, edge, to) = graph.edges.head
+      graph.getEdges.size shouldBe 1
+      val (from, edge, to) = graph.getEdges.head
       from shouldBe sourceProcessor
       edge shouldBe a[StormPartitioner]
       to shouldBe targetProcessor

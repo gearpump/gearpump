@@ -37,13 +37,13 @@ class PageRankWorker(taskContext: TaskContext, conf: UserConfig) extends Task(ta
 
   private val graph = conf.getValue[Graph[NodeWithTaskId[_], AnyRef]](PageRankApplication.DAG).get
 
-  private val node = graph.vertices.find { node =>
+  private val node = graph.getVertices.find { node =>
     node.taskId == taskContext.taskId.index
   }.get
 
   private val downstream = graph.outgoingEdgesOf(node).map(_._3)
     .map(id => taskId.copy(index = id.taskId)).toSeq
-  private val upstreamCount = graph.incomingEdgesOf(node).map(_._1).length
+  private val upstreamCount = graph.incomingEdgesOf(node).map(_._1).size
 
   LOG.info(s"downstream nodes: $downstream")
 

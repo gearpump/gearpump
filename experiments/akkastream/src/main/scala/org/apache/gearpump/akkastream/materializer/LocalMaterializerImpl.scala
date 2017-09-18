@@ -210,10 +210,10 @@ case class LocalMaterializerImpl (
 
   def buildToplevelModule(graph: GGraph[Module, Edge]): Module = {
     var moduleInProgress: Module = EmptyModule
-    graph.vertices.foreach(module => {
+    graph.getVertices.foreach(module => {
       moduleInProgress = moduleInProgress.compose(module)
     })
-    graph.edges.foreach(value => {
+    graph.getEdges.foreach(value => {
       val (node1, edge, node2) = value
       moduleInProgress = moduleInProgress.wire(edge.from, edge.to)
     })
@@ -232,7 +232,7 @@ case class LocalMaterializerImpl (
       session.materializeAtomic(module.asInstanceOf[AtomicModule], module.attributes, matV)
       matV.get(module)
     }
-    materializedGraph.edges.foreach { nodeEdgeNode =>
+    materializedGraph.getEdges.foreach { nodeEdgeNode =>
       val (node1, edge, node2) = nodeEdgeNode
       val from = edge.from
       val to = edge.to
@@ -248,7 +248,7 @@ case class LocalMaterializerImpl (
         case _ =>
       }
     }
-    val matValSources = graph.vertices.flatMap(module => {
+    val matValSources = graph.getVertices.flatMap(module => {
       val rt: Option[MaterializedValueSource[_]] = module match {
         case graphStage: GraphStageModule =>
           graphStage.stage match {

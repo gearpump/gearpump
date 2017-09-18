@@ -69,7 +69,7 @@ class GraphPartitioner(strategy: Strategy) {
     val local = Graph.empty[Module, Edge]
     val remote = Graph.empty[Module, Edge]
 
-    graph.vertices.foreach{ module =>
+    graph.getVertices.foreach{ module =>
       if (tags(module) == Local) {
         local.addVertex(module)
       } else {
@@ -77,7 +77,7 @@ class GraphPartitioner(strategy: Strategy) {
       }
     }
 
-    graph.edges.foreach{ nodeEdgeNode =>
+    graph.getEdges.foreach{ nodeEdgeNode =>
       val (node1, edge, node2) = nodeEdgeNode
       (tags(node1), tags(node2)) match {
         case (Local, Local) =>
@@ -115,14 +115,14 @@ class GraphPartitioner(strategy: Strategy) {
   }
 
   private def tag(graph: Graph[Module, Edge], strategy: Strategy): Map[Module, Location] = {
-    graph.vertices.map{vertex =>
+    graph.getVertices.map{ vertex =>
       vertex -> strategy.apply(vertex)
     }.toMap
   }
 
   private def removeDummyModule(inputGraph: Graph[Module, Edge]): Graph[Module, Edge] = {
     val graph = inputGraph.copy
-    val dummies = graph.vertices.filter {module =>
+    val dummies = graph.getVertices.filter { module =>
       module match {
         case dummy: DummyModule =>
           true

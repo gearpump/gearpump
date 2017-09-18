@@ -86,7 +86,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
 
   private def junctionConfig(processorIds: Map[Module, ProcessorId]):
   Map[ProcessorId, UserConfig] = {
-    val updatedConfigs = graph.vertices.flatMap { vertex =>
+    val updatedConfigs = graph.getVertices.flatMap { vertex =>
       buildShape(vertex, processorIds)
     }.toMap
     updatedConfigs
@@ -119,7 +119,7 @@ class RemoteMaterializerImpl(graph: Graph[Module, Edge], system: ActorSystem) {
   Map[Module, ProcessorId] = {
     ids.flatMap { kv =>
       val (module, id) = kv
-      val processorId = app.dag.vertices.find { processor =>
+      val processorId = app.dag.getVertices.find { processor =>
         processor.taskConf.getString(id).isDefined
       }.map(_.id)
       processorId.map((module, _))

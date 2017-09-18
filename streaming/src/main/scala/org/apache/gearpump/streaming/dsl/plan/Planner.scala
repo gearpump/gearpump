@@ -67,7 +67,7 @@ class Planner {
   private def optimize(dag: Graph[Op, OpEdge])
     (implicit system: ActorSystem): Graph[Op, OpEdge] = {
     val graph = dag.copy
-    val nodes = graph.topologicalOrderWithCirclesIterator.toList.reverse
+    val nodes = graph.topologicalOrderIterator.toList.reverse
     for (node <- nodes) {
       val outGoingEdges = graph.outgoingEdgesOf(node)
       for (edge <- outGoingEdges) {

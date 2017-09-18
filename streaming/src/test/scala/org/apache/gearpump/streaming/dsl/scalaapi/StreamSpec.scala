@@ -85,8 +85,10 @@ class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Mock
     }
     val expectedDagTopology = getExpectedDagTopology
 
-    dagTopology.vertices.toSet should contain theSameElementsAs expectedDagTopology.vertices.toSet
-    dagTopology.edges.toSet should contain theSameElementsAs expectedDagTopology.edges.toSet
+    dagTopology.getVertices.toSet should
+      contain theSameElementsAs expectedDagTopology.getVertices.toSet
+    dagTopology.getEdges.toSet should
+      contain theSameElementsAs expectedDagTopology.getEdges.toSet
   }
 
   private def getExpectedDagTopology: Graph[String, String] = {
