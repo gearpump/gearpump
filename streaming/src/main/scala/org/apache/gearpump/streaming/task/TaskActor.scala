@@ -87,6 +87,7 @@ class TaskActor(
   private var life = taskContextData.life
   private var subscriptions = List.empty[(Int, Subscription)]
   private[task] var sessionId = NONE_SESSION
+  private var minClockReported: Boolean = true
 
   // Reports to appMaster with my address
   express.registerLocalActor(TaskId.toLong(taskId), self)
@@ -181,7 +182,10 @@ class TaskActor(
 
     case watermark@Watermark(instant) =>
       assert(sender.eq(self), "Watermark should only be sent from Task to itself")
-      onUpstreamMinClock(instant)
+      if (minClockReported) {
+        onUpstreamMinClock(instant)
+        minClockReported = false
+      }
       receiveMessage(watermark.toMessage, sender)
 
     case UpstreamMinClock(upstreamClock) =>
@@ -352,6 +356,7 @@ class TaskActor(
     val update = UpdateClock(taskId, watermark.toEpochMilli)
     context.system.scheduler.scheduleOnce(CLOCK_REPORT_INTERVAL) {
       taskContextData.appMaster ! update
+      minClockReported = true
     }
   }
 
