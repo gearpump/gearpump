@@ -44,7 +44,7 @@ class AppMasterResolver(yarnClient: YarnClient, system: ActorSystem) {
   private def connect(appId: ApplicationId): ActorRef = {
     val report = yarnClient.getApplicationReport(appId)
     val client = new HttpClient()
-    val appMasterPath = s"${report.getOriginalTrackingUrl}/supervisor-actor-path"
+    val appMasterPath = s"${report.getTrackingURL}/supervisor-actor-path"
     LOG.info(s"appMasterPath=$appMasterPath")
     val get = new GetMethod(appMasterPath)
     val status = client.executeMethod(get)
@@ -54,7 +54,7 @@ class AppMasterResolver(yarnClient: YarnClient, system: ActorSystem) {
       AkkaHelper.actorFor(system, response)
     } else {
       throw new IOException("Fail to resolve AppMaster address, please make sure " +
-        s"${report.getOriginalTrackingUrl} is accessible...")
+        s"${report.getTrackingURL} is accessible...")
     }
   }
 

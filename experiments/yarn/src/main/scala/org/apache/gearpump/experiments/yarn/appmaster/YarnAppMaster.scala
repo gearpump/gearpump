@@ -365,7 +365,7 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
 
   def getAppMaster(report: ApplicationReport, system: ActorSystem): ActorRef = {
     val client = new HttpClient()
-    val appMasterPath = s"${report.getOriginalTrackingUrl}/supervisor-actor-path"
+    val appMasterPath = s"${report.getTrackingURL}/supervisor-actor-path"
     val get = new GetMethod(appMasterPath)
     var status = client.executeMethod(get)
 
@@ -379,7 +379,7 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
       AkkaHelper.actorFor(system, get.getResponseBodyAsString)
     } else {
       throw new IOException("Fail to resolve AppMaster address, please make sure " +
-        s"${report.getOriginalTrackingUrl} is accessible...")
+        s"${report.getTrackingURL} is accessible...")
     }
   }
 }

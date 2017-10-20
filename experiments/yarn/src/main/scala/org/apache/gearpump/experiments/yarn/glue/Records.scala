@@ -61,7 +61,7 @@ object Records {
 
     def getFinishTime: Long = impl.getFinishTime
 
-    def getOriginalTrackingUrl: String = impl.getOriginalTrackingUrl
+    def getTrackingURL: String = impl.getTrackingUrl
 
     def getYarnApplicationState: YarnApplicationState = impl.getYarnApplicationState
 
