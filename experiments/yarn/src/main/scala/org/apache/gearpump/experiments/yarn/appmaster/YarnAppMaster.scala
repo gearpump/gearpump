@@ -18,14 +18,10 @@
 
 package org.apache.gearpump.experiments.yarn.appmaster
 
-import java.io.IOException
 import java.util.concurrent.TimeUnit
-
 import akka.actor._
 import akka.util.Timeout
 import com.typesafe.config.ConfigValueFactory
-import org.apache.commons.httpclient.HttpClient
-import org.apache.commons.httpclient.methods.GetMethod
 import org.apache.gearpump.cluster.ClientToMaster._
 import org.apache.gearpump.cluster.ClusterConfig
 import org.apache.gearpump.cluster.main.{ArgumentsParser, CLIOption}
@@ -35,7 +31,6 @@ import org.apache.gearpump.experiments.yarn.glue.{NMClient, RMClient, YarnConfig
 import org.apache.gearpump.transport.HostPort
 import org.apache.gearpump.util._
 import org.slf4j.Logger
-
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -364,22 +359,8 @@ object YarnAppMaster extends AkkaApp with ArgumentsParser {
   case class WorkerInfo(id: ContainerId, nodeId: NodeId)
 
   def getAppMaster(report: ApplicationReport, system: ActorSystem): ActorRef = {
-    val client = new HttpClient()
-    val appMasterPath = s"${report.getTrackingURL}/supervisor-actor-path"
-    val get = new GetMethod(appMasterPath)
-    var status = client.executeMethod(get)
+    import org.apache.gearpump.experiments.yarn.client.AppMasterResolver
 
-    if (status != 200) {
-      // Sleeps a little bit, and try again
-      Thread.sleep(3000)
-      status = client.executeMethod(get)
-    }
-
-    if (status == 200) {
-      AkkaHelper.actorFor(system, get.getResponseBodyAsString)
-    } else {
-      throw new IOException("Fail to resolve AppMaster address, please make sure " +
-        s"${report.getTrackingURL} is accessible...")
-    }
+    AppMasterResolver.resolveAppMasterAddress(report, system)
   }
 }

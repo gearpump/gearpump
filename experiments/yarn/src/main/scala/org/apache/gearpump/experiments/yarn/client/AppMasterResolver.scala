@@ -19,14 +19,15 @@
 package org.apache.gearpump.experiments.yarn.client
 
 import java.io.IOException
-
+import java.net.{HttpURLConnection, URL}
+import java.nio.charset.StandardCharsets
 import akka.actor.{ActorRef, ActorSystem}
-import org.apache.commons.httpclient.HttpClient
-import org.apache.commons.httpclient.methods.GetMethod
-import org.apache.gearpump.experiments.yarn.glue.Records.ApplicationId
+import org.apache.commons.io.IOUtils
+import org.apache.gearpump.experiments.yarn.glue.Records.{ApplicationId, ApplicationReport}
 import org.apache.gearpump.experiments.yarn.glue.YarnClient
 import org.apache.gearpump.util.{AkkaHelper, LogUtil}
-
+import org.apache.hadoop.hdfs.web.URLConnectionFactory
+import org.apache.hadoop.yarn.conf.YarnConfiguration
 import scala.util.Try
 
 /**
@@ -43,19 +44,8 @@ class AppMasterResolver(yarnClient: YarnClient, system: ActorSystem) {
 
   private def connect(appId: ApplicationId): ActorRef = {
     val report = yarnClient.getApplicationReport(appId)
-    val client = new HttpClient()
-    val appMasterPath = s"${report.getTrackingURL}/supervisor-actor-path"
-    LOG.info(s"appMasterPath=$appMasterPath")
-    val get = new GetMethod(appMasterPath)
-    val status = client.executeMethod(get)
-    if (status == 200) {
-      val response = get.getResponseBodyAsString
-      LOG.info("Successfully resolved AppMaster address: " + response)
-      AkkaHelper.actorFor(system, response)
-    } else {
-      throw new IOException("Fail to resolve AppMaster address, please make sure " +
-        s"${report.getTrackingURL} is accessible...")
-    }
+
+    AppMasterResolver.resolveAppMasterAddress(report, system)
   }
 
   private def retry(fun: => ActorRef, times: Int): ActorRef = {
@@ -73,5 +63,41 @@ class AppMasterResolver(yarnClient: YarnClient, system: ActorSystem) {
       }
     }
     result
+  }
+}
+
+object AppMasterResolver {
+  val LOG = LogUtil.getLogger(getClass)
+
+  def resolveAppMasterAddress(report: ApplicationReport, system: ActorSystem): ActorRef = {
+    val appMasterPath = s"${report.getTrackingURL}/supervisor-actor-path"
+    LOG.info(s"appMasterPath=$appMasterPath")
+
+    val connectionFactory: URLConnectionFactory = URLConnectionFactory
+      .newDefaultURLConnectionFactory(new YarnConfiguration())
+    val url: URL = new URL(appMasterPath)
+    val connection: HttpURLConnection = connectionFactory.openConnection(url)
+      .asInstanceOf[HttpURLConnection]
+    connection.setInstanceFollowRedirects(true)
+
+    try {
+      connection.connect()
+    } catch {
+      case e: IOException =>
+        LOG.error(s"Failed to connect to AppMaster" + e.getMessage)
+    }
+
+    val status = connection.getResponseCode
+    if (status == 200) {
+      val stream: java.io.InputStream = connection.getInputStream
+      val response = IOUtils.toString(stream, StandardCharsets.UTF_8)
+      LOG.info("Successfully resolved AppMaster address: " + response)
+      connection.disconnect()
+      AkkaHelper.actorFor(system, response)
+    } else {
+      connection.disconnect()
+      throw new IOException("Fail to resolve AppMaster address, please make sure " +
+        s"${report.getTrackingURL} is accessible...")
+    }
   }
 }
