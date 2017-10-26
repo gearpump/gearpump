@@ -30,7 +30,7 @@ case class InitialAckRequest(taskId: TaskId, sessionId: Int)
   Here the sessionId filed is used to distinguish messages
     between different replays after the application restart
  */
-case class AckRequest(taskId: TaskId, seq: Short, sessionId: Int)
+case class AckRequest(taskId: TaskId, seq: Short, sessionId: Int, watermark: Long)
 
 /**
  * Ack back to sender task actor.
@@ -38,7 +38,8 @@ case class AckRequest(taskId: TaskId, seq: Short, sessionId: Int)
  * @param seq The seq field represents the expected number of received messages and the
  *            actualReceivedNum field means the actual received number since start.
  */
-case class Ack(taskId: TaskId, seq: Short, actualReceivedNum: Short, sessionId: Int)
+case class Ack(
+    taskId: TaskId, seq: Short, actualReceivedNum: Short, sessionId: Int, watermark: Long)
 
 sealed trait ClockEvent
 

@@ -80,7 +80,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       testActor ! StartTask(taskId1)
 
       implicit val system = getActorSystem
-      val ack = Ack(taskId2, 100, 99, testActor.underlyingActor.sessionId)
+      val ack = Ack(taskId2, 100, 99, testActor.underlyingActor.sessionId, 1024L)
       EventFilter[MsgLostException](occurrences = 1) intercept {
         testActor ! ack
       }

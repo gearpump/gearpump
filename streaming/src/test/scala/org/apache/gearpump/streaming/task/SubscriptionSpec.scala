@@ -70,6 +70,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
     val (subscription, sender) = prepare
     val msg1 = Message("1", timestamp = Instant.ofEpochMilli(70))
     when(sender.getProcessingWatermark).thenReturn(msg1.timestamp)
+    // Send first message to Task(1, 1)
     subscription.sendMessage(msg1)
 
     verify(sender, times(1)).transport(msg1, TaskId(1, 1))
@@ -77,6 +78,7 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
 
     val msg2 = Message("0", timestamp = Instant.ofEpochMilli(50))
     when(sender.getProcessingWatermark).thenReturn(msg2.timestamp)
+    // Send first message to Task(1, 0)
     subscription.sendMessage(msg2)
 
     verify(sender, times(1)).transport(msg2, TaskId(1, 0))
@@ -85,31 +87,39 @@ class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
     val initialMinClock = subscription.watermark
 
     // Acks initial AckRequest(0)
-    subscription.receiveAck(Ack(TaskId(1, 1), 0, 0, session))
-    subscription.receiveAck(Ack(TaskId(1, 0), 0, 0, session))
+    subscription.receiveAck(Ack(TaskId(1, 1), 0, 0, session, Watermark.MIN.toEpochMilli))
+    subscription.receiveAck(Ack(TaskId(1, 0), 0, 0, session, Watermark.MIN.toEpochMilli))
 
-    // Sends 100 messages
-    100 until 200 foreach { clock =>
-      when(sender.getProcessingWatermark).thenReturn(Instant.ofEpochMilli(clock),
-        Instant.ofEpochMilli(clock))
+    // Sends 98 more messages to each downstream task
+    100 until 198 foreach { clock =>
       subscription.sendMessage(Message("1", clock))
       subscription.sendMessage(Message("2", clock))
     }
 
-    assert(subscription.watermark == 50)
+    // Triger sending AckRequest
+    val inOrders = org.mockito.Mockito.inOrder(sender, sender)
 
-    subscription.receiveAck(Ack(TaskId(1, 1), 100, 100, session))
-    subscription.receiveAck(Ack(TaskId(1, 0), 100, 100, session))
+    val msg3 = Message("1", Instant.ofEpochMilli(200))
+    val expectedAckRequest = AckRequest(taskId, 200, session, 200)
+    when(sender.getProcessingWatermark).thenReturn(Instant.ofEpochMilli(200))
+    subscription.sendMessage(msg3)
+    inOrders.verify(sender).transport(msg3, TaskId(1, 1))
+    inOrders.verify(sender).transport(expectedAckRequest, TaskId(1, 1))
+
+    val msg4 = Message("2", Instant.ofEpochMilli(200))
+    val expectedAckRequest2 = AckRequest(taskId, 200, session, 220)
+    when(sender.getProcessingWatermark).thenReturn(Instant.ofEpochMilli(220))
+    subscription.sendMessage(msg4)
+    inOrders.verify(sender).transport(msg4, TaskId(1, 0))
+    inOrders.verify(sender).transport(expectedAckRequest2, TaskId(1, 0))
+
+    assert(subscription.watermark == initialMinClock)
+
+    subscription.receiveAck(Ack(TaskId(1, 1), 200, 200, session, 200))
+    subscription.receiveAck(Ack(TaskId(1, 0), 200, 200, session, 220))
 
     // Ack received, minClock changed
-    assert(subscription.watermark > initialMinClock)
-
-    // Expects to receive two ackRequest for two downstream tasks
-    val ackRequestForTask0 = AckRequest(taskId, 200, session)
-    verify(sender, times(1)).transport(ackRequestForTask0, TaskId(1, 0))
-
-    val ackRequestForTask1 = AckRequest(taskId, 200, session)
-    verify(sender, times(1)).transport(ackRequestForTask1, TaskId(1, 1))
+    assert(subscription.watermark == 200)
   }
 
   it should "disallow more message sending if there is no ack back" in {

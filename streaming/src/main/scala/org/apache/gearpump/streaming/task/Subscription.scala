@@ -58,11 +58,8 @@ class Subscription(
   // Don't worry if this store negative number. We will wrap the Short
   private val messageCount: Array[Short] = new Array[Short](parallelism)
   private val pendingMessageCount: Array[Short] = new Array[Short](parallelism)
-  private val processingWatermarkSince: Array[Short] = new Array[Short](parallelism)
 
   private val outputWatermark: Array[MilliSeconds] = Array.fill(parallelism)(
-    Watermark.MIN.toEpochMilli)
-  private val processingWatermark: Array[MilliSeconds] = Array.fill(parallelism)(
     Watermark.MIN.toEpochMilli)
 
   private var maxPendingCount: Short = 0
@@ -113,8 +110,6 @@ class Subscription(
       val targetTask = TaskId(processorId, partition)
       publisher.transport(msg, targetTask)
 
-      this.processingWatermark(partition) = publisher.getProcessingWatermark.toEpochMilli
-
       incrementMessageCount(partition, 1)
 
       if (messageCount(partition) % ackOnceEveryMessageCount == 0) {
@@ -162,14 +157,12 @@ class Subscription(
    * @param ack acknowledge message received
    */
   def receiveAck(ack: Ack): Unit = {
-
     val index = ack.taskId.index
 
     if (ack.sessionId == sessionId) {
       if (ack.actualReceivedNum == ack.seq) {
-        if ((ack.seq - processingWatermarkSince(index)).toShort >= 0) {
-          outputWatermark(index) = processingWatermark(index)
-          processingWatermarkSince(index) = messageCount(index)
+        if (ack.watermark > outputWatermark(index)) {
+          outputWatermark(index) = ack.watermark
         }
 
         pendingMessageCount(ack.taskId.index) = (messageCount(ack.taskId.index) - ack.seq).toShort
@@ -209,7 +202,8 @@ class Subscription(
     // to throttle the number of unacked AckRequest
     incrementMessageCount(partition, ackOnceEveryMessageCount)
     val targetTask = TaskId(processorId, partition)
-    val ackRequest = AckRequest(taskId, messageCount(partition), sessionId)
+    val processingWatermark = publisher.getProcessingWatermark.toEpochMilli
+    val ackRequest = AckRequest(taskId, messageCount(partition), sessionId, processingWatermark)
     publisher.transport(ackRequest, targetTask)
   }
 

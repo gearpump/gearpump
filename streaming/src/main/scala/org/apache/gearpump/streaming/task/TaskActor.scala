@@ -392,7 +392,7 @@ object TaskActor {
         null
       } else {
         receivedMsgCount.put(sessionId, 0)
-        Ack(task_id, 0, 0, sessionId)
+        Ack(task_id, 0, 0, sessionId, Watermark.MIN.toEpochMilli)
       }
     }
 
@@ -402,7 +402,8 @@ object TaskActor {
         // Increments more count for each AckRequest
         // to throttle the number of unacked AckRequest
         receivedMsgCount.put(sessionId, (receivedMsgCount.get(sessionId) + incrementCount).toShort)
-        Ack(task_id, ackRequest.seq, receivedMsgCount.get(sessionId), ackRequest.sessionId)
+        Ack(task_id, ackRequest.seq, receivedMsgCount.get(sessionId), ackRequest.sessionId,
+          ackRequest.watermark)
       } else {
         LOG.error(s"get unknown AckRequest $ackRequest from ${sender.toString()}")
         null

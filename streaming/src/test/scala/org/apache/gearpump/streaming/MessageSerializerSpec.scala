@@ -17,9 +17,9 @@
  */
 package org.apache.gearpump.streaming
 
+import org.apache.gearpump.streaming.source.Watermark
 import org.jboss.netty.buffer.{ChannelBufferOutputStream, ChannelBuffers}
 import org.scalatest.{Matchers, WordSpec}
-
 import org.apache.gearpump.streaming.task._
 import org.apache.gearpump.transport.netty.WrappedChannelBuffer
 
@@ -55,7 +55,7 @@ class MessageSerializerSpec extends WordSpec with Matchers {
   "AckRequestSerializer" should {
     "serialize and deserialize AckRequest properly" in {
       val serializer = new AckRequestSerializer
-      val ackRequest = AckRequest(TaskId(1, 2), 1000, 1024)
+      val ackRequest = AckRequest(TaskId(1, 2), 1000, 1024, Watermark.MAX.toEpochMilli)
       assert(testSerializer(ackRequest, serializer).equals(ackRequest))
     }
   }
@@ -71,7 +71,7 @@ class MessageSerializerSpec extends WordSpec with Matchers {
   "AckSerializer" should {
     "serialize and deserialize Ack properly" in {
       val serializer = new AckSerializer
-      val ack = Ack(TaskId(1, 2), 1024, 1023, 1799)
+      val ack = Ack(TaskId(1, 2), 1024, 1023, 1799, Watermark.MAX.toEpochMilli)
       assert(testSerializer(ack, serializer).equals(ack))
     }
   }

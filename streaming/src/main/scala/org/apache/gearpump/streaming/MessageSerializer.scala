@@ -40,13 +40,14 @@ class TaskIdSerializer extends TaskMessageSerializer[TaskId] {
 class AckSerializer extends TaskMessageSerializer[Ack] {
   val taskIdSerializer = new TaskIdSerializer
 
-  override def getLength(obj: Ack): Int = taskIdSerializer.getLength(obj.taskId) + 8
+  override def getLength(obj: Ack): Int = taskIdSerializer.getLength(obj.taskId) + 16
 
   override def write(dataOutput: DataOutput, obj: Ack): Unit = {
     taskIdSerializer.write(dataOutput, obj.taskId)
     dataOutput.writeShort(obj.seq)
     dataOutput.writeShort(obj.actualReceivedNum)
     dataOutput.writeInt(obj.sessionId)
+    dataOutput.writeLong(obj.watermark)
   }
 
   override def read(dataInput: DataInput): Ack = {
@@ -54,7 +55,8 @@ class AckSerializer extends TaskMessageSerializer[Ack] {
     val seq = dataInput.readShort()
     val actualReceivedNum = dataInput.readShort()
     val sessionId = dataInput.readInt()
-    Ack(taskId, seq, actualReceivedNum, sessionId)
+    val watermark = dataInput.readLong()
+    Ack(taskId, seq, actualReceivedNum, sessionId, watermark)
   }
 }
 
@@ -78,19 +80,21 @@ class InitialAckRequestSerializer extends TaskMessageSerializer[InitialAckReques
 class AckRequestSerializer extends TaskMessageSerializer[AckRequest] {
   val taskIdSerializer = new TaskIdSerializer
 
-  override def getLength(obj: AckRequest): Int = taskIdSerializer.getLength(obj.taskId) + 6
+  override def getLength(obj: AckRequest): Int = taskIdSerializer.getLength(obj.taskId) + 14
 
   override def write(dataOutput: DataOutput, obj: AckRequest): Unit = {
     taskIdSerializer.write(dataOutput, obj.taskId)
     dataOutput.writeShort(obj.seq)
     dataOutput.writeInt(obj.sessionId)
+    dataOutput.writeLong(obj.watermark)
   }
 
   override def read(dataInput: DataInput): AckRequest = {
     val taskId = taskIdSerializer.read(dataInput)
     val seq = dataInput.readShort()
     val sessionId = dataInput.readInt()
-    AckRequest(taskId, seq, sessionId)
+    val watermark = dataInput.readLong()
+    AckRequest(taskId, seq, sessionId, watermark)
   }
 }
 
