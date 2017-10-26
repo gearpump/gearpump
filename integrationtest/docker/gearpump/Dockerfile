@@ -15,10 +15,14 @@
 # limitations under the License.
 
 # The base image contains JRE8
-FROM grubykarol/jre:8u121b13_server
+FROM openjdk:8u131-jre-alpine
 
-# Add Python Support
-RUN opkg-install python
+# Install python
+RUN apk add --no-cache python && \
+    python -m ensurepip && \
+    rm -r /usr/lib/python*/ensurepip && \
+    pip install --upgrade pip setuptools && \
+    rm -r /root/.cache
 
 # Create SUT home, files will be mounted at runtime.
 ENV SUT_HOME=/opt/gearpump

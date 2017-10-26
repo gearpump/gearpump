@@ -23,6 +23,6 @@ docker run -d \
  grubykarol/gearpump-launcher \
  worker
 
-docker exec master0 gear info
-docker exec master0 gear app -jar /path/to/userapp.jar [mainclass] [args]
+docker exec master0 bin/gear info
+docker exec master0 bin/gear app -jar /path/to/userapp.jar [mainclass] [args]
 ```
