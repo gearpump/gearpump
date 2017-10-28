@@ -21,7 +21,6 @@ import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 
-import org.apache.gearpump.cluster.client.{RemoteRuntimeEnvironment, RuntimeEnvironment}
 import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
 
 import scala.util.{Failure, Success, Try}
@@ -85,7 +84,6 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
       Thread.currentThread().setContextClassLoader(classLoader)
       val clazz = classLoader.loadClass(main)
       val mainMethod = clazz.getMethod("main", classOf[Array[String]])
-      RuntimeEnvironment.setRuntimeEnv(new RemoteRuntimeEnvironment)
       mainMethod.invoke(null, arguments)
     }
   }

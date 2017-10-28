@@ -18,6 +18,7 @@
 package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.ClusterConfig
+import org.apache.gearpump.cluster.client.{RemoteRuntimeEnvironment, RuntimeEnvironment}
 import org.apache.gearpump.util.LogUtil.ProcessType
 import org.apache.gearpump.util.{Constants, LogUtil}
 
@@ -52,6 +53,8 @@ object Gear {
       // Sets custom config file...
       System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, configFile)
     }
+
+    RuntimeEnvironment.setRuntimeEnv(new RemoteRuntimeEnvironment)
 
     if (args.length == 0) {
       printUsage()
