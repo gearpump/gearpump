@@ -26,14 +26,6 @@ if [ -z "$JAVA_OPTS" ]; then
   exit 1
 fi
 
-update_config_file() {
-  CONF_FILE="$SUT_HOME"/conf/gear.conf
-  mkdir /var/log/gearpump
-  sed -i 's/log\.daemon\.dir\s*=.*$/log.daemon.dir = "\/var\/log\/gearpump\/daemon"/g' $CONF_FILE
-  sed -i 's/log\.application\.dir\s*=.*$/log.application.dir = "\/var\/log\/gearpump\/app"/g' $CONF_FILE
-  sed -i 's/#\s*jarstore\.rootpath\s*=.*$/jarstore.rootpath = "\/tmp"/g' $CONF_FILE
-}
-
 set_and_export_java_opts() {
   JAVA_OPTS="$JAVA_OPTS $*"
   export JAVA_OPTS
@@ -46,7 +38,6 @@ case "$COMMAND" in
   master|local)
     # Launch a container with Gearpump cluster and REST interface (in foreground)
     HOSTNAME=$(hostname)
-    update_config_file
     set_and_export_java_opts \
       "-Dgearpump.hostname=$HOSTNAME" \
       "-Dgearpump.services.host=$HOSTNAME"
@@ -55,7 +46,6 @@ case "$COMMAND" in
     ;;
   worker)
     # Launch a container with a Gearpump worker (in foreground)
-    update_config_file
     set_and_export_java_opts \
       "-Dgearpump.hostname=$(hostname -i)"
     nohup sh "$SUT_HOME"/bin/worker
@@ -63,7 +53,6 @@ case "$COMMAND" in
   gear|storm)
     # Launch a container and execute command `gear` or `storm`
     # Container will be killed, when command is executed. 
-    update_config_file
     set_and_export_java_opts \
       "-Dgearpump.hostname=$(hostname -i)"
     sh "$SUT_HOME"/bin/"$COMMAND" "$@"

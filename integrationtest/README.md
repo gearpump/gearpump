@@ -3,8 +3,6 @@
 To run the integration test, you need a Linux with Kernel version >= 3.10 and Docker 1.7 (or higher). The test framework will use several Docker images.
 These docker image **NEED** to be prepared **BEFOREHAND** to avoid timeout during testing:
 
- * [The Gearpump Cluster Launcher and Storm Client](https://hub.docker.com/r/grubykarol/gearpump-launcher/)
-   `docker pull grubykarol/gearpump-launcher`
  * [The standalone single node Kafka cluster with Zookeeper](https://hub.docker.com/r/grubykarol/kafka/)
    `docker pull grubykarol/kafka:0.8.2.1`
  * [The Hadoop image](https://hub.docker.com/r/sequenceiq/hadoop-docker/)
@@ -29,7 +27,9 @@ The integration test framework use docker to simulate a real cluster. The test s
    `git clone https://github.com/apache/incubator-gearpump.git`
 2. Build Gearpump project
    `sbt assembly pack`
-3. Run Integration test
+3. Build Gearpump docker image 
+   `docker build -t gearpump/gearpump-launcher integrationtest/docker/gearpump`
+4. Run Integration test
    `sbt it:test`
 
 The test will launch a Gearpump cluster with 1 master and 2 worker nodes as 3 Docker containers. It might take 10-20 minutes to go through all the test cases. It depends on, how powerful your machine is. The Docker container itself does not have a Gearpump distribution. It will link your local build to the Docker container. When tests are finished, you can see the test result on the screen, or you can save them to a file with this command `sbt it:test > test_report.out`. To investigate Gearpump log, please check the directory `output/target/pack/logs`.
@@ -69,15 +69,15 @@ You can launch as many worker containers as you wish, but only one master for th
 export GEARPUMP_HOME=/path/to/gearpump/dist
 
 ## Start Master node
-docker run -d -h master0 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --name master0 grubykarol/gearpump-launcher master -ip master0 -port 3000
+docker run -d -h master0 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --name master0 gearpump/gearpump-launcher master -ip master0 -port 3000
 
 ## Start Worker0 node
-docker run -d -h worker0 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --link master0 --name worker0 grubykarol/gearpump-launcher worker
+docker run -d -h worker0 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --link master0 --name worker0 gearpump/gearpump-launcher worker
 
 ## ...
 
 ## Start Worker1 node
-docker run -d -h worker1 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --link master0 --name worker0 grubykarol/gearpump-launcher worker
+docker run -d -h worker1 -v /etc/localtime:/etc/localtime:ro -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 -v $GEARPUMP_HOME:/opt/gearpump -v /tmp/gearpump:/var/log/gearpump --link master0 --name worker0 gearpump/gearpump-launcher worker
 
 ```
 

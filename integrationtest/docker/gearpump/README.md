@@ -13,14 +13,14 @@ docker run -d \
  -v $GEARPUMP_HOME:/opt/gearpump \
  -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 \
  -p 8090:8090 \
- grubykarol/gearpump-launcher \
+ gearpump/gearpump-launcher \
  master -ip master0 -port 3000
 
 docker run -d \
  --link master0 \
  -v $GEARPUMP_HOME:/opt/gearpump \
  -e JAVA_OPTS=-Dgearpump.cluster.masters.0=master0:3000 \
- grubykarol/gearpump-launcher \
+ gearpump/gearpump-launcher \
  worker
 
 docker exec master0 bin/gear info
