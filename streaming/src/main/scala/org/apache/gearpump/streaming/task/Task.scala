@@ -201,6 +201,8 @@ abstract class Task(taskContext: TaskContext, userConf: UserConfig) extends Task
       LOG.error("Failed! Received unknown message " + "taskId: " + taskId + ", " + msg.toString)
   }
 
-  override def onWatermarkProgress(watermark: Instant): Unit = {}
+  override def onWatermarkProgress(watermark: Instant): Unit = {
+    taskContext.updateWatermark(watermark)
+  }
 
 }
