@@ -39,7 +39,7 @@ class LocalJarStore extends JarStore {
   override def init(config: Config): Unit = {
     rootPath = Util.asSubDirOfGearpumpHome(
       config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH))
-    FileUtils.forceMkdir(rootPath)
+    createDirIfNotExists(rootPath)
   }
 
   /**
@@ -49,6 +49,7 @@ class LocalJarStore extends JarStore {
    * @return OutputStream returns a stream into which the data can be written.
    */
   override def createFile(fileName: String): OutputStream = {
+    createDirIfNotExists(rootPath)
     val localFile = new File(rootPath, fileName)
     new FileOutputStream(localFile)
   }
@@ -69,5 +70,11 @@ class LocalJarStore extends JarStore {
         new ClosedInputStream
     }
     is
+  }
+
+  private def createDirIfNotExists(file: File): Unit = {
+    if (!file.exists()) {
+      FileUtils.forceMkdir(file)
+    }
   }
 }

@@ -29,15 +29,12 @@ import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
  * DFSJarStore store the uploaded jar on HDFS
  */
 class DFSJarStore extends JarStore {
-  private var rootPath: Path = null
+  private var rootPath: Path = _
   override val scheme: String = "hdfs"
 
   override def init(config: Config): Unit = {
     rootPath = new Path(config.getString(Constants.GEARPUMP_APP_JAR_STORE_ROOT_PATH))
-    val fs = rootPath.getFileSystem(new Configuration())
-    if (!fs.exists(rootPath)) {
-      fs.mkdirs(rootPath, new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.ALL))
-    }
+    createDirIfNotExists(rootPath)
   }
 
   /**
@@ -47,6 +44,7 @@ class DFSJarStore extends JarStore {
    * @return OutputStream returns a stream into which the data can be written.
    */
   override def createFile(fileName: String): OutputStream = {
+    createDirIfNotExists(rootPath)
     val filePath = new Path(rootPath, fileName)
     val fs = filePath.getFileSystem(new Configuration())
     fs.create(filePath)
@@ -62,5 +60,12 @@ class DFSJarStore extends JarStore {
     val filePath = new Path(rootPath, fileName)
     val fs = filePath.getFileSystem(new Configuration())
     fs.open(filePath)
+  }
+
+  private def createDirIfNotExists(path: Path): Unit = {
+    val fs = path.getFileSystem(new Configuration())
+    if (!fs.exists(path)) {
+      fs.mkdirs(path, new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.ALL))
+    }
   }
 }
