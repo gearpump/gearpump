@@ -15,15 +15,15 @@ Per initial benchmarks we are able to process near 18 million messages/second (1
 
 ![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/contents/img/dashboard.png)
 
-For steps to reproduce the performance test, please check [Performance benchmark](http://gearpump.apache.org/releases/latest/performance-report.html).
+For steps to reproduce the performance test, please check [Performance benchmark](http://gearpump.apache.org/releases/latest/introduction/performance-report/index.html).
 
 ## Useful Resources
 
 * Read the [Introduction on TypeSafe's Blog](https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka)
-* Learn the [Basic Concepts](http://gearpump.apache.org/releases/latest/basic-concepts.html)
-* How to [Develop your first application](http://gearpump.apache.org/releases/latest/dev-write-1st-app.html)
-* How to [Submit your first application](http://gearpump.apache.org/releases/latest/submit-your-1st-application.html)
-* Explore the [Maven dependencies](http://gearpump.apache.org/releases/latest/maven-setting.html)
+* Learn the [Basic Concepts](http://gearpump.apache.org/releases/latest/introduction/basic-concepts/index.html)
+* How to [Develop your first application](http://gearpump.apache.org/releases/latest/dev/dev-write-1st-app/index.html)
+* How to [Submit your first application](http://gearpump.apache.org/releases/latest/introduction/submit-your-1st-application/index.html)
+* Explore the [Maven dependencies](http://gearpump.apache.org/downloads.html#maven-dependencies)
 * Explore the [Document site](http://gearpump.apache.org)
 * Explore the [User Mailing List](http://mail-archives.apache.org/mod_mbox/incubator-gearpump-user/)
 * Report an [issue](https://issues.apache.org/jira/browse/GEARPUMP)
@@ -66,7 +66,7 @@ For Linux:
 
 ```bash
 export HTTP_PROXY=http://host:port
-export HTTPS_PROXY= http://host:port
+export HTTPS_PROXY=http://host:port
 ```
 
 ## How to run Gearpump integration test
