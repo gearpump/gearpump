@@ -37,7 +37,7 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
       defaultValue = Some("")),
     "jar" -> CLIOption("<application>.jar", required = true),
     "executors" -> CLIOption[Int]("number of executor to launch", required = false,
-      defaultValue = Some(1)),
+      defaultValue = None),
     "verbose" -> CLIOption("<print verbose log on console>", required = false,
       defaultValue = Some(false)),
     // For document purpose only, OPTION_CONFIG option is not used here.
@@ -59,7 +59,10 @@ object AppSubmitter extends AkkaApp with ArgumentsParser {
 
       // Set jar path to be submitted to cluster
       System.setProperty(Constants.GEARPUMP_APP_JAR, jar)
-      System.setProperty(Constants.APPLICATION_EXECUTOR_NUMBER, config.getInt("executors").toString)
+      if (config.exists("executors")) {
+        System.setProperty(Constants.APPLICATION_EXECUTOR_NUMBER,
+          config.getInt("executors").toString)
+      }
 
       val namePrefix = config.getString("namePrefix")
       if (namePrefix.nonEmpty) {

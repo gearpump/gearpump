@@ -75,22 +75,27 @@ class ClientContext protected(config: Config, sys: ActorSystem, _master: ActorRe
     submit(app, jar, getExecutorNum)
   }
 
-  def submit(app: Application, jar: String, executorNum: Int): RunningApplication = {
+  def submit(app: Application, jar: String, executorNum: Option[Int]): RunningApplication = {
     val appName = checkAndAddNamePrefix(app.name, System.getProperty(GEARPUMP_APP_NAME_PREFIX))
-    val submissionConfig = getSubmissionConfig(config)
-      .withValue(APPLICATION_EXECUTOR_NUMBER, ConfigValueFactory.fromAnyRef(executorNum))
+    val submissionConfig = getSubmissionConfig(config, executorNum)
     val appDescription =
       AppDescription(appName, app.appMaster.getName, app.userConfig, submissionConfig)
     val appJar = Option(jar).map(loadFile)
     submitApplication(SubmitApplication(appDescription, appJar))
   }
 
-  private def getExecutorNum: Int = {
-    Try(System.getProperty(APPLICATION_EXECUTOR_NUMBER).toInt).getOrElse(1)
+  private def getExecutorNum: Option[Int] = {
+    Try(System.getProperty(APPLICATION_EXECUTOR_NUMBER).toInt).toOption
   }
 
-  private def getSubmissionConfig(config: Config): Config = {
-    ClusterConfig.filterOutDefaultConfig(config)
+  private def getSubmissionConfig(config: Config, executorNum: Option[Int]): Config = {
+    val conf = ClusterConfig.filterOutDefaultConfig(config)
+    executorNum match {
+      case Some(n) =>
+        conf.withValue(APPLICATION_EXECUTOR_NUMBER, ConfigValueFactory.fromAnyRef(n))
+      case None =>
+        conf
+    }
   }
 
   def listApps: AppMastersData = {

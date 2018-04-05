@@ -155,7 +155,7 @@ class GearpumpNimbus(clientContext: ClientContext, stormConf: JMap[AnyRef, AnyRe
     implicit val system = clientContext.system
     val gearpumpStormTopology = GearpumpStormTopology(name, topology, jsonConf)
     val stormConfig = gearpumpStormTopology.getStormConfig
-    val workerNum = StormUtil.getInt(stormConfig, Config.TOPOLOGY_WORKERS).getOrElse(1)
+    val workerNum = StormUtil.getInt(stormConfig, Config.TOPOLOGY_WORKERS)
     val processorGraph = GraphBuilder.build(gearpumpStormTopology)
     val config = UserConfig.empty
       .withValue[StormTopology](StormConstants.STORM_TOPOLOGY, topology)
