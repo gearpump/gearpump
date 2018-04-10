@@ -23,7 +23,7 @@ import java.time.Instant
 import org.apache.gearpump._
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants._
-import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
+import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, StreamingOperator}
 import org.apache.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
 
 /**
@@ -40,7 +40,7 @@ import org.apache.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
  */
 class DataSourceTask[IN, OUT] private[source](
     source: DataSource,
-    windowRunner: WindowRunner[IN, OUT],
+    operator: StreamingOperator[IN, OUT],
     context: TaskContext,
     conf: UserConfig)
   extends Task(context, conf) {
@@ -48,7 +48,7 @@ class DataSourceTask[IN, OUT] private[source](
   def this(context: TaskContext, conf: UserConfig) = {
     this(
       conf.getValue[DataSource](GEARPUMP_STREAMING_SOURCE)(context.system).get,
-      conf.getValue[WindowRunner[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system).get,
+      conf.getValue[StreamingOperator[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system).get,
       context, conf
     )
   }
@@ -58,27 +58,32 @@ class DataSourceTask[IN, OUT] private[source](
   override def onStart(startTime: Instant): Unit = {
     LOG.info(s"opening data source at ${startTime.toEpochMilli}")
     source.open(context, startTime)
+    operator.setup()
 
     self ! Watermark(source.getWatermark)
   }
 
   override def onNext(m: Message): Unit = {
     0.until(batchSize).foreach { _ =>
-      Option(source.read()).foreach(
-        msg => windowRunner.process(
-          TimestampedValue(msg.value.asInstanceOf[IN], msg.timestamp)))
+      Option(source.read()).foreach(process)
     }
 
     self ! Watermark(source.getWatermark)
   }
 
   override def onWatermarkProgress(watermark: Instant): Unit = {
-    TaskUtil.trigger(watermark, windowRunner, context)
+    TaskUtil.trigger(watermark, operator, context)
   }
 
   override def onStop(): Unit = {
     LOG.info("closing data source...")
     source.close()
+    operator.teardown()
+  }
+
+  private def process(msg: Message): Unit = {
+    operator.flatMap(new TimestampedValue(msg))
+      .foreach { tv => context.output(tv.toMessage) }
   }
 
 }

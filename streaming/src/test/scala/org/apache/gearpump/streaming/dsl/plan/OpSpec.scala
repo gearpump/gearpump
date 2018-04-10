@@ -28,7 +28,7 @@ import org.apache.gearpump.streaming.dsl.plan.OpSpec.{AnySink, AnySource, AnyTas
 import org.apache.gearpump.streaming.dsl.plan.functions.{DummyRunner, FlatMapper, FunctionRunner}
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.window.api.GlobalWindows
-import org.apache.gearpump.streaming.dsl.window.impl.{DefaultWindowRunner, WindowRunner}
+import org.apache.gearpump.streaming.dsl.window.impl.{WindowOperator, StreamingOperator}
 import org.apache.gearpump.streaming.sink.DataSink
 import org.apache.gearpump.streaming.source.DataSource
 import org.apache.gearpump.streaming.task.{Task, TaskContext}
@@ -66,7 +66,7 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
       val dataSourceOp = DataSourceOp(dataSource)
       val transformOp = mock[TransformOp[Any, Any]]
       val fn = mock[FunctionRunner[Any, Any]]
-      when(transformOp.fn).thenReturn(fn)
+      when(transformOp.runner).thenReturn(fn)
 
       val chainedOp = dataSourceOp.chain(transformOp)
 
@@ -85,7 +85,7 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
       val processor = dataSourceOp.toProcessor
       processor shouldBe a[Processor[_]]
       processor.parallelism shouldBe dataSourceOp.parallelism
-      processor.description shouldBe s"${dataSourceOp.description}.globalWindows"
+      processor.description shouldBe s"${dataSourceOp.description}"
     }
   }
 
@@ -173,9 +173,9 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
 
     "chain WindowTransformOp" in {
 
-      val runner = new DefaultWindowRunner[Any, Any](GlobalWindows(), new DummyRunner())
+      val runner = new WindowOperator[Any, Any](GlobalWindows(), new DummyRunner())
       val windowTransformOp = mock[WindowTransformOp[Any, Any]]
-      when(windowTransformOp.windowRunner).thenReturn(runner)
+      when(windowTransformOp.operator).thenReturn(runner)
 
       val chainedOp = groupByOp.chain(windowTransformOp)
       chainedOp shouldBe a[GroupByOp[_, _]]
@@ -199,9 +199,9 @@ class OpSpec extends WordSpec with Matchers with BeforeAndAfterAll with MockitoS
     val mergeOp = MergeOp()
 
     "chain WindowTransformOp" in {
-      val runner = mock[WindowRunner[Any, Any]]
+      val runner = mock[StreamingOperator[Any, Any]]
       val windowTransformOp = mock[WindowTransformOp[Any, Any]]
-      when(windowTransformOp.windowRunner).thenReturn(runner)
+      when(windowTransformOp.operator).thenReturn(runner)
 
       val chainedOp = mergeOp.chain(windowTransformOp)
       chainedOp shouldBe a [MergeOp]

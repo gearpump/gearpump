@@ -23,7 +23,7 @@ import java.time.Instant
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, TriggeredOutputs, WindowRunner}
+import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, TriggeredOutputs, StreamingOperator}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
@@ -40,7 +40,7 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
       val dataSource = mock[DataSource]
       val config = UserConfig.empty
         .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
-        val runner = mock[WindowRunner[Any, Any]]
+        val runner = mock[StreamingOperator[Any, Any]]
       val sourceTask = new DataSourceTask[Any, Any](dataSource, runner, taskContext, config)
 
       sourceTask.onStart(startTime)
@@ -57,13 +57,17 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
         val dataSource = mock[DataSource]
         val config = UserConfig.empty
           .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
-        val runner = mock[WindowRunner[Any, Any]]
-        val sourceTask = new DataSourceTask[Any, Any](dataSource, runner, taskContext, config)
+        val processor = mock[StreamingOperator[String, String]]
+        val sourceTask = new DataSourceTask[String, String](dataSource, processor,
+          taskContext, config)
         val msg = Message(str, timestamp)
         when(dataSource.read()).thenReturn(msg)
 
-        when(runner.trigger(Watermark.MAX)).thenReturn(
-          TriggeredOutputs(Some(TimestampedValue(str.asInstanceOf[Any], timestamp)), Watermark.MAX))
+        when(processor.flatMap(new TimestampedValue[String](msg))).thenReturn(
+          Some(new TimestampedValue[String](msg))
+        )
+        when(processor.trigger(Watermark.MAX)).thenReturn(
+          TriggeredOutputs[String](None, Watermark.MAX))
 
         sourceTask.onNext(Message("next"))
         sourceTask.onWatermarkProgress(Watermark.MAX)
@@ -79,7 +83,7 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
     val dataSource = mock[DataSource]
     val config = UserConfig.empty
       .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
-    val runner = mock[WindowRunner[Any, Any]]
+    val runner = mock[StreamingOperator[Any, Any]]
     val sourceTask = new DataSourceTask[Any, Any](dataSource, runner, taskContext, config)
 
     sourceTask.onStop()

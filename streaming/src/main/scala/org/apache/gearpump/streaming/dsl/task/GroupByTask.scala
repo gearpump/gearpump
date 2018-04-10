@@ -25,7 +25,7 @@ import com.gs.collections.impl.map.mutable.UnifiedMap
 import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.Constants.{GEARPUMP_STREAMING_GROUPBY_FUNCTION, GEARPUMP_STREAMING_OPERATOR}
-import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
+import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, StreamingOperator}
 import org.apache.gearpump.streaming.source.Watermark
 import org.apache.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
 
@@ -44,20 +44,21 @@ class GroupByTask[IN, GROUP, OUT](
     )
   }
 
-  private val groups: UnifiedMap[GROUP, WindowRunner[IN, OUT]] =
-    new UnifiedMap[GROUP, WindowRunner[IN, OUT]]
+  private val groups: UnifiedMap[GROUP, StreamingOperator[IN, OUT]] =
+    new UnifiedMap[GROUP, StreamingOperator[IN, OUT]]
 
   override def onNext(message: Message): Unit = {
     val input = message.value.asInstanceOf[IN]
     val group = groupBy(input)
 
     if (!groups.containsKey(group)) {
-      groups.put(group,
-        userConfig.getValue[WindowRunner[IN, OUT]](
-          GEARPUMP_STREAMING_OPERATOR)(taskContext.system).get)
+      val operator = userConfig.getValue[StreamingOperator[IN, OUT]](
+        GEARPUMP_STREAMING_OPERATOR)(taskContext.system).get
+      operator.setup()
+      groups.put(group, operator)
     }
 
-    groups.get(group).process(TimestampedValue(message.value.asInstanceOf[IN],
+    groups.get(group).foreach(TimestampedValue(message.value.asInstanceOf[IN],
       message.timestamp))
   }
 
@@ -65,11 +66,19 @@ class GroupByTask[IN, GROUP, OUT](
     if (groups.isEmpty && watermark == Watermark.MAX) {
       taskContext.updateWatermark(Watermark.MAX)
     } else {
-      groups.values.forEach(new Consumer[WindowRunner[IN, OUT]] {
-        override def accept(runner: WindowRunner[IN, OUT]): Unit = {
-          TaskUtil.trigger(watermark, runner, taskContext)
+      groups.values.forEach(new Consumer[StreamingOperator[IN, OUT]] {
+        override def accept(operator: StreamingOperator[IN, OUT]): Unit = {
+          TaskUtil.trigger(watermark, operator, taskContext)
         }
       })
     }
+  }
+
+  override def onStop(): Unit = {
+    groups.values.forEach(new Consumer[StreamingOperator[IN, OUT]] {
+      override def accept(operator: StreamingOperator[IN, OUT]): Unit = {
+        operator.teardown()
+      }
+    })
   }
 }

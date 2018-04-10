@@ -39,6 +39,7 @@ sealed trait FunctionRunner[IN, OUT] extends java.io.Serializable {
   def description: String
 }
 
+
 case class AndThen[IN, MIDDLE, OUT](first: FunctionRunner[IN, MIDDLE],
     second: FunctionRunner[MIDDLE, OUT])
   extends FunctionRunner[IN, OUT] {
@@ -114,10 +115,5 @@ class FoldRunner[T, A](fn: FoldFunction[T, A], val description: String)
   }
 }
 
-class DummyRunner[T] extends FunctionRunner[T, T] {
-
-  override def process(value: T): TraversableOnce[T] = Option(value)
-
-  override def description: String = ""
-}
+class DummyRunner[T] extends FlatMapper[T, T](FlatMapFunction(Option(_)), "")
 

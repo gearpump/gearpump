@@ -29,7 +29,7 @@ import org.apache.gearpump.streaming.dsl.scalaapi.CollectionDataSource
 import org.apache.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import org.apache.gearpump.streaming.dsl.task.TransformTask
 import org.apache.gearpump.streaming.dsl.window.api.GlobalWindows
-import org.apache.gearpump.streaming.dsl.window.impl.{DefaultWindowRunner, WindowRunner}
+import org.apache.gearpump.streaming.dsl.window.impl.{WindowOperator, StreamingOperator}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
@@ -218,11 +218,11 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
 
       val data = "one two three".split("\\s+")
       val dataSource = new CollectionDataSource[String](data)
-      val runner1 = new DefaultWindowRunner[String, String](
+      val runner1 = new WindowOperator[String, String](
         GlobalWindows(), new DummyRunner[String])
       val conf = UserConfig.empty
         .withValue(GEARPUMP_STREAMING_SOURCE, dataSource)
-        .withValue[WindowRunner[String, String]](GEARPUMP_STREAMING_OPERATOR, runner1)
+        .withValue[StreamingOperator[String, String]](GEARPUMP_STREAMING_OPERATOR, runner1)
 
       // Source with no transformer
       val source = new DataSourceTask[String, String](
@@ -239,7 +239,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       val anotherTaskContext = MockUtil.mockTaskContext
       val double = new FlatMapper[String, String](FlatMapFunction(
         word => List(word, word)), "double")
-      val runner2 = new DefaultWindowRunner[String, String](
+      val runner2 = new WindowOperator[String, String](
         GlobalWindows(), double)
       val another = new DataSourceTask(anotherTaskContext,
         conf.withValue(GEARPUMP_STREAMING_OPERATOR, runner2))
@@ -262,7 +262,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       val conf = UserConfig.empty
       val double = new FlatMapper[String, String](FlatMapFunction(
         word => List(word, word)), "double")
-      val transform = new DefaultWindowRunner[String, String](GlobalWindows(), double)
+      val transform = new WindowOperator[String, String](GlobalWindows(), double)
       val task = new TransformTask[String, String](transform, taskContext, conf)
       task.onStart(Instant.EPOCH)
 

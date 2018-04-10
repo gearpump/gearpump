@@ -21,7 +21,7 @@ package org.apache.gearpump.streaming.task
 import java.time.Instant
 
 import org.apache.gearpump.Message
-import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, WindowRunner}
+import org.apache.gearpump.streaming.dsl.window.impl.{TimestampedValue, StreamingOperator}
 
 object TaskUtil {
 
@@ -36,7 +36,7 @@ object TaskUtil {
     loader.loadClass(className).asSubclass(classOf[Task])
   }
 
-  def trigger[IN, OUT](watermark: Instant, runner: WindowRunner[IN, OUT],
+  def trigger[IN, OUT](watermark: Instant, runner: StreamingOperator[IN, OUT],
       context: TaskContext): Unit = {
     val triggeredOutputs = runner.trigger(watermark)
     context.updateWatermark(triggeredOutputs.watermark)

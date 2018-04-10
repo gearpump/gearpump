@@ -87,8 +87,8 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
       .mapVertex(_.description)
 
     plan.getVertices.toSet should contain theSameElementsAs
-      Set("source.globalWindows", "groupBy.globalWindows.flatMap.reduce", "processor", "sink")
-    plan.outgoingEdgesOf("source.globalWindows").iterator.next()._2 shouldBe
+      Set("source", "groupBy.globalWindows.flatMap.reduce", "processor", "sink")
+    plan.outgoingEdgesOf("source").iterator.next()._2 shouldBe
       a[GroupByPartitioner[_, _]]
     plan.outgoingEdgesOf("groupBy.globalWindows.flatMap.reduce").iterator.next()._2 shouldBe
       a[CoLocationPartitioner]

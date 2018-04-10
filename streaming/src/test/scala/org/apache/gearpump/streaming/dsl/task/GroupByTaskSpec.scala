@@ -24,7 +24,7 @@ import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.streaming.dsl.plan.functions.DummyRunner
 import org.apache.gearpump.streaming.dsl.window.api.GlobalWindows
 import org.apache.gearpump.streaming.{Constants, MockUtil}
-import org.apache.gearpump.streaming.dsl.window.impl.DefaultWindowRunner
+import org.apache.gearpump.streaming.dsl.window.impl.WindowOperator
 import org.apache.gearpump.streaming.source.Watermark
 import org.mockito.Mockito._
 import org.scalacheck.Gen
@@ -40,7 +40,7 @@ class GroupByTaskSpec extends PropSpec with PropertyChecks
 
     forAll(longGen) { (time: Instant) =>
       val groupBy = mock[Any => Int]
-      val windowRunner = new DefaultWindowRunner[Any, Any](GlobalWindows(), new DummyRunner[Any])
+      val windowRunner = new WindowOperator[Any, Any](GlobalWindows(), new DummyRunner[Any])
       val context = MockUtil.mockTaskContext
       val config = UserConfig.empty
         .withValue(
