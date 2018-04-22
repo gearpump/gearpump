@@ -22,8 +22,8 @@ import org.apache.gearpump.streaming.dsl.api.functions.MapFunction
 /**
  * Assigns the input value into a group.
  *
- * @param T Input value type
- * @param GROUP Group value type
+ * @tparam T Input value type
+ * @tparam GROUP Group value type
  */
 abstract class GroupByFunction[T, GROUP] extends MapFunction[T, GROUP] {
 

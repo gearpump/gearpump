@@ -31,8 +31,8 @@ object MapFunction {
 /**
  * Transforms an input into an output of possibly different types.
  *
- * @param T Input value type
- * @param R Output value type
+ * @tparam T Input value type
+ * @tparam R Output value type
  */
 abstract class MapFunction[T, R] extends SerializableFunction {
 

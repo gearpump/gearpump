@@ -93,8 +93,8 @@ object FlatMapFunction {
  * Transforms one input into zero or more outputs of possibly different types.
  * This Scala version of FlatMapFunction returns a TraversableOnce.
  *
- * @param T Input value type
- * @param R Output value type
+ * @tparam T Input value type
+ * @tparam R Output value type
  */
 abstract class FlatMapFunction[T, R] extends SerializableFunction {
 

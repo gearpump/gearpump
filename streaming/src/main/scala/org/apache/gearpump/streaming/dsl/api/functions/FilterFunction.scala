@@ -31,7 +31,7 @@ object FilterFunction {
 /**
  * Returns true to keep the input and false otherwise.
  *
- * @param T Input value type
+ * @tparam T Input value type
  */
 abstract class FilterFunction[T] extends SerializableFunction {
 

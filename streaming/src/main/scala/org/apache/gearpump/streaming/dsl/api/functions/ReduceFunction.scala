@@ -31,7 +31,7 @@ object ReduceFunction {
 /**
  * Combines two inputs into one output of the same type.
  *
- * @param T Type of both inputs and output
+ * @tparam T Type of both inputs and output
  */
 abstract class ReduceFunction[T] extends FoldFunction[T, Option[T]] {
 

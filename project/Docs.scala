@@ -26,7 +26,7 @@ import sbtunidoc.Plugin._
 object Docs extends sbt.Build {
   lazy val javadocSettings = Seq(
     addCompilerPlugin(
-      "com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.9" cross CrossVersion.full),
+      "com.typesafe.genjavadoc" %% "genjavadoc-plugin" % "0.11" cross CrossVersion.full),
     scalacOptions += s"-P:genjavadoc:out=${target.value}/java"
   )
 
