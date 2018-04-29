@@ -39,9 +39,7 @@ object Gear {
   private def executeCommand(command: String, commandArgs: Array[String]) = {
     commands.get(command) match {
       case Some(runner) =>
-        val akkaConfig = ClusterConfig.default()
-        LogUtil.loadConfiguration(akkaConfig, ProcessType.CLIENT)
-        runner.main(akkaConfig, commandArgs)
+        runner.main(commandArgs)
       case None =>
         printUsage()
     }
@@ -53,8 +51,6 @@ object Gear {
       // Sets custom config file...
       System.setProperty(Constants.GEARPUMP_CUSTOM_CONFIG_FILE, configFile)
     }
-
-    RuntimeEnvironment.setRuntimeEnv(new RemoteRuntimeEnvironment)
 
     if (args.length == 0) {
       printUsage()

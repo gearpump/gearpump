@@ -18,10 +18,10 @@
 
 package org.apache.gearpump.cluster.main
 
-import org.apache.gearpump.util.AkkaApp
+import org.apache.gearpump.util.MasterClientCommand
 
 /** Tool to run any main class by providing a jar */
-object MainRunner extends AkkaApp with ArgumentsParser {
+object MainRunner extends MasterClientCommand with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     // For document purpose only, OPTION_CONFIG option is not used here.

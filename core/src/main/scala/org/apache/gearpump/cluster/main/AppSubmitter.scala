@@ -21,12 +21,13 @@ import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 
-import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
+import org.apache.gearpump.cluster.client.RuntimeEnvironment
+import org.apache.gearpump.util.{Constants, LogUtil, MasterClientCommand, Util}
 
 import scala.util.{Failure, Success, Try}
 
 /** Tool to submit an application jar to cluster */
-object AppSubmitter extends AkkaApp with ArgumentsParser {
+object AppSubmitter extends MasterClientCommand with ArgumentsParser {
 
   override val ignoreUnknownArgument = true
 

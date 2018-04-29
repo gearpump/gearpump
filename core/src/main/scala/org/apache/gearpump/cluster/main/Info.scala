@@ -19,10 +19,10 @@ package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.MasterToAppMaster.AppMastersData
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.util.AkkaApp
+import org.apache.gearpump.util.MasterClientCommand
 
 /** Tool to query master info */
-object Info extends AkkaApp with ArgumentsParser {
+object Info extends MasterClientCommand with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     // For document purpose only, OPTION_CONFIG option is not used here.

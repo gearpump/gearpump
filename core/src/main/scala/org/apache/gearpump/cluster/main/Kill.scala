@@ -19,10 +19,10 @@
 package org.apache.gearpump.cluster.main
 
 import org.apache.gearpump.cluster.client.ClientContext
-import org.apache.gearpump.util.AkkaApp
+import org.apache.gearpump.util.MasterClientCommand
 
 /** Tool to kill an App */
-object Kill extends AkkaApp with ArgumentsParser {
+object Kill extends MasterClientCommand with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "appid" -> CLIOption("<application id>", required = true),

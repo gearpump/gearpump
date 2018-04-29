@@ -42,9 +42,9 @@ import org.apache.gearpump.experiments.storm.topology.GearpumpStormTopology
 import org.apache.gearpump.experiments.storm.util.TimeCacheMapWrapper.Callback
 import org.apache.gearpump.experiments.storm.util.{GraphBuilder, StormConstants, StormUtil, TimeCacheMapWrapper}
 import org.apache.gearpump.streaming.StreamApplication
-import org.apache.gearpump.util.{AkkaApp, Constants, LogUtil}
+import org.apache.gearpump.util.{Constants, LogUtil, MasterClientCommand}
 
-object GearpumpNimbus extends AkkaApp with ArgumentsParser {
+object GearpumpNimbus extends MasterClientCommand with ArgumentsParser {
   private val THRIFT_PORT = StormUtil.getThriftPort()
   private val OUTPUT = "output"
   private val LOG: Logger = LogUtil.getLogger(classOf[GearpumpNimbus])
