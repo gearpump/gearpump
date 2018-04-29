@@ -17,7 +17,10 @@
  */
 package org.apache.gearpump.external.hbase
 
+import akka.actor.ActorSystem
+import org.apache.gearpump.Message
 import org.apache.gearpump.cluster.UserConfig
+import org.apache.gearpump.external.hbase.HBaseSink.{HBaseWriter, HBaseWriterFactory}
 import org.apache.gearpump.streaming.MockUtil
 import org.apache.gearpump.streaming.task.TaskContext
 import org.apache.hadoop.conf.Configuration
@@ -25,13 +28,42 @@ import org.apache.hadoop.hbase.TableName
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase.util.Bytes
 import org.mockito.Mockito._
+import org.scalacheck.Gen
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
 class HBaseSinkSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
-  property("HBaseSink should insert a row successfully") {
+
+  property("HBaseSink should invoke HBaseWriter for writing message to HBase") {
+
+    val hbaseWriter = mock[HBaseWriter]
+    val hbaseWriterFactory = mock[HBaseWriterFactory]
+
+    implicit val system: ActorSystem = MockUtil.system
+
+    val userConfig = UserConfig.empty
+    val tableName = "hbase"
+
+    when(hbaseWriterFactory.getHBaseWriter(userConfig, tableName))
+      .thenReturn(hbaseWriter)
+
+    val hbaseSink = new HBaseSink(userConfig, tableName, hbaseWriterFactory)
+
+    hbaseSink.open(MockUtil.mockTaskContext)
+
+    forAll(Gen.alphaStr) { (value: String) =>
+      val message = Message(value)
+      hbaseSink.write(message)
+      verify(hbaseWriter, atLeastOnce()).put(value)
+    }
+
+    hbaseSink.close()
+    verify(hbaseWriter).close()
+  }
+
+  property("HBaseWriter should insert a row successfully") {
 
     val table = mock[Table]
     val config = mock[Configuration]
@@ -54,10 +86,9 @@ class HBaseSinkSpec extends PropSpec with PropertyChecks with Matchers with Mock
 
     val put = new Put(Bytes.toBytes(row))
     put.addColumn(Bytes.toBytes(group), Bytes.toBytes(name), Bytes.toBytes(value))
-    val hbaseSink = new HBaseSink(userConfig, tableName, (userConfig, config)
-    => connection, config)
-    hbaseSink.open(taskContext)
-    hbaseSink.insert(Bytes.toBytes(row), Bytes.toBytes(group), Bytes.toBytes(name),
+
+    val hbaseWriter = new HBaseWriter(connection, tableName)
+    hbaseWriter.insert(Bytes.toBytes(row), Bytes.toBytes(group), Bytes.toBytes(name),
       Bytes.toBytes(value))
 
     verify(table).put(MockUtil.argMatch[Put](_.getRow sameElements Bytes.toBytes(row)))

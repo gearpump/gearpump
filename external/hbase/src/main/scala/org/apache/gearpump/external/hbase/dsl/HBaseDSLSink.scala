@@ -18,7 +18,6 @@
 package org.apache.gearpump.external.hbase.dsl
 
 import scala.language.implicitConversions
-import org.apache.hadoop.conf.Configuration
 import org.apache.gearpump.cluster.UserConfig
 import org.apache.gearpump.external.hbase.HBaseSink
 import org.apache.gearpump.streaming.dsl.scalaapi.Stream
@@ -26,15 +25,11 @@ import org.apache.gearpump.streaming.dsl.scalaapi.Stream
 /** Create a HBase DSL Sink */
 class HBaseDSLSink[T](stream: Stream[T]) {
 
-  def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String)
-    : Stream[T] = {
-    stream.sink(HBaseSink[T](userConfig, table), parallism, userConfig, description)
+  def writeToHbase(userConfig: UserConfig, table: String,
+      parallelism: Int, description: String): Stream[T] = {
+    stream.sink(HBaseSink[T](userConfig, table), parallelism, userConfig, description)
   }
 
-  def writeToHbase(userConfig: UserConfig, configuration: Configuration, table: String,
-      parallism: Int, description: String): Stream[T] = {
-    stream.sink(HBaseSink[T](userConfig, table, configuration), parallism, userConfig, description)
-  }
 }
 
 object HBaseDSLSink {
