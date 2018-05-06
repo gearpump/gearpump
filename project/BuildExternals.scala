@@ -27,6 +27,7 @@ object BuildExternals extends sbt.Build {
   lazy val externals: Seq[ProjectReference] = Seq(
     external_hbase,
     external_kafka,
+    external_kudu,
     external_monoid,
     external_hadoopfs
   )
@@ -40,6 +41,18 @@ object BuildExternals extends sbt.Build {
           "org.apache.kafka" %% "kafka" % kafkaVersion,
           "com.twitter" %% "bijection-core" % bijectionVersion,
           ("org.apache.kafka" %% "kafka" % kafkaVersion classifier ("test")) % "test"
+        )
+      ))
+    .dependsOn(core % "provided", streaming % "test->test; provided")
+    .disablePlugins(sbtassembly.AssemblyPlugin)
+
+  lazy val external_kudu = Project(
+    id = "gearpump-external-kudu",
+    base = file("external/kudu"),
+    settings = commonSettings ++ javadocSettings  ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.apache.kudu" % "kudu-client" % kuduVersion
         )
       ))
     .dependsOn(core % "provided", streaming % "test->test; provided")

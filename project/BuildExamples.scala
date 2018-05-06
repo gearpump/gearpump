@@ -36,7 +36,8 @@ object BuildExamples extends sbt.Build {
     sol,
     wordcount,
     wordcountJava,
-    example_hbase
+    example_hbase,
+    example_kudu
   )
 
   /**
@@ -120,6 +121,12 @@ object BuildExamples extends sbt.Build {
         )
       )
   ) dependsOn(core % "provided", streaming % "provided; test->test", external_hbase)
+
+  lazy val example_kudu = Project(
+    id = "gearpump-examples-kudu",
+    base = file("examples/streaming/kudu"),
+    settings = exampleSettings("org.apache.gearpump.streaming.examples.kudu.KuduConn")
+  ) dependsOn(core % "provided", streaming % "provided; test->test", external_kudu)
 
   lazy val fsio = Project(
     id = "gearpump-examples-fsio",
