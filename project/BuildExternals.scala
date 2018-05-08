@@ -134,4 +134,16 @@ object BuildExternals extends sbt.Build {
       ))
     .dependsOn(core % "provided", streaming % "test->test; provided")
     .disablePlugins(sbtassembly.AssemblyPlugin)
+
+  lazy val external_twitter = Project(
+    id = "gearpump-external-twitter",
+    base = file("external/twitter"),
+    settings = commonSettings ++ javadocSettings ++
+      Seq(
+        libraryDependencies ++= Seq(
+          "org.twitter4j" % "twitter4j-stream" % "4.0.4"
+        )
+      ))
+    .dependsOn(core % "provided", streaming % "test->test; provided")
+    .disablePlugins(sbtassembly.AssemblyPlugin)
 }

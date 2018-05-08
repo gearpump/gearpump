@@ -37,7 +37,8 @@ object BuildExamples extends sbt.Build {
     wordcount,
     wordcountJava,
     example_hbase,
-    example_kudu
+    example_kudu,
+    example_twitter
   )
 
   /**
@@ -158,6 +159,12 @@ object BuildExamples extends sbt.Build {
       )
   ).dependsOn(core % "provided", streaming % "provided; test->test",
     external_hadoopfs, external_monoid, external_serializer, external_kafka)
+
+  lazy val example_twitter = Project(
+    id = "gearpump-examples-twitter",
+    base = file("examples/streaming/twitter"),
+    settings = exampleSettings("org.apache.gearpump.streaming.examples.twitter.TwitterExamples")
+  ).dependsOn(core % "provided", streaming % "provided; test->test", external_twitter)
 
   private def exampleSettings(className: String): Seq[Def.Setting[_]] =
     commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
