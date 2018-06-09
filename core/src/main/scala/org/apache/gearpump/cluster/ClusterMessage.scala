@@ -159,11 +159,15 @@ object MasterToClient {
   /** Return the last error of this streaming application job */
   case class LastFailure(time: MilliSeconds, error: String)
 
-  sealed trait ApplicationResult
+  sealed trait ApplicationResult {
+    def appId: Int
+  }
 
   case class ApplicationSucceeded(appId: Int) extends ApplicationResult
 
   case class ApplicationFailed(appId: Int, error: Throwable) extends ApplicationResult
+
+  case class ApplicationTerminated(appId: Int) extends ApplicationResult
 }
 
 object AppMasterToMaster {

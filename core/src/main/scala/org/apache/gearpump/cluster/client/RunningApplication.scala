@@ -56,11 +56,17 @@ class RunningApplication(val appId: Int, master: ActorRef, timeout: Timeout) {
   def waitUntilFinish(duration: Duration): Unit = {
     val result = ActorUtil.askActor[ApplicationResult](master,
       RegisterAppResultListener(appId), new Timeout(duration.getSeconds, TimeUnit.SECONDS))
-    result match {
-      case failed: ApplicationFailed =>
-        throw failed.error
-      case _ =>
-        LOG.info(s"Application $appId succeeded")
+    if (result.appId == appId) {
+      result match {
+        case failed: ApplicationFailed =>
+          throw failed.error
+        case _: ApplicationSucceeded =>
+          LOG.info(s"Application $appId succeeded")
+        case _: ApplicationTerminated =>
+          LOG.info(s"Application $appId terminated")
+      }
+    } else {
+      LOG.warn(s"Received unexpected result $result for application $appId")
     }
   }
 

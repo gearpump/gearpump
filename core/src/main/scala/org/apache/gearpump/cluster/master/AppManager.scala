@@ -241,17 +241,14 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
             case succeeded@ApplicationStatus.SUCCEEDED =>
               killAppMaster(appId, appRuntimeInfo.worker)
               updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, succeeded)
-              appResultListeners.getOrElse(appId, List.empty).foreach { client =>
-                client ! ApplicationSucceeded(appId)
-              }
+              sendAppResultToListeners(appId, ApplicationSucceeded(appId))
             case failed@ApplicationStatus.FAILED =>
               killAppMaster(appId, appRuntimeInfo.worker)
               updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, failed)
-              appResultListeners.getOrElse(appId, List.empty).foreach { client =>
-                client ! ApplicationFailed(appId, error)
-              }
+              sendAppResultToListeners(appId, ApplicationFailed(appId, error))
             case terminated@ApplicationStatus.TERMINATED =>
               updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, terminated)
+              sendAppResultToListeners(appId, ApplicationTerminated(appId))
             case status =>
               LOG.error(s"App $appId should not change it's status to $status")
           }
@@ -268,6 +265,14 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
       case None =>
         LOG.error(s"Can not find application runtime info for appId $appId when it's " +
           s"status changed to ${newStatus.toString}")
+    }
+  }
+
+  private def sendAppResultToListeners(appId: Int, result: ApplicationResult): Unit = {
+    appResultListeners.get(appId).foreach {
+      _.foreach { client =>
+        client ! result
+      }
     }
   }
 
