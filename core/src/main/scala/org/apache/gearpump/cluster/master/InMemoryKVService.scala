@@ -40,15 +40,15 @@ class InMemoryKVService extends Actor with Stash {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private val replicator = DistributedData(context.system).replicator
-  private implicit val cluster = Cluster(context.system)
+  private implicit val cluster: Cluster = Cluster(context.system)
 
   // Optimize write path, we can tolerate one master down for recovery.
   private val timeout = Duration(15, TimeUnit.SECONDS)
   private val readMajority = ReadMajority(timeout)
   private val writeMajority = WriteMajority(timeout)
 
-  private def groupKey(group: String): LWWMapKey[Any] = {
-    LWWMapKey[Any](KV_SERVICE + "_" + group)
+  private def groupKey(group: String): LWWMapKey[Any, Any] = {
+    LWWMapKey[Any, Any](KV_SERVICE + "_" + group)
   }
 
   def receive: Receive = kvService
@@ -58,14 +58,15 @@ class InMemoryKVService extends Actor with Stash {
     case GetKV(group: String, key: String) =>
       val request = Request(sender(), key)
       replicator ! Get(groupKey(group), readMajority, Some(request))
-    case success@GetSuccess(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
+    case success@GetSuccess(group: LWWMapKey[Any @unchecked, Any @unchecked],
+    Some(request: Request)) =>
       val appData = success.get(group)
       LOG.info(s"Successfully retrived group: ${group.id}")
       request.client ! GetKVSuccess(request.key, appData.get(request.key).orNull)
-    case NotFound(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
+    case NotFound(group: LWWMapKey[Any @unchecked, Any @unchecked], Some(request: Request)) =>
       LOG.info(s"We cannot find group $group")
       request.client ! GetKVSuccess(request.key, null)
-    case GetFailure(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
+    case GetFailure(_, Some(request: Request)) =>
       val error = s"Failed to get application data, the request key is ${request.key}"
       LOG.error(error)
       request.client ! GetKVFailed(new Exception(error))
@@ -76,20 +77,21 @@ class InMemoryKVService extends Actor with Stash {
         map + (key -> value)
       }
       replicator ! update
-    case UpdateSuccess(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
+    case UpdateSuccess(_, Some(request: Request)) =>
       request.client ! PutKVSuccess
-    case ModifyFailure(group: LWWMapKey[Any @unchecked], error, cause, Some(request: Request)) =>
+    case ModifyFailure(_, error, cause,
+    Some(request: Request)) =>
       request.client ! PutKVFailed(request.key, new Exception(error, cause))
-    case UpdateTimeout(group: LWWMapKey[Any @unchecked], Some(request: Request)) =>
+    case UpdateTimeout(_, Some(request: Request)) =>
       request.client ! PutKVFailed(request.key, new TimeoutException())
 
-    case delete@DeleteKVGroup(group: String) =>
+    case DeleteKVGroup(group: String) =>
       replicator ! Delete(groupKey(group), writeMajority)
-    case DeleteSuccess(group) =>
+    case DeleteSuccess(group, _) =>
       LOG.info(s"KV Group ${group.id} is deleted")
-    case ReplicationDeleteFailure(group) =>
+    case ReplicationDeleteFailure(group, _) =>
       LOG.error(s"Failed to delete KV Group ${group.id}...")
-    case DataDeleted(group) =>
+    case DataDeleted(group, _) =>
       LOG.error(s"Group ${group.id} is deleted, you can no longer put/get/delete this group...")
   }
 }

@@ -18,8 +18,10 @@
 package org.apache.gearpump.jarstore
 
 import java.io.File
-import scala.concurrent.{ExecutionContext, Future}
 
+import akka.Done
+
+import scala.concurrent.{ExecutionContext, Future}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
@@ -33,7 +35,6 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsonFormat
-
 import org.apache.gearpump.jarstore.FileDirective._
 import org.apache.gearpump.jarstore.FileServer.Port
 
@@ -84,14 +85,14 @@ class FileServer(system: ActorSystem, host: String, port: Int = 0, jarStore: Jar
     }
   }
 
-  private var connection: Future[ServerBinding] = null
+  private var connection: Future[ServerBinding] = _
 
   def start: Future[Port] = {
     connection = Http().bindAndHandle(Route.handlerFlow(route), host, port)
     connection.map(address => Port(address.localAddress.getPort))
   }
 
-  def stop: Future[Unit] = {
+  def stop: Future[Done] = {
     connection.flatMap(_.unbind())
   }
 }

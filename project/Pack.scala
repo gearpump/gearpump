@@ -128,8 +128,8 @@ object Pack extends sbt.Build {
           "lib/yarn" -> new ProjectsToPack(gearpumpHadoop.id, yarn.id).
             exclude(services.id, core.id),
           "lib/services" -> new ProjectsToPack(services.id).exclude(core.id),
-          "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id),
-          "lib/akkastream" -> new ProjectsToPack(akkastream.id)
+          // "lib/akkastream" -> new ProjectsToPack(akkastream.id),
+          "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id)
         ),
         packExclude := Seq(thisProjectRef.value.project),
 
@@ -164,6 +164,12 @@ object Pack extends sbt.Build {
         packArchiveExcludes := Seq("integrationtest")
 
       )
-  ).dependsOn(core, streaming, services, yarn, storm, akkastream, cgroup).
+  ).dependsOn(core,
+    streaming,
+    services,
+    yarn,
+    storm,
+    // akkastream,
+    cgroup).
     disablePlugins(sbtassembly.AssemblyPlugin)
 }

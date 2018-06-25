@@ -25,7 +25,7 @@ import sbt.Keys._
 object BuildExperiments extends sbt.Build {
 
   lazy val experiments: Seq[ProjectReference] = Seq(
-    akkastream,
+    // akkastream,
     cgroup,
     redis,
     storm,

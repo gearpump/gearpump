@@ -21,7 +21,6 @@ import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
 
-import org.apache.gearpump.cluster.client.RuntimeEnvironment
 import org.apache.gearpump.util.{Constants, LogUtil, MasterClientCommand, Util}
 
 import scala.util.{Failure, Success, Try}
