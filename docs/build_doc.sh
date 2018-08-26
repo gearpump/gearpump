@@ -39,19 +39,6 @@ copy_dir() {
   cp -r $srcDir/* $destDir
 }
 
-render_files() {
-  for file in $2; do
-    if [ -d "$file" ];then
-      for child in "$file"/*; do
-        render_files $1 "$child"
-      done
-    elif [ -f "$file" ]; then
-      mustache $1 $file > tmp.md
-      mv tmp.md $file
-    fi
-  done
-}
-
 if [ $# -ne 2 ]; then
   help
   exit 1
@@ -59,16 +46,6 @@ fi
 
 export SCALA_VERSION=$1
 export BUILD_API=$2
-
-
-# render file templates
-echo "Rendering file templates using mustache..."
-TEMP_DIR="tmp"
-if [ -d "$TEMP_DIR" ]; then
-	rm -rf "$TEMP_DIR"
-fi
-copy_dir contents $TEMP_DIR
-render_files version.yml "$TEMP_DIR/introduction $TEMP_DIR/dev $TEMP_DIR/deployment $TEMP_DIR/api $TEMP_DIR/index.md"
 
 # generate site documents
 mkdocs build --clean

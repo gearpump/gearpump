@@ -17,7 +17,6 @@ all needed software via:
 
     sudo pip install mkdocs
     sudo gem install html-proofer
-    sudo gem install mustache
 
 
 If you are using Mac OSX 10.11+ (El Capitan), you will need to execute following command:
