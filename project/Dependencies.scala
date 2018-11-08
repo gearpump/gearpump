@@ -51,7 +51,7 @@ object Dependencies {
   val mockitoVersion = "1.10.17"
   val bijectionVersion = "0.8.0"
   val scalazVersion = "7.1.1"
-  val algebirdVersion = "0.9.0"
+  val algebirdVersion = "0.13.4"
   val chillVersion = "0.6.0"
   val jedisVersion = "2.9.0"
   val rabbitmqVersion = "3.5.3"
