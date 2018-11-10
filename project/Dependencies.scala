@@ -34,7 +34,7 @@ object Dependencies {
   val dataReplicationVersion = "0.7"
   val upickleVersion = "0.3.4"
   val junitVersion = "4.12"
-  val kafkaVersion = "0.8.2.1"
+  val kafkaVersion = "0.8.2.2"
   val kuduVersion = "1.7.0"
   val jsonSimpleVersion = "1.1"
   val storm09Version = "0.9.6"
