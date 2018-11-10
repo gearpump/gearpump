@@ -38,7 +38,7 @@ object Dependencies {
   val kuduVersion = "1.7.0"
   val jsonSimpleVersion = "1.1"
   val storm09Version = "0.9.6"
-  val stormVersion = "0.10.0"
+  val stormVersion = "0.10.2"
   val slf4jVersion = "1.7.16"
   val guavaVersion = "16.0.1"
   val codahaleVersion = "3.0.2"
