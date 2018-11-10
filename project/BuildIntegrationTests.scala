@@ -41,7 +41,7 @@ object BuildIntegrationTests extends sbt.Build {
       libraryDependencies ++= Seq(
         "com.lihaoyi" %% "upickle" % upickleVersion,
         "org.scalatest" %% "scalatest" % scalaTestVersion % "it",
-        "org.pegdown" % "pegdown" % "1.4.2" % "it",
+        "org.pegdown" % "pegdown" % "1.6.0" % "it",
         "org.parboiled" % "parboiled-core" % "1.1.7" % "it",
         "org.parboiled" % "parboiled-java" % "1.1.7" % "it",
         "org.mortbay.jetty" % "jetty-util" % "6.1.26" % "it",
