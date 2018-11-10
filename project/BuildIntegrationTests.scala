@@ -45,7 +45,7 @@ object BuildIntegrationTests extends sbt.Build {
         "org.parboiled" % "parboiled-core" % "1.1.7" % "it",
         "org.parboiled" % "parboiled-java" % "1.1.7" % "it",
         "org.mortbay.jetty" % "jetty-util" % "6.1.26" % "it",
-        "org.ow2.asm" % "asm-all" % "5.0.3" % "it"
+        "org.ow2.asm" % "asm-all" % "5.0.4" % "it"
       )
     )
   ).configs(IntegrationTest).settings(Defaults.itSettings: _*)
