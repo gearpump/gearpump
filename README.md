@@ -1,5 +1,5 @@
-
 ## Apache Gearpump (incubating)  [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.apache.gearpump/gearpump-core_2.11/badge.svg)](http://gearpump.apache.org/downloads.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](https://github.com/apache/incubator-gearpump/blob/master/LICENSE) [![Build Status](https://travis-ci.org/apache/incubator-gearpump.svg?branch=master)](https://travis-ci.org/apache/incubator-gearpump?branch=master) [![codecov.io](https://codecov.io/github/apache/incubator-gearpump/coverage.svg?branch=master)](https://codecov.io/github/apache/incubator-gearpump?branch=master)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgearpump%2Fgearpump.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgearpump%2Fgearpump?ref=badge_shield)
 
 Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
@@ -16,6 +16,9 @@ Per initial benchmarks we are able to process near 18 million messages/second (1
 ![](https://raw.githubusercontent.com/apache/incubator-gearpump/master/docs/contents/img/dashboard.png)
 
 For steps to reproduce the performance test, please check [Performance benchmark](http://gearpump.apache.org/releases/latest/introduction/performance-report/index.html).
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgearpump%2Fgearpump.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgearpump%2Fgearpump?ref=badge_large)
 
 ## Useful Resources
 
