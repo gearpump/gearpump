@@ -1,25 +1,6 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import sbt.Keys._
 import sbt._
 import BuildGearpump._
-import BuildExternals._
 import Dependencies._
 import sbtassembly.AssemblyPlugin.autoImport._
 
@@ -29,16 +10,10 @@ object BuildExamples extends sbt.Build {
     complexdag,
     distributedshell,
     distributeservice,
-    examples_kafka,
-    examples_state,
-    fsio,
     pagerank,
     sol,
     wordcount,
-    wordcountJava,
-    example_hbase,
-    example_kudu,
-    example_twitter
+    wordcountJava
   )
 
   /**
@@ -111,60 +86,6 @@ object BuildExamples extends sbt.Build {
         ) ++ annotationDependencies
     ) ++ include("examples/distributeservice")
   ).dependsOn(core % "provided; test->test")
-
-  lazy val example_hbase = Project(
-    id = "gearpump-examples-hbase",
-    base = file("examples/streaming/hbase"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.hbase.HBaseConn") ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided"
-        )
-      )
-  ) dependsOn(core % "provided", streaming % "provided; test->test", external_hbase)
-
-  lazy val example_kudu = Project(
-    id = "gearpump-examples-kudu",
-    base = file("examples/streaming/kudu"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.kudu.KuduConn")
-  ) dependsOn(core % "provided", streaming % "provided; test->test", external_kudu)
-
-  lazy val fsio = Project(
-    id = "gearpump-examples-fsio",
-    base = file("examples/streaming/fsio"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.fsio.SequenceFileIO") ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided"
-        )
-      )
-  ).dependsOn(core % "provided", streaming % "provided; test->test")
-
-  lazy val examples_kafka = Project(
-    id = "gearpump-examples-kafka",
-    base = file("examples/streaming/kafka"),
-    settings =
-      exampleSettings("org.apache.gearpump.streaming.examples.kafka.wordcount.KafkaWordCount")
-  ).dependsOn(core % "provided", streaming % "provided; test->test", external_kafka)
-
-  lazy val examples_state = Project(
-    id = "gearpump-examples-state",
-    base = file("examples/streaming/state"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.state.MessageCountApp") ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion % "provided",
-          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion % "provided"
-        )
-      )
-  ).dependsOn(core % "provided", streaming % "provided; test->test",
-    external_hadoopfs, external_monoid, external_serializer, external_kafka)
-
-  lazy val example_twitter = Project(
-    id = "gearpump-examples-twitter",
-    base = file("examples/streaming/twitter"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.twitter.TwitterExamples")
-  ).dependsOn(core % "provided", streaming % "provided; test->test", external_twitter)
 
   private def exampleSettings(className: String): Seq[Def.Setting[_]] =
     commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(

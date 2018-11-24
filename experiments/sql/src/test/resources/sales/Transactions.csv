@@ -1,6 +1,0 @@
-timeStamp:int,id:string,item:string,quantity:int
-100,"I001","item1",3
-101,"I002","item2",5
-102,"I003","item3",8
-103,"I004","item4",33
-104,"I005","item5",23
