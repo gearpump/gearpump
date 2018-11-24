@@ -20,14 +20,13 @@ import sbt.Keys._
 import sbt._
 import BuildGearpump._
 import BuildDashboard.services
-import BuildExperiments.{cgroup, storm, yarn, akkastream}
 import xerial.sbt.Pack._
 
 object Pack extends sbt.Build {
   val daemonClassPath = Seq(
     "${PROG_HOME}/conf",
     // This is for DFSJarStore
-    "${PROG_HOME}/lib/yarn/*"
+    "${PROG_HOME}/lib/hadoop/*"
   )
 
   val applicationClassPath = Seq(
@@ -42,23 +41,6 @@ object Pack extends sbt.Build {
     "${PROG_HOME}/dashboard"
   )
 
-  val yarnClassPath = Seq(
-    "${PROG_HOME}/conf",
-    "${PROG_HOME}/lib/services/*",
-    "${PROG_HOME}/lib/yarn/*",
-    "${PROG_HOME}/conf/yarnconf",
-    "/etc/hadoop/conf",
-    "/etc/hbase/conf"
-  )
-
-  val stormClassPath = daemonClassPath ++ Seq(
-    "${PROG_HOME}/lib/storm/*"
-  )
-
-  val akkaStreamsClassPath = daemonClassPath ++ Seq(
-    "${PROG_HOME}/lib/akkastream/*"
-  )
-
   lazy val packProject = Project(
     id = "gearpump-pack",
     base = file(s"$distDirectory"),
@@ -70,10 +52,7 @@ object Pack extends sbt.Build {
           "local" -> "org.apache.gearpump.cluster.main.Local",
           "master" -> "org.apache.gearpump.cluster.main.Master",
           "worker" -> "org.apache.gearpump.cluster.main.Worker",
-          "services" -> "org.apache.gearpump.services.main.Services",
-          "yarnclient" -> "org.apache.gearpump.experiments.yarn.client.Client",
-          "storm" -> "org.apache.gearpump.experiments.storm.StormRunner",
-          "akkastream" -> "org.apache.gearpump.akkastream.example.Test"
+          "services" -> "org.apache.gearpump.services.main.Services"
         ),
         packJvmOpts := Map(
           "gear" -> Seq(
@@ -105,37 +84,17 @@ object Pack extends sbt.Build {
             "-server",
             "-Djava.net.preferIPv4Stack=true",
             "-Dgearpump.home=${PROG_HOME}",
-            "-Djava.rmi.server.hostname=localhost"),
-
-          "yarnclient" -> Seq(
-            "-server",
-            "-Djava.net.preferIPv4Stack=true",
-            "-Dgearpump.home=${PROG_HOME}",
-            "-Djava.rmi.server.hostname=localhost"),
-
-          "storm" -> Seq(
-            "-server",
-            "-Djava.net.preferIPv4Stack=true",
-            "-Dgearpump.home=${PROG_HOME}"),
-
-          "akkastream" -> Seq(
-            "-server",
-            "-noverify",
-            "-Djava.net.preferIPv4Stack=true",
-            "-Dgearpump.home=${PROG_HOME}")
+            "-Djava.rmi.server.hostname=localhost")
         ),
         packLibDir := Map(
-          "lib/yarn" -> new ProjectsToPack(gearpumpHadoop.id, yarn.id).
+          "lib/hadoop" -> new ProjectsToPack(gearpumpHadoop.id).
             exclude(services.id, core.id),
-          "lib/services" -> new ProjectsToPack(services.id).exclude(core.id),
-          // "lib/akkastream" -> new ProjectsToPack(akkastream.id),
-          "lib/storm" -> new ProjectsToPack(storm.id).exclude(streaming.id)
+          "lib/services" -> new ProjectsToPack(services.id).exclude(core.id)
         ),
         packExclude := Seq(thisProjectRef.value.project),
 
         packResourceDir += (baseDirectory.value / ".." / "bin" -> "bin"),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
-        packResourceDir += (baseDirectory.value / ".." / "yarnconf" -> "conf/yarnconf"),
         packResourceDir += (baseDirectory.value / ".." / "core" / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value) -> "lib"),
         packResourceDir += (baseDirectory.value / ".." / "streaming" / "target" /
@@ -143,8 +102,6 @@ object Pack extends sbt.Build {
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value) -> "examples"),
-        packResourceDir += (baseDirectory.value / ".." / "integrationtest" / "target" /
-          CrossVersion.binaryScalaVersion(scalaVersion.value) -> "integrationtest"),
 
         // The classpath should not be expanded. Otherwise, the classpath maybe too long.
         // On windows, it may report shell error "command line too long"
@@ -154,22 +111,14 @@ object Pack extends sbt.Build {
           "local" -> daemonClassPath,
           "master" -> daemonClassPath,
           "worker" -> applicationClassPath,
-          "services" -> serviceClassPath,
-          "yarnclient" -> yarnClassPath,
-          "storm" -> stormClassPath,
-          "akkastream" -> akkaStreamsClassPath
+          "services" -> serviceClassPath
         ),
 
-        packArchivePrefix := projectName + "-" + scalaBinaryVersion.value,
-        packArchiveExcludes := Seq("integrationtest")
+        packArchivePrefix := projectName + "-" + scalaBinaryVersion.value
 
       )
   ).dependsOn(core,
     streaming,
-    services,
-    yarn,
-    storm,
-    // akkastream,
-    cgroup).
+    services).
     disablePlugins(sbtassembly.AssemblyPlugin)
 }

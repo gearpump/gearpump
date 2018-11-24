@@ -1,5 +1,0 @@
-### Email Address
-### Please enter one email on one line.
-
-# For example:
-# abc@def.com
