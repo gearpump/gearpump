@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.gearpump.dashboard
+package io.gearpump.dashboard
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport

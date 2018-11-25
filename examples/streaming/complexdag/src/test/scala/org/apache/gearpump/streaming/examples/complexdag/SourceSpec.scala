@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.gearpump.streaming.examples.complexdag
+package io.gearpump.streaming.examples.complexdag
 
 import akka.actor.ActorSystem
-import org.apache.gearpump.Message
-import org.apache.gearpump.cluster.{TestUtil, UserConfig}
-import org.apache.gearpump.streaming.MockUtil
-import org.apache.gearpump.streaming.MockUtil._
+import io.gearpump.cluster.TestUtil
+import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.examples.complexdag.Source
+import io.gearpump.Message
+import io.gearpump.streaming.MockUtil._
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
 

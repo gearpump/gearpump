@@ -252,36 +252,36 @@ Sample Response:
 	:
 	    [{
 	        "time": "1450758725070",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "master:memory.heap.used", "value": "59764272"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "master:memory.heap.used", "value": "59764272"}
 	    }, {
 	        "time": "1450758725070",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "master:thread.daemon.count", "value": "18"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "master:thread.daemon.count", "value": "18"}
 	    }, {
 	        "time": "1450758725070",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "master:memory.total.committed",
 	            "value": "210239488"
 	        }
 	    }, {
 	        "time": "1450758725070",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "master:memory.heap.max", "value": "880017408"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "master:memory.heap.max", "value": "880017408"}
 	    }, {
 	        "time": "1450758725070",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "master:memory.total.max", "value": "997457920"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "master:memory.total.max", "value": "997457920"}
 	    }, {
 	        "time": "1450758725070",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "master:memory.heap.committed",
 	            "value": "179830784"
 	        }
 	    }, {
 	        "time": "1450758725070",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "master:memory.total.used", "value": "89117352"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "master:memory.total.used", "value": "89117352"}
 	    }, {
 	        "time": "1450758725070",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "master:thread.count", "value": "28"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "master:thread.count", "value": "28"}
 	    }]
 	}
 	
@@ -458,88 +458,88 @@ Sample Response:
 	    [{
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.total.used",
 	            "value": "152931440"
 	        }
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker1:thread.daemon.count", "value": "18"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker1:thread.daemon.count", "value": "18"}
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.heap.used",
 	            "value": "123139640"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.total.max",
 	            "value": "997457920"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.heap.committed",
 	            "value": "179830784"
 	        }
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker0:thread.count", "value": "28"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker0:thread.count", "value": "28"}
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker0:memory.heap.max", "value": "880017408"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker0:memory.heap.max", "value": "880017408"}
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker1:memory.heap.max", "value": "880017408"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker1:memory.heap.max", "value": "880017408"}
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.total.committed",
 	            "value": "210239488"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.total.used",
 	            "value": "152931440"
 	        }
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker1:thread.count", "value": "28"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker1:thread.count", "value": "28"}
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.total.max",
 	            "value": "997457920"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.heap.committed",
 	            "value": "179830784"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.total.committed",
 	            "value": "210239488"
 	        }
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker0:thread.daemon.count", "value": "18"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker0:thread.daemon.count", "value": "18"}
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.heap.used",
 	            "value": "123139640"
 	        }
@@ -635,7 +635,7 @@ Sample Response:
 	      0,
 	      {
 	        "id": 0,
-	        "taskClass": "org.apache.gearpump.streaming.examples.wordcount.Split",
+	        "taskClass": "io.gearpump.streaming.examples.wordcount.Split",
 	        "parallelism": 1,
 	        "description": "",
 	        "taskConf": {
@@ -662,7 +662,7 @@ Sample Response:
 	      1,
 	      {
 	        "id": 1,
-	        "taskClass": "org.apache.gearpump.streaming.examples.wordcount.Sum",
+	        "taskClass": "io.gearpump.streaming.examples.wordcount.Sum",
 	        "parallelism": 1,
 	        "description": "",
 	        "taskConf": {
@@ -704,7 +704,7 @@ Sample Response:
 	    "edgeList": [
 	      [
 	        0,
-	        "org.apache.gearpump.partitioner.HashPartitioner",
+	        "io.gearpump.partitioner.HashPartitioner",
 	        1
 	      ]
 	    ]
@@ -837,7 +837,7 @@ Sample Response:
 	        },
 	        "netty-dispatcher" : "akka.actor.default-dispatcher",
 	        "scheduling" : {
-	            "scheduler-class" : "org.apache.gearpump.cluster.scheduler.PriorityScheduler"
+	            "scheduler-class" : "io.gearpump.cluster.scheduler.PriorityScheduler"
 	        },
 	        "serializers" : {
 	            "[B" : "",
@@ -849,11 +849,11 @@ Sample Response:
 	            "[Ljava.lang.String;" : "",
 	            "[S" : "",
 	            "[Z" : "",
-	            "org.apache.gearpump.Message" : "org.apache.gearpump.streaming.MessageSerializer",
-	            "org.apache.gearpump.streaming.task.Ack" : "org.apache.gearpump.streaming.AckSerializer",
-	            "org.apache.gearpump.streaming.task.AckRequest" : "org.apache.gearpump.streaming.AckRequestSerializer",
-	            "org.apache.gearpump.streaming.task.LatencyProbe" : "org.apache.gearpump.streaming.LatencyProbeSerializer",
-	            "org.apache.gearpump.streaming.task.TaskId" : "org.apache.gearpump.streaming.TaskIdSerializer",
+	            "io.gearpump.Message" : "io.gearpump.streaming.MessageSerializer",
+	            "io.gearpump.streaming.task.Ack" : "io.gearpump.streaming.AckSerializer",
+	            "io.gearpump.streaming.task.AckRequest" : "io.gearpump.streaming.AckRequestSerializer",
+	            "io.gearpump.streaming.task.LatencyProbe" : "io.gearpump.streaming.LatencyProbeSerializer",
+	            "io.gearpump.streaming.task.TaskId" : "io.gearpump.streaming.TaskIdSerializer",
 	            "scala.Tuple1" : "",
 	            "scala.Tuple2" : "",
 	            "scala.Tuple3" : "",
@@ -890,7 +890,7 @@ aggregator points to a aggregator class, which will aggregate on the current met
 Example:
 
 	:::bash
-	curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/metrics/app1?readLatest=true&aggregator=org.apache.gearpump.streaming.metrics.ProcessorAggregator
+	curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/metrics/app1?readLatest=true&aggregator=io.gearpump.streaming.metrics.ProcessorAggregator
 	
 
 Sample Response:
@@ -904,88 +904,88 @@ Sample Response:
 	    [{
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.total.used",
 	            "value": "152931440"
 	        }
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker1:thread.daemon.count", "value": "18"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker1:thread.daemon.count", "value": "18"}
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.heap.used",
 	            "value": "123139640"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.total.max",
 	            "value": "997457920"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.heap.committed",
 	            "value": "179830784"
 	        }
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker0:thread.count", "value": "28"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker0:thread.count", "value": "28"}
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker0:memory.heap.max", "value": "880017408"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker0:memory.heap.max", "value": "880017408"}
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker1:memory.heap.max", "value": "880017408"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker1:memory.heap.max", "value": "880017408"}
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.total.committed",
 	            "value": "210239488"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker0:memory.total.used",
 	            "value": "152931440"
 	        }
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker1:thread.count", "value": "28"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker1:thread.count", "value": "28"}
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.total.max",
 	            "value": "997457920"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.heap.committed",
 	            "value": "179830784"
 	        }
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.total.committed",
 	            "value": "210239488"
 	        }
 	    }, {
 	        "time": "1450759137860",
-	        "value": {"$type": "org.apache.gearpump.metrics.Metrics.Gauge", "name": "worker0:thread.daemon.count", "value": "18"}
+	        "value": {"$type": "io.gearpump.metrics.Metrics.Gauge", "name": "worker0:thread.daemon.count", "value": "18"}
 	    }, {
 	        "time": "1450759137860",
 	        "value": {
-	            "$type": "org.apache.gearpump.metrics.Metrics.Gauge",
+	            "$type": "io.gearpump.metrics.Metrics.Gauge",
 	            "name": "worker1:memory.heap.used",
 	            "value": "123139640"
 	        }

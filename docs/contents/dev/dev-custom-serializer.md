@@ -10,10 +10,10 @@ To register a class, you need to change the configuration file gear.conf(or appl
 	gearpump {
 	  serializers {
 	    ## We will use default FieldSerializer to serialize this class type
-	    "org.apache.gearpump.UserMessage" = ""
+	    "io.gearpump.UserMessage" = ""
 	    
 	    ## we will use custom serializer to serialize this class type
-	    "org.apache.gearpump.UserMessage2" = "org.apache.gearpump.UserMessageSerializer"
+	    "io.gearpump.UserMessage2" = "io.gearpump.UserMessageSerializer"
 	  }
 	}
 	
@@ -22,7 +22,7 @@ To register a class, you need to change the configuration file gear.conf(or appl
 
 When you decide that you want to define a custom serializer, you can do this in two ways.
 
-Please note that Gearpump shaded the original Kryo dependency. The package name ```com.esotericsoftware``` was relocated to ```org.apache.gearpump.esotericsoftware```. So in the following customization, you should import corresponding shaded classes, the example code will show that part.
+Please note that Gearpump shaded the original Kryo dependency. The package name ```com.esotericsoftware``` was relocated to ```io.gearpump.esotericsoftware```. So in the following customization, you should import corresponding shaded classes, the example code will show that part.
 
 In general you should use the shaded version of a library whenever possible in order to avoid binary incompatibilities, eg don't use:
 
@@ -33,7 +33,7 @@ In general you should use the shaded version of a library whenever possible in o
 but rather
 
 	:::scala
-	import org.apache.gearpump.google.common.io.Files
+	import io.gearpump.google.common.io.Files
 
 
 ##### System Level Serializer
@@ -43,10 +43,10 @@ If the serializer is widely used, you can define a global serializer which is av
 ###### Step1: you first need to develop a java library which contains the custom serializer class. here is an example:
 
 	:::scala
-	package org.apache.gearpump
+	package io.gearpump
 	
-	import org.apache.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
-	import org.apache.gearpump.esotericsoftware.kryo.io.{Input, Output}
+	import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
+	import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
 	
 	class UserMessage(longField: Long, intField: Int)
 	
@@ -73,7 +73,7 @@ Distribute the jar file to lib/ folder of every Gearpump installation in the clu
 	:::json
 	gearpump {
 	  serializers {
-	    "org.apache.gearpump.UserMessage" = "org.apache.gearpump.UserMessageSerializer"
+	    "io.gearpump.UserMessage" = "io.gearpump.UserMessageSerializer"
 	  }
 	}
 	
@@ -88,10 +88,10 @@ If all you want is to define an application level serializer, which is only visi
 You should include the Serializer class in your application jar. Here is an example to define a custom serializer:
 
 	:::scala
-	package org.apache.gearpump
+	package io.gearpump
 	
-	import org.apache.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
-	import org.apache.gearpump.esotericsoftware.kryo.io.{Input, Output}
+	import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
+	import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
 	
 	class UserMessage(longField: Long, intField: Int)
 	
@@ -115,7 +115,7 @@ You should include the Serializer class in your application jar. Here is an exam
 	### content of application.conf
 	gearpump {
 	  serializers {
-	    "org.apache.gearpump.UserMessage" = "org.apache.gearpump.UserMessageSerializer"
+	    "io.gearpump.UserMessage" = "io.gearpump.UserMessageSerializer"
 	  }
 	}
 	
@@ -131,7 +131,7 @@ There are other serialization framework besides Kryo, like Protobuf. If user don
 basically, user need to define in gear.conf(or application.conf for single application's scope) file like this:
 
 	:::bash
-	gearpump.serialization-framework = "org.apache.gearpump.serializer.CustomSerializationFramework"
+	gearpump.serialization-framework = "io.gearpump.serializer.CustomSerializationFramework"
 	
 
 Please find an example in gearpump storm module, search "StormSerializationFramework" in source code.

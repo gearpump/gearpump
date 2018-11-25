@@ -17,9 +17,9 @@ This quick start will walk you through executing your first Gearpump pipeline to
 
 		:::bash
 		Multiple main classes detected, select one to run:
-		[1] org.apache.gearpump.streaming.examples.wordcount.WordCount
-		[2] org.apache.gearpump.streaming.examples.wordcount.dsl.WindowedWordCount
-		[3] org.apache.gearpump.streaming.examples.wordcount.dsl.WordCount
+		[1] io.gearpump.streaming.examples.wordcount.WordCount
+		[2] io.gearpump.streaming.examples.wordcount.dsl.WindowedWordCount
+		[3] io.gearpump.streaming.examples.wordcount.dsl.WordCount
 
 		Enter number: 3
 
