@@ -22,28 +22,28 @@ object BuildExamples extends sbt.Build {
   lazy val wordcountJava = Project(
     id = "gearpump-examples-wordcountjava",
     base = file("examples/streaming/wordcount-java"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.wordcountjava.WordCount") ++
+    settings = exampleSettings("io.gearpump.streaming.examples.wordcountjava.WordCount") ++
       include("examples/streaming/wordcount-java")
   ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
     base = file("examples/streaming/wordcount"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.wordcount.dsl.WordCount") ++
+    settings = exampleSettings("io.gearpump.streaming.examples.wordcount.dsl.WordCount") ++
       include("examples/streaming/wordcount")
   ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",
     base = file("examples/streaming/sol"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.sol.SOL") ++
+    settings = exampleSettings("io.gearpump.streaming.examples.sol.SOL") ++
       include("examples/streaming/sol")
   ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val complexdag = Project(
     id = "gearpump-examples-complexdag",
     base = file("examples/streaming/complexdag"),
-    settings = exampleSettings("org.apache.gearpump.streaming.examples.complexdag.Dag") ++
+    settings = exampleSettings("io.gearpump.streaming.examples.complexdag.Dag") ++
       include("examples/streaming/complexdag")
   ).dependsOn(core, streaming % "compile; test->test")
 
@@ -51,7 +51,7 @@ object BuildExamples extends sbt.Build {
     id = "gearpump-examples-pagerank",
     base = file("examples/pagerank"),
     settings =
-      exampleSettings("org.apache.gearpump.experiments.pagerank.example.PageRankExample") ++
+      exampleSettings("io.gearpump.experiments.pagerank.example.PageRankExample") ++
         include("examples/pagerank")
   ).dependsOn(core % "provided", streaming % "provided; test->test")
 
@@ -63,7 +63,7 @@ object BuildExamples extends sbt.Build {
     base = file("examples/distributedshell"),
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       mainClass in(Compile, packageBin) :=
-        Some("org.apache.gearpump.examples.distributedshell.DistributedShell"),
+        Some("io.gearpump.examples.distributedshell.DistributedShell"),
       target in assembly := baseDirectory.value.getParentFile / "target" /
         CrossVersion.binaryScalaVersion(scalaVersion.value)
     )
@@ -74,7 +74,7 @@ object BuildExamples extends sbt.Build {
     base = file("examples/distributeservice"),
     settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       mainClass in(Compile, packageBin) :=
-        Some("org.apache.gearpump.experiments.distributeservice.DistributeService"),
+        Some("io.gearpump.experiments.distributeservice.DistributeService"),
       target in assembly := baseDirectory.value.getParentFile / "target" /
         CrossVersion.binaryScalaVersion(scalaVersion.value),
       libraryDependencies ++= Seq(

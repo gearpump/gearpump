@@ -35,13 +35,13 @@ To use Kafka connectors in your application, you first need to add the `gearpump
 #### SBT
 
 	:::sbt
-	"org.apache.gearpump" %% "gearpump-external-kafka" % {{GEARPUMP_VERSION}}
+	"io.gearpump" %% "gearpump-external-kafka" % {{GEARPUMP_VERSION}}
 
 #### XML
 
 	:::xml
 	<dependency>
-	  <groupId>org.apache.gearpump</groupId>
+	  <groupId>io.gearpump</groupId>
 	  <artifactId>gearpump-external-kafka</artifactId>
 	  <version>{{GEARPUMP_VERSION}}</version>
 	</dependency>
@@ -128,12 +128,12 @@ To use `HBaseSink` in your application, you first need to add the `gearpump-exte
 #### SBT
 
 	:::sbt
-	"org.apache.gearpump" %% "gearpump-external-hbase" % {{GEARPUMP_VERSION}}
+	"io.gearpump" %% "gearpump-external-hbase" % {{GEARPUMP_VERSION}}
 
 #### XML
 	:::xml
 	<dependency>
-	  <groupId>org.apache.gearpump</groupId>
+	  <groupId>io.gearpump</groupId>
 	  <artifactId>gearpump-external-hbase</artifactId>
 	  <version>{{GEARPUMP_VERSION}}</version>
 	</dependency>
@@ -181,7 +181,7 @@ To implement your own `DataSource`, you need to implement two things:
 2. a helper class to easy the usage in a DSL
 
 ### Implement your own `DataSource`
-You need to implement a class derived from `org.apache.gearpump.streaming.transaction.api.TimeReplayableSource`.
+You need to implement a class derived from `io.gearpump.streaming.transaction.api.TimeReplayableSource`.
 
 ### Implement DSL helper (Optional)
 If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.
@@ -210,7 +210,7 @@ To implement your own `DataSink`, you need to implement two things:
 2. a helper class to make it easy use in DSL
 
 ### Implement your own `DataSink`
-You need to implement a class derived from `org.apache.gearpump.streaming.sink.DataSink`.
+You need to implement a class derived from `io.gearpump.streaming.sink.DataSink`.
 
 ### Implement DSL helper (Optional)
 If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.

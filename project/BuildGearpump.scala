@@ -27,7 +27,7 @@ object BuildGearpump extends sbt.Build {
     Seq(
       scalaVersion := scalaVersionNumber,
       crossScalaVersions := crossScalaVersionNumbers,
-      organization := "org.apache.gearpump",
+      organization := "io.gearpump",
       useGpg := false,
       pgpSecretRing := file("./secring.asc"),
       pgpPublicRing := file("./pubring.asc"),
@@ -116,16 +116,16 @@ object BuildGearpump extends sbt.Build {
       s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
     },
     assemblyShadeRules in assembly := Seq(
-      ShadeRule.rename("com.romix.**" -> "org.apache.gearpump.@0").inAll,
+      ShadeRule.rename("com.romix.**" -> "io.gearpump.@0").inAll,
       ShadeRule.rename("com.esotericsoftware.**" ->
-        "org.apache.gearpump.@0").inAll,
-      ShadeRule.rename("org.objenesis.**" -> "org.apache.gearpump.@0").inAll,
-      ShadeRule.rename("com.google.common.**" -> "org.apache.gearpump.@0").inAll,
-      ShadeRule.rename("com.google.thirdparty.**" -> "org.apache.gearpump.@0").inAll,
+        "io.gearpump.@0").inAll,
+      ShadeRule.rename("org.objenesis.**" -> "io.gearpump.@0").inAll,
+      ShadeRule.rename("com.google.common.**" -> "io.gearpump.@0").inAll,
+      ShadeRule.rename("com.google.thirdparty.**" -> "io.gearpump.@0").inAll,
       ShadeRule.rename("com.codahale.metrics.**" ->
-        "org.apache.gearpump.@0").inAll,
+        "io.gearpump.@0").inAll,
       ShadeRule.rename("com.gs.collections.**" ->
-        "org.apache.gearpump.gs.collections.@0").inAll
+        "io.gearpump.gs.collections.@0").inAll
     ),
     target in assembly := baseDirectory.value / "target" / scalaBinaryVersion.value
   )

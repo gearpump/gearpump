@@ -48,11 +48,11 @@ object Pack extends sbt.Build {
       packSettings ++
       Seq(
         packMain := Map(
-          "gear" -> "org.apache.gearpump.cluster.main.Gear",
-          "local" -> "org.apache.gearpump.cluster.main.Local",
-          "master" -> "org.apache.gearpump.cluster.main.Master",
-          "worker" -> "org.apache.gearpump.cluster.main.Worker",
-          "services" -> "org.apache.gearpump.services.main.Services"
+          "gear" -> "io.gearpump.cluster.main.Gear",
+          "local" -> "io.gearpump.cluster.main.Local",
+          "master" -> "io.gearpump.cluster.main.Master",
+          "worker" -> "io.gearpump.cluster.main.Worker",
+          "services" -> "io.gearpump.services.main.Services"
         ),
         packJvmOpts := Map(
           "gear" -> Seq(

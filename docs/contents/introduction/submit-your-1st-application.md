@@ -19,7 +19,7 @@ Open another shell,
 
 	:::bash
 	### To run WordCount example
-	bin/gear app -jar examples/wordcount-{{SCALA_BINARY_VERSION}}-{{GEARPUMP_VERSION}}-assembly.jar org.apache.gearpump.streaming.examples.wordcount.WordCount
+	bin/gear app -jar examples/wordcount-{{SCALA_BINARY_VERSION}}-{{GEARPUMP_VERSION}}-assembly.jar io.gearpump.streaming.examples.wordcount.WordCount
 
 
 ###  Step 2: Congratulations, you've submitted your first application.
