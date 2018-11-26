@@ -23,9 +23,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.Materializer
 
-// NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
-
 /**
  * AdminService is for cluster-wide managements. it is not related with
  * specific application.

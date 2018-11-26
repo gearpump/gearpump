@@ -26,9 +26,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import io.gearpump.util.{Constants, LogUtil}
-import io.gearpump.util.LogUtil
-// NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
 
 trait RouteService {
   def route: Route

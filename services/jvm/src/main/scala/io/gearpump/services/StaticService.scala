@@ -25,8 +25,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable._
 import akka.stream.Materializer
 import io.gearpump.util.Util
-// NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
 
 /**
  * static resource files.
