@@ -119,6 +119,7 @@ object Pack extends sbt.Build {
       )
   ).dependsOn(core,
     streaming,
-    services).
+    services,
+    gearpumpHadoop).
     disablePlugins(sbtassembly.AssemblyPlugin)
 }

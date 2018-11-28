@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-angular.module('org.apache.gearpump.models', [])
+angular.module('io.gearpump.models', [])
 
 /** TODO: to be absorbed as scalajs */
   .factory('models', ['$timeout', 'conf', 'restapi', 'locator', 'StreamingAppDag', 'Metrics',
@@ -402,7 +402,7 @@ angular.module('org.apache.gearpump.models', [])
           return getter._appMetrics(appId, {all: 'latest'});
         },
         _appMetrics: function (appId, args) {
-          args.aggregator = 'org.apache.gearpump.streaming.metrics.ProcessorAggregator';
+          args.aggregator = 'io.gearpump.streaming.metrics.ProcessorAggregator';
           args.decoder = decoder.appMetrics;
           return getter._metrics('appmaster/' + appId + '/metrics/app' + appId, '', args);
         },
@@ -411,7 +411,7 @@ angular.module('org.apache.gearpump.models', [])
           '&startTask=' + range.start + '&endTask=' + (range.stop + 1) : '';
           var args = {
             all: 'latest',
-            aggregator: 'org.apache.gearpump.streaming.metrics.TaskFilterAggregator' +
+            aggregator: 'io.gearpump.streaming.metrics.TaskFilterAggregator' +
             '&startProcessor=' + processorId + '&endProcessor=' + (processorId + 1) + taskRangeArgs,
             decoder: decoder.appTaskLatestMetricValues
           };

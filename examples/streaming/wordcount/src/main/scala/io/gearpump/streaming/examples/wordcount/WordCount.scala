@@ -21,6 +21,7 @@ package io.gearpump.streaming.examples.wordcount
 import akka.actor.ActorSystem
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.streaming.partitioner.HashPartitioner
 import io.gearpump.streaming.source.DataSourceProcessor
 import io.gearpump.util.{AkkaApp, Graph, LogUtil}

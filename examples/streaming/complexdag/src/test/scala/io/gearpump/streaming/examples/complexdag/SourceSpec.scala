@@ -17,27 +17,29 @@
  */
 package io.gearpump.streaming.examples.complexdag
 
-import io.gearpump.cluster.UserConfig
+import akka.actor.ActorSystem
+import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.examples.complexdag.Sink
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
 import io.gearpump.Message
+import io.gearpump.streaming.MockUtil._
+import org.mockito.Mockito._
+import org.scalatest.{Matchers, WordSpec}
 
-class SinkSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+class SourceSpec extends WordSpec with Matchers {
 
-  val context = MockUtil.mockTaskContext
+  "Source" should {
+    "Source should send a msg of Vector[String](classOf[Source].getCanonicalName)" in {
+      val system1 = ActorSystem("Source", TestUtil.DEFAULT_CONFIG)
 
-  val sink = new Sink(context, UserConfig.empty)
+      val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
 
-  property("Sink should send a Vector[String](classOf[Sink].getCanonicalName, " +
-    "classOf[Sink].getCanonicalName") {
-    val list = Vector(classOf[Sink].getCanonicalName)
-    val expected = Vector(classOf[Sink].getCanonicalName, classOf[Sink].getCanonicalName)
-    sink.onNext(Message(list))
+      val context = MockUtil.mockTaskContext
 
-    (0 until sink.list.size).map(i => {
-      assert(sink.list(i).equals(expected(i)))
-    })
+      val source = new Source(context, UserConfig.empty)
+      source.onNext(Message("start"))
+
+      verify(context).output(argMatch[Message](
+        Vector(classOf[Source].getCanonicalName) == _.value))
+    }
   }
 }

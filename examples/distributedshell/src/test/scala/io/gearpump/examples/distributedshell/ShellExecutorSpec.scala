@@ -23,13 +23,12 @@ import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
-import io.gearpump.cluster.TestUtil
+import io.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommandResult
 import org.scalatest.{Matchers, WordSpec}
 import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.cluster.ExecutorContext
 import io.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
 
 class ShellExecutorSpec extends WordSpec with Matchers {

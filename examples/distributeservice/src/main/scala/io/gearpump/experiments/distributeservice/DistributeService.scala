@@ -20,7 +20,8 @@ package io.gearpump.experiments.distributeservice
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
-import io.gearpump.cluster.Application
+import io.gearpump.cluster.{Application, UserConfig}
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.util.LogUtil
 
 /** Demo app to remotely deploy and start system service on machines in the cluster */

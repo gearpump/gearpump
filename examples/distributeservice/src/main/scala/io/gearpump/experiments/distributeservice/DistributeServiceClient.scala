@@ -23,6 +23,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import akka.pattern.ask
 import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.experiments.distributeservice.DistServiceAppMaster.{FileContainer, GetFileContainer}
 import io.gearpump.util.{AkkaApp, Constants}
 import org.apache.commons.io.FileUtils
