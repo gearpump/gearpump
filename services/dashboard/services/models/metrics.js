@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-angular.module('org.apache.gearpump.models')
+angular.module('io.gearpump.models')
 
 /** TODO: to be absorbed as scalajs (#458) */
   .factory('Metrics', [function () {
@@ -67,11 +67,11 @@ angular.module('org.apache.gearpump.models')
       /** automatically guess metric type and decode or return null */
       $auto: function (data) {
         switch (data.value.$type) {
-          case 'org.apache.gearpump.metrics.Metrics.Meter':
+          case 'io.gearpump.metrics.Metrics.Meter':
             return decoder.meter(data);
-          case 'org.apache.gearpump.metrics.Metrics.Histogram':
+          case 'io.gearpump.metrics.Metrics.Histogram':
             return decoder.histogram(data);
-          case 'org.apache.gearpump.metrics.Metrics.Gauge':
+          case 'io.gearpump.metrics.Metrics.Gauge':
             return decoder.gauge(data);
           default:
             console.warn({message: 'Unknown metric type', type: data.value.$type});

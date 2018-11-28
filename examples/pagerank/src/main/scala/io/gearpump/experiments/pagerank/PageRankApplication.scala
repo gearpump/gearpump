@@ -22,6 +22,7 @@ import io.gearpump.streaming.partitioner.HashPartitioner
 import io.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
 import PageRankApplication.NodeWithTaskId
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.appmaster.AppMaster
 import io.gearpump.util.Graph
 import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.util.Graph.Node

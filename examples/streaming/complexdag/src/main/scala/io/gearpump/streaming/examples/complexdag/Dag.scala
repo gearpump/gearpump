@@ -20,6 +20,7 @@ package io.gearpump.streaming.examples.complexdag
 
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.streaming.partitioner.HashPartitioner
 import io.gearpump.util.{AkkaApp, Graph, LogUtil}
 import org.slf4j.Logger

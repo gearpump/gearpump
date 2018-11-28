@@ -1,4 +1,5 @@
 import BuildDashboard.services
+import BuildExamples.examples
 import Dependencies._
 import Docs._
 import Pack.packProject
@@ -136,7 +137,7 @@ object BuildGearpump extends sbt.Build {
     services,
     gearpumpHadoop,
     packProject
-  )
+  ) ++ examples
 
   lazy val root = Project(
     id = "gearpump",

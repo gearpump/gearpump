@@ -27,9 +27,8 @@ import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated, WorkerList}
 import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
-import io.gearpump.cluster.{AppDescription, AppMasterContext, TestUtil}
+import io.gearpump.cluster.{AppDescription, AppMasterContext, TestUtil, UserConfig}
 import DistServiceAppMaster.{FileContainer, GetFileContainer}
-import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorUtil
 import io.gearpump.util.ActorSystemBooter.RegisterActorSystem

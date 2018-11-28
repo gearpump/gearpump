@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-angular.module('org.apache.gearpump.models')
+angular.module('io.gearpump.models')
 
   .service('StreamingAppMetricsProvider', ['MetricsProvider', function (MetricsProvider) {
     'use strict';

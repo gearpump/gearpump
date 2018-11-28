@@ -25,6 +25,7 @@ import akka.pattern.ask
 import org.slf4j.{Logger, LoggerFactory}
 import DistShellAppMaster.ShellCommand
 import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.util.{AkkaApp, Constants}
 import io.gearpump.util.Constants
 

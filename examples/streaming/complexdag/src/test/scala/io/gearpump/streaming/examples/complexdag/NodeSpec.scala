@@ -19,7 +19,6 @@ package io.gearpump.streaming.examples.complexdag
 
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.examples.complexdag.Node
 import io.gearpump.Message
 import io.gearpump.streaming.MockUtil._
 import org.mockito.Mockito._
