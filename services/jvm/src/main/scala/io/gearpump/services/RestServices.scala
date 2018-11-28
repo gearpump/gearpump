@@ -29,9 +29,6 @@ import akka.util.Timeout
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
 import io.gearpump.jarstore.JarStoreClient
-import io.gearpump.util.LogUtil
-// NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
 
 /** Contains all REST API service endpoints */
 class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem)
