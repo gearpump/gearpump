@@ -22,7 +22,7 @@ resolvers += Resolver.bintrayIvyRepo("manuzhang", "sbt-plugins")
 
 resolvers += Classpaths.sbtPluginReleases
 
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.8")
+addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.26")
 
 addSbtPlugin("io.gearpump.sbt" % "sbt-assembly" % "0.14.5"
   exclude("org.apache.maven", "maven-plugin-api"))
