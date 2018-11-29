@@ -1,21 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import BuildGearpump._
 import Dependencies._
 import org.scalajs.sbtplugin.cross.{CrossProject, CrossType}
@@ -28,22 +10,14 @@ object BuildDashboard extends sbt.Build {
   lazy val services: Project = services_full.jvm
     .settings(serviceJvmSettings: _*)
     .dependsOn(core % "provided", streaming % "test->test; provided")
-
-  // ScalaJs project need to be build separately.
-  // sbt "project gearpump-servicesJS" compile
-  private lazy val serviceJS: Project = services_full.js.settings(serviceJSSettings: _*)
-
+  
   private lazy val services_full = CrossProject("gearpump-services", file("services"),
     CrossType.Full)
     .settings(
       publish := {},
       publishLocal := {}
     ).disablePlugins(sbtassembly.AssemblyPlugin)
-
-  private val copySharedSourceFiles = TaskKey[Unit]("copied shared services source code")
-
-  private val distDashboardDirectory = s"${distDirectory}/target/pack/dashboard/views/scalajs"
-
+  
   private lazy val serviceJvmSettings = commonSettings ++ noPublish ++ Seq(
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test",
@@ -81,39 +55,5 @@ object BuildDashboard extends sbt.Build {
       "org.webjars.npm" % "dashing" % "0.4.8"
     ).map(_.exclude("org.scalamacros", "quasiquotes_2.10"))
       .map(_.exclude("org.scalamacros", "quasiquotes_2.10.3")))
-
-  private lazy val serviceJSSettings = Seq(
-    scalaVersion := scalaVersionNumber,
-    crossScalaVersions := crossScalaVersionNumbers,
-    checksums := Seq(""),
-    requiresDOM := true,
-    libraryDependencies ++= Seq(
-      "com.lihaoyi" %%% "upickle" % upickleVersion,
-      "com.lihaoyi" %%% "utest" % "0.3.1"
-    ),
-    scalaJSStage in Global := FastOptStage,
-    testFrameworks += new TestFramework("utest.runner.Framework"),
-    requiresDOM := true,
-    persistLauncher in Compile := false,
-    persistLauncher in Test := false,
-    skip in packageJSDependencies := false,
-    scoverage.ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages :=
-      ".*gearpump\\.dashboard.*",
-
-    copySharedSourceFiles := {
-      // scalastyle:off println
-      println(s"Copy shared source code to project services...")
-      // scalastyle:on println
-    },
-
-    artifactPath in fastOptJS in Compile :=
-      new java.io.File(distDashboardDirectory, moduleName.value + "-fastopt.js"),
-
-    fastOptJS in Compile := {
-      (fastOptJS in Compile).dependsOn(copySharedSourceFiles).value
-    },
-
-    relativeSourceMaps := true,
-    jsEnv in Test := new PhantomJS2Env(scalaJSPhantomJSClassLoader.value)
-  )
+  
 }
