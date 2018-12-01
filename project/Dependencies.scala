@@ -29,7 +29,7 @@ object Dependencies {
   val commonsHttpVersion = "3.1"
   val commonsLoggingVersion = "1.1.3"
   val commonsLangVersion = "2.6"
-  val commonsIOVersion = "2.4"
+  val commonsIOVersion = "2.6"
   val dataReplicationVersion = "0.7"
   val upickleVersion = "0.7.1"
   val junitVersion = "4.12"
