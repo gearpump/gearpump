@@ -77,11 +77,7 @@ object FlatMapFunction {
       }
 
       override def flatMap(t: T): TraversableOnce[T] = {
-        if (fn.filter(t)) {
-          Option(t)
-        } else {
-          None
-        }
+        Option(t).filter(fn.filter)
       }
 
       override def teardown(): Unit = {

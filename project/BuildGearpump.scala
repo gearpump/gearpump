@@ -39,8 +39,6 @@ object BuildGearpump extends sbt.Build {
                     // that should be imported explicitly
         "-language:existentials", // Enable existential types
         "-language:implicitConversions", // Enable implicit conversions
-        "-Yclosure-elim", // Perform closure elimination
-        "-Yinline", // Perform inlining when possible
         "-Ywarn-unused-import" // Warn on unused imports
       ),
       publishMavenStyle := true,

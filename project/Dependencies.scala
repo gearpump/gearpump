@@ -1,27 +1,9 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import sbt._
 import Keys._
 
 object Dependencies {
 
-  val crossScalaVersionNumbers = Seq("2.11.8")
+  val crossScalaVersionNumbers = Seq("2.12.7")
   val scalaVersionNumber = crossScalaVersionNumbers.last
   val akkaVersion = "2.5.18"
   val akkaHttpVersion = "10.1.3"
@@ -37,12 +19,12 @@ object Dependencies {
   val slf4jVersion = "1.7.16"
   val guavaVersion = "16.0.1"
   val codahaleVersion = "3.0.2"
-  val kryoVersion = "0.4.1"
+  val kryoVersion = "0.5.2"
   val gsCollectionsVersion = "6.2.0"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
-  val scalaTestVersion = "2.2.6"
-  val scalaCheckVersion = "1.11.6"
+  val scalaTestVersion = "3.0.5"
+  val scalaCheckVersion = "1.14.0"
   val mockitoVersion = "1.10.17"
   val bijectionVersion = "0.8.0"
   val scalazVersion = "7.1.1"

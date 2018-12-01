@@ -1,21 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.gearpump.cluster
 
 import java.io.File
@@ -26,7 +8,7 @@ import java.util.concurrent.{Executors, TimeUnit}
 import akka.actor.{Actor, ActorSystem, Address, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigValueFactory}
-import io.gearpump.cluster.MasterHarness.MockMaster
+import io.gearpump.cluster.MasterHarness._
 import io.gearpump.cluster.client.{RemoteRuntimeEnvironment, RuntimeEnvironment}
 import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorUtil, FileUtils, LogUtil}
@@ -36,7 +18,6 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
 
 trait MasterHarness {
-  private val LOG = LogUtil.getLogger(getClass)
 
   implicit val pool = MasterHarness.cachedPool
 
@@ -150,6 +131,7 @@ trait MasterHarness {
 }
 
 object MasterHarness {
+  private val LOG = LogUtil.getLogger(getClass)
 
   val cachedPool = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
 
