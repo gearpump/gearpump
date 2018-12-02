@@ -146,10 +146,10 @@ class Stream[T](
    * Log to task log file
    */
   def log(): Unit = {
-    this.map(msg => {
+    this.map((msg => {
       LoggerFactory.getLogger("dsl").info(msg.toString)
       msg
-    }, "log")
+    }): T => T, "log")
   }
 
   /**

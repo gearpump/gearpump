@@ -29,5 +29,6 @@ trait ConsoleOutput {
 class RichProcess(process: Process, _logger: ConsoleOutput) extends Process {
   def exitValue(): scala.Int = process.exitValue()
   def destroy(): scala.Unit = process.destroy()
+  def isAlive(): Boolean = process.isAlive()
   def logger: ConsoleOutput = _logger
 }

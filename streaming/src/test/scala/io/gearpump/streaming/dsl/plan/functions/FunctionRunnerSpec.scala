@@ -1,20 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package io.gearpump.streaming.dsl.plan.functions
 
 import java.time.Instant
@@ -92,12 +75,15 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
     }
 
     "chain multiple single input function" in {
-      val split = new FlatMapper[String, String](FlatMapFunction(_.split("\\s")), "split")
+      val split = new FlatMapper[String, String](FlatMapFunction(
+        (_.split("\\s")): String => TraversableOnce[String]), "split")
 
       val filter = new FlatMapper[String, String](
-        FlatMapFunction(word => if (word.isEmpty) None else Some(word)), "filter")
+        FlatMapFunction((word =>
+          if (word.isEmpty) None else Some(word)): String => TraversableOnce[String]), "filter")
 
-      val map = new FlatMapper[String, Int](FlatMapFunction(word => Some(1)), "map")
+      val map = new FlatMapper[String, Int](FlatMapFunction(
+        (_ => Some(1)): String => TraversableOnce[Int]), "map")
 
       val sum = new FoldRunner[Int, Option[Int]](
         ReduceFunction({(left, right) => left + right}), "sum")
@@ -241,7 +227,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       // Source with transformer
       val anotherTaskContext = MockUtil.mockTaskContext
       val double = new FlatMapper[String, String](FlatMapFunction(
-        word => List(word, word)), "double")
+        (word => List(word, word)): String => TraversableOnce[String]), "double")
       val runner2 = new WindowOperator[String, String](
         GlobalWindows(), double)
       val another = new DataSourceTask(anotherTaskContext,
@@ -264,7 +250,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       val taskContext = MockUtil.mockTaskContext
       val conf = UserConfig.empty
       val double = new FlatMapper[String, String](FlatMapFunction(
-        word => List(word, word)), "double")
+        (word => List(word, word)): String => List[String]), "double")
       val transform = new WindowOperator[String, String](GlobalWindows(), double)
       val task = new TransformTask[String, String](transform, taskContext, conf)
       task.onStart(Instant.EPOCH)
