@@ -202,12 +202,12 @@
 
 ========================================================================
 
-Apache Gearpump subcomponents:
+Gearpump subcomponents:
 
-   Apache Gearpump includes a number of subcomponents with
+   Gearpump includes a number of subcomponents with
    separate copyright notices and license terms. Your use of the source
    code for these subcomponents is subject to the terms and
-   conditions of the following licenses. 
+   conditions of the following licenses.
 
 ========================================================================
 BSD licenses
