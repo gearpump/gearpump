@@ -18,10 +18,12 @@ import Dependencies._
 import Docs._
 import Pack.packProject
 import com.typesafe.sbt.SbtPgp.autoImport._
-import de.johoop.jacoco4sbt.JacocoPlugin.jacoco
 import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyPlugin.autoImport._
+import sbtunidoc.GenJavadocPlugin
+import sbtunidoc.JavaUnidocPlugin
+import sbtunidoc.ScalaUnidocPlugin
 import xerial.sbt.Sonatype._
 
 object BuildGearpump extends sbt.Build {
@@ -30,16 +32,13 @@ object BuildGearpump extends sbt.Build {
   val distDirectory = "output"
   val projectName = "gearpump"
 
-  val commonSettings = Seq(jacoco.settings: _*) ++ sonatypeSettings ++
+  val commonSettings = sonatypeSettings ++
     Seq(
       resolvers ++= Seq(
         // https://repo1.maven.org/maven2 has been added by default
         "apache-repo" at "https://repository.apache.org/content/repositories",
-        Resolver.sonatypeRepo("releases"),
-        "clojars" at "http://clojars.org/repo"
-      )
-    ) ++
-    Seq(
+        Resolver.sonatypeRepo("releases")
+      ),
       scalaVersion := scalaVersionNumber,
       crossScalaVersions := crossScalaVersionNumbers,
       organization := "io.gearpump",
@@ -157,6 +156,8 @@ object BuildGearpump extends sbt.Build {
     settings = commonSettings ++ noPublish ++ gearpumpUnidocSetting,
     aggregate = aggregated)
     .settings(Defaults.itSettings: _*)
+    .enablePlugins(ScalaUnidocPlugin)
+    .enablePlugins(JavaUnidocPlugin)
     .disablePlugins(sbtassembly.AssemblyPlugin)
 
   lazy val core = Project(
@@ -179,6 +180,7 @@ object BuildGearpump extends sbt.Build {
           ), List.empty[xml.Node], node)
       }
     ))
+    .enablePlugins(GenJavadocPlugin)
 
   lazy val streaming = Project(
     id = "gearpump-streaming",
@@ -212,6 +214,7 @@ object BuildGearpump extends sbt.Build {
         }
       )
   ).dependsOn(core % "test->test;provided")
+    .enablePlugins(GenJavadocPlugin)
 
   lazy val gearpumpHadoop = Project(
     id = "gearpump-hadoop",

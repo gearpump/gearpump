@@ -17,6 +17,7 @@ import Docs._
 import Dependencies._
 import sbt._
 import sbt.Keys._
+import sbtunidoc.GenJavadocPlugin
 
 object BuildDashboard extends sbt.Build {
 
@@ -25,6 +26,7 @@ object BuildDashboard extends sbt.Build {
     base = file("services/jvm"))
     .settings(serviceJvmSettings: _*)
     .dependsOn(core % "provided", streaming % "test->test; provided")
+    .enablePlugins(GenJavadocPlugin)
     .disablePlugins(sbtassembly.AssemblyPlugin)
 
   private lazy val serviceJvmSettings = commonSettings ++ noPublish ++
