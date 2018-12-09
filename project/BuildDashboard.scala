@@ -27,9 +27,8 @@ object BuildDashboard extends sbt.Build {
     .settings(serviceJvmSettings: _*)
     .dependsOn(core % "provided", streaming % "test->test; provided")
     .enablePlugins(GenJavadocPlugin)
-    .disablePlugins(sbtassembly.AssemblyPlugin)
 
-  private lazy val serviceJvmSettings = commonSettings ++ noPublish ++
+  private lazy val serviceJvmSettings = commonSettings ++ noPublish ++ myAssemblySettings ++
     javadocSettings ++ Seq(
       libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test",
