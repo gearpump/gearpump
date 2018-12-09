@@ -1,5 +1,3 @@
-resolvers += Resolver.bintrayIvyRepo("fvunicorn", "sbt-plugins")
-
 resolvers += Resolver.bintrayIvyRepo("manuzhang", "sbt-plugins")
 
 resolvers += Classpaths.sbtPluginReleases
@@ -7,7 +5,7 @@ resolvers += Classpaths.sbtPluginReleases
 addSbtPlugin("io.gearpump.sbt" % "sbt-assembly" % "0.14.5"
   exclude("org.apache.maven", "maven-plugin-api"))
 
-addSbtPlugin("io.gearpump.sbt" % "sbt-pack" % "0.7.7")
+addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.11")
 
 addSbtPlugin("de.johoop" % "jacoco4sbt" % "2.1.6")
 

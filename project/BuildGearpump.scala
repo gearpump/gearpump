@@ -219,7 +219,7 @@ object BuildGearpump extends sbt.Build {
   lazy val gearpumpHadoop = Project(
     id = "gearpump-hadoop",
     base = file("gearpump-hadoop"),
-    settings = commonSettings ++ noPublish ++
+    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
       Seq(
         libraryDependencies ++= Seq(
           "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
@@ -227,7 +227,7 @@ object BuildGearpump extends sbt.Build {
         ).map(_.exclude("org.slf4j", "slf4j-api"))
           .map(_.exclude("org.slf4j", "slf4j-log4j12"))
       )
-  ).dependsOn(core % "provided").disablePlugins(sbtassembly.AssemblyPlugin)
+  ).dependsOn(core % "provided")
 
   private def changeShadedDeps(toExclude: Set[String], toInclude: List[xml.Node],
       node: xml.Node): xml.Node = {

@@ -16,13 +16,14 @@ import sbt.Keys._
 import sbt._
 import BuildGearpump._
 import BuildDashboard.services
-import xerial.sbt.Pack._
+import xerial.sbt.pack.PackPlugin
+import xerial.sbt.pack.PackPlugin.autoImport._
 
 object Pack extends sbt.Build {
   val daemonClassPath = Seq(
     "${PROG_HOME}/conf",
     // This is for DFSJarStore
-    "${PROG_HOME}/lib/hadoop/*"
+    "${PROG_HOME}/hadoop/*"
   )
 
   val applicationClassPath = Seq(
@@ -33,7 +34,7 @@ object Pack extends sbt.Build {
 
   val serviceClassPath = Seq(
     "${PROG_HOME}/conf",
-    "${PROG_HOME}/lib/services/*",
+    "${PROG_HOME}/services/*",
     "${PROG_HOME}/dashboard"
   )
 
@@ -41,7 +42,6 @@ object Pack extends sbt.Build {
     id = "gearpump-pack",
     base = file(s"$distDirectory"),
     settings = commonSettings ++ noPublish ++
-      packSettings ++
       Seq(
         packMain := Map(
           "gear" -> "io.gearpump.cluster.main.Gear",
@@ -82,12 +82,9 @@ object Pack extends sbt.Build {
             "-Dgearpump.home=${PROG_HOME}",
             "-Djava.rmi.server.hostname=localhost")
         ),
-        packLibDir := Map(
-          "lib/hadoop" -> new ProjectsToPack(gearpumpHadoop.id).
-            exclude(services.id, core.id),
-          "lib/services" -> new ProjectsToPack(services.id).exclude(core.id)
-        ),
-        packExclude := Seq(thisProjectRef.value.project),
+        packExcludeLibJars := Seq(thisProjectRef.value.project),
+
+        packGenerateMakefile := false,
 
         packResourceDir += (baseDirectory.value / ".." / "bin" -> "bin"),
         packResourceDir += (baseDirectory.value / ".." / "conf" -> "conf"),
@@ -96,6 +93,10 @@ object Pack extends sbt.Build {
         packResourceDir += (baseDirectory.value / ".." / "streaming" / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value) -> "lib"),
         packResourceDir += (baseDirectory.value / ".." / "services" / "dashboard" -> "dashboard"),
+        packResourceDir += (baseDirectory.value / ".." / "services" / "jvm" / "target" /
+          CrossVersion.binaryScalaVersion(scalaVersion.value) -> "services"),
+        packResourceDir += (baseDirectory.value / ".." / "gearpump-hadoop" / "target" /
+          CrossVersion.binaryScalaVersion(scalaVersion.value) -> "hadoop"),
         packResourceDir += (baseDirectory.value / ".." / "examples" / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value) -> "examples"),
 
@@ -113,9 +114,7 @@ object Pack extends sbt.Build {
         packArchivePrefix := projectName + "-" + scalaBinaryVersion.value
 
       )
-  ).dependsOn(core,
-    streaming,
-    services,
-    gearpumpHadoop).
-    disablePlugins(sbtassembly.AssemblyPlugin)
+  )
+    .enablePlugins(PackPlugin)
+    .disablePlugins(sbtassembly.AssemblyPlugin)
 }
