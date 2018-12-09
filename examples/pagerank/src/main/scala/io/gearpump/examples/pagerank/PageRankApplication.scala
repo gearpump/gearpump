@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.experiments.pagerank
+package io.gearpump.examples.pagerank
 
 import akka.actor.ActorSystem
 import io.gearpump.streaming.partitioner.HashPartitioner

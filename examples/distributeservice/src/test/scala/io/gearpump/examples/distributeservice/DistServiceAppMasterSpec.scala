@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.experiments.distributeservice
+package io.gearpump.examples.distributeservice
 
 import scala.concurrent.Await
 import scala.concurrent.duration._

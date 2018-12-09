@@ -1,9 +1,6 @@
-resolvers += Resolver.bintrayIvyRepo("manuzhang", "sbt-plugins")
-
 resolvers += Classpaths.sbtPluginReleases
 
-addSbtPlugin("io.gearpump.sbt" % "sbt-assembly" % "0.14.5"
-  exclude("org.apache.maven", "maven-plugin-api"))
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.9")
 
 addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.11")
 

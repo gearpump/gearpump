@@ -11,13 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.experiments.pagerank.example
+package io.gearpump.examples.pagerank
 
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.experiments.pagerank.PageRankApplication
 import io.gearpump.util.{AkkaApp, Graph}
 import io.gearpump.util.Graph.Node
-import io.gearpump.util.Graph
 
 /** A very simple PageRank example, Cyclic graph is not supported */
 object PageRankExample extends AkkaApp {

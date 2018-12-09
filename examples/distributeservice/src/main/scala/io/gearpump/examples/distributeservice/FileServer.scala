@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package io.gearpump.experiments.distributeservice
+package io.gearpump.examples.distributeservice
 
 import java.io.File
 
