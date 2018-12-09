@@ -18,6 +18,8 @@ import BuildGearpump._
 import Dependencies._
 import sbtassembly.AssemblyPlugin.autoImport._
 
+import scala.annotation.tailrec
+
 object BuildExamples extends sbt.Build {
 
   lazy val examples: Seq[ProjectReference] = Seq(
@@ -36,38 +38,33 @@ object BuildExamples extends sbt.Build {
   lazy val wordcountJava = Project(
     id = "gearpump-examples-wordcountjava",
     base = file("examples/streaming/wordcount-java"),
-    settings = exampleSettings("io.gearpump.streaming.examples.wordcountjava.WordCount") ++
-      include("examples/streaming/wordcount-java")
+    settings = exampleSettings("io.gearpump.streaming.examples.wordcountjava.WordCount")
   ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val wordcount = Project(
     id = "gearpump-examples-wordcount",
     base = file("examples/streaming/wordcount"),
-    settings = exampleSettings("io.gearpump.streaming.examples.wordcount.dsl.WordCount") ++
-      include("examples/streaming/wordcount")
+    settings = exampleSettings("io.gearpump.streaming.examples.wordcount.dsl.WordCount")
   ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val sol = Project(
     id = "gearpump-examples-sol",
     base = file("examples/streaming/sol"),
-    settings = exampleSettings("io.gearpump.streaming.examples.sol.SOL") ++
-      include("examples/streaming/sol")
+    settings = exampleSettings("io.gearpump.streaming.examples.sol.SOL")
   ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val complexdag = Project(
     id = "gearpump-examples-complexdag",
     base = file("examples/streaming/complexdag"),
-    settings = exampleSettings("io.gearpump.streaming.examples.complexdag.Dag") ++
-      include("examples/streaming/complexdag")
+    settings = exampleSettings("io.gearpump.streaming.examples.complexdag.Dag")
   ).dependsOn(core, streaming % "compile; test->test")
 
   lazy val pagerank = Project(
     id = "gearpump-examples-pagerank",
     base = file("examples/pagerank"),
     settings =
-      exampleSettings("io.gearpump.experiments.pagerank.example.PageRankExample") ++
-        include("examples/pagerank")
-  ).dependsOn(core % "provided", streaming % "provided; test->test")
+      exampleSettings("io.gearpump.experiments.pagerank.example.PageRankExample")
+  ).dependsOn(core, streaming % "compile; test->test")
 
   /**
    * The following examples must be submitted to a deployed gearpump clutser
@@ -75,46 +72,54 @@ object BuildExamples extends sbt.Build {
   lazy val distributedshell = Project(
     id = "gearpump-examples-distributedshell",
     base = file("examples/distributedshell"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
-      mainClass in(Compile, packageBin) :=
-        Some("io.gearpump.examples.distributedshell.DistributedShell"),
-      target in assembly := baseDirectory.value.getParentFile / "target" /
-        CrossVersion.binaryScalaVersion(scalaVersion.value)
-    )
-  ).dependsOn(core % "provided; test->test")
+    settings = exampleSettings("io.gearpump.examples.distributedshell.DistributedShell")
+  ).dependsOn(core % "compile; test->test")
 
   lazy val distributeservice = Project(
     id = "gearpump-examples-distributeservice",
     base = file("examples/distributeservice"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
-      mainClass in(Compile, packageBin) :=
-        Some("io.gearpump.experiments.distributeservice.DistributeService"),
-      target in assembly := baseDirectory.value.getParentFile / "target" /
-        CrossVersion.binaryScalaVersion(scalaVersion.value),
-      libraryDependencies ++= Seq(
-        "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
-        "commons-lang" % "commons-lang" % commonsLangVersion,
-        "commons-io" % "commons-io" % commonsIOVersion,
-        "io.spray" %% "spray-can" % sprayVersion,
-        "io.spray" %% "spray-routing-shapeless2" % sprayVersion
+    settings = exampleSettings("io.gearpump.experiments.distributeservice.DistributeService")++
+      Seq(
+        libraryDependencies ++= Seq(
+          "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
+          "commons-lang" % "commons-lang" % commonsLangVersion,
+          "commons-io" % "commons-io" % commonsIOVersion,
+          "io.spray" %% "spray-can" % sprayVersion,
+          "io.spray" %% "spray-routing-shapeless2" % sprayVersion
         ) ++ annotationDependencies
-    ) ++ include("examples/distributeservice")
-  ).dependsOn(core % "provided; test->test")
+      )
+  ).dependsOn(core % "compile; test->test")
 
-  private def exampleSettings(className: String): Seq[Def.Setting[_]] =
+  private def exampleSettings(className: String): Seq[Def.Setting[_]] = {
     commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       mainClass in(Compile, packageBin) :=
         Some(className),
-      target in assembly := baseDirectory.value.getParentFile.getParentFile / "target" /
-        CrossVersion.binaryScalaVersion(scalaVersion.value)
-    )
+      target in assembly := {
+        @tailrec
+        def getExamplesPath(file: File): File = {
+          if (file.getName.equals("examples")) {
+            file
+          } else {
+            getExamplesPath(file.getParentFile)
+          }
+        }
 
-  private def include(files: String*): Seq[Def.Setting[_]] =
-    Seq(
-      assemblyExcludedJars in assembly := {
-        val cp = (fullClasspath in assembly).value
-        cp.filterNot(p =>
-          files.exists(p.data.getAbsolutePath.contains))
+        getExamplesPath(baseDirectory.value) / "target" /
+          CrossVersion.binaryScalaVersion(scalaVersion.value)
+      },
+      assemblyMergeStrategy in assembly := {
+        x =>
+          // core and streaming dependencies are not marked as provided
+          // such that the examples can be run with sbt or Intellij
+          // so they have to be excluded manually here
+          if (x.contains("examples")) {
+            val oldStrategy = (assemblyMergeStrategy in assembly).value
+            oldStrategy(x)
+          } else {
+            MergeStrategy.discard
+          }
+
       }
     )
+  }
 }

@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gearpump.experiments.distributeservice
+package io.gearpump.examples.distributeservice
 
 import java.io.File
 
@@ -20,6 +20,7 @@ import scala.util.{Failure, Success}
 import akka.pattern.ask
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import io.gearpump.examples.distributeservice.DistServiceAppMaster.{FileContainer, GetFileContainer}
 import io.gearpump.experiments.distributeservice.DistServiceAppMaster.{FileContainer, GetFileContainer}
 import io.gearpump.util.{AkkaApp, Constants}
 import org.apache.commons.io.FileUtils

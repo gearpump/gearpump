@@ -15,7 +15,6 @@
 import sbt.Keys._
 import sbt._
 import BuildGearpump._
-import BuildDashboard.services
 import xerial.sbt.pack.PackPlugin
 import xerial.sbt.pack.PackPlugin.autoImport._
 
