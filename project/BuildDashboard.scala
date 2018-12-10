@@ -17,18 +17,10 @@ import Docs._
 import Dependencies._
 import sbt._
 import sbt.Keys._
-import sbtunidoc.GenJavadocPlugin
 
-object BuildDashboard extends sbt.Build {
+object BuildDashboard {
 
-  lazy val services: Project = Project(
-    id = "gearpump-services",
-    base = file("services/jvm"))
-    .settings(serviceJvmSettings: _*)
-    .dependsOn(core % "provided", streaming % "test->test; provided")
-    .enablePlugins(GenJavadocPlugin)
-
-  private lazy val serviceJvmSettings = commonSettings ++ noPublish ++ myAssemblySettings ++
+  lazy val serviceJvmSettings = commonSettings ++ noPublish ++ myAssemblySettings ++
     javadocSettings ++ Seq(
       libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test",
