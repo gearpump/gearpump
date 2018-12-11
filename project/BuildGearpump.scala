@@ -12,11 +12,7 @@
  * limitations under the License.
  */
 
-import BuildDashboard.services
-import BuildExamples.examples
 import Dependencies._
-import Docs._
-import Pack.packProject
 import com.typesafe.sbt.SbtPgp.autoImport._
 import sbt.Keys._
 import sbt._
@@ -26,10 +22,9 @@ import sbtunidoc.JavaUnidocPlugin
 import sbtunidoc.ScalaUnidocPlugin
 import xerial.sbt.Sonatype._
 
-object BuildGearpump extends sbt.Build {
+object BuildGearpump {
 
   val apacheRepo = "https://repository.apache.org/"
-  val distDirectory = "output"
   val projectName = "gearpump"
 
   val commonSettings = sonatypeSettings ++
@@ -142,94 +137,7 @@ object BuildGearpump extends sbt.Build {
     target in assembly := baseDirectory.value / "target" / scalaBinaryVersion.value
   )
 
-  lazy val aggregated: Seq[ProjectReference] = Seq[ProjectReference](
-    core,
-    streaming,
-    services,
-    gearpumpHadoop,
-    packProject
-  ) ++ examples
-
-  lazy val root = Project(
-    id = "gearpump",
-    base = file("."),
-    settings = commonSettings ++ noPublish ++ gearpumpUnidocSetting,
-    aggregate = aggregated)
-    .settings(Defaults.itSettings: _*)
-    .enablePlugins(ScalaUnidocPlugin)
-    .enablePlugins(JavaUnidocPlugin)
-    .disablePlugins(sbtassembly.AssemblyPlugin)
-
-  lazy val core = Project(
-    id = "gearpump-core",
-    base = file("core"),
-    settings = commonSettings ++ myAssemblySettings ++ javadocSettings ++ coreDependencies ++
-      addArtifact(Artifact("gearpump-core"), sbtassembly.AssemblyKeys.assembly) ++ Seq(
-
-      assemblyOption in assembly ~= {
-        _.copy(includeScala = true)
-      },
-
-      pomPostProcess := {
-        (node: xml.Node) => changeShadedDeps(
-          Set(
-            "com.github.romix.akka",
-            "com.google.guava",
-            "com.codahale.metrics",
-            "org.scoverage"
-          ), List.empty[xml.Node], node)
-      }
-    ))
-    .enablePlugins(GenJavadocPlugin)
-
-  lazy val streaming = Project(
-    id = "gearpump-streaming",
-    base = file("streaming"),
-    settings = commonSettings ++ myAssemblySettings ++ javadocSettings ++
-      addArtifact(Artifact("gearpump-streaming"), sbtassembly.AssemblyKeys.assembly) ++
-      Seq(
-        assemblyMergeStrategy in assembly := {
-          case "geardefault.conf" =>
-            MergeStrategy.last
-          case x =>
-            val oldStrategy = (assemblyMergeStrategy in assembly).value
-            oldStrategy(x)
-        },
-
-        libraryDependencies ++= Seq(
-          "com.goldmansachs" % "gs-collections" % gsCollectionsVersion
-        ) ++ annotationDependencies,
-
-        pomPostProcess := {
-          (node: xml.Node) => changeShadedDeps(
-            Set(
-              "com.goldmansachs",
-              "org.scala-lang",
-              "org.scoverage"
-            ),
-            List(
-              getShadedDepXML(organization.value, s"${core.id}_${scalaBinaryVersion.value}",
-                version.value, "provided")),
-            node)
-        }
-      )
-  ).dependsOn(core % "test->test;provided")
-    .enablePlugins(GenJavadocPlugin)
-
-  lazy val gearpumpHadoop = Project(
-    id = "gearpump-hadoop",
-    base = file("gearpump-hadoop"),
-    settings = commonSettings ++ noPublish ++ myAssemblySettings ++
-      Seq(
-        libraryDependencies ++= Seq(
-          "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
-          "org.apache.hadoop" % "hadoop-common" % hadoopVersion
-        ).map(_.exclude("org.slf4j", "slf4j-api"))
-          .map(_.exclude("org.slf4j", "slf4j-log4j12"))
-      )
-  ).dependsOn(core % "provided")
-
-  private def changeShadedDeps(toExclude: Set[String], toInclude: List[xml.Node],
+  def changeShadedDeps(toExclude: Set[String], toInclude: List[xml.Node],
       node: xml.Node): xml.Node = {
     node match {
       case elem: xml.Elem =>
@@ -247,7 +155,7 @@ object BuildGearpump extends sbt.Build {
     }
   }
 
-  private def getShadedDepXML(groupId: String, artifactId: String,
+  def getShadedDepXML(groupId: String, artifactId: String,
       version: String, scope: String): scala.xml.Node = {
     <dependency>
       <groupId>{groupId}</groupId>

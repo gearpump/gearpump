@@ -15,82 +15,13 @@
 import sbt.Keys._
 import sbt._
 import BuildGearpump._
-import Dependencies._
 import sbtassembly.AssemblyPlugin.autoImport._
 
 import scala.annotation.tailrec
 
-object BuildExamples extends sbt.Build {
+object BuildExamples {
 
-  lazy val examples: Seq[ProjectReference] = Seq(
-    complexdag,
-    distributedshell,
-    // distributeservice,
-    pagerank,
-    sol,
-    wordcount,
-    wordcountJava
-  )
-
-  /**
-   * The follow examples can be run in IDE or with `sbt run`
-   */
-  lazy val wordcountJava = Project(
-    id = "gearpump-examples-wordcountjava",
-    base = file("examples/streaming/wordcount-java"),
-    settings = exampleSettings("io.gearpump.streaming.examples.wordcountjava.WordCount")
-  ).dependsOn(core, streaming % "compile; test->test")
-
-  lazy val wordcount = Project(
-    id = "gearpump-examples-wordcount",
-    base = file("examples/streaming/wordcount"),
-    settings = exampleSettings("io.gearpump.streaming.examples.wordcount.dsl.WordCount")
-  ).dependsOn(core, streaming % "compile; test->test")
-
-  lazy val sol = Project(
-    id = "gearpump-examples-sol",
-    base = file("examples/streaming/sol"),
-    settings = exampleSettings("io.gearpump.streaming.examples.sol.SOL")
-  ).dependsOn(core, streaming % "compile; test->test")
-
-  lazy val complexdag = Project(
-    id = "gearpump-examples-complexdag",
-    base = file("examples/streaming/complexdag"),
-    settings = exampleSettings("io.gearpump.streaming.examples.complexdag.Dag")
-  ).dependsOn(core, streaming % "compile; test->test")
-
-  lazy val pagerank = Project(
-    id = "gearpump-examples-pagerank",
-    base = file("examples/pagerank"),
-    settings =
-      exampleSettings("io.gearpump.experiments.pagerank.example.PageRankExample")
-  ).dependsOn(core, streaming % "compile; test->test")
-
-  /**
-   * The following examples must be submitted to a deployed gearpump clutser
-   */
-  lazy val distributedshell = Project(
-    id = "gearpump-examples-distributedshell",
-    base = file("examples/distributedshell"),
-    settings = exampleSettings("io.gearpump.examples.distributedshell.DistributedShell")
-  ).dependsOn(core % "compile; test->test")
-
-  lazy val distributeservice = Project(
-    id = "gearpump-examples-distributeservice",
-    base = file("examples/distributeservice"),
-    settings = exampleSettings("io.gearpump.experiments.distributeservice.DistributeService")++
-      Seq(
-        libraryDependencies ++= Seq(
-          "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
-          "commons-lang" % "commons-lang" % commonsLangVersion,
-          "commons-io" % "commons-io" % commonsIOVersion,
-          "io.spray" %% "spray-can" % sprayVersion,
-          "io.spray" %% "spray-routing-shapeless2" % sprayVersion
-        ) ++ annotationDependencies
-      )
-  ).dependsOn(core % "compile; test->test")
-
-  private def exampleSettings(className: String): Seq[Def.Setting[_]] = {
+  def exampleSettings(className: String): Seq[Def.Setting[_]] = {
     commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
       mainClass in(Compile, packageBin) :=
         Some(className),
@@ -118,7 +49,6 @@ object BuildExamples extends sbt.Build {
           } else {
             MergeStrategy.discard
           }
-
       }
     )
   }

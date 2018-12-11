@@ -12,21 +12,21 @@
  * limitations under the License.
  */
 
-import BuildGearpump.{core, streaming}
 import sbt.Keys._
 import sbt._
 import sbtunidoc.BaseUnidocPlugin.autoImport.{unidoc, unidocAllSources, unidocProjectFilter}
 import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
 import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 
-object Docs extends sbt.Build {
+object Docs {
   lazy val javadocSettings = Seq(
     scalacOptions += s"-P:genjavadoc:out=${target.value}/java"
   )
 
-  lazy val gearpumpUnidocSetting = Seq(
-    unidocProjectFilter in(ScalaUnidoc, unidoc) := projectsWithDoc,
-    unidocProjectFilter in(JavaUnidoc, unidoc) := projectsWithDoc,
+  def gearpumpUnidocSetting(projects: ProjectReference*) = Seq(
+    unidocProjectFilter in(ScalaUnidoc, unidoc) := inProjects(projects: _*),
+
+    unidocProjectFilter in(JavaUnidoc, unidoc) := inProjects(projects: _*),
 
     unidocAllSources in(ScalaUnidoc, unidoc) := {
      ignoreUndocumentedPackages((unidocAllSources in(ScalaUnidoc, unidoc)).value)
@@ -37,14 +37,6 @@ object Docs extends sbt.Build {
      ignoreUndocumentedPackages((unidocAllSources in(JavaUnidoc, unidoc)).value)
     }
   )
-
-  private lazy val projectsWithDoc = {
-    val projects: Seq[ProjectReference] = Seq[ProjectReference](
-      core,
-      streaming
-    )
-    inProjects(projects: _*)
-  }
 
   private def ignoreUndocumentedPackages(packages: Seq[Seq[File]]): Seq[Seq[File]] = {
     packages
