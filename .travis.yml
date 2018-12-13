@@ -19,18 +19,23 @@ script:
 - echo "TRAVIS_TAG" $TRAVIS_TAG
 - echo "repo" $TRAVIS_REPO_SLUG
 - set -o pipefail; skipLogs="Resolving |Compiling |Done updating|Updating |scoverage|coverage-report";
-  if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]];
-    then sbt -jvm-opts project/travis/jvmopts clean +assembly scalastyle test:scalastyle unidoc coverage +test | grep -v -E "$skipLogs";
-  elif [[ $TRAVIS_BRANCH == "master" ]];
-    then sbt -jvm-opts project/travis/jvmopts clean +assembly +publish | grep -v -E "$skipLogs"; sbt -jvm-opts project/travis/jvmopts scalastyle test:scalastyle unidoc coverage  +test  | grep -v -E "$skipLogs";
-  elif [[ $TRAVIS_TAG != "" ]];
-    then sbt -jvm-opts project/travis/jvmopts clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
+  if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]]; then 
+    sbt -jvm-opts project/travis/jvmopts clean +assembly scalastyle test:scalastyle unidoc coverage test | grep -v -E "$skipLogs";
+    sbt coverageReport;
+  elif [[ $TRAVIS_BRANCH == "master" ]]; then
+    sbt -jvm-opts project/travis/jvmopts clean +assembly +publish | grep -v -E "$skipLogs";
+    sbt -jvm-opts project/travis/jvmopts scalastyle test:scalastyle unidoc coverage test  | grep -v -E "$skipLogs";
+    sbt coverageReport;
+  elif [[ $TRAVIS_TAG != "" ]]; then
+    sbt -jvm-opts project/travis/jvmopts clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
   fi
 after_success:
-- if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" || $TRAVIS_BRANCH == "master" ]];
-    then bash <(curl -s https://codecov.io/bash);  
-  elif [[ $TRAVIS_TAG != "" ]];
-    then set -o pipefail; openssl aes-256-cbc -K $encrypted_3d8d53d5fdbf_key -iv $encrypted_3d8d53d5fdbf_iv -in secring.asc.enc -out secring.asc -d; sbt +publishSigned sonatypeReleaseAll | grep -v -E "Resolving ";
+- if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" || $TRAVIS_BRANCH == "master" ]]; then
+    bash <(curl -s https://codecov.io/bash);  
+  elif [[ $TRAVIS_TAG != "" ]]; then
+    set -o pipefail;
+    openssl aes-256-cbc -K $encrypted_3d8d53d5fdbf_key -iv $encrypted_3d8d53d5fdbf_iv -in secring.asc.enc -out secring.asc -d;
+    sbt +publishSigned sonatypeReleaseAll | grep -v -E "Resolving ";
   fi 
 deploy:
   provider: releases
@@ -43,8 +48,3 @@ deploy:
     repo: gearpump/gearpump
     tags: true
     all_branches: true
-install:
-  - mkdir travis-phantomjs
-  - wget https://s3.amazonaws.com/travis-phantomjs/phantomjs-2.0.0-ubuntu-12.04.tar.bz2 -O "$PWD"/travis-phantomjs/phantomjs-2.0.0-ubuntu-12.04.tar.bz2
-  - tar -xvf "$PWD"/travis-phantomjs/phantomjs-2.0.0-ubuntu-12.04.tar.bz2 -C "$PWD"/travis-phantomjs
-  - export PATH="$PWD/travis-phantomjs:$PATH"
