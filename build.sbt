@@ -57,29 +57,34 @@ lazy val core = Project(
   id = "gearpump-core",
   base = file("core"))
   .settings(commonSettings ++ myAssemblySettings ++ javadocSettings ++ coreDependencies ++
-    addArtifact(Artifact("gearpump-core"), sbtassembly.AssemblyKeys.assembly) ++ Seq(
+    addArtifact(artifact in (Compile, assembly), assembly) ++
+    Seq(
+      assemblyOption in assembly ~= {
+        _.copy(includeScala = true)
+      },
 
-    assemblyOption in assembly ~= {
-      _.copy(includeScala = true)
-    },
+      artifact in (Compile, assembly) := {
+        val art = (artifact in (Compile, assembly)).value
+        art.withClassifier(Some("assembly"))
+      },
 
-    pomPostProcess := {
-      (node: xml.Node) => changeShadedDeps(
-        Set(
-          "com.github.romix.akka",
-          "com.google.guava",
-          "com.codahale.metrics",
-          "org.scoverage"
-        ), List.empty[xml.Node], node)
-    }
-  ))
+      pomPostProcess := {
+        (node: xml.Node) => changeShadedDeps(
+          Set(
+            "com.github.romix.akka",
+            "com.google.guava",
+            "com.codahale.metrics",
+            "org.scoverage"
+          ), List.empty[xml.Node], node)
+      }
+    ))
   .enablePlugins(GenJavadocPlugin)
 
 lazy val streaming = Project(
   id = "gearpump-streaming",
   base = file("streaming"))
   .settings(commonSettings ++ myAssemblySettings ++ javadocSettings ++
-    addArtifact(Artifact("gearpump-streaming"), sbtassembly.AssemblyKeys.assembly) ++
+    addArtifact(artifact in (Compile, assembly), assembly) ++
     Seq(
       assemblyMergeStrategy in assembly := {
         case "geardefault.conf" =>
@@ -87,6 +92,11 @@ lazy val streaming = Project(
         case x =>
           val oldStrategy = (assemblyMergeStrategy in assembly).value
           oldStrategy(x)
+      },
+
+      artifact in (Compile, assembly) := {
+        val art = (artifact in (Compile, assembly)).value
+        art.withClassifier(Some("assembly"))
       },
 
       libraryDependencies ++= Seq(

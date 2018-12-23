@@ -17,9 +17,6 @@ import com.typesafe.sbt.SbtPgp.autoImport._
 import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyPlugin.autoImport._
-import sbtunidoc.GenJavadocPlugin
-import sbtunidoc.JavaUnidocPlugin
-import sbtunidoc.ScalaUnidocPlugin
 import xerial.sbt.Sonatype._
 
 object BuildGearpump {
@@ -120,7 +117,7 @@ object BuildGearpump {
       _.copy(includeScala = false)
     },
     assemblyJarName in assembly := {
-      s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
+      s"${name.value}_${scalaBinaryVersion.value}-${version.value}-assembly.jar"
     },
     assemblyShadeRules in assembly := Seq(
       ShadeRule.rename("com.romix.**" -> "io.gearpump.@0").inAll,
