@@ -37,6 +37,7 @@ object BuildGearpump {
       useGpg := false,
       pgpSecretRing := file("./secring.asc"),
       pgpPublicRing := file("./pubring.asc"),
+      updateOptions := updateOptions.value.withGigahorse(false),
       scalacOptions ++= Seq(
         "-deprecation", // Emit warning and location for usages of deprecated APIs
         "-encoding", "UTF-8", // Specify character encoding used by source files
