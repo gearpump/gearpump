@@ -33,7 +33,7 @@ object BuildGearpump {
       ),
       scalaVersion := scalaVersionNumber,
       crossScalaVersions := crossScalaVersionNumbers,
-      organization := "io.gearpump",
+      organization := "io.github.gearpump",
       useGpg := false,
       pgpSecretRing := file("./secring.asc"),
       pgpPublicRing := file("./pubring.asc"),
@@ -68,7 +68,7 @@ object BuildGearpump {
 
       pomExtra := {
         // scalastyle:off line.size.limit
-        <url>https://github.com/apache/incubator-gearpump</url>
+        <url>https://github.com/gearpump/gearpump</url>
         <licenses>
           <license>
             <name>Apache 2</name>
@@ -76,15 +76,14 @@ object BuildGearpump {
           </license>
         </licenses>
         <scm>
-          <connection>scm:git://git.apache.org/incubator-gearpump.git</connection>
-          <developerConnection>scm:git:git@github.com:apache/incubator-gearpump</developerConnection>
-          <url>github.com/apache/incubator-gearpump</url>
+          <connection>scm:git:git@github.com:gearpump/gearpump.git</connection>
+          <url>https://github.com/gearpump/gearpump.git</url>
         </scm>
         <developers>
           <developer>
             <id>gearpump</id>
             <name>Gearpump Team</name>
-            <url>http://gearpump.incubator.apache.org/community.html#who-we-are</url>
+            <url>https://github.com/orgs/gearpump/teams</url>
           </developer>
         </developers>
         // scalastyle:on line.size.limit
