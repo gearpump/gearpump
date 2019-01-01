@@ -21,7 +21,6 @@ import xerial.sbt.Sonatype._
 
 object BuildGearpump {
 
-  val apacheRepo = "https://repository.apache.org/"
   val projectName = "gearpump"
 
   val commonSettings = sonatypeSettings ++
@@ -52,17 +51,18 @@ object BuildGearpump {
       pgpPassphrase := Option(System.getenv().get("PASSPHRASE")).map(_.toArray),
       credentials += Credentials(
         "Sonatype Nexus Repository Manager",
-        "repository.apache.org",
+        "oss.sonatype.org",
         System.getenv().get("SONATYPE_USERNAME"),
         System.getenv().get("SONATYPE_PASSWORD")),
 
       pomIncludeRepository := { _ => false },
 
       publishTo := {
+        val nexus = "https://oss.sonatype.org/"
         if (isSnapshot.value) {
-          Some("snapshots" at apacheRepo + "content/repositories/snapshots")
+          Some("snapshots" at nexus + "content/repositories/snapshots")
         } else {
-          Some("releases" at apacheRepo + "content/repositories/releases")
+          Some("releases" at nexus + "service/local/staging/deploy/maven2")
         }
       },
 
