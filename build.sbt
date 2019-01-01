@@ -30,7 +30,6 @@ lazy val aggregated: Seq[ProjectReference] = Seq[ProjectReference](
   packProject,
   complexdag,
   distributedshell,
-  // distributeservice,
   pagerank,
   sol,
   wordcount,
@@ -181,18 +180,4 @@ lazy val distributedshell = Project(
   .settings(exampleSettings("io.gearpump.examples.distributedshell.DistributedShell"))
   .dependsOn(core % "compile; test->test")
 
-lazy val distributeservice = Project(
-  id = "gearpump-examples-distributeservice",
-  base = file("examples/distributeservice"))
-  .settings(exampleSettings("io.gearpump.experiments.distributeservice.DistributeService")++
-    Seq(
-      libraryDependencies ++= Seq(
-        "commons-httpclient" % "commons-httpclient" % commonsHttpVersion,
-        "commons-lang" % "commons-lang" % commonsLangVersion,
-        "commons-io" % "commons-io" % commonsIOVersion,
-        "io.spray" %% "spray-can" % sprayVersion,
-        "io.spray" %% "spray-routing-shapeless2" % sprayVersion
-      ) ++ annotationDependencies
-    ))
-  .dependsOn(core % "compile; test->test")
 
