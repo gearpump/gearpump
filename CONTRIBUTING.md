@@ -122,7 +122,7 @@ To work on a code contribution, following process is suggested:
   git checkout branch_issueId
   ```
 
-  Work on the branch, make changes, then push to [your forked Gearpump repo](https://github.com/your_username/incubator-gearpump).
+  Work on the branch, make changes, then push to [your forked Gearpump repo](https://github.com/your_username/gearpump).
 
   ```
   git push origin branch_issueId
@@ -180,19 +180,19 @@ It is highly recommended to set up a development environment to make any code co
 If you just want to study Gearpump source code, it is optional to perform following steps. 
 But, if you plan to contribute to Gearpump's code base, it is necessary to perform following steps:
 
-1. [Fork](https://help.github.com/articles/fork-a-repo) https://github.com/apache/incubator-gearpump to  your own repo at https://github.com/your_username/incubator-gearpump.
+1. [Fork](https://help.github.com/articles/fork-a-repo) https://github.com/gearpump/gearpump to  your own repo at https://github.com/your_username/gearpump.
 
 2. Clone the forked repo at your computer.
 
   ```bash
-  git clone https://github.com/your_username/incubator-gearpump
-  cd incubator-gearpump
+  git clone https://github.com/your_username/gearpump
+  cd gearpump
   ```
 
-3. Add apache/incubator-gearpump as an external repo 'upstream' by following the [guide](https://help.github.com/articles/configuring-a-remote-for-a-fork/).
+3. Add gearpump/gearpump as an external repo 'upstream' by following the [guide](https://help.github.com/articles/configuring-a-remote-for-a-fork/).
 
   ```bash
-  git remote add upstream https://github.com/apache/incubator-gearpump.git
+  git remote add upstream https://github.com/gearpump/gearpump.git
   ```
 
 4. In local master branch, periodically sync the forked master with the upstream master with 
