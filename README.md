@@ -5,7 +5,7 @@
 [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](LICENSE)
 [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master)
 [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
-[![Join the Gitter Chat](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/gearpump)
+[![Join the chat at https://gitter.im/gearpump/gearpump](https://badges.gitter.im/gearpump/gearpump.svg)](https://gitter.im/gearpump/gearpump)
 
 Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
