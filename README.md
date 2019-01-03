@@ -1,5 +1,11 @@
 
-## Gearpump  [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.apache.gearpump/gearpump-core_2.11/badge.svg)](http://gearpump.apache.org/downloads.html) [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](LICENSE) [![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master) [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
+## Gearpump  
+
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.gearpump/gearpump-core_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.gearpump/gearpump-core_2.12)
+[![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](LICENSE)
+[![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master)
+[![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
+[![Join the Gitter Chat](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/gearpump)
 
 Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
 
@@ -26,21 +32,21 @@ For steps to reproduce the performance test, please check [Performance benchmark
 * Explore the [Maven dependencies](http://gearpump.apache.org/downloads.html#maven-dependencies)
 * Explore the [Document site](http://gearpump.apache.org)
 * Explore the [User Mailing List](http://mail-archives.apache.org/mod_mbox/incubator-gearpump-user/)
-* Report an [issue](https://issues.apache.org/jira/browse/GEARPUMP)
+* Report an [issue](https://github.com/gearpump/gearpump/issues)
 
 ## How to Build
 
 1). Clone the Gearpump repository
 
 ```bash
-  git clone https://github.com/apache/incubator-gearpump.git
+  git clone https://github.com/gearpump/gearpump.git
   cd gearpump
 ```
 
 2). Build package
 
 ```bash
-  ## Please use scala 2.11 or 2.10
+  ## Please use scala 2.12
   ## The target package path: output/target/gearpump-${version}.zip
   sbt clean +assembly +packArchiveZip
 ```
@@ -68,9 +74,6 @@ For Linux:
 export HTTP_PROXY=http://host:port
 export HTTPS_PROXY=http://host:port
 ```
-
-## How to run Gearpump integration test
-Gearpump has an integration test system which is based on Docker. Please check [the instructions](integrationtest/README.md).
 
 ## How to do style check before submitting a pull request?
 
@@ -104,16 +107,10 @@ Before submitting a PR, you should always run style check first:
 * [Gong Yu](https://github.com/pangolulu)
 * [Karol Brejna](https://github.com/karol-brejna-i)
 
-## Contacts
-
-* [Subscribe](mailto:user-subscribe@gearpump.incubator.apache.org) or [mail](mailto:user@gearpump.incubator.apache.org) the  [user@gearpump.incubator.apache.org](http://mail-archives.apache.org/mod_mbox/incubator-gearpump-user/) list
-* [Subscribe](mailto:dev-subscribe@gearpump.incubator.apache.org) or [mail](mailto:dev@gearpump.incubator.apache.org) the [dev@gearpump.incubator.apache.org](http://mail-archives.apache.org/mod_mbox/incubator-gearpump-dev/) list
-* Report issues on [JIRA](https://issues.apache.org/jira/browse/GEARPUMP)
-
 ## License
 
 Gearpump itself is licensed under the [Apache License (2.0)](http://www.apache.org/licenses/LICENSE-2.0).
-For library it used, please see [LICENSE](https://github.com/apache/incubator-gearpump/blob/master/LICENSE).
+For library it used, please see [LICENSE](https://github.com/gearpump/gearpump/blob/master/LICENSE.bin).
 
 ## Acknowledgement
 
