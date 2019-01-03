@@ -134,7 +134,7 @@ class Stream[T](
   private def transform[R](fn: FunctionRunner[T, R]): Stream[R] = {
     val op = TransformOp(fn)
     graph.addVertex(op)
-    graph.addEdge(thisNode, edge.getOrElse(Direct), op)
+    graph.addVertexAndEdge(thisNode, edge.getOrElse(Direct), op)
     new Stream(graph, op, None, windows)
   }
 
@@ -157,8 +157,8 @@ class Stream[T](
   def merge(other: Stream[T], parallelism: Int = 1, description: String = "merge"): Stream[T] = {
     val mergeOp = MergeOp(parallelism, description, UserConfig.empty)
     graph.addVertex(mergeOp)
-    graph.addEdge(thisNode, edge.getOrElse(Direct), mergeOp)
-    graph.addEdge(other.thisNode, other.edge.getOrElse(Shuffle), mergeOp)
+    graph.addVertexAndEdge(thisNode, edge.getOrElse(Direct), mergeOp)
+    graph.addVertexAndEdge(other.thisNode, other.edge.getOrElse(Shuffle), mergeOp)
     val winOp = Stream.addWindowOp(graph, mergeOp, windows)
     new Stream[T](graph, winOp, None, windows)
   }
@@ -185,7 +185,7 @@ class Stream[T](
       description: String = "groupBy"): Stream[T] = {
     val gbOp = GroupByOp(fn, parallelism, description)
     graph.addVertex(gbOp)
-    graph.addEdge(thisNode, edge.getOrElse(Shuffle), gbOp)
+    graph.addVertexAndEdge(thisNode, edge.getOrElse(Shuffle), gbOp)
     val winOp = Stream.addWindowOp(graph, gbOp, windows)
     new Stream(graph, winOp, None, windows)
   }
@@ -214,7 +214,7 @@ class Stream[T](
       description: String = "process"): Stream[R] = {
     val processorOp = ProcessorOp(processor, parallelism, conf, description)
     graph.addVertex(processorOp)
-    graph.addEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
+    graph.addVertexAndEdge(thisNode, edge.getOrElse(Shuffle), processorOp)
     new Stream[R](graph, processorOp, Some(Shuffle), windows)
   }
 
@@ -263,7 +263,7 @@ object Stream {
   def addWindowOp(graph: Graph[Op, OpEdge], op: Op, win: Windows): Op = {
     val winOp = WindowOp(win)
     graph.addVertex(winOp)
-    graph.addEdge(op, Direct, winOp)
+    graph.addVertexAndEdge(op, Direct, winOp)
     winOp
   }
 
@@ -276,7 +276,7 @@ object Stream {
         conf: UserConfig = UserConfig.empty, description: String = "sink"): Stream[T] = {
       implicit val sink = DataSinkOp(dataSink, parallelism, description, conf)
       stream.graph.addVertex(sink)
-      stream.graph.addEdge(stream.thisNode, Shuffle, sink)
+      stream.graph.addVertexAndEdge(stream.thisNode, Shuffle, sink)
       new Stream[T](stream.graph, sink, None, stream.windows)
     }
   }

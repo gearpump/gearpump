@@ -86,11 +86,11 @@ class Planner {
         val chainedOp = node1.chain(node2)
         graph.addVertex(chainedOp)
         for (incomingEdge <- graph.incomingEdgesOf(node1)) {
-          graph.addEdge(incomingEdge._1, incomingEdge._2, chainedOp)
+          graph.addVertexAndEdge(incomingEdge._1, incomingEdge._2, chainedOp)
         }
 
         for (outgoingEdge <- graph.outgoingEdgesOf(node2)) {
-          graph.addEdge(chainedOp, outgoingEdge._2, outgoingEdge._3)
+          graph.addVertexAndEdge(chainedOp, outgoingEdge._2, outgoingEdge._3)
         }
 
         // Remove the old vertex

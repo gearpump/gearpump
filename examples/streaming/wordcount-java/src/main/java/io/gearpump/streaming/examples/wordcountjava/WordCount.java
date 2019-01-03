@@ -46,7 +46,7 @@ public class WordCount {
     graph.addVertex(sum);
 
     Partitioner partitioner = new HashPartitioner();
-    graph.addEdge(split, partitioner, sum);
+    graph.addVertexAndEdge(split, partitioner, sum);
 
     UserConfig conf = UserConfig.empty();
     StreamApplication app = new StreamApplication("wordcountJava", conf, graph);

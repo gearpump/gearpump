@@ -18,7 +18,7 @@ import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
 
-import Graph.{Node, Path}
+import io.gearpump.util.Graph.{Node, Path}
 
 class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 
@@ -65,7 +65,7 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     val graph: Graph[Vertex, Edge] = Graph(graphElements: _*)
     graph.getVertices should contain theSameElementsAs vertices
 
-    0.until(vertices.size).foreach { i =>
+    vertices.indices.foreach { i =>
       val v = vertices(i)
       graph.outgoingEdgesOf(v) should contain theSameElementsAs outGoingEdges(i)
       graph.edgesOf(v).sortBy(_._1.id)
@@ -87,19 +87,19 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     graph.addVertex("B")
     graph.addVertex("C")
 
-    graph.addEdge("A", defaultEdge, "B")
-    graph.addEdge("B", defaultEdge, "C")
-    graph.addEdge("A", defaultEdge, "C")
+    graph.addVertexAndEdge("A", defaultEdge, "B")
+    graph.addVertexAndEdge("B", defaultEdge, "C")
+    graph.addVertexAndEdge("A", defaultEdge, "C")
 
     graph.addVertex("D")
     graph.addVertex("E")
     graph.addVertex("F")
 
-    graph.addEdge("D", defaultEdge, "E")
-    graph.addEdge("E", defaultEdge, "F")
-    graph.addEdge("D", defaultEdge, "F")
+    graph.addVertexAndEdge("D", defaultEdge, "E")
+    graph.addVertexAndEdge("E", defaultEdge, "F")
+    graph.addVertexAndEdge("D", defaultEdge, "F")
 
-    graph.addEdge("C", defaultEdge, "E")
+    graph.addVertexAndEdge("C", defaultEdge, "E")
 
     val levelMap = graph.vertexHierarchyLevelMap()
 
@@ -115,12 +115,12 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     assert(levelMap("C") < levelMap("F"))
   }
 
-  property("copy should return a immutalbe new Graph") {
+  property("copy should return a immutable new Graph") {
     val graph = Graph.empty[String, String]
     val defaultEdge = "edge"
     graph.addVertex("A")
     graph.addVertex("B")
-    graph.addEdge("A", defaultEdge, "B")
+    graph.addVertexAndEdge("A", defaultEdge, "B")
 
     val newGraph = graph.copy
     newGraph.addVertex("C")
@@ -134,9 +134,9 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     graph.addVertex("A")
     graph.addVertex("B")
     graph.addVertex("C")
-    graph.addEdge("A", defaultEdge, "B")
-    graph.addEdge("B", defaultEdge, "C")
-    graph.addEdge("A", defaultEdge, "C")
+    graph.addVertexAndEdge("A", defaultEdge, "B")
+    graph.addVertexAndEdge("B", defaultEdge, "C")
+    graph.addVertexAndEdge("A", defaultEdge, "C")
 
     val subGraph = graph.subGraph("C")
     assert(subGraph.outDegreeOf("A") != graph.outDegreeOf("A"))
@@ -148,8 +148,8 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     graph.addVertex("A")
     graph.addVertex("B")
     graph.addVertex("C")
-    graph.addEdge("A", defaultEdge, "B")
-    graph.addEdge("B", defaultEdge, "C")
+    graph.addVertexAndEdge("A", defaultEdge, "B")
+    graph.addVertexAndEdge("B", defaultEdge, "C")
 
     val newGraph = graph.copy.replaceVertex("B", "D")
     assert(newGraph.inDegreeOf("D") == graph.inDegreeOf("B"))
@@ -162,15 +162,15 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     graph.addVertex("A")
     graph.addVertex("B")
     graph.addVertex("C")
-    graph.addEdge("A", defaultEdge, "B")
-    graph.addEdge("B", defaultEdge, "C")
+    graph.addVertexAndEdge("A", defaultEdge, "B")
+    graph.addVertexAndEdge("B", defaultEdge, "C")
 
     assert(!graph.hasCycle())
 
-    graph.addEdge("C", defaultEdge, "B")
+    graph.addVertexAndEdge("C", defaultEdge, "B")
     assert(graph.hasCycle())
 
-    graph.addEdge("C", defaultEdge, "A")
+    graph.addVertexAndEdge("C", defaultEdge, "A")
     assert(graph.hasCycle())
   }
 
@@ -178,18 +178,18 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     "return equal order of graph with no circle") {
     val graph = Graph(1 ~> 2 ~> 3, 4 ~> 2, 2 ~> 5)
     val topoNoCircles = graph.topologicalOrderIterator
-    val topoWithCircles = graph.topologicalOrderWithCirclesIterator
+    val topoWithCircles = graph.topologicalOrderWithCyclesIterator
 
     assert(topoNoCircles.zip(topoWithCircles).forall(x => x._1 == x._2))
   }
 
-  property("Topological sort of graph with circles should work properly") {
+  property("Topological sort of graph with cycles should work properly") {
     val graph = Graph(0 ~> 1 ~> 3 ~> 4 ~> 6 ~> 5 ~> 7,
       4 ~> 1, 1 ~> 2 ~> 4, 7 ~> 6, 8 ~> 2, 6 ~> 9, 4 ~> 10)
-    val topoWithCircles = graph.topologicalOrderWithCirclesIterator
-    val trueTopoWithCircles = Iterator[Int](0, 8, 1, 3, 4, 2, 6, 5, 7, 10, 9)
+    val topoWithCycles = graph.topologicalOrderWithCyclesIterator
+    val trueTopoWithCycles = Iterator[Int](0, 8, 1, 4, 2, 6, 5, 7, 10, 3, 9)
 
-    assert(trueTopoWithCircles.zip(topoWithCircles).forall(x => x._1 == x._2))
+    assert(trueTopoWithCycles.zip(topoWithCycles).forall(x => x._1 == x._2))
   }
 
   property("Hierarchy level map should handle graph with cycles") {
@@ -207,11 +207,11 @@ class GraphSpec extends PropSpec with PropertyChecks with Matchers {
     val anotherEdge = "edge2"
     graph.addVertex("A")
     graph.addVertex("B")
-    graph.addEdge("A", defaultEdge, "B")
+    graph.addVertexAndEdge("A", defaultEdge, "B")
 
     assert(!graph.hasDuplicatedEdge())
 
-    graph.addEdge("A", anotherEdge, "B")
+    graph.addVertexAndEdge("A", anotherEdge, "B")
 
     assert(graph.hasDuplicatedEdge())
   }

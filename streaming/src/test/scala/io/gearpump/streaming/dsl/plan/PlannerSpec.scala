@@ -65,17 +65,17 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
 
     graph.addVertex(sourceOp)
     graph.addVertex(groupByOp)
-    graph.addEdge(sourceOp, shuffleEdge, groupByOp)
+    graph.addVertexAndEdge(sourceOp, shuffleEdge, groupByOp)
     graph.addVertex(windowOp)
-    graph.addEdge(groupByOp, directEdge, windowOp)
+    graph.addVertexAndEdge(groupByOp, directEdge, windowOp)
     graph.addVertex(flatMapOp)
-    graph.addEdge(windowOp, directEdge, flatMapOp)
+    graph.addVertexAndEdge(windowOp, directEdge, flatMapOp)
     graph.addVertex(reduceOp)
-    graph.addEdge(flatMapOp, directEdge, reduceOp)
+    graph.addVertexAndEdge(flatMapOp, directEdge, reduceOp)
     graph.addVertex(processorOp)
-    graph.addEdge(reduceOp, directEdge, processorOp)
+    graph.addVertexAndEdge(reduceOp, directEdge, processorOp)
     graph.addVertex(sinkOp)
-    graph.addEdge(processorOp, directEdge, sinkOp)
+    graph.addVertexAndEdge(processorOp, directEdge, sinkOp)
 
     implicit val system = MockUtil.system
 
