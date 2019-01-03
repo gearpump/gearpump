@@ -14,6 +14,7 @@
 
 package io.gearpump.util
 
+import scala.collection.immutable.Stack
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
@@ -141,7 +142,7 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
    * add edge
    * Current Graph is changed.
    */
-  def addEdge(node1: N, edge: E, node2: N): Unit = {
+  def addVertexAndEdge(node1: N, edge: E, node2: N): Unit = {
     addVertex(node1)
     addVertex(node2)
     addEdge((node1, edge, node2))
@@ -194,7 +195,7 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
    */
   def addGraph(other: Graph[N, E]): Graph[N, E] = {
     (getVertices ++ other.getVertices).foreach(addVertex)
-    (getEdges ++ other.getEdges).foreach(edge => addEdge(edge._1, edge._2, edge._3))
+    (getEdges ++ other.getEdges).foreach(edge => addVertexAndEdge(edge._1, edge._2, edge._3))
     this
   }
 
@@ -225,7 +226,7 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
   def subGraph(node: N): Graph[N, E] = {
     val newGraph = Graph.empty[N, E]
     for (edge <- edgesOf(node)) {
-      newGraph.addEdge(edge._1, edge._2, edge._3)
+      newGraph.addVertexAndEdge(edge._1, edge._2, edge._3)
     }
     newGraph
   }
@@ -235,11 +236,11 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
    */
   def replaceVertex(node: N, newNode: N): Graph[N, E] = {
     for (edge <- incomingEdgesOf(node)) {
-      addEdge(edge._1, edge._2, newNode)
+      addVertexAndEdge(edge._1, edge._2, newNode)
     }
 
     for (edge <- outgoingEdgesOf(node)) {
-      addEdge(newNode, edge._2, edge._3)
+      addVertexAndEdge(newNode, edge._2, edge._3)
     }
     removeVertex(node)
     this
@@ -260,7 +261,7 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
       case Success(iterator) => iterator
       case Failure(_) =>
         LOG.warn("Please note this graph is cyclic.")
-        topologicalOrderWithCirclesIterator
+        topologicalOrderWithCyclesIterator
     }
   }
 
@@ -273,14 +274,14 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
       var output = List.empty[N]
       var count = 0
       while (verticesWithZeroIndegree.nonEmpty) {
-        val vertice = verticesWithZeroIndegree.dequeue()
-        adjacentVertices(vertice).foreach { adjacentV =>
+        val vertex = verticesWithZeroIndegree.dequeue()
+        adjacentVertices(vertex).foreach { adjacentV =>
           indegreeMap += adjacentV -> (indegreeMap(adjacentV) - 1)
           if (indegreeMap(adjacentV) == 0) {
             verticesWithZeroIndegree.enqueue(adjacentV)
           }
         }
-        output :+= vertice
+        output :+= vertex
         count += 1
       }
       if (count != getVertices.size) {
@@ -291,61 +292,58 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
   }
 
   /**
-   * Return all circles in graph.
-   *
-   * The reference of this algorithm is:
-   * https://en.wikipedia.org/wiki/Tarjan%27s_strongly_connected_components_algorithm
+   * Find all cycles in graph including one-node cycle and
+   * return an inverted index from a node to its containing cycle.
    */
-  private def findCircles: mutable.MutableList[mutable.MutableList[N]] = {
-    val inStack = mutable.Map.empty[N, Boolean]
-    val stack = mutable.Stack[N]()
-    val indexMap = mutable.Map.empty[N, Int]
-    val lowLink = mutable.Map.empty[N, Int]
+  private def findCycles: Map[N, List[N]] = {
+    var visited = Set.empty[N]
+    var stack = Stack[N]()
+    var indexMap = Map.empty[N, Int]
+    var cycleRoot = Map.empty[N, Int]
     var index = 0
 
-    val circles = mutable.MutableList.empty[mutable.MutableList[N]]
+    var nodeToCycles = Map.empty[N, List[N]]
 
-    def tarjan(node: N): Unit = {
-      indexMap(node) = index
-      lowLink(node) = index
+    def visit(node: N): Unit = {
+      indexMap += node -> index
+      cycleRoot += node -> index
       index += 1
-      inStack(node) = true
-      stack.push(node)
+      visited += node
+      stack = stack.push(node)
 
       outgoingEdgesOf(node).foreach {
-        edge => {
-          if (!indexMap.contains(edge._3)) {
-            tarjan(edge._3)
-            if (lowLink(edge._3) < lowLink(node)) {
-              lowLink(node) = lowLink(edge._3)
+        case (_, _, successor) => {
+          if (!visited(successor)) { // depth-first traverse
+            visit(successor)
+            if (cycleRoot(successor) < cycleRoot(node)) {
+              cycleRoot += node -> cycleRoot(successor)
             }
-          } else {
-            if (inStack(edge._3) && (indexMap(edge._3) < lowLink(node))) {
-              lowLink(node) = indexMap(edge._3)
-            }
+          } else if (indexMap(successor) < cycleRoot(node)) {
+            cycleRoot += node -> indexMap(successor)
           }
         }
       }
 
-      if (indexMap(node) == lowLink(node)) {
-        val circle = mutable.MutableList.empty[N]
-        var n = node
+      if (stack.nonEmpty) {
+        val hr = cycleRoot(stack.head)
+        val cycle = mutable.MutableList.empty[N]
         do {
-          n = stack.pop()
-          inStack(n) = false
-          circle += n
-        } while (n != node)
-        circles += circle
+          cycle += stack.head
+          stack = stack.pop
+        } while (stack.nonEmpty && hr <= indexMap(stack.head))
+        cycle.foreach { node =>
+          nodeToCycles += node -> cycle.toList
+        }
       }
     }
 
-    getVertices.foreach {
-      node => {
-        if (!indexMap.contains(node)) tarjan(node)
+    getVertices.collect {
+      case node if !visited(node) => {
+        visit(node)
       }
     }
 
-    circles
+    nodeToCycles
   }
 
   /**
@@ -355,31 +353,21 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
    * The reference of this algorithm is:
    * http://www.drdobbs.com/database/topological-sorting/184410262
    */
-  def topologicalOrderWithCirclesIterator: Iterator[N] = {
+  def topologicalOrderWithCyclesIterator: Iterator[N] = {
     val topo = getAcyclicCopy().topologicalOrderIterator
     topo.flatMap(_.sortBy(indexs(_)).iterator)
   }
 
-  private def getAcyclicCopy(): Graph[mutable.MutableList[N], E] = {
-    val circles = findCircles
-    val newGraph = Graph.empty[mutable.MutableList[N], E]
-    circles.foreach {
-      circle => {
-        newGraph.addVertex(circle)
-      }
-    }
-
-    for (circle1 <- circles; circle2 <- circles; if circle1 != circle2) yield {
-      for (node1 <- circle1; node2 <- circle2) yield {
-        var outgoingEdges = outgoingEdgesOf(node1)
-        for (edge <- outgoingEdges; if edge._3 == node2) yield {
-          newGraph.addEdge(circle1, edge._2, circle2)
-        }
-
-        outgoingEdges = outgoingEdgesOf(node2)
-        for (edge <- outgoingEdges; if edge._3 == node1) yield {
-          newGraph.addEdge(circle2, edge._2, circle1)
-        }
+  private def getAcyclicCopy(): Graph[List[N], E] = {
+    val nodeToCycles = findCycles
+    val newGraph = Graph.empty[List[N], E]
+    var added = Set.empty[(List[N], List[N])]
+    getEdges.foreach { case (from, via, to) =>
+      val fc = nodeToCycles(from)
+      val tc = nodeToCycles(to)
+      if (fc != tc && !added(fc -> tc) && !added(tc -> fc)) {
+        added += fc -> tc
+        newGraph.addVertexAndEdge(fc, via, tc)
       }
     }
     newGraph
@@ -487,7 +475,8 @@ object Graph {
           case Left(node) =>
             graph.addVertex(node)
             if (lastNode.isDefined) {
-              graph.addEdge(lastNode.get, lastEdge.getOrElse(null.asInstanceOf[EdgeT]), node)
+              graph.addVertexAndEdge(
+                lastNode.get, lastEdge.getOrElse(null.asInstanceOf[EdgeT]), node)
             }
             (Some(node), None)
           case Right(edge) =>

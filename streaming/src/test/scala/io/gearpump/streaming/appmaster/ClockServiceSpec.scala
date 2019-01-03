@@ -188,7 +188,7 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
       val graph = Graph.empty[ProcessorDescription, PartitionerDescription]
       graph.addVertex(source)
       graph.addVertex(sink)
-      graph.addEdge(source, PartitionerDescription(null), sink)
+      graph.addVertexAndEdge(source, PartitionerDescription(null), sink)
       val dag = DAG(graph)
       val clocks = Map(
         0 -> sourceClock,

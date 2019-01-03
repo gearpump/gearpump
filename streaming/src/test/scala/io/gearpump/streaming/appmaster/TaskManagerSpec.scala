@@ -133,7 +133,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
     val d = ProcessorDescription(id = 4, taskClass = null, parallelism = 1)
     val right = left.copy
     right.addVertex(d)
-    right.addEdge(c, defaultEdge, d)
+    right.addVertexAndEdge(c, defaultEdge, d)
     val e = a.copy(life = LifeTime(0, 0))
     right.replaceVertex(a, e)
 
