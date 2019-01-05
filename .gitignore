@@ -13,6 +13,8 @@ project/boot/
 project/plugins/project/
 .scala_dependencies
 .worksheet
+.bloop/
+.metals/
 
 # Java
 *.jar
@@ -47,3 +49,5 @@ local.properties
 .externalToolBuilders/
 *.launch
 .target
+
+nohup.out
