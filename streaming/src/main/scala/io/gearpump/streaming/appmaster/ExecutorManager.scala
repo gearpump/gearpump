@@ -20,19 +20,20 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
-import io.gearpump.cluster.appmaster.WorkerInfo
+import io.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.streaming.executor.Executor
 import io.gearpump.util.{LogUtil, Util}
 import org.apache.commons.lang.exception.ExceptionUtils
 import io.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
+import io.gearpump.cluster.ClientToMaster.ShutdownApplication
 import io.gearpump.cluster.UserConfig
-import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
+import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems, StopExecutorSystem}
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.{AppJar, AppMasterContext, ExecutorContext, UserConfig}
 import io.gearpump.streaming.ExecutorId
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import io.gearpump.streaming.appmaster.ExecutorManager.{BroadCast, ExecutorInfo, ExecutorResourceUsageSummary, ExecutorStarted, ExecutorStopped, GetExecutorInfo, SetTaskManager, StartExecutors, StartExecutorsTimeOut, UniCast}
+import io.gearpump.streaming.appmaster.ExecutorManager.{BroadCast, ExecutorInfo, ExecutorResourceUsageSummary, ExecutorStarted, ExecutorStopped, AllExecutorsStopped, GetExecutorInfo, SetTaskManager, StartExecutors, StartExecutorsTimeOut, UniCast}
 import io.gearpump.util.LogUtil
 
 /**
@@ -54,11 +55,13 @@ private[appmaster] class ExecutorManager(
   import appContext.{appId, masterProxy, username}
 
   private var taskManager: ActorRef = null
+  private var shutdown = false
 
   private implicit val actorSystem = context.system
   private val systemConfig = context.system.settings.config
 
   private var executors = Map.empty[Int, ExecutorInfo]
+  private var executorSystems = Map.empty[Int, ExecutorSystem]
 
   def receive: Receive = waitForTaskManager
 
@@ -98,6 +101,7 @@ private[appmaster] class ExecutorManager(
       val executorContext = ExecutorContext(executorId, worker, appId, appName,
         appMaster = context.parent, executorResource)
       executors += executorId -> ExecutorInfo(executorId, null, worker, boundedJar)
+      executorSystems += executorId -> executorSystem
 
       // Starts executor
       val executor = context.actorOf(executorFactory(executorContext, userConfig,
@@ -105,6 +109,13 @@ private[appmaster] class ExecutorManager(
       executorSystem.bindLifeCycleWith(executor)
     case StartExecutorSystemTimeout =>
       taskManager ! StartExecutorsTimeOut
+
+    case ShutdownApplication(_) =>
+      shutdown = true
+      executors.foreach { case (id, info) =>
+        executors -= id
+        info.executor ! PoisonPill
+      }
 
     case RegisterExecutor(executor, executorId, resource, worker) =>
       LOG.info(s"executor $executorId has been launched")
@@ -150,9 +161,15 @@ private[appmaster] class ExecutorManager(
       val executorId = Try(actor.path.name.toInt)
       executorId match {
         case scala.util.Success(id) => {
-          executors -= id
-          LOG.error(s"Executor $id is down")
-          taskManager ! ExecutorStopped(id)
+          if (shutdown && executors.isEmpty) {
+            context.parent ! AllExecutorsStopped
+          } else if (executors.contains(id)) {
+            executors -= id
+            if (!shutdown) {
+              LOG.error(s"Executor $id is down")
+              taskManager ! ExecutorStopped(id)
+            }
+          }
         }
         case scala.util.Failure(ex) =>
           LOG.error(s"failed to get the executor Id from path string ${actor.path}", ex)
@@ -169,6 +186,8 @@ private[appmaster] class ExecutorManager(
 }
 
 private[appmaster] object ExecutorManager {
+  case object AllExecutorsStopped
+
   case class StartExecutors(resources: Array[ResourceRequest], jar: AppJar)
   case class BroadCast(msg: Any)
 
