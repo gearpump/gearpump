@@ -30,7 +30,6 @@ import io.gearpump.cluster.ClientToMaster.GetStallingTasks
 import io.gearpump.streaming.AppMasterToMaster.StallingTasks
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.ClockService.HealthChecker.ClockValue
-import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess, HealthCheck, HealthChecker, ProcessorClock, ProcessorClocks, SnapshotStartClock, StoredStartClock}
 import io.gearpump.streaming.task._
 import org.slf4j.Logger
 
@@ -89,6 +88,8 @@ class ClockService(
   private var checkpointClocks: Map[TaskId, Vector[MilliSeconds]] = _
 
   private var minCheckpointClock: Option[MilliSeconds] = None
+
+  private var minClock = Time.MIN_TIME_MILLIS
 
   private def checkpointEnabled(processor: ProcessorDescription): Boolean = {
     val taskConf = processor.taskConf
@@ -214,16 +215,13 @@ class ClockService(
       sendBackUpstreamMinClock(sender, task)
 
     case UpdateClock(task, clock) =>
-      val processorClock = clocks.get(task.processorId)
-      if (processorClock.isDefined) {
-        processorClock.get.updateMinClock(task.index, clock)
-      } else {
-        LOG.error(s"Cannot updateClock for task $task")
-      }
-      if (Instant.ofEpochMilli(minClock).equals(Watermark.MAX)) {
-        appMaster ! EndingClock
-      } else {
-        sendBackUpstreamMinClock(sender, task)
+      if (Instant.ofEpochMilli(minClock).isBefore(Watermark.MAX)) {
+        updateMinClock(task, clock)
+        if (Instant.ofEpochMilli(minClock).equals(Watermark.MAX)) {
+          appMaster ! EndingClock
+        } else {
+          sendBackUpstreamMinClock(sender, task)
+        }
       }
 
     case GetLatestMinClock =>
@@ -301,14 +299,18 @@ class ClockService(
     }
   }
 
-  private def minClock: MilliSeconds = {
-    ProcessorClocks.minClock(processorClocks)
+  private def updateMinClock(task: TaskId, clock: MilliSeconds): Unit = {
+    if (clocks.contains(task.processorId)) {
+      clocks(task.processorId).updateMinClock(task.index, clock)
+      minClock = ProcessorClocks.minClock(processorClocks)
+
+    } else {
+      LOG.error(s"Cannot updateClock for task $task")
+    }
   }
 
   def selfCheck(): Unit = {
-    val minTimestamp = minClock
-
-    healthChecker.check(minTimestamp, clocks, dag, System.currentTimeMillis())
+    healthChecker.check(minClock, clocks, dag, System.currentTimeMillis())
   }
 
   private def getStartClock: MilliSeconds = {

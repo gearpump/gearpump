@@ -73,7 +73,7 @@ class AppMasterRuntimeEnvironment(
       context.stop(self)
     case Terminated(actor) => actor match {
       case `appMaster` =>
-        LOG.error(s"AppMaster $appId is stopped, shutdown myself")
+        LOG.info(s"AppMaster $appId is stopped, shutdown myself")
         context.stop(self)
       case `masterConnectionKeeper` =>
         LOG.error(s"Master connection keeper is stopped, appId: $appId, shutdown myself")
@@ -132,7 +132,6 @@ object AppMasterRuntimeEnvironment {
 
     def terminationWatch(appMaster: ActorRef): Receive = {
       case Terminated(appMaster) =>
-        LOG.error("appmaster is stopped")
         context.stop(self)
     }
 

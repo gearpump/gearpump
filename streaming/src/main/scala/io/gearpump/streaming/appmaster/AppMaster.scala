@@ -34,7 +34,7 @@ import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor,
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, ExecutorBrief, LookupTaskActorRef, ServiceNotAvailableException}
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
-import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, GetExecutorInfo}
+import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, AllExecutorsStopped, GetExecutorInfo}
 import io.gearpump.streaming.appmaster.TaskManager.{ApplicationReady, FailedToRecover, GetTaskList, TaskList}
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.streaming.partitioner.PartitionerDescription
@@ -310,6 +310,13 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
           exception.getOrElse(new Exception(failure.error)))
         masterProxy ! failed
       }
+    case shutdown@ShutdownApplication(id) =>
+      if (id.equals(appId)) {
+        executorManager ! shutdown
+      }
+    case AllExecutorsStopped =>
+      self ! PoisonPill
+
     case AllocateResourceTimeOut =>
       val errorMsg = s"Failed to allocate resource in time, shutdown application $appId"
       LOG.error(errorMsg)

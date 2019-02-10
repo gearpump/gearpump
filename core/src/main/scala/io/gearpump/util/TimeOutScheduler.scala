@@ -15,10 +15,12 @@
 package io.gearpump.util
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
+
+import scala.util.{Failure, Success}
 
 /** A helper util to send a message to remote actor and notify callback when timeout */
 trait TimeOutScheduler {
@@ -26,14 +28,13 @@ trait TimeOutScheduler {
   import context.dispatcher
 
   def sendMsgWithTimeOutCallBack(
-      target: ActorRef, msg: AnyRef, milliSeconds: Long, timeOutHandler: => Unit): Unit = {
-    val result = target.ask(msg)(FiniteDuration(milliSeconds, TimeUnit.MILLISECONDS))
-    result onSuccess {
-      case msg =>
-        self ! msg
-    }
-    result onFailure {
-      case _ => timeOutHandler
+      target: ActorRef, msg: AnyRef, duration: Long, timeOutHandler: => Unit): Unit = {
+    val result = target.ask(msg)(FiniteDuration(duration, TimeUnit.MILLISECONDS))
+    result.onComplete {
+      case Success(r) =>
+        self ! r
+      case Failure(_) =>
+        timeOutHandler
     }
   }
 }

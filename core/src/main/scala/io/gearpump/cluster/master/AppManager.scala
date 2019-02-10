@@ -26,12 +26,11 @@ import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataReques
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.cluster.WorkerToAppMaster.{ShutdownExecutorFailed, _}
 import io.gearpump.cluster.appmaster.{ApplicationMetaData, ApplicationRuntimeInfo}
-import io.gearpump.cluster.master.InMemoryKVService.{GetKVResult, PutKVResult, PutKVSuccess}
 import io.gearpump.cluster.master.AppManager._
 import io.gearpump.cluster.master.InMemoryKVService.{GetKVResult, PutKVResult, PutKVSuccess, _}
 import io.gearpump.cluster.master.Master._
 import io.gearpump.util.Constants._
-import io.gearpump.util.{ActorUtil, Constants, LogUtil, RestartPolicy, TimeOutScheduler, Util}
+import io.gearpump.util.{Constants, LogUtil, RestartPolicy, TimeOutScheduler}
 import io.gearpump.util.{ActorUtil, Util, _}
 import org.slf4j.Logger
 
@@ -56,6 +55,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
   private var nextAppId: Int = 1
 
   private var applicationRegistry = Map.empty[Int, ApplicationRuntimeInfo]
+  private var applicationResults = Map.empty[Int, ApplicationResult]
   private var appResultListeners = Map.empty[Int, List[ActorRef]]
 
   private var appMasterRestartPolicies = Map.empty[Int, RestartPolicy]
@@ -141,7 +141,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
         filter(!_.status.isInstanceOf[ApplicationTerminalStatus])
       appInfo match {
         case Some(info) =>
-          killAppMaster(appId, info.worker)
+          shutdownApplication(info)
           sender ! ShutdownApplicationResult(Success(appId))
           // Here we use the function to make sure the status is consistent because
           // sending another message to self will involve timing problem
@@ -237,16 +237,17 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
               updatedStatus = appRuntimeInfo.onAppMasterActivated(timeStamp)
               sender ! AppMasterActivated(appId)
             case succeeded@ApplicationStatus.SUCCEEDED =>
-              killAppMaster(appId, appRuntimeInfo.worker)
+              shutdownApplication(appRuntimeInfo)
               updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, succeeded)
-              sendAppResultToListeners(appId, ApplicationSucceeded(appId))
+              applicationResults += appId -> ApplicationSucceeded(appId)
             case failed@ApplicationStatus.FAILED =>
-              killAppMaster(appId, appRuntimeInfo.worker)
+              shutdownApplication(appRuntimeInfo)
               updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, failed)
-              sendAppResultToListeners(appId, ApplicationFailed(appId, error))
+              applicationResults += appId -> ApplicationFailed(appId, error)
             case terminated@ApplicationStatus.TERMINATED =>
+              shutdownApplication(appRuntimeInfo)
               updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, terminated)
-              sendAppResultToListeners(appId, ApplicationTerminated(appId))
+              applicationResults += appId -> ApplicationTerminated(appId)
             case status =>
               LOG.error(s"App $appId should not change it's status to $status")
           }
@@ -300,27 +301,28 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
 
       // Now we assume that the only normal way to stop the application is submitting a
       // ShutdownApplication request
-      val application = applicationRegistry.find { appInfo =>
-        val (_, runtimeInfo) = appInfo
-        terminate.actor.equals(runtimeInfo.appMaster) &&
-          !runtimeInfo.status.isInstanceOf[ApplicationTerminalStatus]
-      }
-      if (application.nonEmpty) {
-        val appId = application.get._1
-        (kvService ? GetKV(appId.toString, APP_METADATA)).asInstanceOf[Future[GetKVResult]].map {
-          case GetKVSuccess(_, result) =>
-            val appMetadata = result.asInstanceOf[ApplicationMetaData]
-            if (appMetadata != null) {
-              LOG.info(s"Recovering application, $appId")
-              val updatedInfo = application.get._2.copy(status = ApplicationStatus.PENDING)
-              applicationRegistry += appId -> updatedInfo
-              self ! RecoverApplication(appMetadata)
-            } else {
-              LOG.error(s"Cannot find application meta data for $appId")
-            }
-          case GetKVFailed(ex) =>
-            LOG.error(s"Cannot find master state to recover")
-        }
+      applicationRegistry.find(_._2.appMaster.equals(terminate.actor)).foreach {
+        case (appId, info) =>
+          info.status match {
+            case _: ApplicationTerminalStatus =>
+              sendAppResultToListeners(appId, applicationResults(appId))
+            case _ =>
+              (kvService ? GetKV(appId.toString, APP_METADATA))
+                .asInstanceOf[Future[GetKVResult]].map {
+                case GetKVSuccess(_, result) =>
+                  val appMetadata = result.asInstanceOf[ApplicationMetaData]
+                  if (appMetadata != null) {
+                    LOG.info(s"Recovering application, $appId")
+                    val updatedInfo = info.copy(status = ApplicationStatus.PENDING)
+                    applicationRegistry += appId -> updatedInfo
+                    self ! RecoverApplication(appMetadata)
+                  } else {
+                    LOG.error(s"Cannot find application meta data for $appId")
+                  }
+                case GetKVFailed(ex) =>
+                  LOG.error(s"Cannot find master state to recover")
+              }
+          }
       }
   }
 
@@ -345,6 +347,10 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
     val shutdown = ShutdownExecutor(appId, APPMASTER_DEFAULT_EXECUTOR_ID,
       s"AppMaster $appId shutdown requested by master...")
     sendMsgWithTimeOutCallBack(worker, shutdown, 30000, shutDownExecutorTimeOut())
+  }
+
+  private def shutdownApplication(info: ApplicationRuntimeInfo): Unit = {
+    info.appMaster ! ShutdownApplication(info.appId)
   }
 
   private def applicationNameExist(appName: String): Boolean = {
