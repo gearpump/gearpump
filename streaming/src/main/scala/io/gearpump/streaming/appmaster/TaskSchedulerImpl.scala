@@ -76,7 +76,7 @@ object TaskScheduler {
   class TaskStatus(val taskId: TaskId, val preferLocality: Locality, var allocation: Location)
 }
 
-class TaskSchedulerImpl(appId: Int, appName: String, config: Config) extends TaskScheduler {
+class TaskSchedulerImpl(appName: String, config: Config) extends TaskScheduler {
   private val executorNum = config.getInt(Constants.APPLICATION_EXECUTOR_NUMBER)
 
   private var tasks = List.empty[TaskStatus]
@@ -94,11 +94,11 @@ class TaskSchedulerImpl(appId: Int, appName: String, config: Config) extends Tas
   }
 
   def getResourceRequests(): Array[ResourceRequest] = {
-    fetchResourceRequests(fromOneWorker = false)
+    fetchResourceRequests()
   }
 
   import io.gearpump.cluster.scheduler.Relaxation._
-  private def fetchResourceRequests(fromOneWorker: Boolean = false): Array[ResourceRequest] = {
+  private def fetchResourceRequests(): Array[ResourceRequest] = {
     var workersResourceRequest = Map.empty[WorkerId, Resource]
 
     tasks.filter(_.allocation == null).foreach { task =>
@@ -128,16 +128,16 @@ class TaskSchedulerImpl(appId: Int, appName: String, config: Config) extends Tas
     val location = Location(workerId, executorId)
     // Schedules tasks for specific worker
     scheduledTasks ++= scheduleTasksForLocality(resource, location,
-      (locality) => locality == WorkerLocality(workerId))
+      _ == WorkerLocality(workerId))
 
     // Schedules tasks without specific location preference
     scheduledTasks ++= scheduleTasksForLocality(resource - Resource(scheduledTasks.length),
-      location, (locality) => true)
+      location, _ => true)
     scheduledTasks
   }
 
   private def scheduleTasksForLocality(
-      resource: Resource, resourceLocation: Location, matcher: (Locality) => Boolean)
+      resource: Resource, resourceLocation: Location, matcher: Locality => Boolean)
     : List[TaskId] = {
     var scheduledTasks = List.empty[TaskId]
     var index = 0

@@ -55,7 +55,7 @@ class MasterConnectionKeeper(
   context.become(waitMasterToConfirm(registerAppMaster))
 
   def waitMasterToConfirm(cancelRegister: Cancellable): Receive = {
-    case AppMasterRegistered(appId) =>
+    case AppMasterRegistered(_) =>
       cancelRegister.cancel()
       masterStatusListener ! MasterConnected
       context.become(masterLivenessListener)

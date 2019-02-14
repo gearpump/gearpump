@@ -16,14 +16,12 @@ package io.gearpump.streaming.examples.complexdag
 
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.streaming.partitioner.HashPartitioner
-import io.gearpump.util.{AkkaApp, Graph, LogUtil}
-import org.slf4j.Logger
 import io.gearpump.streaming.task.TaskContext
 import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.util.Graph.{Node => GraphNode}
-import io.gearpump.util.{Graph, LogUtil}
+import io.gearpump.util.{AkkaApp, Graph}
 
 case class Source_0(_context: TaskContext, _conf: UserConfig) extends Source(_context, _conf)
 case class Source_1(_context: TaskContext, _conf: UserConfig) extends Source(_context, _conf)
@@ -59,12 +57,9 @@ case class Sink_4(_context: TaskContext, _conf: UserConfig) extends Sink(_contex
  * }
  */
 object Dag extends AkkaApp with ArgumentsParser {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
-  val RUN_FOR_EVER = -1
-
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  def application(config: ParseResult): StreamApplication = {
+  def application(): StreamApplication = {
 
     val source_0 = Processor[Source_0](1)
     val source_1 = Processor[Source_1](1)
@@ -100,9 +95,8 @@ object Dag extends AkkaApp with ArgumentsParser {
   }
 
   override def main(akkaConf: Config, args: Array[String]): Unit = {
-    val userConf = parse(args)
     val context = ClientContext(akkaConf)
-    val appId = context.submit(application(userConf))
+    context.submit(application())
     context.close()
   }
 }

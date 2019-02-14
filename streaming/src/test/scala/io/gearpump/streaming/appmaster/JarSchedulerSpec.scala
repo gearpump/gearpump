@@ -47,7 +47,7 @@ class JarSchedulerSpec extends WordSpec with Matchers {
     "schedule tasks depends on app jar" in {
       val system = ActorSystem("JarSchedulerSpec")
       implicit val dispatcher = system.dispatcher
-      val manager = new JarScheduler(0, "APP", TestUtil.DEFAULT_CONFIG, system)
+      val manager = new JarScheduler("APP", TestUtil.DEFAULT_CONFIG, system)
       manager.setDag(dag, Future {
         0L
       })

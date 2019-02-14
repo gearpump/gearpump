@@ -49,7 +49,7 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
 
       import io.gearpump.streaming.Constants.GEARPUMP_STREAMING_LOCALITIES
       val appName = "app"
-      val taskScheduler = new TaskSchedulerImpl(appId = 0, appName,
+      val taskScheduler = new TaskSchedulerImpl(appName,
         config.withValue(s"$GEARPUMP_STREAMING_LOCALITIES.$appName", localityConfig.root))
 
       val expectedRequests =
@@ -96,7 +96,7 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
 
     "schedule task fairly" in {
       val appName = "app"
-      val taskScheduler = new TaskSchedulerImpl(appId = 0, appName, config)
+      val taskScheduler = new TaskSchedulerImpl(appName, config)
 
       val expectedRequests =
         Array(ResourceRequest(Resource(4), WorkerId(1, 0L), relaxation = Relaxation.SPECIFICWORKER),

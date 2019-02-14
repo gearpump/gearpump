@@ -16,7 +16,6 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor._
 import akka.pattern.ask
-import io.gearpump.streaming.util.ActorPathUtil
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
 import io.gearpump.streaming.AppMasterToExecutor._
@@ -26,12 +25,12 @@ import io.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, Looku
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
 import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorStarted, StartExecutorsTimeOut, _}
-import TaskManager._
-import TaskRegistry.{Accept, TaskLocation}
+import io.gearpump.streaming.appmaster.TaskManager._
+import io.gearpump.streaming.appmaster.TaskRegistry.{Accept, TaskLocation}
 import io.gearpump.streaming.executor.Executor.RestartTasks
-import io.gearpump.util.{Constants, LogUtil, RestartPolicy}
 import io.gearpump.streaming.task._
-import io.gearpump.util.{Constants, LogUtil}
+import io.gearpump.streaming.util.ActorPathUtil
+import io.gearpump.util.{Constants, LogUtil, RestartPolicy}
 import org.slf4j.Logger
 
 import scala.concurrent.Future
@@ -63,8 +62,7 @@ private[appmaster] class TaskManager(
     jarScheduler: JarScheduler,
     executorManager: ActorRef,
     clockService: ActorRef,
-    appMaster: ActorRef,
-    appName: String)
+    appMaster: ActorRef)
   extends Actor {
 
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
@@ -76,7 +74,6 @@ private[appmaster] class TaskManager(
   private val appRestartPolicy = new RestartPolicy(appTotalRetries)
 
   private implicit val timeout = Constants.FUTURE_TIMEOUT
-  private implicit val actorSystem = context.system
 
   import context.dispatcher
 
@@ -212,9 +209,9 @@ private[appmaster] class TaskManager(
     LOG.info(s"DynamicDag transit to dag version: ${state.dag.version}...")
 
     val onMessageLoss: Receive = {
-      case ExecutorStopped(executorId) =>
+      case ExecutorStopped(_) =>
         context.become(recovery(recoverState))
-      case MessageLoss(executorId, taskId, cause, _) =>
+      case MessageLoss(executorId, taskId, _, _) =>
         if (state.taskRegistry.isTaskRegisteredForExecutor(executorId) &&
           appRestartPolicy.allowRestart) {
           context.become(recovery(recoverState))
@@ -283,7 +280,7 @@ private[appmaster] class TaskManager(
         sender ! TaskRejected(taskId)
       }
 
-    case TaskChanged(taskId, dagVersion) =>
+    case TaskChanged(taskId, _) =>
       state.taskChangeRegistry.taskChanged(taskId)
       if (allTasksReady(state)) {
         broadcastLocations(state)
@@ -347,8 +344,7 @@ private[appmaster] class TaskManager(
 
     LOG.info(s"goto state Recovery(recoverDag = $recoverDagVersion)...")
     val ignoreClock: Receive = {
-      case clock: ClockEvent =>
-      // Ignores clock events.
+      case _: ClockEvent => // Ignores clock events.
     }
 
     if (state.dag.isEmpty) {

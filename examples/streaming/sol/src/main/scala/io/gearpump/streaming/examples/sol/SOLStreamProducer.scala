@@ -17,10 +17,10 @@ package io.gearpump.streaming.examples.sol
 import java.time.Instant
 import java.util.Random
 
-import io.gearpump.streaming.source.Watermark
 import io.gearpump.Message
-import SOLStreamProducer._
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.examples.sol.SOLStreamProducer._
+import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.{Task, TaskContext}
 
 class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
@@ -35,20 +35,20 @@ class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
   private var messageCount: Long = 0
 
   override def onStart(startTime: Instant): Unit = {
-    prepareRandomMessage
+    prepareRandomMessage()
     self ! Watermark(Instant.now)
   }
 
-  private def prepareRandomMessage = {
+  private def prepareRandomMessage() = {
     rand = new Random()
     val differentMessages = 100
     messages = new Array(differentMessages)
 
-    0.until(differentMessages).map { index =>
+    0.until(differentMessages).foreach { index =>
       val sb = new StringBuilder(sizeInBytes)
       // Even though java encodes strings in UCS2, the serialized version sent by the tuples
       // is UTF8, so it should be a single byte
-      0.until(sizeInBytes).foldLeft(sb) { (sb, j) =>
+      0.until(sizeInBytes).foldLeft(sb) { (sb, _) =>
         sb.append(rand.nextInt(9))
       }
       messages(index) = sb.toString()

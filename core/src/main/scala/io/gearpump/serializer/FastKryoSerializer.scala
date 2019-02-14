@@ -17,7 +17,7 @@ package io.gearpump.serializer
 import akka.actor.ExtendedActorSystem
 import com.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
 import com.romix.akka.serialization.kryo.{KryoBasedSerializer, KryoSerializer}
-import FastKryoSerializer.KryoSerializationException
+import io.gearpump.serializer.FastKryoSerializer.KryoSerializationException
 import io.gearpump.util.LogUtil
 import org.objenesis.strategy.StdInstantiatorStrategy
 
@@ -31,14 +31,13 @@ class FastKryoSerializer(system: ExtendedActorSystem) extends Serializer {
   val strategy = new DefaultInstantiatorStrategy
   strategy.setFallbackInstantiatorStrategy(new StdInstantiatorStrategy)
   kryo.setInstantiatorStrategy(strategy)
-  private val kryoClazz = new GearpumpSerialization(config).customize(kryo)
+  new GearpumpSerialization(config).customize(kryo)
 
   override def serialize(message: Any): Array[Byte] = {
     try {
       kryoSerializer.toBinary(message.asInstanceOf[AnyRef])
     } catch {
       case ex: java.lang.IllegalArgumentException =>
-        val clazz = message.getClass
         val error = s"""
           | ${ex.getMessage}
           |You can also register the class by providing a configuration with serializer

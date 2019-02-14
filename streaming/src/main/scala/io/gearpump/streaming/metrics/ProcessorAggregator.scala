@@ -56,7 +56,7 @@ class ProcessorAggregator(historyMetricConfig: HistoryMetricsConfig) extends Met
    */
   override def aggregate(options: Map[String, String],
       inputs: Iterator[HistoryMetricsItem]): List[HistoryMetricsItem] = {
-    val readOption = options.get(ReadOption.Key).getOrElse(ReadOption.ReadLatest)
+    val readOption = options.getOrElse(ReadOption.Key, ReadOption.ReadLatest)
     aggregate(readOption, inputs, System.currentTimeMillis())
   }
 
@@ -290,8 +290,8 @@ object ProcessorAggregator {
   class AggregatorFactory {
     def create(item: HistoryMetricsItem, name: String): Aggregator = {
       item.value match {
-        case meter: Meter => new MeterAggregator(name)
-        case histogram: Histogram => new HistogramAggregator(name)
+        case _: Meter => new MeterAggregator(name)
+        case _: Histogram => new HistogramAggregator(name)
         case _ => null // not supported
       }
     }

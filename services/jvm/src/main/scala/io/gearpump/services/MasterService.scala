@@ -19,32 +19,32 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption.{APPEND, WRITE}
 
-import scala.collection.JavaConverters._
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import akka.stream.Materializer
 import com.typesafe.config.Config
-import io.gearpump.cluster.{ClusterConfig, UserConfig}
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.util.{Constants, Graph, Util}
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ReadOption}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig, SubmitApplicationResultValue}
+import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.worker.WorkerSummary
-import io.gearpump.jarstore.{FileDirective, JarStoreClient}
+import io.gearpump.cluster.{ClusterConfig, UserConfig}
+import io.gearpump.jarstore.FileDirective._
+import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
-import io.gearpump.streaming.partitioner.{PartitionerByClassName, PartitionerDescription}
-// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.streaming.partitioner.{PartitionerByClassName, PartitionerDescription}
 import io.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplication}
 import io.gearpump.util.ActorUtil._
-import FileDirective._
-import io.gearpump.util.Graph
+import io.gearpump.util.{Constants, Graph, Util}
+
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /** Manages service for master node */
 class MasterService(val master: ActorRef,
@@ -56,7 +56,7 @@ class MasterService(val master: ActorRef,
   private val systemConfig = system.settings.config
   private val concise = systemConfig.getBoolean(Constants.GEARPUMP_SERVICE_RENDER_CONFIG_CONCISE)
 
-  protected override def doRoute(implicit mat: Materializer) = pathPrefix("master") {
+  protected override def doRoute(implicit mat: Materializer): Route = pathPrefix("master") {
     pathEnd {
       get {
         onComplete(askActor[MasterData](master, GetMasterData)) {
@@ -78,7 +78,7 @@ class MasterService(val master: ActorRef,
           val workers = workerList.workers
           val workerDataList = List.empty[WorkerSummary]
 
-          Future.fold(workers.map { workerId =>
+          Future.foldLeft(workers.map { workerId =>
             askWorker[WorkerData](master, workerId, GetWorkerData(workerId))
           })(workerDataList) { (workerDataList, workerData) =>
             workerDataList :+ workerData.workerDescription
@@ -160,7 +160,7 @@ class MasterService(val master: ActorRef,
 
           val graph = dag.mapVertex { processorId =>
             processors(processorId)
-          }.mapEdge { (node1, edge, node2) =>
+          }.mapEdge { (_, edge, _) =>
             PartitionerDescription(new PartitionerByClassName(edge))
           }
 
@@ -245,8 +245,7 @@ object MasterService {
       argsArray = spaceSeparatedArgumentsToArray(args),
       fileMap = Map("jar" -> jar, "config" -> stormConf).filter(_._2.isDefined).mapValues(_.get),
       classPath = getStormApplicationClassPath,
-      systemConfig,
-      userConfigFile = None
+      systemConfig
     )
   }
 

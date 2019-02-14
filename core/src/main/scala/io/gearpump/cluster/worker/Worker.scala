@@ -68,7 +68,7 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
   private val jarStoreClient = new JarStoreClient(systemConfig, context.system)
 
   private val ioPool = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
-  private val resourceUpdateTimeoutMs = 30000 // Milliseconds
+  private val resourceUpdateTimeoutMs = 30000L // Milliseconds
 
   private var totalSlots: Int = 0
 
@@ -178,28 +178,30 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
         context.watch(executor)
       }
     case UpdateResourceFailed(reason, ex) =>
-      LOG.error(reason)
+      LOG.error(reason, ex)
       context.stop(self)
     case UpdateResourceSucceed =>
       LOG.info(s"Update resource succeed")
     case GetWorkerData(workerId) =>
-      val aliveFor = System.currentTimeMillis() - createdTime
-      val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
-      val userDir = System.getProperty("user.dir")
-      sender ! WorkerData(WorkerSummary(
-        id, "active",
-        address,
-        aliveFor,
-        logDir,
-        executorsInfo.values.toArray,
-        totalSlots,
-        resource.slots,
-        userDir,
-        jvmName = ManagementFactory.getRuntimeMXBean().getName(),
-        resourceManagerContainerId = systemConfig.getString(
-          GEARPUMP_WORKER_RESOURCE_MANAGER_CONTAINER_ID),
-        historyMetricsConfig = getHistoryMetricsConfig)
-      )
+      if (workerId == id) {
+        val aliveFor = System.currentTimeMillis() - createdTime
+        val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
+        val userDir = System.getProperty("user.dir")
+        sender ! WorkerData(WorkerSummary(
+          id, "active",
+          address,
+          aliveFor,
+          logDir,
+          executorsInfo.values.toArray,
+          totalSlots,
+          resource.slots,
+          userDir,
+          jvmName = ManagementFactory.getRuntimeMXBean().getName(),
+          resourceManagerContainerId = systemConfig.getString(
+            GEARPUMP_WORKER_RESOURCE_MANAGER_CONTAINER_ID),
+          historyMetricsConfig = getHistoryMetricsConfig)
+        )
+      }
     case ChangeExecutorResource(appId, executorId, usedResource) =>
       for (executor <- executorActorRef(appId, executorId);
         allocatedResource <- allocatedResources.get(executor)) {
@@ -521,7 +523,7 @@ private[cluster] object Worker {
     val daemonPathPattern = List("lib" + File.separator + "yarn")
 
     override def receive: Receive = {
-      case ShutdownExecutor(appId, executorId, reason: String) =>
+      case ShutdownExecutor(appId, executorId, _) =>
         executorHandler.destroy()
         sender ! ShutdownExecutorSucceed(appId, executorId)
         context.stop(self)
@@ -540,7 +542,7 @@ private[cluster] object Worker {
     }
 
     private def filterOutDaemonLib(classPath: Array[String]): Array[String] = {
-      classPath.filterNot(matchDaemonPattern(_))
+      classPath.filterNot(matchDaemonPattern)
     }
 
     private def matchDaemonPattern(path: String): Boolean = {

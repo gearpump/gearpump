@@ -16,11 +16,10 @@ package io.gearpump.streaming
 
 import akka.actor.ActorSystem
 import io.gearpump.cluster.{AppJar, Application, ApplicationMaster, UserConfig}
-import io.gearpump.util.{Graph, LogUtil, ReferenceEqual}
-import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.appmaster.AppMaster
 import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner, PartitionerDescription, PartitionerObject}
 import io.gearpump.streaming.task.Task
+import io.gearpump.util.{Graph, ReferenceEqual}
 
 /**
  * Represent a streaming application
@@ -41,7 +40,6 @@ class StreamApplication(
 object StreamApplication {
 
   private val hashPartitioner = new HashPartitioner()
-  private val LOG = LogUtil.getLogger(getClass)
 
   def apply[T <: Processor[Task], P <: Partitioner](
       name: String, dag: Graph[T, P], userConfig: UserConfig): StreamApplication = {

@@ -15,13 +15,12 @@
 package io.gearpump.streaming.executor
 
 import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
-import io.gearpump.streaming.util.ActorPathUtil
-import io.gearpump.cluster.ExecutorContext
-import io.gearpump.streaming.ProcessorDescription
-import TaskLauncher.TaskArgument
-import io.gearpump.cluster.UserConfig
+import io.gearpump.cluster.{ExecutorContext, UserConfig}
 import io.gearpump.serializer.SerializationFramework
+import io.gearpump.streaming.ProcessorDescription
+import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.task._
+import io.gearpump.streaming.util.ActorPathUtil
 
 trait ITaskLauncher {
 
@@ -58,7 +57,7 @@ class TaskLauncher(
     var tasks = Map.empty[TaskId, ActorRef]
     taskIds.foreach { taskId =>
       val task = new TaskWrapper(taskId, taskClass, taskContext, taskConf)
-      val taskActor = context.actorOf(Props(taskActorClass, taskId, taskContext, userConf, task,
+      val taskActor = context.actorOf(Props(taskActorClass, taskId, taskContext, task,
         serializer).withDispatcher(dispatcher), ActorPathUtil.taskActorName(taskId))
       tasks += taskId -> taskActor
     }

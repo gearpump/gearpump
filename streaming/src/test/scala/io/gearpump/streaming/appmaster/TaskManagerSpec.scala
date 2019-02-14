@@ -160,7 +160,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     val taskManager = system.actorOf(
       Props(new TaskManager(appId, dagManager.ref, scheduler, executorManager.ref, clockService.ref,
-        appMaster.ref, "appName")))
+        appMaster.ref)))
 
     dagManager.expectMsgType[WatchChange]
     executorManager.expectMsgType[SetTaskManager]

@@ -43,12 +43,13 @@ trait ArgumentsParser {
   // scalastyle:off println
   def help(): Unit = {
     Console.println(s"\nHelp: $description")
-    val usage = options.map(kv => if (kv._2.required) {
-      s"-${kv._1} (required:${kv._2.required})${kv._2.description}"
-    } else {
-      s"-${kv._1} (required:${kv._2.required}, " +
-        s"default:${kv._2.defaultValue.getOrElse("")})${kv._2.description}"
-    }) ++ remainArgs.map(k => s"<$k>").mkString(" ")
+    val usage = options.map(kv =>
+      if (kv._2.required) {
+        s"-${kv._1} (required:${kv._2.required})${kv._2.description}"
+      } else {
+        s"-${kv._1} (required:${kv._2.required}, " +
+          s"default:${kv._2.defaultValue.getOrElse("")})${kv._2.description}"
+      }) :+ (remainArgs.map(k => s"<$k>").mkString(" "))
     usage.foreach(Console.println)
   }
   // scalastyle:on println

@@ -47,6 +47,7 @@ object Dependencies {
   val jedisVersion = "2.9.0"
   val rabbitmqVersion = "3.5.3"
   val calciteVersion = "1.12.0"
+  val silencerVersion = "1.3.1"
 
   val annotationDependencies = Seq(
     // work around for compiler warnings like
@@ -54,6 +55,11 @@ object Dependencies {
     // see https://issues.scala-lang.org/browse/SI-8978
     // marked as "provided" to be excluded from assembling
     "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided"
+  )
+
+  val compilerDependencies = Seq(
+    compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
+    "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided
   )
 
   val coreDependencies = Seq(
@@ -99,6 +105,6 @@ object Dependencies {
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
       "org.mockito" % "mockito-core" % mockitoVersion % "test",
       "junit" % "junit" % junitVersion % "test"
-    ) ++ annotationDependencies
+    ) ++ annotationDependencies ++ compilerDependencies
   )
 }

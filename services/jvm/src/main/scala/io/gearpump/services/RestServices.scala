@@ -14,20 +14,21 @@
 
 package io.gearpump.services
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.{ActorRef, ActorSystem}
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Route, _}
-import akka.stream.ActorMaterializer
 import akka.util.Timeout
+import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
-import io.gearpump.jarstore.JarStoreClient
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 /** Contains all REST API service endpoints */
-class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem)
+class RestServices(master: ActorRef, system: ActorSystem)
   extends RouteService {
 
   private val LOG = LogUtil.getLogger(getClass)
@@ -48,7 +49,7 @@ class RestServices(master: ActorRef, mat: ActorMaterializer, system: ActorSystem
     case ex: Throwable => {
       extractUri { uri =>
         LOG.error(s"Request to $uri could not be handled normally", ex)
-        complete(InternalServerError, ExceptionUtils.getStackTrace(ex))
+        complete(HttpResponse(InternalServerError, entity = ExceptionUtils.getStackTrace(ex)))
       }
     }
   }

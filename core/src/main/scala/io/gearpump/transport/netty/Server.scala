@@ -16,24 +16,23 @@ package io.gearpump.transport.netty
 
 import java.util
 
-import scala.collection.JavaConverters._
-import scala.collection.immutable.IntMap
-import scala.concurrent.Future
 import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import io.gearpump.transport.ActorLookupById
 import io.gearpump.util.{AkkaHelper, LogUtil}
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
-import io.gearpump.util.LogUtil
+
+import scala.collection.JavaConverters._
+import scala.collection.immutable.IntMap
+import scala.concurrent.Future
 
 /** Netty server actor, message received will be forward to the target on the address line. */
-class Server(
-    name: String, conf: NettyConfig, lookupActor: ActorLookupById, deserializeFlag: Boolean)
+class Server(name: String, lookupActor: ActorLookupById)
   extends Actor {
 
   private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = name)
-  import Server._
+  import io.gearpump.transport.netty.Server._
 
   val allChannels: ChannelGroup = new DefaultChannelGroup("gearpump-server")
 

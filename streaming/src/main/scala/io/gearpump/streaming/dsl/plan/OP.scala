@@ -15,17 +15,17 @@
 package io.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
+import com.github.ghik.silencer.silent
 import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.dsl.scalaapi.Stream
 import io.gearpump.streaming.Processor.DefaultProcessor
 import io.gearpump.streaming.dsl.plan.functions.{AndThen, DummyRunner, FlatMapper, FunctionRunner}
-import io.gearpump.streaming.dsl.window.impl.{AndThenOperator, FlatMapOperator, StreamingOperator, WindowOperator}
-import io.gearpump.streaming.{Constants, Processor}
 import io.gearpump.streaming.dsl.task.{GroupByTask, TransformTask}
 import io.gearpump.streaming.dsl.window.api.{GlobalWindows, Windows}
+import io.gearpump.streaming.dsl.window.impl.{AndThenOperator, FlatMapOperator, StreamingOperator, WindowOperator}
 import io.gearpump.streaming.sink.{DataSink, DataSinkProcessor}
 import io.gearpump.streaming.source.{DataSource, DataSourceTask}
 import io.gearpump.streaming.task.Task
+import io.gearpump.streaming.{Constants, Processor}
 
 import scala.reflect.ClassTag
 
@@ -67,9 +67,9 @@ object Op {
 
   def isFlatMapper(runner: FunctionRunner[Any, Any]): Boolean = {
     runner match {
-      case fm: FlatMapper[Any, Any] =>
+      case _: FlatMapper[Any, Any] =>
         true
-      case at: AndThen[Any, Any, Any] =>
+      case at: AndThen[Any, Any, Any] @unchecked =>
         isFlatMapper(at.first) && isFlatMapper(at.second)
       case _ =>
         false
@@ -105,10 +105,8 @@ sealed trait Op {
 }
 
 /**
- * This represents a low level Processor. It is deprecated since it
- * doesn't work with other Ops.
+ * This represents a low level Processor.
  */
-@deprecated
 case class ProcessorOp[T <: Task](
     processor: Class[T],
     parallelism: Int,
@@ -146,7 +144,7 @@ case class DataSourceOp(
 
   override def chain(other: Op)(implicit system: ActorSystem): Op = {
     other match {
-      case op: WindowTransformOp[Any, Any] =>
+      case op: WindowTransformOp[Any, Any] @unchecked =>
         val chainedRunner =
           operator.map(AndThenOperator(_, op.operator)).getOrElse(op.operator)
         DataSourceOp(
@@ -157,7 +155,7 @@ case class DataSourceOp(
             chainedRunner),
             op.userConfig),
         Some(chainedRunner))
-      case op: TransformOp[Any, Any] =>
+      case op: TransformOp[Any, Any] @unchecked =>
         val runner = op.runner
         if (Op.isFlatMapper(runner)) {
           val fm = new FlatMapOperator[Any, Any](runner)
@@ -302,9 +300,10 @@ case class WindowOp(
  */
 case class GroupByOp[IN, GROUP] private(
     groupBy: IN => GROUP,
-    parallelism: Int = 1,
-    description: String = "groupBy",
-    override val userConfig: UserConfig = UserConfig.empty)
+    parallelism: Int,
+    description: String,
+    // https://github.com/scala/bug/issues/7707
+    @silent override val userConfig: UserConfig = UserConfig.empty)
   extends Op {
 
   override def chain(other: Op)(implicit system: ActorSystem): Op = {

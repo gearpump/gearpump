@@ -18,14 +18,11 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.streaming.partitioner.ShufflePartitioner
-import io.gearpump.util.{AkkaApp, Graph, LogUtil}
-import org.slf4j.Logger
 import io.gearpump.streaming.{Processor, StreamApplication}
+import io.gearpump.util.{AkkaApp, Graph}
 import io.gearpump.util.Graph._
-import io.gearpump.util.{Graph, LogUtil}
 
 object SOL extends AkkaApp with ArgumentsParser {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "streamProducer" -> CLIOption[Int]("<stream producer number>", required = false,
@@ -47,7 +44,7 @@ object SOL extends AkkaApp with ArgumentsParser {
     val streamProducer = Processor[SOLStreamProducer](spoutNum)
     val streamProcessor = Processor[SOLStreamProcessor](boltNum)
     var computation = streamProducer ~ partitioner ~> streamProcessor
-    computation = 0.until(stages - 2).foldLeft(computation) { (c, id) =>
+    computation = 0.until(stages - 2).foldLeft(computation) { (c, _) =>
       c ~ partitioner ~> streamProcessor.copy()
     }
     val dag = Graph(computation)
@@ -58,7 +55,7 @@ object SOL extends AkkaApp with ArgumentsParser {
   override def main(akkaConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
     val context = ClientContext(akkaConf)
-    val appId = context.submit(application(config))
+    context.submit(application(config))
     context.close()
   }
 }

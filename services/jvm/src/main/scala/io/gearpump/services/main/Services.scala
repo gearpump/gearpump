@@ -16,8 +16,6 @@ package io.gearpump.services.main
 
 import java.util.Random
 
-import scala.collection.JavaConverters._
-import scala.concurrent.Await
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
@@ -26,17 +24,17 @@ import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, Gear}
 import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.util.AkkaApp
-import org.slf4j.Logger
-import sun.misc.BASE64Encoder
 import io.gearpump.services.{RestServices, SecurityService}
 import io.gearpump.util.LogUtil.ProcessType
-import io.gearpump.util.{Constants, LogUtil, Util}
+import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
+import org.slf4j.Logger
+import sun.misc.BASE64Encoder
+
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
 
 /** Command line to start UI server */
 object Services extends AkkaApp with ArgumentsParser {
-
-  private val LOG = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption("<host:port>", required = false),
@@ -97,9 +95,9 @@ object Services extends AkkaApp with ArgumentsParser {
       s"masterproxy${system.name}")
     val (host, port) = parseHostPort(system.settings.config)
 
-    implicit val mat = ActorMaterializer()
-    val services = new RestServices(master, mat, system)
+    val services = new RestServices(master, system)
 
+    implicit val mat = ActorMaterializer()
     val bindFuture = Http().bindAndHandle(Route.handlerFlow(services.route), host, port)
     Await.result(bindFuture, 15.seconds)
 

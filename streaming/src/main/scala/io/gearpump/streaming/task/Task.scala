@@ -16,14 +16,16 @@ package io.gearpump.streaming.task
 
 import java.time.Instant
 
-import scala.concurrent.duration.FiniteDuration
 import akka.actor.Actor.Receive
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import io.gearpump.cluster.UserConfig
-import io.gearpump.util.LogUtil
+import com.github.ghik.silencer.silent
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
+import io.gearpump.cluster.UserConfig
+import io.gearpump.util.LogUtil
 import org.slf4j.Logger
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * This provides context information for a task.
@@ -167,7 +169,8 @@ trait TaskInterface {
   def onWatermarkProgress(watermark: Instant): Unit
 }
 
-abstract class Task(taskContext: TaskContext, userConf: UserConfig) extends TaskInterface {
+@silent // parameter value userConfig in class Task is never used
+abstract class Task(taskContext: TaskContext, userConfig: UserConfig) extends TaskInterface {
 
   import taskContext.{appId, executorId, taskId}
 

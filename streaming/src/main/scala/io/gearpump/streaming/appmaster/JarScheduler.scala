@@ -16,16 +16,15 @@ package io.gearpump.streaming.appmaster
 import akka.actor._
 import akka.pattern.ask
 import com.typesafe.config.Config
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.util.{Constants, Graph, LogUtil}
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.AppJar
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.streaming.appmaster.JarScheduler.{ExecutorFailed, GetResourceRequestDetails, JarSchedulerImpl, NewDag, ResourceRequestDetail, ScheduleTask, TransitToNewDag}
 import io.gearpump.streaming.partitioner.PartitionerDescription
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.streaming.{DAG, ProcessorDescription}
-import io.gearpump.util.{Graph, LogUtil}
+import io.gearpump.util.{Constants, Graph, LogUtil}
 
 import scala.concurrent.Future
 
@@ -38,8 +37,8 @@ import scala.concurrent.Future
  *
  * In runtime, the implementation is delegated to actor JarSchedulerImpl
  */
-class JarScheduler(appId: Int, appName: String, config: Config, factory: ActorRefFactory) {
-  private val actor: ActorRef = factory.actorOf(Props(new JarSchedulerImpl(appId, appName, config)))
+class JarScheduler(appName: String, config: Config, factory: ActorRefFactory) {
+  private val actor: ActorRef = factory.actorOf(Props(new JarSchedulerImpl(appName, config)))
   private implicit val dispatcher = factory.dispatcher
   private implicit val timeout = Constants.FUTURE_TIMEOUT
 
@@ -98,7 +97,7 @@ object JarScheduler {
   /** Some executor JVM is dead, try to recover tasks that are located on failed executor */
   case class ExecutorFailed(executorId: Int)
 
-  class JarSchedulerImpl(appId: Int, appName: String, config: Config) extends Actor with Stash {
+  class JarSchedulerImpl(appName: String, config: Config) extends Actor with Stash {
 
     // Each TaskScheduler maps to a jar.
     private var taskSchedulers = Map.empty[AppJar, TaskScheduler]
@@ -127,7 +126,7 @@ object JarScheduler {
           val subDagForSingleJar = DAG(subGraph)
 
           val taskScheduler = taskSchedulers
-            .getOrElse(jar, new TaskSchedulerImpl(appId, appName, config))
+            .getOrElse(jar, new TaskSchedulerImpl(appName, config))
 
           LOG.info(s"Set DAG for TaskScheduler, count: " + subDagForSingleJar.processors.size)
           taskScheduler.setDAG(subDagForSingleJar)
@@ -135,7 +134,7 @@ object JarScheduler {
         }
         unstashAll()
         context.become(ready)
-      case other =>
+      case _ =>
         stash()
     }
 

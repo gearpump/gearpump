@@ -14,20 +14,19 @@
 
 package io.gearpump.cluster.appmaster
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import akka.actor._
 import akka.testkit.TestProbe
-import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import io.gearpump.TestProbeUtil._
 import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
-import io.gearpump.cluster._
+import io.gearpump.cluster.{TestUtil, _}
 import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment._
-import AppMasterRuntimeEnvironmentSpec.TestAppMasterEnv
-import io.gearpump.cluster.TestUtil
+import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironmentSpec.TestAppMasterEnv
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.StartExecutorSystems
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.MasterConnectionStatus.{MasterConnected, MasterStopped}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
@@ -65,7 +64,7 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
 
     val appMaster = TestProbe()
     val appMasterProps: Props = appMaster
-    val lazyAppMaster = system.actorOf(Props(new LazyStartAppMaster(appId = 0, appMasterProps)))
+    val lazyAppMaster = system.actorOf(Props(new LazyStartAppMaster(appMasterProps)))
     val msg = "Some"
     lazyAppMaster ! msg
     lazyAppMaster ! StartAppMaster

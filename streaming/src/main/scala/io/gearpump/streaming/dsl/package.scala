@@ -13,30 +13,24 @@
  */
 package io.gearpump.streaming
 
-import io.gearpump.streaming.dsl.api.functions.SerializableFunction
-import io.gearpump.streaming.dsl.scalaapi.{Stream, StreamApp}
-import io.gearpump.streaming.dsl.task.{GroupByTask, TransformTask}
-import io.gearpump.streaming.sink.{DataSink, DataSinkTask}
-import io.gearpump.streaming.source.{DataSource, DataSourceTask}
-
 
 // scalastyle:off line.size.limit
 /**
  *
  * The architecture of Gearpump Streaming DSL consists of several layers:
  *
- *   * User facing [[Stream]] DSL. Stream is created by [[StreamApp]]
+ *   * User facing [[Stream]] DSL. Stream is created by [[io.gearpump.streaming.dsl.scalaapi.StreamApp]]
  *     from input source like Kafka or by applying high level operations (e.g. flatMap, window, groupBy) to user defined functions(UDFs). UDFs are subclasses
- *     of [[SerializableFunction]], represented by [[io.gearpump.streaming.dsl.plan.Op]]
+ *     of [[io.gearpump.streaming.dsl.api.functions.SerializableFunction]], represented by [[io.gearpump.streaming.dsl.plan.Op]]
  *     in the underlying [[io.gearpump.util.Graph]].
  *   * [[io.gearpump.streaming.dsl.plan.Planner]], responsible for interpreting the Op Graph, optimizing it and building a low level Graph of
  *     [[io.gearpump.streaming.Processor]]. Finally, it creates a runnable Graph of [[io.gearpump.streaming.task.Task]].
  *   * The execution layer is usually composed of the following four tasks.
  *
- *     * [[DataSourceTask]] for [[DataSource]] to ingest data into Gearpump
- *     * [[DataSinkTask]] for [[DataSink]] to write data out.
- *     * [[GroupByTask]] to execute Ops followed by [[io.gearpump.streaming.dsl.plan.GroupByOp]]
- *     * [[TransformTask]] to execute all other Ops.
+ *     * [[io.gearpump.streaming.source.DataSourceTask]] for [[io.gearpump.streaming.source.DataSource]] to ingest data into Gearpump
+ *     * [[io.gearpump.streaming.sink.DataSinkTask]] for [[io.gearpump.streaming.sink.DataSink]] to write data out.
+ *     * [[io.gearpump.streaming.dsl.task.GroupByTask]] to execute Ops followed by [[io.gearpump.streaming.dsl.plan.GroupByOp]]
+ *     * [[io.gearpump.streaming.dsl.task.TransformTask]] to execute all other Ops.
  *
  *     All but [[sink.DataSinkTask]] delegates execution to [[io.gearpump.streaming.dsl.window.impl.StreamingOperator]], which internally
  *     runs a chain of [[io.gearpump.streaming.dsl.plan.functions.FunctionRunner]] grouped by windows. Window assignments are either explicitly defined with

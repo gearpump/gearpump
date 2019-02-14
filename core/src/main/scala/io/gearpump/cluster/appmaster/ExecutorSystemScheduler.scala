@@ -107,7 +107,7 @@ class ExecutorSystemScheduler(appId: Int, masterProxy: ActorRef,
       if (isSessionAlive(session)) {
         LOG.error(s"Failed to launch executor system, due to $reason, " +
           s"will ask master to allocate new resources $resource")
-        resourceAgents.get(session).map { resourceAgent: ActorRef =>
+        resourceAgents.get(session).foreach { resourceAgent: ActorRef =>
           resourceAgent ! RequestResource(appId, ResourceRequest(resource, WorkerId.unspecified))
         }
       }
@@ -166,7 +166,7 @@ object ExecutorSystemScheduler {
       case ResourceAllocated(allocations) =>
         unallocatedResource -= allocations.map(_.resource.slots).sum
         resourceRequestor forward ResourceAllocatedForSession(allocations, session)
-      case timeout: ResourceAllocationTimeOut =>
+      case ResourceAllocationTimeOut =>
         if (unallocatedResource > 0) {
           resourceRequestor ! ResourceAllocationTimeOut(session)
           // We will not receive any ResourceAllocation after timeout

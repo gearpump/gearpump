@@ -107,26 +107,24 @@ object ActorUtil {
       appContext: AppMasterContext): Unit = {
     if (workerNum.contains(executorSystemNum)) {
       appContext.masterProxy ! ApplicationStatusChanged(appContext.appId, ApplicationStatus.ACTIVE,
-        System.currentTimeMillis(), null)
+        System.currentTimeMillis())
     }
   }
 
   def askAppMaster[T](master: ActorRef, appId: Int, msg: Any)(implicit ex: ExecutionContext)
     : Future[T] = {
-    implicit val timeout = Constants.FUTURE_TIMEOUT
-    val appmaster = askActor[ResolveAppIdResult](master, ResolveAppId(appId)).flatMap { result =>
+    val appMaster = askActor[ResolveAppIdResult](master, ResolveAppId(appId)).flatMap { result =>
       if (result.appMaster.isSuccess) {
         Future.successful(result.appMaster.get)
       } else {
         Future.failed(result.appMaster.failed.get)
       }
     }
-    appmaster.flatMap(askActor[T](_, msg))
+    appMaster.flatMap(askActor[T](_, msg))
   }
 
   def askWorker[T](master: ActorRef, workerId: WorkerId, msg: Any)(implicit ex: ExecutionContext)
     : Future[T] = {
-    implicit val timeout = Constants.FUTURE_TIMEOUT
     val worker = askActor[ResolveWorkerIdResult](master, ResolveWorkerId(workerId))
       .flatMap { result =>
         if (result.worker.isSuccess) {
@@ -138,17 +136,16 @@ object ActorUtil {
     worker.flatMap(askActor[T](_, msg))
   }
 
-  def askActor[T](actor: ActorRef, msg: Any)(implicit ex: ExecutionContext): Future[T] = {
+  def askActor[T](actor: ActorRef, msg: Any): Future[T] = {
     implicit val timeout = Constants.FUTURE_TIMEOUT
     (actor ? msg).asInstanceOf[Future[T]]
   }
 
-  def askActor[T](actor: ActorRef, msg: Any, timeout: Timeout)(implicit ex: ExecutionContext): T = {
+  def askActor[T](actor: ActorRef, msg: Any, timeout: Timeout): T = {
     askActor(actor, msg, timeout, ActorRef.noSender)
   }
 
-  def askActor[T](actor: ActorRef, msg: Any, timeout: Timeout, sender: ActorRef)
-    (implicit ex: ExecutionContext): T = {
+  def askActor[T](actor: ActorRef, msg: Any, timeout: Timeout, sender: ActorRef): T = {
     Await.result(actor.ask(msg)(timeout, sender).asInstanceOf[Future[T]], Duration.Inf)
   }
 }

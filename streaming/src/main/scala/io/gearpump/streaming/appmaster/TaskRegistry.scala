@@ -16,13 +16,11 @@ package io.gearpump.streaming.appmaster
 
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.streaming.appmaster.ExecutorManager.ExecutorResourceUsageSummary
-import TaskRegistry._
-import io.gearpump.transport.HostPort
-import io.gearpump.transport.netty.Context
-import io.gearpump.util.LogUtil
+import io.gearpump.streaming.appmaster.TaskRegistry.{Accept, RegisterTaskStatus, Reject, TaskLocation, TaskLocations}
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.streaming.{ExecutorId, ProcessorId}
 import io.gearpump.transport.HostPort
+import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 /**
@@ -52,7 +50,7 @@ class TaskRegistry(val expectedTasks: List[TaskId],
       registeredTasks += taskId -> location
       Accept
     } else {
-      LOG.error(s" the task is not accepted for registration, taskId: ${taskId}")
+      LOG.error(s" the task is not accepted for registration, taskId: $taskId")
       Reject
     }
   }
@@ -73,8 +71,7 @@ class TaskRegistry(val expectedTasks: List[TaskId],
   }
 
   def getTaskExecutorMap: Map[TaskId, ExecutorId] = {
-    getTaskLocations.locations.flatMap { pair =>
-      val (hostPort, taskSet) = pair
+    getTaskLocations.locations.flatMap { case (_, taskSet) =>
       taskSet.map { taskId =>
         (taskId, getExecutorId(taskId).getOrElse(-1))
       }
@@ -92,7 +89,7 @@ class TaskRegistry(val expectedTasks: List[TaskId],
   }
 
   def isAllTasksRegistered: Boolean = {
-    val aliveTasks = (expectedTasks.toSet -- deadTasks)
+    val aliveTasks = expectedTasks.toSet -- deadTasks
     aliveTasks.forall(task => registeredTasks.contains(task))
   }
 

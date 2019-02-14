@@ -18,9 +18,6 @@ import io.gearpump.streaming.dsl.api.functions.{FilterFunction, FoldFunction, Ma
 import io.gearpump.streaming.dsl.javaapi.functions.GroupByFunction
 import io.gearpump.streaming.dsl.scalaapi.Stream
 import io.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import io.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunction, ReduceFunction}
-import io.gearpump.streaming.dsl.javaapi.functions.{GroupByFunction, FlatMapFunction => JFlatMapFunction}
-import io.gearpump.streaming.dsl.scalaapi.Stream
 import io.gearpump.streaming.dsl.window.api.Windows
 import io.gearpump.streaming.task.Task
 
@@ -31,7 +28,7 @@ class JavaStream[T](val stream: Stream[T]) {
 
   /** FlatMap on stream */
   def flatMap[R](fn: functions.FlatMapFunction[T, R], description: String): JavaStream[R] = {
-    new JavaStream[R](stream.flatMap(FlatMapFunction(fn), "flatMap"))
+    new JavaStream[R](stream.flatMap(FlatMapFunction(fn), description))
   }
 
   /** Map on stream */

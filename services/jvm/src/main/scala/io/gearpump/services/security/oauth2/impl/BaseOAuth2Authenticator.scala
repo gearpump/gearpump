@@ -97,8 +97,8 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
     }
   }
 
-  override def getAuthorizationUrl(): String = {
-    oauthService.getAuthorizationUrl()
+  override def getAuthorizationUrl: String = {
+    oauthService.getAuthorizationUrl
   }
 
   protected def authenticateWithAccessToken(accessToken: OAuth2AccessToken): Future[UserSession] = {

@@ -14,20 +14,18 @@
 
 package io.gearpump.metrics
 
-import scala.collection.JavaConverters._
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.ActorRef
 import com.codahale.metrics.{MetricRegistry, Gauge => CodaGauge}
-import io.gearpump.metrics.MetricsReporterService.ReportTo
-import io.gearpump.util.LogUtil
 import io.gearpump.metrics.Metrics.{Counter => CounterData, Gauge => GaugeData, Histogram => HistogramData, Meter => MeterData}
 import io.gearpump.metrics.MetricsReporterService.ReportTo
+import io.gearpump.util.LogUtil
+
+import scala.collection.JavaConverters._
 
 /**
  * A reporter class for logging metrics values to a remote actor periodically
  */
-class AkkaReporter(
-    system: ActorSystem,
-    registry: MetricRegistry)
+class AkkaReporter(registry: MetricRegistry)
   extends ReportTo {
   private val LOG = LogUtil.getLogger(getClass)
   LOG.info("Start Metrics AkkaReporter")

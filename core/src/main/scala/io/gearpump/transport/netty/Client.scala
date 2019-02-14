@@ -25,7 +25,6 @@ import scala.language.implicitConversions
 import akka.actor.Actor
 import io.gearpump.transport.HostPort
 import io.gearpump.util.LogUtil
-import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel._
 import org.slf4j.Logger
 
@@ -36,20 +35,15 @@ import org.slf4j.Logger
 class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) extends Actor {
   import Client._
 
-  val name = s"netty-client-$hostPort"
-
-  private final var bootstrap: ClientBootstrap = null
-  private final val random: Random = new Random
+  private val name = s"netty-client-$hostPort"
+  private val random: Random = new Random
   private val serializer = conf.newTransportSerializer
   private var channel: Channel = null
+  private var batch = new util.ArrayList[TaskMessage]
+  private val bootstrap = NettyUtil.createClientBootStrap(factory,
+    new ClientPipelineFactory(name, conf), conf.buffer_size)
 
-  var batch = new util.ArrayList[TaskMessage]
-
-  private val init = {
-    bootstrap = NettyUtil.createClientBootStrap(factory,
-      new ClientPipelineFactory(name, conf), conf.buffer_size)
-    self ! Connect(0)
-  }
+  self ! Connect(0)
 
   def receive: Receive = messageHandler orElse connectionHandler
 
@@ -175,7 +169,6 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
     }
   }
 
-  private def isChannelWritable = (null != channel) && channel.isWritable
 }
 
 object Client {
@@ -194,7 +187,7 @@ object Client {
 
     override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) {
       event.getCause match {
-        case ex: ConnectException => Unit
+        case _: ConnectException => Unit
         case ex: ClosedChannelException =>
           LOG.warn("exception found when trying to close netty connection", ex.getMessage)
         case ex => LOG.error("Connection failed " + name, ex)

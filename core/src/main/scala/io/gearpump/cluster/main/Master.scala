@@ -85,7 +85,7 @@ object Master extends AkkaApp with ArgumentsParser {
     LOG.info(s"Replicator path: ${replicator.path}")
 
     // Starts singleton manager
-    val singletonManager = system.actorOf(ClusterSingletonManager.props(
+    val _ = system.actorOf(ClusterSingletonManager.props(
       singletonProps = Props(classOf[MasterWatcher], MASTER),
       terminationMessage = PoisonPill,
       settings = ClusterSingletonManagerSettings(system).withSingletonName(MASTER_WATCHER)
@@ -117,7 +117,7 @@ object Master extends AkkaApp with ArgumentsParser {
           try {
             Await.result(system.whenTerminated, Duration(3, TimeUnit.SECONDS))
           } catch {
-            case ex: Exception => // Ignore
+            case _: Exception => // Ignore
           }
           system.terminate()
           mainThread.join()

@@ -31,7 +31,7 @@ object PageRankExample extends AkkaApp {
     val pageRankGraph = Graph(a ~> b, a ~> c, a ~> d, b ~> a, b ~> d, d ~> b, d ~> c, c ~> b)
     val app = new PageRankApplication("pagerank", iteration = 100, delta = 0.001, pageRankGraph)
     val context = ClientContext(akkaConf)
-    val appId = context.submit(app)
+    context.submit(app)
     context.close()
   }
 }

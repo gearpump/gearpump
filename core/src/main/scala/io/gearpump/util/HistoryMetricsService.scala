@@ -16,17 +16,18 @@ package io.gearpump.util
 
 import java.util
 
-import scala.collection.mutable.ListBuffer
 import akka.actor.Actor
 import com.typesafe.config.Config
-import org.slf4j.Logger
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, ReadOption}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem}
 import io.gearpump.metrics.Metrics._
 import io.gearpump.metrics.MetricsAggregator
-import Constants._
-import HistoryMetricsService.{DummyMetricsAggregator, HistoryMetricsConfig, HistoryMetricsStore, SkipAllAggregator}
+import io.gearpump.util.Constants._
+import io.gearpump.util.HistoryMetricsService.{DummyMetricsAggregator, HistoryMetricsConfig, HistoryMetricsStore, SkipAllAggregator}
+import org.slf4j.Logger
+
+import scala.collection.mutable.ListBuffer
 
 /**
  *
@@ -54,7 +55,7 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
       if (metricsStore.contains(name)) {
         metricsStore(name).add(metrics)
       } else {
-        val store = HistoryMetricsStore(name, metrics, config)
+        val store = HistoryMetricsStore(metrics, config)
         metricsStore += name -> store
         store.add(metrics)
       }
@@ -181,13 +182,13 @@ object HistoryMetricsService {
   }
 
   object HistoryMetricsStore {
-    def apply(name: String, metric: MetricType, config: HistoryMetricsConfig)
+    def apply(metric: MetricType, config: HistoryMetricsConfig)
       : HistoryMetricsStore = {
       metric match {
-        case histogram: Histogram => new HistogramMetricsStore(config)
-        case meter: Meter => new MeterMetricsStore(config)
-        case counter: Counter => new CounterMetricsStore(config)
-        case gauge: Gauge => new GaugeMetricsStore(config)
+        case _: Histogram => new HistogramMetricsStore(config)
+        case _: Meter => new MeterMetricsStore(config)
+        case _: Counter => new CounterMetricsStore(config)
+        case _: Gauge => new GaugeMetricsStore(config)
         case _ => new DummyHistoryMetricsStore // other metrics are not supported
       }
     }

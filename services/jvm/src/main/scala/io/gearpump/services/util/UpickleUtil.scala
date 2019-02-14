@@ -63,7 +63,8 @@ object UpickleUtil {
         case "pending" => ApplicationStatus.PENDING
         case "active" => ApplicationStatus.ACTIVE
         case "succeeded" => ApplicationStatus.SUCCEEDED
-        case "failed" => ApplicationStatus.FAILED
+        // FIXME
+        case "failed" => ApplicationStatus.FAILED(new Exception(""))
         case "terminated" => ApplicationStatus.TERMINATED
         case _ => ApplicationStatus.NONEXIST
       }

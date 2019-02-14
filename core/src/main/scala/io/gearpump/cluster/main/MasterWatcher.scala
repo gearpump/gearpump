@@ -113,7 +113,7 @@ class MasterWatcher(role: String) extends Actor with ActorLogging {
         try {
           Await.result(system.whenTerminated, Duration(3, TimeUnit.SECONDS))
         } catch {
-          case ex: Exception => // Ignore
+          case _: Exception => // Ignore
         }
         system.terminate()
       }

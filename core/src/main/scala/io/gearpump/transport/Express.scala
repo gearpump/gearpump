@@ -14,16 +14,16 @@
 
 package io.gearpump.transport
 
-import scala.collection.immutable.LongMap
-import scala.concurrent._
 import akka.actor._
 import akka.agent.Agent
+import com.github.ghik.silencer.silent
 import io.gearpump.transport.netty.Client.Close
 import io.gearpump.transport.netty.{Context, TaskMessage}
 import io.gearpump.util.LogUtil
 import org.slf4j.Logger
-import io.gearpump.transport.netty.Client.Close
-import io.gearpump.transport.netty.{Context, TaskMessage}
+
+import scala.collection.immutable.LongMap
+import scala.concurrent._
 
 trait ActorLookupById {
 
@@ -39,13 +39,12 @@ trait ActorLookupById {
  */
 class Express(val system: ExtendedActorSystem) extends Extension with ActorLookupById {
 
+  import io.gearpump.transport.Express._
   import system.dispatcher
+  @silent val localActorMap = Agent(LongMap.empty[ActorRef])
+  @silent val remoteAddressMap = Agent(Map.empty[Long, HostPort])
 
-  import Express._
-  val localActorMap = Agent(LongMap.empty[ActorRef])
-  val remoteAddressMap = Agent(Map.empty[Long, HostPort])
-
-  val remoteClientMap = Agent(Map.empty[HostPort, ActorRef])
+  @silent val remoteClientMap = Agent(Map.empty[HostPort, ActorRef])
 
   val conf = system.settings.config
 
@@ -58,9 +57,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
     val localHost = HostPort(system.provider.getDefaultAddress.host.get, serverPort)
     LOG.info(s"binding to netty server $localHost")
 
-    system.registerOnTermination(new Runnable {
-      override def run(): Unit = context.close()
-    })
+    system.registerOnTermination(() => context.close())
     (context, serverPort, localHost)
   }
 
@@ -72,7 +69,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   def startClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
     val clientsToClose = remoteClientMap.get().filterKeys(!hostPorts.contains(_)).keySet
     closeClients(clientsToClose)
-    hostPorts.toList.foldLeft(Future(Map.empty[HostPort, ActorRef])) { (future, hostPort) =>
+    hostPorts.toList.foldLeft(Future(Map.empty[HostPort, ActorRef])) { (_, hostPort) =>
       remoteClientMap.alter { map =>
         if (!map.contains(hostPort)) {
           val actor = context.connect(hostPort)

@@ -18,6 +18,7 @@ import java.io.Serializable
 
 import akka.actor.{Actor, ActorRef}
 import com.typesafe.config.{Config, ConfigFactory}
+import io.gearpump.cluster.MasterToClient.{ApplicationFailed, ApplicationResult, ApplicationSucceeded, ApplicationTerminated}
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.jarstore.FilePath
@@ -125,11 +126,22 @@ object ApplicationStatus {
 
   case object SUCCEEDED extends ApplicationTerminalStatus("succeeded")
 
-  case object FAILED extends ApplicationTerminalStatus("failed")
+  case class FAILED(ex: Throwable) extends ApplicationTerminalStatus("failed")
 
   case object TERMINATED extends ApplicationTerminalStatus("terminated")
 
   case object NONEXIST extends ApplicationStatus("nonexist") {
     override def canTransitTo(newStatus: ApplicationStatus): Boolean = false
+  }
+
+  def toResult(status: ApplicationTerminalStatus, appId: Int): ApplicationResult = {
+    status match {
+      case SUCCEEDED =>
+        ApplicationSucceeded(appId)
+      case FAILED(ex) =>
+        ApplicationFailed(appId, ex)
+      case TERMINATED =>
+        ApplicationTerminated(appId)
+    }
   }
 }

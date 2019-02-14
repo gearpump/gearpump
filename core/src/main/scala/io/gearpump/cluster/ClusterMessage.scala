@@ -244,7 +244,7 @@ object AppMasterToMaster {
    * Denotes the application state change of an app.
    */
   case class ApplicationStatusChanged(appId: Int, newStatus: ApplicationStatus,
-      timeStamp: MilliSeconds, error: Throwable)
+      timeStamp: MilliSeconds)
 }
 
 object MasterToAppMaster {

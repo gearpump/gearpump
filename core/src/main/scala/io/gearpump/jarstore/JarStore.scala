@@ -20,7 +20,6 @@ import java.util.ServiceLoader
 
 import com.typesafe.config.Config
 import io.gearpump.util.Util
-import io.gearpump.util.Constants
 
 import scala.collection.JavaConverters._
 
@@ -65,7 +64,7 @@ object JarStore {
   /**
    * Get a active JarStore by specifying a scheme.
    *
-   * Please see config [[Constants#GEARPUMP_APP_JAR_STORE_ROOT_PATH]] for
+   * Please see config [[io.gearpump.util.Constants#GEARPUMP_APP_JAR_STORE_ROOT_PATH]] for
    * more information.
    */
   private lazy val jarstores: List[JarStore] = {
