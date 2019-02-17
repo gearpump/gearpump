@@ -14,15 +14,14 @@
 
 package io.gearpump.streaming.examples.sol
 
-import scala.concurrent.Future
-import scala.util.Success
 import com.typesafe.config.Config
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
+import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.ClientToMaster.SubmitApplication
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import io.gearpump.cluster.{MasterHarness, TestUtil}
-import io.gearpump.cluster.{MasterHarness, TestUtil}
+import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
+import org.scalatest.prop.PropertyChecks
+import scala.concurrent.Future
+import scala.util.Success
 
 class SOLSpec
   extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {

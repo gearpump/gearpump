@@ -13,12 +13,11 @@
  */
 package io.gearpump.streaming.task
 
-import java.io.{DataInput, DataOutput}
-
+import io.gearpump.streaming.{AckRequestSerializer, AckSerializer, InitialAckRequestSerializer, LatencyProbeSerializer}
 import io.gearpump.transport.netty.ITransportMessageSerializer
 import io.gearpump.util.LogUtil
+import java.io.{DataInput, DataOutput}
 import org.slf4j.Logger
-import io.gearpump.streaming.{AckRequestSerializer, AckSerializer, InitialAckRequestSerializer, LatencyProbeSerializer}
 
 class StreamingTransportSerializer extends ITransportMessageSerializer {
   private val log: Logger = LogUtil.getLogger(getClass)

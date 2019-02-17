@@ -13,18 +13,15 @@
  */
 package io.gearpump.streaming.examples.wordcount.dsl
 
-import java.time.{Duration, Instant}
-
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.dsl.scalaapi.{LoggerSink, StreamApp}
-import io.gearpump.streaming.source.{DataSource, Watermark}
-import io.gearpump.util.AkkaApp
 import io.gearpump.Message
+import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import io.gearpump.streaming.dsl.scalaapi.StreamApp
+import io.gearpump.streaming.dsl.scalaapi.{LoggerSink, StreamApp}
 import io.gearpump.streaming.dsl.window.api.{EventTimeTrigger, FixedWindows}
-import io.gearpump.streaming.source.Watermark
+import io.gearpump.streaming.source.{DataSource, Watermark}
 import io.gearpump.streaming.task.TaskContext
+import io.gearpump.util.AkkaApp
+import java.time.{Duration, Instant}
 
 object WindowedWordCount extends AkkaApp with ArgumentsParser {
 

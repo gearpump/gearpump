@@ -15,8 +15,8 @@
 package io.gearpump.streaming.state.impl
 
 import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.prop.PropertyChecks
 
 class InMemoryCheckpointStoreSpec extends PropSpec with PropertyChecks with Matchers {
 

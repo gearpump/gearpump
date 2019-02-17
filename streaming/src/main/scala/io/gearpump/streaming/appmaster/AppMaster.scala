@@ -14,36 +14,32 @@
 
 package io.gearpump.streaming.appmaster
 
-import java.lang.management.ManagementFactory
-
 import akka.actor._
-import io.gearpump.cluster.ClusterConfig
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.metrics.Metrics
-import io.gearpump.streaming.storage.InMemoryAppStoreOnMaster
-import io.gearpump.streaming.util.ActorPathUtil
 import io.gearpump.Time.MilliSeconds
+import io.gearpump.cluster._
 import io.gearpump.cluster.AppMasterToMaster.ApplicationStatusChanged
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterActivated, AppMasterDataDetailRequest, ReplayFromTimestampWindowTrailingEdge}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, LastFailure}
-import io.gearpump.cluster._
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.metrics.Metrics.ReportMetrics
-import io.gearpump.metrics.{JvmMetricsSet, MetricsReporterService}
-import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask, UnRegisterTask}
 import io.gearpump.streaming._
+import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask, UnRegisterTask}
 import io.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, ExecutorBrief, LookupTaskActorRef, ServiceNotAvailableException}
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, LatestDAG, ReplaceProcessor}
-import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorInfo, AllExecutorsStopped, GetExecutorInfo}
+import io.gearpump.streaming.appmaster.ExecutorManager.{AllExecutorsStopped, ExecutorInfo, GetExecutorInfo}
 import io.gearpump.streaming.appmaster.TaskManager.{ApplicationReady, FailedToRecover, GetTaskList, TaskList}
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.streaming.partitioner.PartitionerDescription
-import io.gearpump.util.{ActorUtil, Graph, HistoryMetricsService, LogUtil}
+import io.gearpump.streaming.storage.InMemoryAppStoreOnMaster
 import io.gearpump.streaming.task._
+import io.gearpump.streaming.util.ActorPathUtil
+import io.gearpump.util.{ActorUtil, Graph, HistoryMetricsService, LogUtil}
 import io.gearpump.util.Constants.{APPMASTER_DEFAULT_EXECUTOR_ID, _}
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
+import java.lang.management.ManagementFactory
 import org.slf4j.Logger
-
 import scala.concurrent.Future
 
 /**

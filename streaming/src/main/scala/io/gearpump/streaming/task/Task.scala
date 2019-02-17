@@ -14,17 +14,15 @@
 
 package io.gearpump.streaming.task
 
-import java.time.Instant
-
-import akka.actor.Actor.Receive
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import akka.actor.Actor.Receive
 import com.github.ghik.silencer.silent
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.UserConfig
 import io.gearpump.util.LogUtil
+import java.time.Instant
 import org.slf4j.Logger
-
 import scala.concurrent.duration.FiniteDuration
 
 /**

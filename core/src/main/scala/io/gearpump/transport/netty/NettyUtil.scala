@@ -16,10 +16,9 @@ package io.gearpump.transport.netty
 
 import java.net.InetSocketAddress
 import java.util.concurrent.{Executors, ThreadFactory}
-
 import org.jboss.netty.bootstrap.{ClientBootstrap, ServerBootstrap}
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 import org.jboss.netty.channel.{Channel, ChannelFactory, ChannelPipelineFactory}
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory
 
 object NettyUtil {
 

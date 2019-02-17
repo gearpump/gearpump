@@ -13,11 +13,10 @@
  */
 package io.gearpump.streaming.executor
 
-import org.scalatest._
-
-import Executor.TaskArgumentStore
-import TaskLauncher.TaskArgument
+import io.gearpump.streaming.executor.Executor.TaskArgumentStore
+import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.task.TaskId
+import org.scalatest._
 
 class TaskArgumentStoreSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   it should "retain all history of taskArgument" in {

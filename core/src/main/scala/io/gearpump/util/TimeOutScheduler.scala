@@ -14,12 +14,10 @@
 
 package io.gearpump.util
 
-import java.util.concurrent.TimeUnit
-
-import scala.concurrent.duration._
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.ask
-
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 /** A helper util to send a message to remote actor and notify callback when timeout */

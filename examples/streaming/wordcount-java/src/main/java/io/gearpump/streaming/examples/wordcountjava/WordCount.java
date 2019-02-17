@@ -18,11 +18,11 @@ import com.typesafe.config.Config;
 import io.gearpump.cluster.ClusterConfig;
 import io.gearpump.cluster.UserConfig;
 import io.gearpump.cluster.client.ClientContext;
-import io.gearpump.streaming.partitioner.HashPartitioner;
-import io.gearpump.streaming.partitioner.Partitioner;
 import io.gearpump.streaming.javaapi.Graph;
 import io.gearpump.streaming.javaapi.Processor;
 import io.gearpump.streaming.javaapi.StreamApplication;
+import io.gearpump.streaming.partitioner.HashPartitioner;
+import io.gearpump.streaming.partitioner.Partitioner;
 
 /** Java version of WordCount with Processor Graph API */
 public class WordCount {

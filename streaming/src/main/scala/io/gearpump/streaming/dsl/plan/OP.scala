@@ -17,6 +17,7 @@ package io.gearpump.streaming.dsl.plan
 import akka.actor.ActorSystem
 import com.github.ghik.silencer.silent
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.{Constants, Processor}
 import io.gearpump.streaming.Processor.DefaultProcessor
 import io.gearpump.streaming.dsl.plan.functions.{AndThen, DummyRunner, FlatMapper, FunctionRunner}
 import io.gearpump.streaming.dsl.task.{GroupByTask, TransformTask}
@@ -25,8 +26,6 @@ import io.gearpump.streaming.dsl.window.impl.{AndThenOperator, FlatMapOperator, 
 import io.gearpump.streaming.sink.{DataSink, DataSinkProcessor}
 import io.gearpump.streaming.source.{DataSource, DataSourceTask}
 import io.gearpump.streaming.task.Task
-import io.gearpump.streaming.{Constants, Processor}
-
 import scala.reflect.ClassTag
 
 object Op {

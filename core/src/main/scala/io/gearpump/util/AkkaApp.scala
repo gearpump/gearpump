@@ -15,7 +15,6 @@
 package io.gearpump.util
 
 import io.gearpump.cluster.ClusterConfig
-
 import scala.util.Try
 
 /**

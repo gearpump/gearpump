@@ -14,28 +14,26 @@
 
 package io.gearpump.cluster.master
 
-import java.util.concurrent.{TimeUnit, TimeoutException}
-
-import scala.collection.JavaConverters._
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success}
 import akka.actor.{Actor, ActorRef, Props, _}
 import com.typesafe.config.Config
-import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, WorkerInfo}
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.transport.HostPort
-import org.slf4j.Logger
+import io.gearpump.cluster.{AppDescription, AppJar, _}
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
+import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, WorkerInfo}
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
-import io.gearpump.cluster.{AppDescription, AppJar, _}
-import io.gearpump.util.ActorSystemBooter._
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.transport.HostPort
 import io.gearpump.util.{ActorSystemBooter, ActorUtil, LogUtil, Util}
+import io.gearpump.util.ActorSystemBooter._
 import io.gearpump.util.Constants._
-import io.gearpump.util.{ActorSystemBooter, LogUtil, Util}
+import java.util.concurrent.{TimeoutException, TimeUnit}
+import org.slf4j.Logger
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success}
 
 /**
  * AppMasterLauncher is a child Actor of AppManager, it is responsible

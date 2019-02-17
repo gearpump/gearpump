@@ -14,11 +14,10 @@
 
 package io.gearpump.util
 
-import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{Matchers, PropSpec}
-
 import io.gearpump.util.Graph.{Node, Path}
+import org.scalacheck.Gen
+import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.prop.PropertyChecks
 
 class GraphSpec extends PropSpec with PropertyChecks with Matchers {
 

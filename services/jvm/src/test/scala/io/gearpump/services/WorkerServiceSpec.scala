@@ -14,22 +14,20 @@
 
 package io.gearpump.services
 
-import scala.concurrent.duration._
-import scala.util.{Success, Try}
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
+import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig, ResolveWorkerId}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, ResolveWorkerIdResult, WorkerConfig}
 import io.gearpump.cluster.TestUtil
-// NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import scala.concurrent.duration._
+import scala.util.{Success, Try}
 
 class WorkerServiceSpec
   extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {

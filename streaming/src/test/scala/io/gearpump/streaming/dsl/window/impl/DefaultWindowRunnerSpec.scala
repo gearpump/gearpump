@@ -14,14 +14,13 @@
 
 package io.gearpump.streaming.dsl.window.impl
 
-import java.time.{Duration, Instant}
-
+import io.gearpump.Message
 import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.dsl.api.functions.ReduceFunction
-import io.gearpump.streaming.source.Watermark
-import io.gearpump.Message
 import io.gearpump.streaming.dsl.plan.functions.FoldRunner
 import io.gearpump.streaming.dsl.window.api.SessionWindows
+import io.gearpump.streaming.source.Watermark
+import java.time.{Duration, Instant}
 import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks

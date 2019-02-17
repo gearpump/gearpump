@@ -13,16 +13,15 @@
  */
 package io.gearpump.examples.distributedshell
 
-import scala.concurrent.Future
-import scala.util.{Success, Try}
 import akka.testkit.TestProbe
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.ClientToMaster.ResolveAppId
 import io.gearpump.cluster.MasterToClient.ResolveAppIdResult
-import io.gearpump.cluster.{MasterHarness, TestUtil}
-import DistShellAppMaster.ShellCommand
-import io.gearpump.cluster.{MasterHarness, TestUtil}
+import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
 import io.gearpump.util.LogUtil
+import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+import scala.concurrent.Future
+import scala.util.{Success, Try}
 
 class DistributedShellClientSpec
   extends PropSpec with Matchers with BeforeAndAfter with MasterHarness {

@@ -14,10 +14,9 @@
 
 package io.gearpump.transport
 
-import java.io.{DataInput, DataOutput}
-
-import io.gearpump.transport.netty.ITransportMessageSerializer
 import io.gearpump.transport.MockTransportSerializer.NettyMessage
+import io.gearpump.transport.netty.ITransportMessageSerializer
+import java.io.{DataInput, DataOutput}
 
 class MockTransportSerializer extends ITransportMessageSerializer {
   override def getLength(obj: scala.Any): Int = 4

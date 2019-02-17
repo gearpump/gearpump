@@ -14,18 +14,16 @@
 
 package io.gearpump.metrics
 
-import java.net.InetSocketAddress
-import java.util.concurrent.TimeUnit
-
-import scala.concurrent.duration._
 import akka.actor.{Actor, ActorRef}
 import com.codahale.metrics.{MetricFilter, Slf4jReporter}
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
-import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.metrics.Metrics.{DemandMoreMetrics, ReportMetrics}
 import io.gearpump.metrics.MetricsReporterService.ReportTo
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil
+import java.net.InetSocketAddress
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration._
 
 /**
  * Reports the metrics data to some where, like Ganglia, remote Akka actor, log files...

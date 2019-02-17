@@ -14,18 +14,16 @@
 
 package io.gearpump.streaming.state.impl
 
+import io.gearpump.Time.MilliSeconds
 import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.state.api.{Group, Serializer}
-import io.gearpump.Time.MilliSeconds
-
-import scala.collection.immutable.TreeMap
-import scala.util.Success
 import org.mockito.Mockito._
 import org.scalacheck.Gen
+import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{Matchers, PropSpec}
-import io.gearpump.streaming.state.api.{Group, Serializer}
+import scala.collection.immutable.TreeMap
+import scala.util.Success
 
 class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 

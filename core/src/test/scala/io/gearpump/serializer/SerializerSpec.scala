@@ -15,14 +15,13 @@
 package io.gearpump.serializer
 
 import akka.actor.{ActorSystem, ExtendedActorSystem}
-import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
+import com.esotericsoftware.kryo.io.{Input, Output}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
-import SerializerSpec._
 import io.gearpump.cluster.TestUtil
-import org.scalatest.mock.MockitoSugar
+import io.gearpump.serializer.SerializerSpec._
 import org.scalatest.{FlatSpec, Matchers}
-
+import org.scalatest.mock.MockitoSugar
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

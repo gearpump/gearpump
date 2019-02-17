@@ -17,11 +17,11 @@ package io.gearpump.streaming.examples.complexdag
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.streaming.partitioner.HashPartitioner
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.streaming.{Processor, StreamApplication}
-import io.gearpump.util.Graph.{Node => GraphNode}
 import io.gearpump.util.{AkkaApp, Graph}
+import io.gearpump.util.Graph.{Node => GraphNode}
 
 case class Source_0(_context: TaskContext, _conf: UserConfig) extends Source(_context, _conf)
 case class Source_1(_context: TaskContext, _conf: UserConfig) extends Source(_context, _conf)

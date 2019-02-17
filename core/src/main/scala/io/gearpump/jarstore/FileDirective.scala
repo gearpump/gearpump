@@ -14,16 +14,15 @@
 
 package io.gearpump.jarstore
 
+import akka.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.Directives._
+import akka.stream.Materializer
+import akka.stream.scaladsl.{FileIO, StreamConverters}
+import akka.util.ByteString
 import java.io.File
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
-
-import akka.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
-import akka.stream.Materializer
-import akka.stream.scaladsl.{StreamConverters, FileIO}
-import akka.util.ByteString
 
 
 /**

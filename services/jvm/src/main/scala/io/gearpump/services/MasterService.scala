@@ -14,11 +14,6 @@
 
 package io.gearpump.services
 
-import java.io.{File, IOException}
-import java.nio.charset.StandardCharsets.UTF_8
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption.{APPEND, WRITE}
-
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -26,22 +21,25 @@ import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import akka.stream.Materializer
 import com.typesafe.config.Config
+import io.gearpump.cluster.{ClusterConfig, UserConfig}
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ReadOption}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig, SubmitApplicationResultValue}
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.worker.WorkerSummary
-import io.gearpump.cluster.{ClusterConfig, UserConfig}
 import io.gearpump.jarstore.FileDirective._
 import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
 import io.gearpump.services.util.UpickleUtil._
-import io.gearpump.streaming.partitioner.{PartitionerByClassName, PartitionerDescription}
 import io.gearpump.streaming.{ProcessorDescription, ProcessorId, StreamApplication}
-import io.gearpump.util.ActorUtil._
+import io.gearpump.streaming.partitioner.{PartitionerByClassName, PartitionerDescription}
 import io.gearpump.util.{Constants, Graph, Util}
-
+import io.gearpump.util.ActorUtil._
+import java.io.{File, IOException}
+import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption.{APPEND, WRITE}
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}

@@ -17,16 +17,15 @@ package io.gearpump.services
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
+import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToClient.ResolveWorkerIdResult
 import io.gearpump.cluster.TestUtil
+import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-
 import scala.concurrent.duration._
 import scala.util.Success
 

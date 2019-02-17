@@ -15,10 +15,10 @@
 package io.gearpump.streaming.appmaster
 
 import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.streaming.{ExecutorId, ProcessorId}
 import io.gearpump.streaming.appmaster.ExecutorManager.ExecutorResourceUsageSummary
 import io.gearpump.streaming.appmaster.TaskRegistry.{Accept, RegisterTaskStatus, Reject, TaskLocation, TaskLocations}
 import io.gearpump.streaming.task.TaskId
-import io.gearpump.streaming.{ExecutorId, ProcessorId}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.LogUtil
 import org.slf4j.Logger

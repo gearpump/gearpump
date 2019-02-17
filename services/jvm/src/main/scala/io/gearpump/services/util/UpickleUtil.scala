@@ -14,8 +14,8 @@
 
 package io.gearpump.services.util
 
-import io.gearpump.cluster.AppMasterToMaster.{GeneralAppMasterSummary, MasterData}
 import io.gearpump.cluster.{AppJar, ApplicationStatus, UserConfig}
+import io.gearpump.cluster.AppMasterToMaster.{GeneralAppMasterSummary, MasterData}
 import io.gearpump.cluster.ClientToMaster.CommandResult
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData}
 import io.gearpump.cluster.MasterToClient._
@@ -23,21 +23,19 @@ import io.gearpump.cluster.master.{MasterActivity, MasterNode, MasterSummary}
 import io.gearpump.cluster.worker.{ExecutorSlots, WorkerId, WorkerSummary}
 import io.gearpump.jarstore.FilePath
 import io.gearpump.metrics.Metrics._
-import io.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners, SubmitApplicationRequest}
 import io.gearpump.services.{AppMasterService, MasterService, SecurityService, SupervisorService}
-import io.gearpump.streaming.AppMasterToMaster.StallingTasks
-import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
+import io.gearpump.services.MasterService.{AppSubmissionResult, BuiltinPartitioners, SubmitApplicationRequest}
 import io.gearpump.streaming.{LifeTime, ProcessorDescription}
-import io.gearpump.streaming.appmaster.DagManager._
+import io.gearpump.streaming.AppMasterToMaster.StallingTasks
 import io.gearpump.streaming.appmaster.{ProcessorSummary, StreamAppMasterSummary, TaskCount}
+import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
+import io.gearpump.streaming.appmaster.DagManager._
 import io.gearpump.streaming.executor.Executor.ExecutorSummary
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.Graph
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
-import upickle.default.{ReadWriter => RW}
-import upickle.default._
-
 import scala.util.Success
+import upickle.default.{ReadWriter => RW, _}
 
 object UpickleUtil {
 

@@ -13,18 +13,17 @@
  */
 package io.gearpump.streaming.executor
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import akka.actor.{Actor, ActorSystem}
 import akka.testkit.TestProbe
-import org.scalatest._
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.ProcessorDescription
-import TaskLauncher.TaskArgument
-import TaskLauncherSpec.{MockTask, MockTaskActor}
 import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.serializer.SerializationFramework
+import io.gearpump.streaming.ProcessorDescription
+import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
+import io.gearpump.streaming.executor.TaskLauncherSpec.{MockTask, MockTaskActor}
 import io.gearpump.streaming.task.{Task, TaskContext, TaskContextData, TaskId, TaskWrapper}
+import org.scalatest._
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 class TaskLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   val appId = 0

@@ -19,11 +19,10 @@ import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.{Master => MasterActor}
 import io.gearpump.cluster.worker.{Worker => WorkerActor}
+import io.gearpump.util.{Constants, LogUtil, MasterClientCommand, Util}
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
-import io.gearpump.util.{Constants, LogUtil, MasterClientCommand, Util}
 import org.slf4j.Logger
-
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

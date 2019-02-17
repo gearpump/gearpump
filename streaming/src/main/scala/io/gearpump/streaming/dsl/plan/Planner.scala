@@ -15,11 +15,10 @@
 package io.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
-import io.gearpump.streaming.partitioner.HashPartitioner
-import io.gearpump.util.Graph
-import io.gearpump.streaming.partitioner.{CoLocationPartitioner, GroupByPartitioner, Partitioner}
 import io.gearpump.streaming.Processor
+import io.gearpump.streaming.partitioner.{CoLocationPartitioner, GroupByPartitioner, HashPartitioner, Partitioner}
 import io.gearpump.streaming.task.Task
+import io.gearpump.util.Graph
 
 /**
  * This class is responsible for turning the high level

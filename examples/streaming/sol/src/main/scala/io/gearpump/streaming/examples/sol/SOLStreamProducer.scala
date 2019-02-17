@@ -14,14 +14,13 @@
 
 package io.gearpump.streaming.examples.sol
 
-import java.time.Instant
-import java.util.Random
-
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.examples.sol.SOLStreamProducer._
 import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.{Task, TaskContext}
+import java.time.Instant
+import java.util.Random
 
 class SOLStreamProducer(taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {

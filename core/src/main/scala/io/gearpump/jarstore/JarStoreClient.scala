@@ -13,22 +13,18 @@
  */
 package io.gearpump.jarstore
 
-import java.io.File
-import java.util.concurrent.TimeUnit
-
-import scala.collection.JavaConverters._
-import scala.concurrent.duration.Duration
-import scala.concurrent.Await
-import akka.pattern.ask
 import akka.actor.{ActorRef, ActorSystem}
+import akka.pattern.ask
 import com.typesafe.config.Config
-import io.gearpump.util.{Constants, LogUtil, Util}
-import io.gearpump.util.{Constants, LogUtil}
-import org.slf4j.Logger
 import io.gearpump.cluster.ClientToMaster.{GetJarStoreServer, JarStoreServerAddress}
 import io.gearpump.cluster.master.MasterProxy
-
-import scala.concurrent.{ExecutionContext, Future}
+import io.gearpump.util.{Constants, LogUtil, Util}
+import java.io.File
+import java.util.concurrent.TimeUnit
+import org.slf4j.Logger
+import scala.collection.JavaConverters._
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.Duration
 
 class JarStoreClient(config: Config, system: ActorSystem) {
   private def LOG: Logger = LogUtil.getLogger(getClass)

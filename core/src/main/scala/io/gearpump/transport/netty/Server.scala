@@ -14,15 +14,13 @@
 
 package io.gearpump.transport.netty
 
-import java.util
-
 import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import io.gearpump.transport.ActorLookupById
 import io.gearpump.util.{AkkaHelper, LogUtil}
+import java.util
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
-
 import scala.collection.JavaConverters._
 import scala.collection.immutable.IntMap
 import scala.concurrent.Future

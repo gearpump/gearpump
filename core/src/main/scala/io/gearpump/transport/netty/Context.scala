@@ -14,17 +14,15 @@
 
 package io.gearpump.transport.netty
 
-import java.io.Closeable
-import java.util.concurrent._
-
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.Config
 import io.gearpump.transport.{ActorLookupById, HostPort}
 import io.gearpump.transport.netty.Server.ServerPipelineFactory
 import io.gearpump.util.{Constants, LogUtil}
+import java.io.Closeable
+import java.util.concurrent._
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.slf4j.Logger
-
 import scala.collection.JavaConverters._
 
 object Context {

@@ -18,8 +18,8 @@ import akka.actor._
 import akka.pattern.ask
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.Time.MilliSeconds
-import io.gearpump.cluster.AppMasterToMaster.{AppDataSaved, SaveAppDataFailed, _}
 import io.gearpump.cluster.{ApplicationStatus, ApplicationTerminalStatus}
+import io.gearpump.cluster.AppMasterToMaster.{AppDataSaved, SaveAppDataFailed, _}
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataRequest, AppMastersDataRequest, _}
 import io.gearpump.cluster.MasterToClient._
@@ -28,11 +28,9 @@ import io.gearpump.cluster.appmaster.{ApplicationMetaData, ApplicationRuntimeInf
 import io.gearpump.cluster.master.AppManager._
 import io.gearpump.cluster.master.InMemoryKVService.{GetKVResult, PutKVResult, PutKVSuccess, _}
 import io.gearpump.cluster.master.Master._
+import io.gearpump.util.{ActorUtil, Constants, LogUtil, RestartPolicy, TimeOutScheduler, Util}
 import io.gearpump.util.Constants._
-import io.gearpump.util.{Constants, LogUtil, RestartPolicy, TimeOutScheduler}
-import io.gearpump.util.{ActorUtil, Util}
 import org.slf4j.Logger
-
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 

@@ -14,10 +14,9 @@
 
 package io.gearpump.util
 
+import com.typesafe.config.Config
 import java.io.File
 import java.util.Properties
-
-import com.typesafe.config.Config
 import org.apache.log4j.PropertyConfigurator
 import org.slf4j.{Logger, LoggerFactory}
 

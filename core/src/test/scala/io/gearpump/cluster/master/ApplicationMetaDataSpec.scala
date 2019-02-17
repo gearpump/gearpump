@@ -15,8 +15,8 @@
 package io.gearpump.cluster.master
 
 import io.gearpump.cluster.AppDescription
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 import io.gearpump.cluster.appmaster.ApplicationMetaData
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 
 class ApplicationMetaDataSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 

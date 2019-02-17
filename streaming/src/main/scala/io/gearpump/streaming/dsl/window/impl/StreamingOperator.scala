@@ -13,19 +13,17 @@
  */
 package io.gearpump.streaming.dsl.window.impl
 
-import java.time.Instant
-
 import com.gs.collections.api.block.predicate.Predicate
 import com.gs.collections.api.block.procedure.Procedure
 import com.gs.collections.impl.list.mutable.FastList
 import com.gs.collections.impl.map.sorted.mutable.TreeSortedMap
-import io.gearpump.streaming.source.Watermark
 import io.gearpump.Message
 import io.gearpump.streaming.dsl.plan.functions.FunctionRunner
-import io.gearpump.streaming.dsl.window.api.WindowFunction.Context
 import io.gearpump.streaming.dsl.window.api.{Discarding, Windows}
+import io.gearpump.streaming.dsl.window.api.WindowFunction.Context
+import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.TaskUtil
-
+import java.time.Instant
 import scala.collection.mutable.ArrayBuffer
 
 /**

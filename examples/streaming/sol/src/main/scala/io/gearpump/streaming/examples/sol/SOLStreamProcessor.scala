@@ -14,14 +14,13 @@
 
 package io.gearpump.streaming.examples.sol
 
+import akka.actor.Cancellable
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.task.{Task, TaskContext}
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.Cancellable
-import io.gearpump.cluster.UserConfig
-import io.gearpump.Message
-import io.gearpump.streaming.task.{Task, TaskContext}
 
 class SOLStreamProcessor(taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {

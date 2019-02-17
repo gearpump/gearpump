@@ -14,20 +14,17 @@
 
 package io.gearpump.streaming.dsl.scalaapi
 
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl.api.functions.{FilterFunction, FoldFunction, MapFunction, ReduceFunction}
-import io.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import io.gearpump.streaming.sink.DataSink
-import io.gearpump.util.Graph
-import io.gearpump.Message
-import io.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunction, ReduceFunction}
-import io.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import io.gearpump.streaming.dsl.plan._
 import io.gearpump.streaming.dsl.plan.functions._
+import io.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import io.gearpump.streaming.dsl.window.api._
+import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.{Task, TaskContext}
+import io.gearpump.util.Graph
 import org.slf4j.{Logger, LoggerFactory}
-
 import scala.language.implicitConversions
 
 class Stream[T](

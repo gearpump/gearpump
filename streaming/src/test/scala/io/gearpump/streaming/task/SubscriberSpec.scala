@@ -13,13 +13,12 @@
  */
 package io.gearpump.streaming.task
 
-import io.gearpump.streaming.partitioner.HashPartitioner
-import io.gearpump.util.Graph
-import org.scalatest.{FlatSpec, Matchers}
-import io.gearpump.streaming.partitioner.Partitioner
-import io.gearpump.streaming.task.SubscriberSpec.TestTask
 import io.gearpump.streaming.{DAG, ProcessorDescription}
+import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
+import io.gearpump.streaming.task.SubscriberSpec.TestTask
+import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
+import org.scalatest.{FlatSpec, Matchers}
 
 class SubscriberSpec extends FlatSpec with Matchers {
   "Subscriber.of" should "return all subscriber for a processor" in {

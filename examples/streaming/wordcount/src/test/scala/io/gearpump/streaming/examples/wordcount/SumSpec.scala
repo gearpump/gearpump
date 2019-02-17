@@ -13,14 +13,13 @@
  */
 package io.gearpump.streaming.examples.wordcount
 
-import java.time.Instant
-
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
+import java.time.Instant
 import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import io.gearpump.Message
+import org.scalatest.prop.PropertyChecks
 
 class SumSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
   val stringGenerator = Gen.alphaStr

@@ -14,13 +14,12 @@
 
 package io.gearpump.streaming.source
 
-import java.time.Instant
-
-import io.gearpump.cluster.UserConfig
 import io.gearpump._
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.Constants._
 import io.gearpump.streaming.dsl.window.impl.{StreamingOperator, TimestampedValue}
 import io.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
+import java.time.Instant
 
 /**
  * Default Task container for [[DataSource]] that

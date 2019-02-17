@@ -14,24 +14,20 @@
 
 package io.gearpump.cluster.main
 
-import java.util.Properties
-
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.transport.HostPort
+import io.gearpump.cluster.{ApplicationStatus, MasterHarness, TestUtil}
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication}
-import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge, _}
 import io.gearpump.cluster.MasterToClient.{ReplayApplicationResult, ResolveAppIdResult, ShutdownApplicationResult}
 import io.gearpump.cluster.MasterToWorker.WorkerRegistered
 import io.gearpump.cluster.WorkerToMaster.RegisterNewWorker
 import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.cluster.{ApplicationStatus, TestUtil}
-import io.gearpump.util.Constants._
+import io.gearpump.transport.HostPort
 import io.gearpump.util.{Constants, LogUtil, Util}
-import io.gearpump.util.{Constants, LogUtil}
+import io.gearpump.util.Constants._
+import java.util.Properties
 import org.scalatest._
-
 import scala.concurrent.Future
 import scala.util.Success
 

@@ -14,13 +14,13 @@
 package io.gearpump.streaming.appmaster
 
 import com.typesafe.config.Config
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.util.Constants
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.streaming.DAG
 import io.gearpump.streaming.appmaster.TaskLocator.{Locality, WorkerLocality}
 import io.gearpump.streaming.appmaster.TaskScheduler.{Location, TaskStatus}
 import io.gearpump.streaming.task.TaskId
+import io.gearpump.util.Constants
 
 /**
  * Schedules tasks to run for new allocated resources. TaskScheduler only schedule tasks that

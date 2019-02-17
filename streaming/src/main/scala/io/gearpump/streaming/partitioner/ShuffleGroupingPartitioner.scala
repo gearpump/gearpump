@@ -15,7 +15,6 @@
 package io.gearpump.streaming.partitioner
 
 import io.gearpump.Message
-
 import scala.util.Random
 
 /**

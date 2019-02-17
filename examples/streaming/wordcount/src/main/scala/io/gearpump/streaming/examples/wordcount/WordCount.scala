@@ -18,9 +18,9 @@ import akka.actor.ActorSystem
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
+import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.streaming.partitioner.HashPartitioner
 import io.gearpump.streaming.source.DataSourceProcessor
-import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.util.{AkkaApp, Graph}
 import io.gearpump.util.Graph.Node
 

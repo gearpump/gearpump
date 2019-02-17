@@ -15,18 +15,16 @@ package io.gearpump.streaming.appmaster
 
 import com.typesafe.config.ConfigFactory
 import io.gearpump.cluster.{TestUtil, UserConfig}
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.streaming.partitioner.HashPartitioner
-import io.gearpump.util.Graph
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
-import io.gearpump.streaming.partitioner.Partitioner
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.streaming.{DAG, ProcessorDescription}
 import io.gearpump.streaming.appmaster.TaskLocator.Localities
 import io.gearpump.streaming.appmaster.TaskSchedulerSpec.{TestTask1, TestTask2}
+import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.streaming.task.{Task, TaskContext, TaskId}
-import io.gearpump.streaming.{DAG, ProcessorDescription}
+import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.scalatest.{Matchers, WordSpec}
-
 import scala.collection.mutable.ArrayBuffer
 
 class TaskSchedulerSpec extends WordSpec with Matchers {

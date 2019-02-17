@@ -14,31 +14,29 @@
 
 package io.gearpump.services
 
-import scala.util.{Failure, Success, Try}
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.{FormData, Multipart}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import akka.stream.Materializer
-import io.gearpump.cluster.ClusterConfig
-import io.gearpump.util.{Constants, Util}
-import upickle.default.{read, write}
 import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
+import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
-import io.gearpump.jarstore.{FileDirective, JarStoreClient}
+import io.gearpump.jarstore.FileDirective._
+import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.services.AppMasterService.Status
+import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.streaming.AppMasterToMaster.StallingTasks
 import io.gearpump.streaming.appmaster.DagManager.{DAGOperation, DAGOperationResult, ReplaceProcessor}
 import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
-// NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
-import io.gearpump.streaming.AppMasterToMaster.StallingTasks
+import io.gearpump.util.{Constants, Util}
 import io.gearpump.util.ActorUtil.{askActor, askAppMaster}
-import FileDirective._
-import io.gearpump.util.Constants
+import scala.util.{Failure, Success, Try}
+import upickle.default.{read, write}
 
 /**
  * Management service for AppMaster

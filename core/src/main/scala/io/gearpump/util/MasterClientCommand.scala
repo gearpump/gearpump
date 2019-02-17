@@ -16,9 +16,6 @@ package io.gearpump.util
 
 import io.gearpump.cluster.client.{RemoteRuntimeEnvironment, RuntimeEnvironment}
 import io.gearpump.util.LogUtil.ProcessType
-import io.gearpump.cluster.client.RemoteRuntimeEnvironment
-import io.gearpump.util.LogUtil.ProcessType
-
 import scala.util.Try
 
 trait MasterClientCommand extends AkkaApp {

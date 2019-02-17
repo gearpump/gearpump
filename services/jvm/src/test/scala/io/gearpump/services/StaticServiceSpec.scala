@@ -14,16 +14,15 @@
 
 package io.gearpump.services
 
-import scala.concurrent.duration._
-import scala.util.Try
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.Constants
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import scala.concurrent.duration._
+import scala.util.Try
 // NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
 
 class StaticServiceSpec
   extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {

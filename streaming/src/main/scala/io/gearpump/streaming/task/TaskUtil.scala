@@ -14,10 +14,9 @@
 
 package io.gearpump.streaming.task
 
-import java.time.Instant
-
 import io.gearpump.Message
 import io.gearpump.streaming.dsl.window.impl.{StreamingOperator, TimestampedValue}
+import java.time.Instant
 
 object TaskUtil {
 

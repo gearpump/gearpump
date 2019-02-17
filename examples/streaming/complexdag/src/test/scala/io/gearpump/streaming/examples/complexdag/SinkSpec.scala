@@ -13,11 +13,11 @@
  */
 package io.gearpump.streaming.examples.complexdag
 
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import io.gearpump.Message
+import org.scalatest.prop.PropertyChecks
 
 class SinkSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
 

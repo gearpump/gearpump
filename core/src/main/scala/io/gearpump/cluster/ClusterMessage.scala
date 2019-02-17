@@ -16,13 +16,12 @@ package io.gearpump.cluster
 
 import akka.actor.ActorRef
 import com.typesafe.config.Config
-import io.gearpump.cluster.appmaster.WorkerInfo
-import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import io.gearpump.metrics.Metrics.MetricType
 import io.gearpump.Time.MilliSeconds
+import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.master.MasterSummary
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
-
+import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
+import io.gearpump.metrics.Metrics.MetricType
 import scala.util.Try
 
 object ClientToMaster {

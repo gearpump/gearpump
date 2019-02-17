@@ -13,17 +13,15 @@
  */
 package io.gearpump.examples.distributedshell
 
-import java.util.concurrent.TimeUnit
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import akka.pattern.ask
-import org.slf4j.{Logger, LoggerFactory}
-import DistShellAppMaster.ShellCommand
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
+import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
 import io.gearpump.util.{AkkaApp, Constants}
-import io.gearpump.util.Constants
+import java.util.concurrent.TimeUnit
+import org.slf4j.{Logger, LoggerFactory}
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 /** Client to DistributedShell to input "shell command" */
 object DistributedShellClient extends AkkaApp with ArgumentsParser {

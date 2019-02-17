@@ -22,9 +22,8 @@ import io.gearpump.cluster.MasterToAppMaster.WorkerList
 import io.gearpump.cluster.master.Master
 import io.gearpump.cluster.worker.Worker
 import io.gearpump.util.Constants
-
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
 
 class MiniCluster {
   private val mockMasterIP = "127.0.0.1"

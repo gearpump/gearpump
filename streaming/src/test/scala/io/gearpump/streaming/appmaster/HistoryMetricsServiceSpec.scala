@@ -23,7 +23,6 @@ import io.gearpump.metrics.Metrics.{Counter, Histogram, Meter}
 import io.gearpump.util.HistoryMetricsService
 import io.gearpump.util.HistoryMetricsService._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
 import scala.concurrent.Await
 
 class HistoryMetricsServiceSpec extends FlatSpec with Matchers with BeforeAndAfterEach {

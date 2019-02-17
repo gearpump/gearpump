@@ -15,24 +15,20 @@
 package io.gearpump.streaming.dsl.scalaapi
 
 import akka.actor._
-import io.gearpump.streaming.partitioner.HashPartitioner
-import io.gearpump.streaming.source.DataSourceTask
 import io.gearpump.Message
 import io.gearpump.cluster.{TestUtil, UserConfig}
-import StreamSpec.Join
-import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.dsl.task.{GroupByTask, TransformTask}
-import io.gearpump.util.Graph
-import io.gearpump.streaming.dsl.task.GroupByTask
-import io.gearpump.streaming.partitioner.{CoLocationPartitioner, GroupByPartitioner, PartitionerDescription}
-import io.gearpump.streaming.task.{Task, TaskContext}
 import io.gearpump.streaming.{ProcessorDescription, StreamApplication}
+import io.gearpump.streaming.dsl.scalaapi.StreamSpec.Join
+import io.gearpump.streaming.dsl.task.{GroupByTask, TransformTask}
+import io.gearpump.streaming.partitioner.{CoLocationPartitioner, GroupByPartitioner, HashPartitioner, PartitionerDescription}
+import io.gearpump.streaming.source.DataSourceTask
+import io.gearpump.streaming.task.{Task, TaskContext}
+import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.mockito.Mockito.when
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.util.{Either, Left, Right}

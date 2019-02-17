@@ -14,8 +14,6 @@
 
 package io.gearpump.util
 
-import java.util
-
 import akka.actor.Actor
 import com.typesafe.config.Config
 import io.gearpump.Time.MilliSeconds
@@ -25,8 +23,8 @@ import io.gearpump.metrics.Metrics._
 import io.gearpump.metrics.MetricsAggregator
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.{DummyMetricsAggregator, HistoryMetricsConfig, HistoryMetricsStore, SkipAllAggregator}
+import java.util
 import org.slf4j.Logger
-
 import scala.collection.mutable.ListBuffer
 
 /**

@@ -14,12 +14,10 @@
 
 package io.gearpump.security
 
-import scala.concurrent.{ExecutionContext, Future}
-
 import com.typesafe.config.Config
-
-import Authenticator.AuthenticationResult
-import ConfigFileBasedAuthenticator._
+import io.gearpump.security.Authenticator.AuthenticationResult
+import io.gearpump.security.ConfigFileBasedAuthenticator._
+import scala.concurrent.{ExecutionContext, Future}
 
 object ConfigFileBasedAuthenticator {
 

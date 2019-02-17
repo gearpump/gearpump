@@ -14,16 +14,15 @@
 
 package io.gearpump.util
 
+import com.typesafe.config.{Config, ConfigFactory}
+import io.gearpump.cluster.AppJar
+import io.gearpump.jarstore.JarStoreClient
+import io.gearpump.transport.HostPort
 import java.io.{BufferedReader, File, FileInputStream, InputStreamReader}
 import java.net.{ServerSocket, URI}
-
 import java.util.concurrent.ThreadLocalRandom
 import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
-import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.transport.HostPort
-import io.gearpump.cluster.AppJar
-import io.gearpump.jarstore.JarStoreClient
 
 object Util {
   val LOG = LogUtil.getLogger(getClass)

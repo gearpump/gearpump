@@ -14,12 +14,11 @@
 
 package io.gearpump.streaming.state.impl
 
+import io.gearpump.Time.MilliSeconds
 import org.scalacheck.Gen
+import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{Matchers, PropSpec}
-
-import io.gearpump.Time.MilliSeconds
 
 class WindowSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 

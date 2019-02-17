@@ -16,14 +16,13 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.streaming.partitioner.HashPartitioner
+import io.gearpump.Time.MilliSeconds
+import io.gearpump.cluster.{AppJar, TestUtil, UserConfig}
 import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
-import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
-import io.gearpump.cluster.{AppJar, TestUtil}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.jarstore.FilePath
-import io.gearpump.streaming.partitioner.{Partitioner, PartitionerDescription}
+import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, ProcessorId}
 import io.gearpump.streaming.AppMasterToExecutor.{LaunchTasks, StartAllTasks, StartDynamicDag, TaskLocationsReady, TaskLocationsReceived, TaskRegistered}
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.appmaster.AppMaster.AllocateResourceTimeOut
@@ -34,17 +33,15 @@ import io.gearpump.streaming.appmaster.JarScheduler.ResourceRequestDetail
 import io.gearpump.streaming.appmaster.TaskManager.ApplicationReady
 import io.gearpump.streaming.appmaster.TaskManagerSpec.{Env, Task1, Task2}
 import io.gearpump.streaming.executor.Executor.RestartTasks
+import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
+import io.gearpump.streaming.task.{TaskContext, _}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.Graph
-import io.gearpump.streaming.task.{TaskContext, _}
-import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription, ProcessorId}
 import io.gearpump.util.Graph._
-import io.gearpump.Time.MilliSeconds
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
 
 class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 

@@ -14,18 +14,16 @@
 
 package io.gearpump.cluster.appmaster
 
-import scala.concurrent.duration._
 import akka.actor._
-import org.slf4j.Logger
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.ExecutorJVMConfig
 import io.gearpump.cluster.WorkerToAppMaster._
-import io.gearpump.cluster.appmaster.ExecutorSystemLauncher.{LaunchExecutorSystem, LaunchExecutorSystemRejected, LaunchExecutorSystemSuccess, LaunchExecutorSystemTimeout}
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, Session}
 import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, RegisterActorSystem}
 import io.gearpump.util.{ActorSystemBooter, ActorUtil, Constants, LogUtil}
-import io.gearpump.util.{ActorSystemBooter, Constants, LogUtil}
+import io.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, RegisterActorSystem}
+import org.slf4j.Logger
+import scala.concurrent.duration._
 
 /**
  * This launches single executor system on target worker.

@@ -14,14 +14,11 @@
 
 package io.gearpump.streaming.examples.wordcountjava
 
-import io.gearpump.streaming.examples.wordcountjava.dsl.WordCount
-import io.gearpump.cluster.ClientToMaster.SubmitApplication
 import io.gearpump.cluster.{MasterHarness, TestUtil}
+import io.gearpump.cluster.ClientToMaster.SubmitApplication
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import io.gearpump.cluster.MasterHarness
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-
+import org.scalatest.prop.PropertyChecks
 import scala.concurrent.Future
 import scala.util.Success
 

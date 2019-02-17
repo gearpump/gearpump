@@ -17,14 +17,13 @@ package io.gearpump.cluster.appmaster
 import akka.actor._
 import akka.testkit.TestProbe
 import io.gearpump.TestProbeUtil._
-import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.{TestUtil, _}
+import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment._
 import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironmentSpec.TestAppMasterEnv
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.StartExecutorSystems
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.MasterConnectionStatus.{MasterConnected, MasterStopped}
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

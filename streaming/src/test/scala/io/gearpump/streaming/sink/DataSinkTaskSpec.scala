@@ -14,16 +14,15 @@
 
 package io.gearpump.streaming.sink
 
-import java.time.Instant
-
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
-import io.gearpump.Message
+import java.time.Instant
 import org.mockito.Mockito._
 import org.scalacheck.Gen
+import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.{Matchers, PropSpec}
 
 class DataSinkTaskSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 

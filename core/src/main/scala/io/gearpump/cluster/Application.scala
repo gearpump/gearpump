@@ -15,7 +15,6 @@
 package io.gearpump.cluster
 
 import akka.actor.ActorSystem
-
 import scala.reflect.ClassTag
 
 /**

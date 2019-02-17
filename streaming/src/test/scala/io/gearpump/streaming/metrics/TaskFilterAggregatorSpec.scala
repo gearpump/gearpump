@@ -14,14 +14,12 @@
 
 package io.gearpump.streaming.metrics
 
-import scala.util.Random
-
-import org.scalatest.{FlatSpec, Matchers}
-
 import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
 import io.gearpump.metrics.Metrics.{Histogram, Meter}
-import TaskFilterAggregator.Options
+import io.gearpump.streaming.metrics.TaskFilterAggregator.Options
 import io.gearpump.streaming.task.TaskId
+import org.scalatest.{FlatSpec, Matchers}
+import scala.util.Random
 
 class TaskFilterAggregatorSpec extends FlatSpec with Matchers {
 

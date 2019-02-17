@@ -14,14 +14,13 @@
 
 package io.gearpump.util
 
-import java.io.File
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import akka.actor.ActorSystem
 import io.gearpump.cluster.{ClusterConfig, ClusterConfigSource, UserConfig}
-import org.scalatest.mock.MockitoSugar
+import java.io.File
 import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.mock.MockitoSugar
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 class ConfigsSpec extends FlatSpec with Matchers with MockitoSugar {
   "Typesafe Cluster Configs" should "follow the override rules" in {

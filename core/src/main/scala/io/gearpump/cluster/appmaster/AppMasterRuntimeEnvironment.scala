@@ -15,14 +15,13 @@
 package io.gearpump.cluster.appmaster
 
 import akka.actor._
-import io.gearpump.util.LogUtil
+import io.gearpump.cluster.{AppDescription, AppMasterContext}
 import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment.{AppId, ListenerActorRef, MasterActorRef, StartAppMaster}
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{Session, StartExecutorSystems}
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.MasterConnectionStatus.{MasterConnected, MasterStopped}
 import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.cluster.{AppDescription, AppMasterContext}
-
+import io.gearpump.util.LogUtil
 import scala.concurrent.duration._
 
 /**

@@ -14,12 +14,10 @@
 
 package io.gearpump.streaming.examples.wordcount
 
-import java.time.Instant
-
-import io.gearpump.streaming.source.DataSource
 import io.gearpump.Message
+import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.task.TaskContext
-
+import java.time.Instant
 import scala.collection.mutable.ArrayBuffer
 
 

@@ -16,15 +16,14 @@ package io.gearpump.cluster.appmaster
 
 import akka.actor._
 import com.typesafe.config.Config
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.util.{Constants, LogUtil}
+import io.gearpump.cluster._
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
-import io.gearpump.cluster._
 import io.gearpump.cluster.appmaster.ExecutorSystemLauncher.{LaunchExecutorSystem, LaunchExecutorSystemRejected, LaunchExecutorSystemSuccess, LaunchExecutorSystemTimeout}
-import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemStarted, ResourceAgent, ResourceAllocatedForSession, ResourceAllocationTimeOut, Session, StartExecutorSystemTimeout, StartExecutorSystems, StopExecutorSystem}
+import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemStarted, ResourceAgent, ResourceAllocatedForSession, ResourceAllocationTimeOut, Session, StartExecutorSystems, StartExecutorSystemTimeout, StopExecutorSystem}
 import io.gearpump.cluster.scheduler.{ResourceAllocation, ResourceRequest}
-
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.util.{Constants, LogUtil}
 import scala.concurrent.duration._
 
 /**

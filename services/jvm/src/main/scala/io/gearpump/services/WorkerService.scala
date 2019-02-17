@@ -14,19 +14,18 @@
 
 package io.gearpump.services
 
-import scala.util.{Failure, Success}
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.Materializer
-import io.gearpump.cluster.ClusterConfig
-import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig, ReadOption}
+import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, WorkerConfig}
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.util.ActorUtil._
 import io.gearpump.util.Constants
-// NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
+import scala.util.{Failure, Success}
 
 /** Service to handle worker related queries */
 class WorkerService(val master: ActorRef, override val system: ActorSystem)

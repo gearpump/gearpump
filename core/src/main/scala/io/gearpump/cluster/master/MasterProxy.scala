@@ -18,7 +18,6 @@ import akka.actor._
 import io.gearpump.transport.HostPort
 import io.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
-
 import scala.concurrent.duration.FiniteDuration
 
 /**

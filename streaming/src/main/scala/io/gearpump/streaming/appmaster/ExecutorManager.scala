@@ -14,24 +14,23 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
+import akka.actor.SupervisorStrategy.Stop
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
+import io.gearpump.cluster.{AppJar, AppMasterContext, ExecutorContext, UserConfig}
 import io.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import io.gearpump.cluster.ClientToMaster.ShutdownApplication
-import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import io.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
+import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystems, StartExecutorSystemTimeout}
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.cluster.{AppJar, AppMasterContext, ExecutorContext, UserConfig}
 import io.gearpump.streaming.ExecutorId
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
 import io.gearpump.streaming.appmaster.ExecutorManager.{AllExecutorsStopped, BroadCast, ExecutorInfo, ExecutorResourceUsageSummary, ExecutorStarted, ExecutorStopped, GetExecutorInfo, SetTaskManager, StartExecutors, StartExecutorsTimeOut, UniCast}
 import io.gearpump.streaming.executor.Executor
 import io.gearpump.util.{LogUtil, Util}
 import org.apache.commons.lang.exception.ExceptionUtils
-
 import scala.concurrent.duration._
 import scala.util.{Failure, Try}
 

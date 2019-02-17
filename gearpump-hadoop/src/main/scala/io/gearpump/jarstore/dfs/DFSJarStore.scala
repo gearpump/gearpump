@@ -13,13 +13,12 @@
  */
 package io.gearpump.jarstore.dfs
 
-import java.io.{InputStream, OutputStream}
-
+import com.typesafe.config.Config
 import io.gearpump.jarstore.JarStore
+import io.gearpump.util.Constants
+import java.io.{InputStream, OutputStream}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import com.typesafe.config.Config
-import io.gearpump.util.Constants
 import org.apache.hadoop.fs.permission.{FsAction, FsPermission}
 
 /**

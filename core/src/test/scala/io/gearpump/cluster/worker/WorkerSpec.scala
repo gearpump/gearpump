@@ -16,19 +16,15 @@ package io.gearpump.cluster.worker
 import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.worker.{Worker, WorkerId}
-import io.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
+import io.gearpump.cluster.{ExecutorJVMConfig, MasterHarness, TestUtil}
 import io.gearpump.cluster.AppMasterToWorker.{ChangeExecutorResource, LaunchExecutor, ShutdownExecutor}
 import io.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
-import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.WorkerToAppMaster.{ExecutorLaunchRejected, ShutdownExecutorFailed, ShutdownExecutorSucceed}
 import io.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, ResourceUpdate}
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.cluster.ExecutorJVMConfig
-import io.gearpump.util.{ActorSystemBooter, Constants}
+import io.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
 import org.scalatest._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

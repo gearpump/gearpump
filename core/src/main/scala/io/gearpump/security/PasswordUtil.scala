@@ -16,7 +16,6 @@ package io.gearpump.security
 
 import java.security.MessageDigest
 import scala.util.Try
-
 import sun.misc.{BASE64Decoder, BASE64Encoder}
 
 /**

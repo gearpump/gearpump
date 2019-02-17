@@ -13,13 +13,13 @@
  */
 package io.gearpump.streaming.examples.complexdag
 
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
-import io.gearpump.Message
 import io.gearpump.streaming.MockUtil._
 import org.mockito.Mockito._
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+import org.scalatest.prop.PropertyChecks
 
 class NodeSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
 

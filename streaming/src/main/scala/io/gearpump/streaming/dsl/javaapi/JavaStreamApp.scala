@@ -14,15 +14,11 @@
 
 package io.gearpump.streaming.dsl.javaapi
 
-import java.util.Collection
-
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.{ClientContext, RunningApplication}
 import io.gearpump.streaming.dsl.scalaapi.{CollectionDataSource, StreamApp}
 import io.gearpump.streaming.source.DataSource
-import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.dsl.scalaapi.CollectionDataSource
-
+import java.util.Collection
 import scala.collection.JavaConverters._
 
 class JavaStreamApp(name: String, context: ClientContext, userConfig: UserConfig) {

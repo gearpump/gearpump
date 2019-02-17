@@ -14,16 +14,15 @@
 
 package io.gearpump.streaming.task
 
-import java.time.Instant
-
-import scala.concurrent.duration.FiniteDuration
-import akka.actor.Actor._
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import io.gearpump.cluster.UserConfig
-import io.gearpump.util.LogUtil
+import akka.actor.Actor._
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
+import io.gearpump.cluster.UserConfig
+import io.gearpump.util.LogUtil
+import java.time.Instant
 import org.slf4j.Logger
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * This provides TaskContext for user defined tasks

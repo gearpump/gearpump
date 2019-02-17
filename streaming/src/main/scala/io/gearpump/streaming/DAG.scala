@@ -15,8 +15,8 @@
 package io.gearpump.streaming
 
 import io.gearpump.streaming.partitioner.PartitionerDescription
-import io.gearpump.util.Graph
 import io.gearpump.streaming.task.TaskId
+import io.gearpump.util.Graph
 
 /**
  * DAG is wrapper for [[io.gearpump.util.Graph]] for streaming applications.

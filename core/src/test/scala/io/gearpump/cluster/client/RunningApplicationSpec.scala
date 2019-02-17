@@ -14,21 +14,19 @@
 
 package io.gearpump.cluster.client
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication}
 import io.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ShutdownApplicationResult}
-import RunningApplicationSpec.{MockAskAppMasterRequest, MockAskAppMasterResponse}
 import io.gearpump.cluster.TestUtil
+import io.gearpump.cluster.client.RunningApplicationSpec.{MockAskAppMasterRequest, MockAskAppMasterResponse}
+import java.util.concurrent.TimeUnit
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-
 import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class RunningApplicationSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = _

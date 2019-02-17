@@ -14,23 +14,21 @@
 
 package io.gearpump.util
 
-import io.gearpump.cluster.{AppMasterContext, ApplicationStatus}
-
-import scala.concurrent.{Await, ExecutionContext, Future}
-import akka.actor.Actor.Receive
 import akka.actor._
+import akka.actor.Actor.Receive
 import akka.pattern.ask
-import org.slf4j.Logger
 import akka.util.Timeout
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.transport.HostPort
+import io.gearpump.cluster.{ApplicationStatus, AppMasterContext}
 import io.gearpump.cluster.AppMasterToMaster.{ApplicationStatusChanged, GetAllWorkers}
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ResolveWorkerId}
 import io.gearpump.cluster.MasterToAppMaster.WorkerList
 import io.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ResolveWorkerIdResult}
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, StartExecutorSystems}
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceRequest}
-
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.transport.HostPort
+import org.slf4j.Logger
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
 object ActorUtil {

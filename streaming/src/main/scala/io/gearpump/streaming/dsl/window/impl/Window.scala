@@ -13,9 +13,8 @@
  */
 package io.gearpump.streaming.dsl.window.impl
 
-import java.time.Instant
-
 import io.gearpump.Time.MilliSeconds
+import java.time.Instant
 
 object Window {
   def ofEpochMilli(startTime: MilliSeconds, endTime: MilliSeconds): Window = {

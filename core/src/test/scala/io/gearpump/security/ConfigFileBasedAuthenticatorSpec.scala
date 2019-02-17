@@ -14,11 +14,11 @@
 
 package io.gearpump.security
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{FlatSpec, Matchers}
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class ConfigFileBasedAuthenticatorSpec extends FlatSpec with Matchers {
   it should "authenticate correctly" in {

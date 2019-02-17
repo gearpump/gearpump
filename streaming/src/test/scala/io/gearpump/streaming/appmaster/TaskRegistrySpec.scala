@@ -15,9 +15,9 @@
 package io.gearpump.streaming.appmaster
 
 import io.gearpump.cluster.scheduler.Resource
-import TaskRegistry.{Accept, Reject, TaskLocation, TaskLocations}
-import io.gearpump.transport.HostPort
+import io.gearpump.streaming.appmaster.TaskRegistry.{Accept, Reject, TaskLocation, TaskLocations}
 import io.gearpump.streaming.task.TaskId
+import io.gearpump.transport.HostPort
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
 class TaskRegistrySpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 

@@ -13,12 +13,11 @@
  */
 package io.gearpump.streaming.dsl.task
 
-import java.time.Instant
-
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
-import io.gearpump.Message
 import io.gearpump.streaming.dsl.window.impl.{StreamingOperator, TimestampedValue, TriggeredOutputs}
+import java.time.Instant
 import org.mockito.Mockito.{verify, when}
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}

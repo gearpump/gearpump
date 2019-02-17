@@ -16,15 +16,15 @@ package io.gearpump.streaming.task
 import akka.actor.{ExtendedActorSystem, Props}
 import akka.testkit._
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
-import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.Message
+import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
 import io.gearpump.serializer.{FastKryoSerializer, SerializationFramework}
-import io.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, StartTask, TaskChanged, TaskRegistered}
-import io.gearpump.streaming.task.TaskActorSpec.TestTask
 import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
-import io.gearpump.util.Graph._
+import io.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, StartTask, TaskChanged, TaskRegistered}
+import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
+import io.gearpump.streaming.task.TaskActorSpec.TestTask
 import io.gearpump.util.{Graph, Util}
+import io.gearpump.util.Graph._
 import org.mockito.Mockito.{mock, times, verify, when}
 import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 

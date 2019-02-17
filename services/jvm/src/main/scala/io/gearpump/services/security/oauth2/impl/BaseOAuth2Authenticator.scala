@@ -14,24 +14,23 @@
 
 package io.gearpump.services.security.oauth2.impl
 
-import java.util.concurrent.atomic.AtomicBoolean
-
-import scala.collection.mutable.StringBuilder
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
-import com.typesafe.config.Config
 import com.github.scribejava.core.builder.ServiceBuilderAsync
 import com.github.scribejava.core.builder.api.DefaultApi20
 import com.github.scribejava.core.model._
 import com.github.scribejava.core.oauth.OAuth20Service
 import com.github.scribejava.core.utils.OAuthEncoder
 import com.ning.http.client.AsyncHttpClientConfig
+import com.typesafe.config.Config
 import io.gearpump.security.Authenticator
-import io.gearpump.util.Util
 import io.gearpump.services.SecurityService.UserSession
 import io.gearpump.services.security.oauth2.OAuth2Authenticator
 import io.gearpump.services.security.oauth2.impl.BaseOAuth2Authenticator.BaseApi20
 import io.gearpump.util.Constants._
+import io.gearpump.util.Util
+import java.util.concurrent.atomic.AtomicBoolean
+import scala.collection.mutable.StringBuilder
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 /**
  * Uses Ning AsyncClient to connect to OAuth2 service.

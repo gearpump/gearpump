@@ -14,11 +14,6 @@
 
 package io.gearpump.services
 
-import java.io.File
-
-import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Try}
 import akka.actor.ActorRef
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
@@ -28,19 +23,22 @@ import akka.stream.scaladsl.{FileIO, Source}
 import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
-import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import io.gearpump.util.Graph
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ResolveWorkerId, SubmitApplication}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.cluster.TestUtil
+import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
 import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.services.MasterService.{BuiltinPartitioners, SubmitApplicationRequest}
-// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.ProcessorDescription
+import io.gearpump.util.Graph
+import java.io.File
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration._
+import scala.util.{Success, Try}
 
 class MasterServiceSpec extends FlatSpec with ScalatestRouteTest
   with Matchers with BeforeAndAfterAll {

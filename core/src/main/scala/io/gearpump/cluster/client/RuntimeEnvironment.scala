@@ -15,7 +15,7 @@
 package io.gearpump.cluster.client
 
 import com.typesafe.config.Config
-import RuntimeEnvironment.RemoteClientContext
+import io.gearpump.cluster.client.RuntimeEnvironment.RemoteClientContext
 import io.gearpump.cluster.embedded.EmbeddedRuntimeEnvironment
 
 /**

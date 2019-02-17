@@ -14,13 +14,13 @@
 
 package io.gearpump.metrics
 
-import scala.collection.JavaConverters._
 import akka.actor._
-import org.slf4j.Logger
 import com.codahale.metrics._
 import io.gearpump
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil
+import org.slf4j.Logger
+import scala.collection.JavaConverters._
 
 /** Metric objects registry */
 class Metrics(sampleRate: Int) extends Extension {

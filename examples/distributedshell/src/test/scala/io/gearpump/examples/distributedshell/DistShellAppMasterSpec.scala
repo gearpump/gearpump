@@ -13,21 +13,20 @@
  */
 package io.gearpump.examples.distributedshell
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import akka.actor.ActorSystem
 import akka.testkit.{TestActorRef, TestProbe}
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.util.ActorUtil
-import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import io.gearpump.cluster.{TestUtil, _}
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, RegisterAppMaster, RequestResource}
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated, WorkerList}
-import io.gearpump.cluster.TestUtil
-import io.gearpump.cluster._
-import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, ApplicationRuntimeInfo}
+import io.gearpump.cluster.appmaster.{ApplicationRuntimeInfo, AppMasterRuntimeEnvironment}
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
+import io.gearpump.util.ActorUtil
+import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter {
   implicit val system = ActorSystem("AppMasterSpec", TestUtil.DEFAULT_CONFIG)

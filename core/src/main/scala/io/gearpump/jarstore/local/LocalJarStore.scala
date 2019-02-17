@@ -13,12 +13,10 @@
  */
 package io.gearpump.jarstore.local
 
-import java.io._
-
 import com.typesafe.config.Config
-import io.gearpump.util.{Constants, FileUtils, LogUtil, Util}
 import io.gearpump.jarstore.JarStore
-import io.gearpump.util.{Constants, LogUtil, Util}
+import io.gearpump.util.{Constants, FileUtils, LogUtil, Util}
+import java.io._
 import org.slf4j.Logger
 
 /**

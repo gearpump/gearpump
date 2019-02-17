@@ -15,26 +15,26 @@
 package io.gearpump.services
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCookie, HttpCookiePair}
 import akka.http.scaladsl.model.{RemoteAddress, StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCookie, HttpCookiePair}
+import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
 import akka.stream.Materializer
 import com.github.ghik.silencer.silent
+import com.softwaremill.session.{MultiValueSessionSerializer, SessionConfig, SessionManager}
 import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
-import com.softwaremill.session.{MultiValueSessionSerializer, SessionConfig, SessionManager}
 import com.typesafe.config.Config
 import io.gearpump.security.Authenticator
 import io.gearpump.services.SecurityService.{User, UserSession}
 import io.gearpump.services.security.oauth2.OAuth2Authenticator
 import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.util.{Constants, LogUtil}
-import upickle.default.write
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import upickle.default.write
 
 /**
  * Security authentication endpoint.

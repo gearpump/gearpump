@@ -17,8 +17,8 @@ package io.gearpump.streaming.examples.wordcount.dsl
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.streaming.dsl.scalaapi.StreamApp
-import io.gearpump.util.AkkaApp
 import io.gearpump.streaming.dsl.scalaapi.StreamApp._
+import io.gearpump.util.AkkaApp
 
 /** Same WordCount with High level DSL syntax */
 object WordCount extends AkkaApp with ArgumentsParser {

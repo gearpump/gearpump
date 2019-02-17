@@ -14,10 +14,6 @@
 
 package io.gearpump.streaming.task
 
-import java.time.Instant
-import java.util
-import java.util.concurrent.TimeUnit
-
 import akka.actor._
 import com.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import io.gearpump.Message
@@ -31,8 +27,10 @@ import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.TaskActor._
 import io.gearpump.util.{LogUtil, TimeOutScheduler}
+import java.time.Instant
+import java.util
+import java.util.concurrent.TimeUnit
 import org.slf4j.Logger
-
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 

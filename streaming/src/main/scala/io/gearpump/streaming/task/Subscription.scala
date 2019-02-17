@@ -15,15 +15,14 @@
 package io.gearpump.streaming.task
 
 import com.google.common.primitives.Shorts
-import io.gearpump.Time
-import io.gearpump.streaming.source.Watermark
-import io.gearpump.util.LogUtil
+import io.gearpump.{Message, Time}
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.streaming.AppMasterToExecutor.MsgLostException
 import io.gearpump.streaming.LifeTime
-import io.gearpump.Message
 import io.gearpump.streaming.partitioner.{MulticastPartitioner, Partitioner, UnicastPartitioner}
+import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.Subscription._
+import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 
 /**

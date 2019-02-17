@@ -20,9 +20,7 @@ import com.typesafe.config.Config
 import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.master.InMemoryKVService
 import io.gearpump.cluster.master.InMemoryKVService._
-import io.gearpump.cluster.{MasterHarness, TestUtil}
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
 import scala.concurrent.duration._
 
 class InMemoryKVServiceSpec

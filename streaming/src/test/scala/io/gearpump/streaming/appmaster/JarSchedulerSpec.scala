@@ -14,20 +14,17 @@
 package io.gearpump.streaming.appmaster
 
 import akka.actor.ActorSystem
-import io.gearpump.cluster.TestUtil
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.streaming.partitioner.HashPartitioner
-import io.gearpump.util.Graph
-import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.{AppJar, TestUtil}
+import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.jarstore.FilePath
-import io.gearpump.streaming.partitioner.Partitioner
-import io.gearpump.streaming.appmaster.TaskSchedulerSpec.{TestTask1, TestTask2}
-import io.gearpump.streaming.task.TaskId
 import io.gearpump.streaming.{DAG, ProcessorDescription, _}
+import io.gearpump.streaming.appmaster.TaskSchedulerSpec.{TestTask1, TestTask2}
+import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
+import io.gearpump.streaming.task.TaskId
+import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.scalatest.{Matchers, WordSpec}
-
 import scala.concurrent.{Await, Future}
 
 class JarSchedulerSpec extends WordSpec with Matchers {

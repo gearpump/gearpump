@@ -14,17 +14,15 @@
 
 package io.gearpump.streaming.metrics
 
-import scala.collection.JavaConverters._
-import scala.util.Random
-
-import org.scalatest.{FlatSpec, Matchers}
-
 import io.gearpump.cluster.ClientToMaster.ReadOption
 import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
 import io.gearpump.metrics.Metrics.{Gauge, Histogram, Meter}
-import ProcessorAggregator.{AggregatorFactory, HistogramAggregator, MeterAggregator, MultiLayerMap}
+import io.gearpump.streaming.metrics.ProcessorAggregator.{AggregatorFactory, HistogramAggregator, MeterAggregator, MultiLayerMap}
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
+import org.scalatest.{FlatSpec, Matchers}
+import scala.collection.JavaConverters._
+import scala.util.Random
 
 class ProcessorAggregatorSpec extends FlatSpec with Matchers {
 
