@@ -212,11 +212,9 @@ object CloudFoundryUAAOAuth2Authenticator {
 
   class OrganizationAccessChecker extends AdditionalAuthenticator {
     private var organizationUrl: String = null
-    private implicit var executionContext: ExecutionContext = null
 
     override def init(config: Config, executionContext: ExecutionContext): Unit = {
       this.organizationUrl = config.getString(ORGANIZATION_URL)
-      this.executionContext = executionContext
     }
 
     override def authenticate(asyncClient: AsyncHttpClient, accessToken: OAuth2AccessToken,

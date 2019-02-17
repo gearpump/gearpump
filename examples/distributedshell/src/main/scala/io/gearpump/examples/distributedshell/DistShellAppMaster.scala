@@ -24,9 +24,8 @@ import org.slf4j.Logger
 import io.gearpump.cluster.ClientToMaster.ShutdownApplication
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout}
 import io.gearpump.cluster._
-import DistShellAppMaster._
+import io.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult, ShellCommandResultAggregator}
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
-import io.gearpump.util.{Constants, LogUtil, Util}
 
 class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
   extends ApplicationMaster {
@@ -49,7 +48,7 @@ class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
       val executorContext = ExecutorContext(currentExecutorId, worker, appId, app.name,
         self, executorResource)
       // Start executor
-      val executor = context.actorOf(Props(classOf[ShellExecutor], executorContext, app.userConfig)
+      val executor = context.actorOf(Props(classOf[ShellExecutor], executorContext)
         .withDeploy(Deploy(scope = RemoteScope(address))), currentExecutorId.toString)
       executorSystem.bindLifeCycleWith(executor)
       currentExecutorId += 1
@@ -62,7 +61,7 @@ class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
       masterProxy ! ShutdownApplication(appId)
       context.stop(self)
     case msg: ShellCommand =>
-      Future.fold(context.children.map(_ ? msg))(new ShellCommandResultAggregator) {
+      Future.foldLeft(context.children.map(_ ? msg))(new ShellCommandResultAggregator) {
         (aggregator, response) => {
           aggregator.aggregate(response.asInstanceOf[ShellCommandResult])
         }

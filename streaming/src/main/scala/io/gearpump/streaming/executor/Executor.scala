@@ -16,30 +16,27 @@ package io.gearpump.streaming.executor
 
 import java.lang.management.ManagementFactory
 
-import scala.concurrent.duration._
 import akka.actor.SupervisorStrategy.Resume
 import akka.actor._
 import com.typesafe.config.Config
-import org.apache.commons.lang.exception.ExceptionUtils
-import org.slf4j.Logger
-import io.gearpump.cluster.ExecutorContext
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.cluster.{ClusterConfig, ExecutorContext, UserConfig}
 import io.gearpump.metrics.Metrics.ReportMetrics
-import io.gearpump.metrics.{JvmMetricsSet, MetricsReporterService}
+import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
+import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.AppMasterToExecutor.{MsgLostException, TasksChanged, TasksLaunched, _}
 import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask, UnRegisterTask}
 import io.gearpump.streaming.ProcessorId
-import Executor._
-import TaskLauncher.TaskArgument
-import io.gearpump.cluster.{ClusterConfig, UserConfig}
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
-import io.gearpump.serializer.SerializationFramework
-import io.gearpump.transport.{Express, HostPort}
+import io.gearpump.streaming.executor.Executor._
+import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.task.{Subscriber, TaskId}
-import io.gearpump.transport.HostPort
+import io.gearpump.transport.{Express, HostPort}
 import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, TimeOutScheduler}
-import io.gearpump.util.{ActorUtil, Constants, LogUtil}
+import org.apache.commons.lang.exception.ExceptionUtils
+import org.slf4j.Logger
+
+import scala.concurrent.duration._
 
 /**
  * Executor is child of AppMaster.
@@ -62,7 +59,6 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
 
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 
-  private implicit val timeOut = FUTURE_TIMEOUT
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private val systemConfig = context.system.settings.config
   private val serializerPool = getSerializerPool()
@@ -299,7 +295,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         }
         tasks -= taskId
 
-      case unRegister@UnRegisterTask(taskId, _) =>
+      case unRegister: UnRegisterTask =>
         // Sends UnRegisterTask to AppMaster
         appMaster ! unRegister
     }
@@ -352,14 +348,13 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         needRestart = List.empty[TaskId]))
 
       tasks.values.foreach {
-        case task: ActorRef => task ! PoisonPill
+        task: ActorRef => task ! PoisonPill
       }
   }
 
   def executorService: Receive = terminationWatch orElse onRestartTasks orElse {
-    case taskChanged: TaskChanged =>
-    // Skip
-    case get: GetExecutorSummary =>
+    case _: TaskChanged => // Skip
+    case _: GetExecutorSummary =>
       val logFile = LogUtil.applicationLogDir(systemConfig)
       val processorTasks = tasks.keySet.groupBy(_.processorId).mapValues(_.toList).view.force
       sender ! ExecutorSummary(
@@ -372,7 +367,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         processorTasks,
         jvmName = ManagementFactory.getRuntimeMXBean().getName())
 
-    case query: QueryExecutorConfig =>
+    case _: QueryExecutorConfig =>
       sender ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
     case HealthCheck =>
       context.system.scheduler.scheduleOnce(3.second)(HealthCheck)

@@ -13,10 +13,8 @@
  */
 package io.gearpump.streaming.dsl.scalaapi.functions
 
-import io.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunction, SerializableFunction}
 import io.gearpump.streaming.dsl.javaapi.functions
-import io.gearpump.streaming.dsl.api.functions.{MapFunction, SerializableFunction}
-import io.gearpump.streaming.dsl.javaapi.functions.{FlatMapFunction => JFlatMapFunction}
+import io.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunction, SerializableFunction}
 
 import scala.collection.JavaConverters._
 
@@ -41,11 +39,7 @@ object FlatMapFunction {
   }
 
   def apply[T, R](fn: T => TraversableOnce[R]): FlatMapFunction[T, R] = {
-    new FlatMapFunction[T, R] {
-      override def flatMap(t: T): TraversableOnce[R] = {
-        fn(t)
-      }
-    }
+    fn(_)
   }
 
   def apply[T, R](fn: MapFunction[T, R]): FlatMapFunction[T, R] = {

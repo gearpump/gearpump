@@ -14,12 +14,12 @@
 package io.gearpump.examples.pagerank
 
 import akka.actor.Actor.Receive
-import PageRankApplication.NodeWithTaskId
-import PageRankController.Tick
-import PageRankWorker.{LatestWeight, UpdateWeight}
 import io.gearpump.cluster.UserConfig
-import io.gearpump.util.Graph
+import io.gearpump.examples.pagerank.PageRankApplication.NodeWithTaskId
+import io.gearpump.examples.pagerank.PageRankController.Tick
+import io.gearpump.examples.pagerank.PageRankWorker.{LatestWeight, UpdateWeight}
 import io.gearpump.streaming.task.{Task, TaskContext, TaskId, TaskWrapper}
+import io.gearpump.util.Graph
 
 class PageRankWorker(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.taskId
@@ -61,7 +61,7 @@ class PageRankWorker(taskContext: TaskContext, conf: UserConfig) extends Task(ta
         val update = UpdateWeight(taskId, weight / downstream.length)
         output(update, downstream: _*)
       }
-    case update@UpdateWeight(upstreamTaskId, weight) =>
+    case UpdateWeight(upstreamTaskId, weight) =>
       upstreamWeights += upstreamTaskId -> weight
       if (upstreamWeights.size == upstreamCount) {
         val nextWeight = upstreamWeights.foldLeft(0.0) { (sum, item) => sum + item._2 }

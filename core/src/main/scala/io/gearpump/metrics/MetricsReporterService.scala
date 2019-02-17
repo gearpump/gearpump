@@ -81,7 +81,7 @@ class MetricsReporterService(metrics: Metrics) extends Actor {
   }
 
   def startAkkaReporter(): ReportTo = {
-    new AkkaReporter(system, metrics.registry)
+    new AkkaReporter(metrics.registry)
   }
 
   def getReporter: ReportTo = {

@@ -14,8 +14,6 @@
 
 package io.gearpump.services
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCookie, HttpCookiePair}
 import akka.http.scaladsl.model.{RemoteAddress, StatusCodes, Uri}
@@ -24,19 +22,19 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
 import akka.stream.Materializer
-import com.typesafe.config.Config
+import com.github.ghik.silencer.silent
 import com.softwaremill.session.SessionDirectives._
 import com.softwaremill.session.SessionOptions._
 import com.softwaremill.session.{MultiValueSessionSerializer, SessionConfig, SessionManager}
+import com.typesafe.config.Config
 import io.gearpump.security.Authenticator
-import io.gearpump.util.{Constants, LogUtil}
-import upickle.default.write
-import io.gearpump.security.{Authenticator => BaseAuthenticator}
 import io.gearpump.services.SecurityService.{User, UserSession}
 import io.gearpump.services.security.oauth2.OAuth2Authenticator
-import io.gearpump.util.{Constants, LogUtil}
-// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.util.{Constants, LogUtil}
+import upickle.default.write
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 /**
  * Security authentication endpoint.
@@ -59,7 +57,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
   private val challenge = HttpChallenge(scheme = "GearpumpBasic", realm = Some("gearpump"),
     params = Map.empty[String, String])
 
-  val LOG = LogUtil.getLogger(getClass, "AUDIT")
+  private val LOG = LogUtil.getLogger(getClass, "AUDIT")
 
   private val config = system.settings.config
   private val sessionConfig = SessionConfig.fromConfig(config)
@@ -110,14 +108,11 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
   }
 
   private def requireAuthentication(inner: UserSession => Route): Route = {
-    optionalSession(oneOff, usingCookiesOrHeaders) { sessionOption =>
-      sessionOption match {
-        case Some(session) => {
-          inner(session)
-        }
-        case None =>
-          rejectMissingCredentials
-      }
+    optionalSession(oneOff, usingCookiesOrHeaders) {
+      case Some(session) =>
+        inner(session)
+      case None =>
+        rejectMissingCredentials
     }
   }
 
@@ -132,7 +127,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
         if (redirectToRoot) {
           redirect(Uri("/"), StatusCodes.TemporaryRedirect)
         } else {
-          complete(write(new User(user)))
+          complete(write(User(user)))
         }
       }
     }
@@ -141,14 +136,14 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
   private def logout(user: UserSession, ip: String): Route = {
     invalidateSession(oneOff, usingCookies) { ctx =>
       LOG.info(s"user ${user.user} logout from $ip")
-      ctx.complete(write(new User(user.user)))
+      ctx.complete(write(User(user.user)))
     }
   }
 
   // Only admin are able to access operation like post/delete/put
   private def requireAuthorization(user: UserSession, route: => Route): Route = {
     // Valid user
-    if (user.permissionLevel >= BaseAuthenticator.User.permissionLevel) {
+    if (user.permissionLevel >= Authenticator.User.permissionLevel) {
       route
     } else {
       // Possibly a guest or not authenticated.
@@ -164,18 +159,19 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
 
   private val unknownIp: Directive1[RemoteAddress] = {
     Directive[Tuple1[RemoteAddress]]{ inner =>
-      inner(new Tuple1(RemoteAddress.Unknown))
+      inner(Tuple1(RemoteAddress.Unknown))
     }
   }
 
+  @silent // parameter value mat in value $anonfun is never used
   override val route: Route = {
 
-    extractExecutionContext{implicit ec: ExecutionContext =>
-    extractMaterializer{implicit mat: Materializer =>
-    (extractClientIP | unknownIp) { ip =>
-      pathPrefix("login") {
-        pathEndOrSingleSlash {
-          get {
+    extractExecutionContext { implicit ec: ExecutionContext =>
+      extractMaterializer { implicit mat: Materializer =>
+        (extractClientIP | unknownIp) { ip =>
+          pathPrefix("login") {
+            pathEndOrSingleSlash {
+              get {
             getFromResource("login/login.html")
           } ~
           post {
@@ -212,10 +208,9 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
               onComplete(result) {
                 case Success(session) =>
                   login(session, ip.toString, redirectToRoot = true)
-                case Failure(ex) => {
+                case Failure(ex) =>
                   LOG.info(s"Failed to login user from ${ip.toString}", ex)
                   rejectWrongCredentials
-                }
               }
             }
 

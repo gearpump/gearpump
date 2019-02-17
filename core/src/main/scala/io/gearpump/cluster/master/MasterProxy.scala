@@ -14,12 +14,12 @@
 
 package io.gearpump.cluster.master
 
-import scala.concurrent.duration.FiniteDuration
 import akka.actor._
 import io.gearpump.transport.HostPort
 import io.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger
-import io.gearpump.util.LogUtil
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * This works with Master HA. When there are multiple Master nodes,
@@ -27,16 +27,16 @@ import io.gearpump.util.LogUtil
  */
 class MasterProxy(masters: Iterable[ActorPath], timeout: FiniteDuration)
   extends Actor with Stash {
-  import MasterProxy._
+  import io.gearpump.cluster.master.MasterProxy._
 
-  val LOG: Logger = LogUtil.getLogger(getClass, name = self.path.name)
+  private val LOG: Logger = LogUtil.getLogger(getClass, name = self.path.name)
 
-  val contacts = masters.map { url =>
+  private val contacts = masters.map { url =>
     LOG.info(s"Contacts point URL: $url")
     context.actorSelection(url)
   }
 
-  var watchers: List[ActorRef] = List.empty[ActorRef]
+  private var watchers: List[ActorRef] = List.empty[ActorRef]
 
   import context.dispatcher
 
@@ -62,26 +62,26 @@ class MasterProxy(masters: Iterable[ActorPath], timeout: FiniteDuration)
     case _ =>
   }
 
-  def establishing(findMaster: Cancellable): Actor.Receive = {
+  def establishing(findMaster: Cancellable): Receive = {
     case ActorIdentity(_, Some(receptionist)) =>
       context watch receptionist
-      LOG.info("Connected to [{}]", receptionist.path)
+      LOG.info(s"Connected to [${receptionist.path}]")
       context.watch(receptionist)
 
       watchers.foreach(_ ! MasterRestarted)
       unstashAll()
       findMaster.cancel()
-      context.become(active(receptionist) orElse messageHandler(receptionist))
+      context.become(active orElse messageHandler(receptionist))
     case ActorIdentity(_, None) => // ok, use another instead
     case msg =>
       LOG.info(s"Stashing ${msg.getClass.getSimpleName}")
       stash()
   }
 
-  def active(receptionist: ActorRef): Actor.Receive = {
-    case Terminated(receptionist) =>
-      LOG.info("Lost contact with [{}], reestablishing connection", receptionist)
-      context.become(establishing(findMaster))
+  def active: Receive = {
+    case Terminated(master) =>
+      LOG.warn(s"Lost contact with [$master], reestablishing connection")
+      context.become(establishing(findMaster()))
     case _: ActorIdentity => // ok, from previous establish, already handled
     case WatchMaster(watcher) =>
       watchers = watchers :+ watcher
@@ -123,7 +123,7 @@ object MasterProxy {
 
   import scala.concurrent.duration._
   def props(masters: Iterable[HostPort], duration: FiniteDuration = 30.seconds): Props = {
-    val contacts = masters.map(ActorUtil.getMasterActorPath(_))
+    val contacts = masters.map(ActorUtil.getMasterActorPath)
     Props(new MasterProxy(contacts, duration))
   }
 }

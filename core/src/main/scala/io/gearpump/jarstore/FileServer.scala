@@ -27,7 +27,7 @@ import akka.http.scaladsl.model.{HttpEntity, HttpRequest, MediaTypes, Multipart,
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, IOResult}
 import akka.stream.scaladsl.{FileIO, Sink, Source}
 import spray.json.DefaultJsonProtocol._
 import spray.json.JsonFormat
@@ -131,14 +131,13 @@ object FileServer {
       }
     }
 
-    def download(remoteFile: FilePath, saveAs: File): Future[Unit] = {
-      val download = server.withPath(Path("/download")).withQuery(Query("file" -> remoteFile.path))
+    def download(remoteFile: FilePath, saveAs: File): Future[IOResult] = {
+      val uri = server.withPath(Path("/download")).withQuery(Query("file" -> remoteFile.path))
       // Download file to local
-      val response = Source.single(HttpRequest(uri = download)).via(httpClient).runWith(Sink.head)
-      val downloaded = response.flatMap { response =>
-        response.entity.dataBytes.runWith(FileIO.toPath(saveAs.toPath))
+      Source.single(HttpRequest(uri = uri)).via(httpClient).runWith(Sink.head).flatMap {
+        response =>
+          response.entity.dataBytes.runWith(FileIO.toPath(saveAs.toPath))
       }
-      downloaded.map(written => Unit)
     }
 
     private def entity(file: File)(implicit ec: ExecutionContext): Future[RequestEntity] = {

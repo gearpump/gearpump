@@ -103,7 +103,7 @@ object AppMasterRuntimeEnvironment {
   }
 
   /**
-   * This behavior like a AppMaster. Under the hood, It start start the real AppMaster in a lazy
+   * This behavior like a AppMaster. Under the hood, It starts the real AppMaster in a lazy
    * way. When real AppMaster is not started yet, all messages are stashed. The stashed
    * messages are forwarded to real AppMaster when the real AppMaster is started.
    *
@@ -112,9 +112,7 @@ object AppMasterRuntimeEnvironment {
    * @param appMasterProps  underlying AppMaster Props
    */
   private[appmaster]
-  class LazyStartAppMaster(appId: Int, appMasterProps: Props) extends Actor with Stash {
-
-    private val LOG = LogUtil.getLogger(getClass, app = appId)
+  class LazyStartAppMaster(appMasterProps: Props) extends Actor with Stash {
 
     def receive: Receive = null
 
@@ -124,14 +122,14 @@ object AppMasterRuntimeEnvironment {
       case StartAppMaster =>
         val appMaster = context.actorOf(appMasterProps, "appmaster")
         context.watch(appMaster)
-        context.become(terminationWatch(appMaster) orElse appMasterService(appMaster))
+        context.become(terminationWatch orElse appMasterService(appMaster))
         unstashAll()
       case _ =>
         stash()
     }
 
-    def terminationWatch(appMaster: ActorRef): Receive = {
-      case Terminated(appMaster) =>
+    def terminationWatch: Receive = {
+      case Terminated(_) =>
         context.stop(self)
     }
 
@@ -144,7 +142,7 @@ object AppMasterRuntimeEnvironment {
   object LazyStartAppMaster {
     def props(appContext: AppMasterContext, app: AppDescription): Props = {
       val appMasterProps = Props(Class.forName(app.appMaster), appContext, app)
-      Props(new LazyStartAppMaster(appContext.appId, appMasterProps))
+      Props(new LazyStartAppMaster(appMasterProps))
     }
   }
 

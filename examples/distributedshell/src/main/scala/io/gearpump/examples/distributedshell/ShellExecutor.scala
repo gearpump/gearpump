@@ -14,17 +14,17 @@
 
 package io.gearpump.examples.distributedshell
 
+import akka.actor.Actor
+import io.gearpump.cluster.ExecutorContext
+import io.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
+import io.gearpump.util.LogUtil
+import org.slf4j.Logger
+
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
-import akka.actor.Actor
-import org.slf4j.Logger
-import io.gearpump.cluster.ExecutorContext
-import DistShellAppMaster.{ShellCommand, ShellCommandResult}
-import io.gearpump.cluster.UserConfig
-import io.gearpump.util.LogUtil
 
 /** Executor actor on remote machine */
-class ShellExecutor(executorContext: ExecutorContext, userConf: UserConfig) extends Actor {
+class ShellExecutor(executorContext: ExecutorContext) extends Actor {
   import executorContext._
   private val LOG: Logger = LogUtil.getLogger(getClass, executor = executorId, app = appId)
 

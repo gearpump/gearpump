@@ -16,15 +16,15 @@ package io.gearpump.util
 
 import java.util.concurrent.{TimeUnit, TimeoutException}
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-import scala.util.{Failure, Success, Try}
 import akka.actor._
 import com.typesafe.config.Config
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.util.LogUtil.ProcessType
 import org.slf4j.Logger
-import io.gearpump.util.LogUtil.ProcessType
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success, Try}
 
 /**
  * ActorSystemBooter start a new JVM process to boot an actor system.
@@ -33,7 +33,7 @@ import io.gearpump.util.LogUtil.ProcessType
  * It send the system address to "report back actor"
  */
 class ActorSystemBooter(config: Config) {
-  import ActorSystemBooter._
+  import io.gearpump.util.ActorSystemBooter._
 
   def boot(name: String, reportBackActor: String): ActorSystem = {
     val system = ActorSystem(name, config)
@@ -124,7 +124,7 @@ object ActorSystemBooter {
       case BindLifeCycle(actor) =>
         LOG.info(s"ActorSystem $name Binding life cycle with actor: $actor")
         context.watch(actor)
-      case create@CreateActor(props: Props, name: String) =>
+      case CreateActor(props: Props, name: String) =>
         LOG.info(s"creating actor $name")
         val actor = Try(context.actorOf(props, name))
         actor match {

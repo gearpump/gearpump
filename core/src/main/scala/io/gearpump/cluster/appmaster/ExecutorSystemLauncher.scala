@@ -77,7 +77,7 @@ class ExecutorSystemLauncher(appId: Int, session: Session) extends Actor {
         ExecutorSystem(executorId, AddressFromURIString(systemPath), sender, resource, worker)
       replyTo ! LaunchExecutorSystemSuccess(system, session)
       context.stop(self)
-    case reject@ExecutorLaunchRejected(reason, ex) =>
+    case ExecutorLaunchRejected(reason, ex) =>
       LOG.error(s"Executor Launch ${launch.resource} failed reason: $reason", ex)
       replyTo ! LaunchExecutorSystemRejected(launch.resource, reason, session)
       context.stop(self)

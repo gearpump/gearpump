@@ -20,20 +20,18 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor._
 import com.gs.collections.impl.map.mutable.primitive.IntShortHashMap
-import io.gearpump.cluster.UserConfig
-import io.gearpump.metrics.Metrics
-import io.gearpump.serializer.SerializationFramework
-import io.gearpump.streaming.source.Watermark
-import io.gearpump.util.{LogUtil, TimeOutScheduler}
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
-import org.slf4j.Logger
+import io.gearpump.metrics.Metrics
+import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.AppMasterToExecutor._
 import io.gearpump.streaming.Constants._
 import io.gearpump.streaming.ExecutorToAppMaster._
 import io.gearpump.streaming.ProcessorId
+import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.TaskActor._
-import io.gearpump.util.LogUtil
+import io.gearpump.util.{LogUtil, TimeOutScheduler}
+import org.slf4j.Logger
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -45,7 +43,6 @@ import scala.concurrent.duration._
 class TaskActor(
     val taskId: TaskId,
     val taskContextData: TaskContextData,
-    userConf: UserConfig,
     val task: TaskWrapper,
     inputSerializerPool: SerializationFramework)
     extends Actor with ExpressTransport with TimeOutScheduler {
@@ -208,7 +205,7 @@ class TaskActor(
               taskContextData.executorId, taskId, subscriber,
               sessionId, this, maxPendingMessageCount, ackOnceEveryMessageCount)
             subscription.start()
-            subscriptions :+=(subscriber.processorId, subscription)
+            subscriptions :+= subscriber.processorId -> subscription
             // Sorting, keep the order
             subscriptions = subscriptions.sortBy(_._1)
         }

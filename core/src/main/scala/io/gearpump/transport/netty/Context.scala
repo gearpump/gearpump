@@ -17,16 +17,15 @@ package io.gearpump.transport.netty
 import java.io.Closeable
 import java.util.concurrent._
 
-import scala.collection.JavaConverters._
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.Config
+import io.gearpump.transport.{ActorLookupById, HostPort}
+import io.gearpump.transport.netty.Server.ServerPipelineFactory
+import io.gearpump.util.{Constants, LogUtil}
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.slf4j.Logger
-import Server.ServerPipelineFactory
-import io.gearpump.transport.{ActorLookupById, HostPort}
-import io.gearpump.util.{Constants, LogUtil}
-import io.gearpump.transport.HostPort
-import io.gearpump.util.LogUtil
+
+import scala.collection.JavaConverters._
 
 object Context {
   private final val LOG: Logger = LogUtil.getLogger(getClass)
@@ -34,7 +33,7 @@ object Context {
 
 /** Netty Context */
 class Context(system: ActorSystem, conf: NettyConfig) extends IContext {
-  import Context._
+  import io.gearpump.transport.netty.Context._
 
   def this(system: ActorSystem, conf: Config) {
     this(system, new NettyConfig(conf))
@@ -52,11 +51,9 @@ class Context(system: ActorSystem, conf: NettyConfig) extends IContext {
         Executors.newCachedThreadPool(bossFactory),
         Executors.newCachedThreadPool(workerFactory), maxWorkers)
 
-    closeHandler.add(new Closeable {
-      override def close(): Unit = {
-        LOG.info("Closing all client resources....")
-        channelFactory.releaseExternalResources
-      }
+    closeHandler.add(() => {
+      LOG.info("Closing all client resources....")
+      channelFactory.releaseExternalResources()
     })
     channelFactory
   }
@@ -65,18 +62,16 @@ class Context(system: ActorSystem, conf: NettyConfig) extends IContext {
       name: String, lookupActor : ActorLookupById, deserializeFlag : Boolean = true,
       inputPort: Int = 0): Int = {
     // TODO: whether we should expose it as application config?
-    val server = system.actorOf(Props(classOf[Server], name, conf, lookupActor,
-      deserializeFlag).withDispatcher(nettyDispatcher), name)
+    val server = system.actorOf(Props(classOf[Server], name, lookupActor)
+      .withDispatcher(nettyDispatcher), name)
     val (port, channel) = NettyUtil.newNettyServer(name,
       new ServerPipelineFactory(server, conf), 5242880, inputPort)
     val factory = channel.getFactory
-    closeHandler.add(new Closeable {
-      override def close(): Unit = {
-        system.stop(server)
-        channel.close()
-        LOG.info("Closing all server resources....")
-        factory.releaseExternalResources
-      }
+    closeHandler.add(() => {
+      system.stop(server)
+      channel.close()
+      LOG.info("Closing all server resources....")
+      factory.releaseExternalResources()
     })
     port
   }
@@ -84,11 +79,9 @@ class Context(system: ActorSystem, conf: NettyConfig) extends IContext {
   def connect(hostPort: HostPort): ActorRef = {
     val client = system.actorOf(Props(classOf[Client], conf, clientChannelFactory, hostPort)
       .withDispatcher(nettyDispatcher))
-    closeHandler.add(new Closeable {
-      override def close(): Unit = {
-        LOG.info("closing Client actor....")
-        system.stop(client)
-      }
+    closeHandler.add(() => {
+      LOG.info("closing Client actor....")
+      system.stop(client)
     })
 
     client

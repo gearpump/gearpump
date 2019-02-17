@@ -14,27 +14,26 @@
 
 package io.gearpump.streaming.appmaster
 
-import scala.concurrent.duration._
-import scala.util.{Failure, Try}
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
-import io.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.streaming.executor.Executor
-import io.gearpump.util.{LogUtil, Util}
-import org.apache.commons.lang.exception.ExceptionUtils
 import io.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
 import io.gearpump.cluster.ClientToMaster.ShutdownApplication
-import io.gearpump.cluster.UserConfig
-import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems, StopExecutorSystem}
+import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
+import io.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.{AppJar, AppMasterContext, ExecutorContext, UserConfig}
 import io.gearpump.streaming.ExecutorId
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
-import io.gearpump.streaming.appmaster.ExecutorManager.{BroadCast, ExecutorInfo, ExecutorResourceUsageSummary, ExecutorStarted, ExecutorStopped, AllExecutorsStopped, GetExecutorInfo, SetTaskManager, StartExecutors, StartExecutorsTimeOut, UniCast}
-import io.gearpump.util.LogUtil
+import io.gearpump.streaming.appmaster.ExecutorManager.{AllExecutorsStopped, BroadCast, ExecutorInfo, ExecutorResourceUsageSummary, ExecutorStarted, ExecutorStopped, GetExecutorInfo, SetTaskManager, StartExecutors, StartExecutorsTimeOut, UniCast}
+import io.gearpump.streaming.executor.Executor
+import io.gearpump.util.{LogUtil, Util}
+import org.apache.commons.lang.exception.ExceptionUtils
+
+import scala.concurrent.duration._
+import scala.util.{Failure, Try}
 
 /**
  * ExecutorManager manage the start and stop of all executors.
@@ -57,7 +56,6 @@ private[appmaster] class ExecutorManager(
   private var taskManager: ActorRef = null
   private var shutdown = false
 
-  private implicit val actorSystem = context.system
   private val systemConfig = context.system.settings.config
 
   private var executors = Map.empty[Int, ExecutorInfo]
@@ -84,7 +82,7 @@ private[appmaster] class ExecutorManager(
             ExceptionUtils.getStackTrace(ex))
         }
         case Failure(ex) => {
-          LOG.error(s"Sender ${sender.path} is dead, but seems it is not an executor...")
+          LOG.error(s"Sender ${sender.path} is dead, but seems it is not an executor...", ex)
         }
       }
       Stop
@@ -95,7 +93,7 @@ private[appmaster] class ExecutorManager(
     case StartExecutors(resources, jar) =>
       masterProxy ! StartExecutorSystems(resources, getExecutorJvmConfig(Some(jar)))
     case ExecutorSystemStarted(executorSystem, boundedJar) =>
-      import executorSystem.{address, executorSystemId, resource => executorResource, worker}
+      import executorSystem.{address, executorSystemId, worker, resource => executorResource}
 
       val executorId = executorSystemId
       val executorContext = ExecutorContext(executorId, worker, appId, appName,
@@ -121,7 +119,7 @@ private[appmaster] class ExecutorManager(
       LOG.info(s"executor $executorId has been launched")
       // Watches for executor termination
       context.watch(executor)
-      val executorInfo = executors.get(executorId).get
+      val executorInfo = executors(executorId)
       executors += executorId -> executorInfo.copy(executor = executor)
       taskManager ! ExecutorStarted(executorId, resource, worker.workerId, executorInfo.boundedJar)
 
@@ -210,7 +208,7 @@ private[appmaster] object ExecutorManager {
       (executorContext: ExecutorContext,
         userConfig: UserConfig,
         address: Address,
-        executorId: ExecutorId) =>
+        _: ExecutorId) =>
         Props(classOf[Executor], executorContext, userConfig)
           .withDeploy(Deploy(scope = RemoteScope(address)))
 

@@ -15,15 +15,16 @@ package io.gearpump.streaming.dsl.task
 
 import java.time.Instant
 
-import io.gearpump.cluster.UserConfig
 import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.Constants._
 import io.gearpump.streaming.dsl.window.impl.{StreamingOperator, TimestampedValue}
 import io.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
 
 class TransformTask[IN, OUT](
     operator: StreamingOperator[IN, OUT],
-    taskContext: TaskContext, userConf: UserConfig) extends Task(taskContext, userConf) {
+    taskContext: TaskContext,
+    conf: UserConfig) extends Task(taskContext, conf) {
 
   def this(context: TaskContext, conf: UserConfig) = {
     this(

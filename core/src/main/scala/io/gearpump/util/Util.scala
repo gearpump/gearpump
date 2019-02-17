@@ -17,7 +17,7 @@ package io.gearpump.util
 import java.io.{BufferedReader, File, FileInputStream, InputStreamReader}
 import java.net.{ServerSocket, URI}
 
-import scala.concurrent.forkjoin.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
 import scala.sys.process.Process
 import scala.util.{Failure, Success, Try}
 import com.typesafe.config.{Config, ConfigFactory}

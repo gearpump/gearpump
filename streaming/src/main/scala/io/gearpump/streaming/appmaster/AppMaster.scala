@@ -128,10 +128,10 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
 
   for (dag <- getDAG) {
     clockService = Some(context.actorOf(Props(new ClockService(dag, self, store))))
-    val jarScheduler = new JarScheduler(appId, app.name, systemConfig, context)
+    val jarScheduler = new JarScheduler(app.name, systemConfig, context)
 
     taskManager = Some(context.actorOf(Props(new TaskManager(appContext.appId, dagManager,
-      jarScheduler, executorManager, clockService.get, self, app.name))))
+      jarScheduler, executorManager, clockService.get, self))))
   }
 
   override def receive: Receive = {
@@ -225,7 +225,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
             logFile = logFile.getAbsolutePath,
             processors = processors,
             processorLevels = graph.vertexHierarchyLevelMap(),
-            dag = graph.mapEdge { (node1, edge, node2) =>
+            dag = graph.mapEdge { (_, edge, _) =>
               edge.partitionerFactory.name
             },
             executors = executors,
@@ -252,7 +252,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       } else {
         historyMetricsService.get forward query
       }
-    case getStalling@GetStallingTasks =>
+    case getStalling: GetStallingTasks.type =>
       clockService.foreach(_ forward getStalling)
     case replaceDAG: ReplaceProcessor =>
       dagManager forward replaceDAG
@@ -292,12 +292,12 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
   def ready: Receive = {
     case ApplicationReady =>
       masterProxy ! ApplicationStatusChanged(appId, ApplicationStatus.ACTIVE,
-        System.currentTimeMillis(), null)
+        System.currentTimeMillis())
     case AppMasterActivated(id) =>
       LOG.info(s"AppMaster for app$id is activated")
     case EndingClock =>
       masterProxy ! ApplicationStatusChanged(appId, ApplicationStatus.SUCCEEDED,
-        System.currentTimeMillis(), null)
+        System.currentTimeMillis())
   }
 
   /** Error handling */
@@ -305,9 +305,9 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
     case FailedToRecover(errorMsg) =>
       if (context.children.toList.contains(sender())) {
         LOG.error(errorMsg)
-        val (failure, exception) = lastFailure
-        val failed = ApplicationStatusChanged(appId, ApplicationStatus.FAILED, failure.time,
-          exception.getOrElse(new Exception(failure.error)))
+        val exception = getException(lastFailure)
+        val failed = ApplicationStatusChanged(appId, ApplicationStatus.FAILED(exception),
+          lastFailure._1.time)
         masterProxy ! failed
       }
     case shutdown@ShutdownApplication(id) =>
@@ -320,11 +320,16 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
     case AllocateResourceTimeOut =>
       val errorMsg = s"Failed to allocate resource in time, shutdown application $appId"
       LOG.error(errorMsg)
-      val (failure, exception) = lastFailure
-      val failed = ApplicationStatusChanged(appId, ApplicationStatus.FAILED,
-        System.currentTimeMillis(), exception.getOrElse(new Exception(failure.error)))
+      val exception = getException(lastFailure)
+      val failed = ApplicationStatusChanged(appId, ApplicationStatus.FAILED(exception),
+        System.currentTimeMillis())
       masterProxy ! failed
       context.stop(self)
+  }
+
+  private def getException(failureOrException: (LastFailure, Option[Throwable])): Throwable = {
+    val (failure, exception) = failureOrException
+    exception.getOrElse(new Exception(failure.error))
   }
 
   private def getMinClock: Future[MilliSeconds] = {

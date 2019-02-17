@@ -16,24 +16,21 @@ package io.gearpump.streaming.dsl.plan.functions
 
 import java.time.Instant
 
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.Constants._
 import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.dsl.api.functions.{FoldFunction, ReduceFunction}
 import io.gearpump.streaming.dsl.scalaapi.CollectionDataSource
 import io.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import io.gearpump.streaming.dsl.task.TransformTask
-import io.gearpump.streaming.source.{DataSourceTask, Watermark}
-import io.gearpump.Message
-import io.gearpump.streaming.source.Watermark
-import io.gearpump.streaming.Constants._
-import io.gearpump.streaming.dsl.api.functions.ReduceFunction
-import io.gearpump.streaming.dsl.scalaapi.CollectionDataSource
 import io.gearpump.streaming.dsl.window.api.GlobalWindows
 import io.gearpump.streaming.dsl.window.impl.{StreamingOperator, WindowOperator}
+import io.gearpump.streaming.source.{DataSourceTask, Watermark}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.{Matchers, WordSpec}
 import org.scalatest.mock.MockitoSugar
+import org.scalatest.{Matchers, WordSpec}
 
 class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
   import io.gearpump.streaming.dsl.plan.functions.FunctionRunnerSpec._

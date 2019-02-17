@@ -20,16 +20,12 @@ import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.streaming.partitioner.HashPartitioner
 import io.gearpump.streaming.source.DataSourceProcessor
-import io.gearpump.util.{AkkaApp, Graph, LogUtil}
 import io.gearpump.streaming.{Processor, StreamApplication}
+import io.gearpump.util.{AkkaApp, Graph}
 import io.gearpump.util.Graph.Node
-import io.gearpump.util.{Graph, LogUtil}
-import org.slf4j.Logger
 
 /** Same WordCount with low level Processor Graph syntax */
 object WordCount extends AkkaApp with ArgumentsParser {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
-  val RUN_FOR_EVER = -1
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "split" -> CLIOption[Int]("<how many source tasks>", required = false,

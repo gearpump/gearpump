@@ -42,8 +42,7 @@ class ShellExecutorSpec extends WordSpec with Matchers {
       val workerInfo = WorkerInfo(workerId, worker.ref)
       val executorContext = ExecutorContext(executorId, workerInfo, appId, appName,
         mockMaster.ref, resource)
-      val executor = system.actorOf(Props(classOf[ShellExecutor], executorContext,
-        UserConfig.empty))
+      val executor = system.actorOf(Props(classOf[ShellExecutor], executorContext))
 
       val process = Try(s"ls /".!!)
       val result = process match {

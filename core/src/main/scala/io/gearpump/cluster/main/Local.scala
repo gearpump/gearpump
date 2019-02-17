@@ -19,7 +19,6 @@ import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.{Master => MasterActor}
 import io.gearpump.cluster.worker.{Worker => WorkerActor}
-import io.gearpump.util.ActorUtil
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
 import io.gearpump.util.{Constants, LogUtil, MasterClientCommand, Util}
@@ -74,7 +73,6 @@ object Local extends MasterClientCommand with ArgumentsParser {
       )
 
       val master = system.actorOf(Props[MasterActor], MASTER)
-      val masterPath = ActorUtil.getSystemAddress(system).toString + s"/user/$MASTER"
 
       0.until(workerCount).foreach { id =>
         system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)

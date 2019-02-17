@@ -100,7 +100,7 @@ lazy val streaming = Project(
 
       libraryDependencies ++= Seq(
         "com.goldmansachs" % "gs-collections" % gsCollectionsVersion
-      ) ++ annotationDependencies,
+      ) ++ annotationDependencies ++ compilerDependencies,
 
       pomPostProcess := {
         (node: xml.Node) => changeShadedDeps(
@@ -135,6 +135,11 @@ lazy val services: Project = Project(
   id = "gearpump-services",
   base = file("services/jvm"))
   .settings(serviceJvmSettings: _*)
+  .settings(
+    Seq(
+      libraryDependencies ++= compilerDependencies
+    )
+  )
   .dependsOn(core % "provided", streaming % "test->test; provided")
   .enablePlugins(GenJavadocPlugin)
 

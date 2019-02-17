@@ -24,7 +24,6 @@ import akka.remote.DisassociatedEvent
 import com.typesafe.config.Config
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import org.apache.commons.lang.exception.ExceptionUtils
 import org.slf4j.Logger
 import io.gearpump.cluster.AppMasterToMaster._
@@ -40,10 +39,9 @@ import io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.transport.HostPort
 import io.gearpump.util.{ActorUtil, Constants, HistoryMetricsService, LogUtil}
-import io.gearpump.metrics.{JvmMetricsSet, MetricsReporterService}
+import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
-import io.gearpump.util._
 
 /**
  * Master Actor who manages resources of the whole cluster.
@@ -52,7 +50,6 @@ import io.gearpump.util._
 private[cluster] class Master extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private val systemConfig: Config = context.system.settings.config
-  private implicit val timeout = Constants.FUTURE_TIMEOUT
   private val kvService = context.actorOf(Props(new InMemoryKVService()), "kvService")
   // Resources and resourceRequests can be dynamically constructed by
   // heartbeat of worker and appmaster when master singleton is migrated.
@@ -115,7 +112,7 @@ private[cluster] class Master extends Actor with Stash {
       context.become(receiveHandler)
       unstashAll()
     case GetKVFailed(ex) =>
-      LOG.error("Failed to get worker id, shutting down master to avoid data corruption...")
+      LOG.error("Failed to get worker id, shutting down master to avoid data corruption...", ex)
       context.parent ! PoisonPill
     case msg =>
       LOG.info(s"Get message ${msg.getClass.getSimpleName}")
@@ -239,7 +236,7 @@ private[cluster] class Master extends Actor with Stash {
       LOG.debug(s"Receive from client, resolving workerId ${resolve.workerId}")
       val worker = workers.find(_._2 == resolve.workerId)
       worker match {
-        case Some(worker) => sender ! ResolveWorkerIdResult(Success(worker._1))
+        case Some(w) => sender ! ResolveWorkerIdResult(Success(w._1))
         case None => sender ! ResolveWorkerIdResult(Failure(
           new Exception(s"cannot find worker ${resolve.workerId}")))
       }
@@ -272,7 +269,7 @@ private[cluster] class Master extends Actor with Stash {
       LOG.info("Let's filter out dead resources...")
       // Filters out dead worker resource
       if (workers.keySet.contains(actor)) {
-        scheduler ! WorkerTerminated(workers.get(actor).get)
+        scheduler ! WorkerTerminated(workers(actor))
         workers -= actor
       }
   }
