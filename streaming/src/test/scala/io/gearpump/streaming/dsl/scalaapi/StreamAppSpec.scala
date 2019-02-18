@@ -17,14 +17,13 @@ package io.gearpump.streaming.dsl.scalaapi
 import akka.actor.ActorSystem
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.client.ClientContext
+import io.gearpump.streaming.{ProcessorDescription, StreamApplication}
+import io.gearpump.streaming.partitioner.PartitionerDescription
 import io.gearpump.streaming.source.DataSourceTask
 import io.gearpump.util.Graph
-import io.gearpump.streaming.partitioner.PartitionerDescription
-import io.gearpump.streaming.{ProcessorDescription, StreamApplication}
 import org.mockito.Mockito.when
 import org.scalatest._
 import org.scalatest.mock.MockitoSugar
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 class StreamAppSpec extends FlatSpec with Matchers with BeforeAndAfterAll with MockitoSugar {

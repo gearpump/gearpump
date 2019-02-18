@@ -13,14 +13,13 @@
  */
 package io.gearpump.streaming.examples.sol
 
-import java.time.Instant
-
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
+import java.time.Instant
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
-import io.gearpump.Message
 
 class SOLStreamProducerSpec extends WordSpec with Matchers {
 

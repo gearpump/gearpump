@@ -14,26 +14,24 @@
 
 package io.gearpump.services
 
-import scala.concurrent.duration._
-import scala.util.{Success, Try}
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import akka.testkit.{TestKit, TestProbe}
+import akka.testkit.TestActor.{AutoPilot, KeepRunning}
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import upickle.default.read
+import io.gearpump.cluster.{ApplicationStatus, TestUtil}
 import io.gearpump.cluster.AppMasterToMaster.GeneralAppMasterSummary
 import io.gearpump.cluster.ClientToMaster.{GetLastFailure, QueryAppMasterConfig, QueryHistoryMetrics, ResolveAppId}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
-import io.gearpump.cluster.TestUtil
-import io.gearpump.cluster.ApplicationStatus
 import io.gearpump.jarstore.JarStoreClient
-import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
-// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import scala.concurrent.duration._
+import scala.util.{Success, Try}
+import upickle.default.read
 
 class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
   with Matchers with BeforeAndAfterAll {

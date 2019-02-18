@@ -14,14 +14,13 @@
 
 package io.gearpump.cluster
 
-import java.io.Serializable
-
 import akka.actor.{Actor, ActorRef}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.MasterToClient.{ApplicationFailed, ApplicationResult, ApplicationSucceeded, ApplicationTerminated}
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.jarstore.FilePath
+import java.io.Serializable
 
 /**
  * This contains all information to run an application

@@ -17,11 +17,10 @@ package io.gearpump.transport
 import akka.actor._
 import akka.agent.Agent
 import com.github.ghik.silencer.silent
-import io.gearpump.transport.netty.Client.Close
 import io.gearpump.transport.netty.{Context, TaskMessage}
+import io.gearpump.transport.netty.Client.Close
 import io.gearpump.util.LogUtil
 import org.slf4j.Logger
-
 import scala.collection.immutable.LongMap
 import scala.concurrent._
 

@@ -15,11 +15,10 @@
 package io.gearpump.metrics
 
 import akka.actor.ActorRef
-import com.codahale.metrics.{MetricRegistry, Gauge => CodaGauge}
+import com.codahale.metrics.{Gauge => CodaGauge, MetricRegistry}
 import io.gearpump.metrics.Metrics.{Counter => CounterData, Gauge => GaugeData, Histogram => HistogramData, Meter => MeterData}
 import io.gearpump.metrics.MetricsReporterService.ReportTo
 import io.gearpump.util.LogUtil
-
 import scala.collection.JavaConverters._
 
 /**

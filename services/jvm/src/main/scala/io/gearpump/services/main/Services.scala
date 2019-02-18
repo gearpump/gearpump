@@ -14,8 +14,6 @@
 
 package io.gearpump.services.main
 
-import java.util.Random
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
@@ -25,13 +23,13 @@ import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, Gear}
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.services.{RestServices, SecurityService}
-import io.gearpump.util.LogUtil.ProcessType
 import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
+import io.gearpump.util.LogUtil.ProcessType
+import java.util.Random
 import org.slf4j.Logger
-import sun.misc.BASE64Encoder
-
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
+import sun.misc.BASE64Encoder
 
 /** Command line to start UI server */
 object Services extends AkkaApp with ArgumentsParser {

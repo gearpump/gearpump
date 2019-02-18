@@ -18,9 +18,9 @@ import akka.actor._
 import akka.pattern.ask
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge
+import io.gearpump.streaming._
 import io.gearpump.streaming.AppMasterToExecutor._
 import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterTask, UnRegisterTask}
-import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.AppMaster.{AllocateResourceTimeOut, LookupTaskActorRef, TaskActorRef}
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess}
 import io.gearpump.streaming.appmaster.DagManager.{GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, TaskLaunchData, WatchChange}
@@ -32,7 +32,6 @@ import io.gearpump.streaming.task._
 import io.gearpump.streaming.util.ActorPathUtil
 import io.gearpump.util.{Constants, LogUtil, RestartPolicy}
 import org.slf4j.Logger
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 

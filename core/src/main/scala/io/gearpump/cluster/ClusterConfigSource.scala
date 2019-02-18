@@ -14,10 +14,8 @@
 
 package io.gearpump.cluster
 
-import java.io.File
-
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions}
-
+import java.io.File
 import scala.language.implicitConversions
 
 /**

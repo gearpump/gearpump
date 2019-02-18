@@ -14,9 +14,8 @@
 
 package io.gearpump
 
-import java.time.Instant
-
 import io.gearpump.Time.MilliSeconds
+import java.time.Instant
 
 trait Message {
 

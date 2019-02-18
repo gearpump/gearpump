@@ -14,19 +14,16 @@
 
 package io.gearpump.jarstore
 
-import java.io.File
-import java.util.concurrent.TimeUnit
-
 import akka.actor.ActorSystem
 import com.google.common.io.Files
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.TestUtil
-import io.gearpump.util.{FileUtils, LogUtil}
-import io.gearpump.jarstore.local.LocalJarStore
-import io.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import io.gearpump.jarstore.FileServer._
-
+import io.gearpump.jarstore.local.LocalJarStore
+import io.gearpump.util.{FileUtils, LogUtil}
+import java.io.File
+import java.util.concurrent.TimeUnit
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

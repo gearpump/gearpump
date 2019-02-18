@@ -14,9 +14,8 @@
 
 package io.gearpump.streaming.state.impl
 
-import io.gearpump.streaming.transaction.api.{CheckpointStore, CheckpointStoreFactory}
 import io.gearpump.Time.MilliSeconds
-import io.gearpump.streaming.transaction.api.CheckpointStoreFactory
+import io.gearpump.streaming.transaction.api.{CheckpointStore, CheckpointStoreFactory}
 
 /**
  * an in memory store provided for test

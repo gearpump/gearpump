@@ -14,12 +14,11 @@
 
 package io.gearpump.streaming.examples.complexdag
 
-import java.time.Instant
-
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.source.Watermark
-import io.gearpump.Message
 import io.gearpump.streaming.task.{Task, TaskContext}
+import java.time.Instant
 
 class Source(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   import taskContext.output

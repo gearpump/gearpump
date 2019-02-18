@@ -14,21 +14,21 @@
 
 package io.gearpump.cluster.appmaster
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigValueFactory
-import io.gearpump.cluster.worker.WorkerId
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import io.gearpump.cluster.appmaster.ExecutorSystemLauncher._
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.Session
 import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, RegisterActorSystem}
 import io.gearpump.util.Constants
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class ExecutorSystemLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null

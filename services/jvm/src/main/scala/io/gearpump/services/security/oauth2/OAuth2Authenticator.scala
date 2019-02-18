@@ -14,11 +14,11 @@
 
 package io.gearpump.services.security.oauth2
 
-import scala.concurrent.{ExecutionContext, Future}
 import com.typesafe.config.Config
-import io.gearpump.util.Constants
 import io.gearpump.services.SecurityService.UserSession
+import io.gearpump.util.Constants
 import io.gearpump.util.Constants._
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  *

@@ -13,11 +13,11 @@
  */
 package io.gearpump.streaming.storage
 
-import scala.concurrent.Future
 import akka.actor.ActorRef
 import akka.pattern.ask
-import io.gearpump.util.Constants
 import io.gearpump.cluster.AppMasterToMaster.{GetAppData, GetAppDataResult, SaveAppData}
+import io.gearpump.util.Constants
+import scala.concurrent.Future
 
 /**
  * In memory application storage located on master nodes

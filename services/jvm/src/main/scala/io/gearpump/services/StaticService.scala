@@ -16,9 +16,9 @@ package io.gearpump.services
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.marshalling.ToResponseMarshallable._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.marshalling.ToResponseMarshallable._
 import akka.stream.Materializer
 import io.gearpump.util.Util
 

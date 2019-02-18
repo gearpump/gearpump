@@ -17,13 +17,12 @@ package io.gearpump.services
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Route, _}
+import akka.http.scaladsl.server.Directives._
 import akka.util.Timeout
 import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

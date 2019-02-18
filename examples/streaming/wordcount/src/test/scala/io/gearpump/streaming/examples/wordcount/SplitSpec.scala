@@ -13,16 +13,14 @@
  */
 package io.gearpump.streaming.examples.wordcount
 
-import java.time.Instant
-
 import akka.actor.ActorSystem
-import io.gearpump.Message
 import akka.testkit.TestProbe
+import io.gearpump.Message
 import io.gearpump.cluster.TestUtil
 import io.gearpump.streaming.MockUtil
+import java.time.Instant
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

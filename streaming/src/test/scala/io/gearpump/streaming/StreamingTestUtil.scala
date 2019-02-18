@@ -16,11 +16,11 @@ package io.gearpump.streaming
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit.TestActorRef
-import io.gearpump.util.Graph
-import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.{AppDescription, AppMasterContext, MiniCluster, UserConfig}
+import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.streaming.appmaster.AppMaster
+import io.gearpump.util.Graph
 
 object StreamingTestUtil {
   private var executorId = 0

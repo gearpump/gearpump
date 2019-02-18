@@ -14,22 +14,20 @@
 
 package io.gearpump.cluster.appmaster
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestProbe
-import io.gearpump.cluster.appmaster.{ExecutorSystem, ExecutorSystemScheduler, WorkerInfo}
-import io.gearpump.cluster.worker.WorkerId
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import io.gearpump.cluster.{AppJar, TestUtil}
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.appmaster.ExecutorSystemLauncher._
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler._
-import ExecutorSystemSchedulerSpec.{ExecutorSystemLauncherStarted, MockExecutorSystemLauncher}
-import io.gearpump.cluster.TestUtil
+import io.gearpump.cluster.appmaster.ExecutorSystemSchedulerSpec.{ExecutorSystemLauncherStarted, MockExecutorSystemLauncher}
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
-import io.gearpump.cluster.{AppJar, TestUtil}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.jarstore.FilePath
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
   val appId = 0

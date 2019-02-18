@@ -15,31 +15,28 @@ package io.gearpump.streaming.appmaster
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.{TestActorRef, TestProbe}
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.streaming.partitioner.HashPartitioner
+import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig, _}
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.ClientToMaster.GetLastFailure
 import io.gearpump.cluster.MasterToAppMaster._
 import io.gearpump.cluster.MasterToClient.LastFailure
-import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
 import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
+import io.gearpump.cluster.appmaster.{ApplicationRuntimeInfo, AppMasterRuntimeEnvironment}
 import io.gearpump.cluster.master.MasterProxy
-import io.gearpump.cluster._
-import io.gearpump.cluster.appmaster.{AppMasterRuntimeEnvironment, ApplicationRuntimeInfo}
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.jarstore.FilePath
+import io.gearpump.streaming.{DAG, Processor, StreamApplication}
 import io.gearpump.streaming.AppMasterToExecutor.StopTask
 import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, UnRegisterTask}
 import io.gearpump.streaming.appmaster.AppMaster.{LookupTaskActorRef, TaskActorRef}
+import io.gearpump.streaming.partitioner.HashPartitioner
 import io.gearpump.streaming.task.{TaskContext, _}
-import io.gearpump.streaming.{DAG, Processor, StreamApplication}
-import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import io.gearpump.util.{ActorUtil, Graph}
-import io.gearpump.util.Graph
+import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import io.gearpump.util.Graph._
 import org.scalatest._
-
 import scala.concurrent.duration._
 
 class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {

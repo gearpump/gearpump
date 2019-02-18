@@ -16,7 +16,6 @@ package io.gearpump
 
 import akka.actor.{Actor, Props, Terminated}
 import akka.testkit.TestProbe
-
 import scala.language.implicitConversions
 
 object TestProbeUtil {

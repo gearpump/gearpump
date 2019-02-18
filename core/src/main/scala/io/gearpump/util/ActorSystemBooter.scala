@@ -14,14 +14,12 @@
 
 package io.gearpump.util
 
-import java.util.concurrent.{TimeUnit, TimeoutException}
-
 import akka.actor._
 import com.typesafe.config.Config
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.util.LogUtil.ProcessType
+import java.util.concurrent.{TimeoutException, TimeUnit}
 import org.slf4j.Logger
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}

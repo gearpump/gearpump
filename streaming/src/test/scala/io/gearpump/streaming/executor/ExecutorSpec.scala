@@ -13,24 +13,24 @@
  */
 package io.gearpump.streaming.executor
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
-import org.mockito.Matchers._
-import org.mockito.Mockito.{times, _}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
+import io.gearpump.cluster.appmaster.WorkerInfo
+import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.streaming.{LifeTime, ProcessorDescription}
 import io.gearpump.streaming.AppMasterToExecutor._
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
-import TaskLauncherSpec.MockTask
-import io.gearpump.cluster.appmaster.WorkerInfo
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.transport.HostPort
+import io.gearpump.streaming.executor.TaskLauncherSpec.MockTask
 import io.gearpump.streaming.task.{Subscriber, TaskId}
-import io.gearpump.streaming.{LifeTime, ProcessorDescription}
+import io.gearpump.transport.HostPort
+import org.mockito.Matchers._
+import org.mockito.Mockito.{times, _}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   val appId = 0

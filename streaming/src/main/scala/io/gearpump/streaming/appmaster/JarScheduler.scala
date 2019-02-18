@@ -20,12 +20,11 @@ import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.AppJar
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.streaming.{DAG, ProcessorDescription}
 import io.gearpump.streaming.appmaster.JarScheduler.{ExecutorFailed, GetResourceRequestDetails, JarSchedulerImpl, NewDag, ResourceRequestDetail, ScheduleTask, TransitToNewDag}
 import io.gearpump.streaming.partitioner.PartitionerDescription
 import io.gearpump.streaming.task.TaskId
-import io.gearpump.streaming.{DAG, ProcessorDescription}
 import io.gearpump.util.{Constants, Graph, LogUtil}
-
 import scala.concurrent.Future
 
 /**

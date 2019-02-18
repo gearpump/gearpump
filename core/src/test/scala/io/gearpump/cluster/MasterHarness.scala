@@ -14,22 +14,20 @@
 
 package io.gearpump.cluster
 
-import java.io.File
-import java.net.{InetSocketAddress, Socket, SocketTimeoutException, URLClassLoader, UnknownHostException}
-import java.util.Properties
-import java.util.concurrent.{Executors, TimeUnit}
-
 import akka.actor.{Actor, ActorSystem, Address, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigValueFactory}
 import io.gearpump.cluster.MasterHarness._
 import io.gearpump.cluster.client.{RemoteRuntimeEnvironment, RuntimeEnvironment}
-import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorUtil, FileUtils, LogUtil}
-
+import io.gearpump.util.Constants._
+import java.io.File
+import java.net.{InetSocketAddress, Socket, SocketTimeoutException, UnknownHostException, URLClassLoader}
+import java.util.Properties
+import java.util.concurrent.{Executors, TimeUnit}
 import scala.collection.JavaConverters._
-import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.duration.Duration
 
 trait MasterHarness {
 

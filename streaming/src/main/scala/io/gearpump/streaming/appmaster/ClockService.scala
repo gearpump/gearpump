@@ -14,25 +14,23 @@
 
 package io.gearpump.streaming.appmaster
 
+import akka.actor.{Actor, ActorRef, Cancellable, Stash}
+import com.google.common.primitives.Longs
+import io.gearpump.Time
+import io.gearpump.Time.MilliSeconds
+import io.gearpump.cluster.ClientToMaster.GetStallingTasks
+import io.gearpump.streaming._
+import io.gearpump.streaming.AppMasterToMaster.StallingTasks
+import io.gearpump.streaming.appmaster.ClockService.HealthChecker.ClockValue
+import io.gearpump.streaming.source.Watermark
+import io.gearpump.streaming.storage.AppDataStore
+import io.gearpump.streaming.task._
+import io.gearpump.util.LogUtil
 import java.time.Instant
 import java.util
 import java.util.Date
 import java.util.concurrent.TimeUnit
-
-import akka.actor.{Actor, ActorRef, Cancellable, Stash}
-import com.google.common.primitives.Longs
-import io.gearpump.Time
-import io.gearpump.streaming.source.Watermark
-import io.gearpump.streaming.storage.AppDataStore
-import io.gearpump.util.LogUtil
-import io.gearpump.Time.MilliSeconds
-import io.gearpump.cluster.ClientToMaster.GetStallingTasks
-import io.gearpump.streaming.AppMasterToMaster.StallingTasks
-import io.gearpump.streaming._
-import io.gearpump.streaming.appmaster.ClockService.HealthChecker.ClockValue
-import io.gearpump.streaming.task._
 import org.slf4j.Logger
-
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -44,8 +42,8 @@ class ClockService(
     store: AppDataStore) extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
-  import ClockService._
   import context.dispatcher
+  import ClockService._
 
   private val healthChecker = new HealthChecker(stallingThresholdSeconds = 60)
   private var healthCheckScheduler: Cancellable = _

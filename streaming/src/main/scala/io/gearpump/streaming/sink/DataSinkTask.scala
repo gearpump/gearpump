@@ -14,11 +14,10 @@
 
 package io.gearpump.streaming.sink
 
-import java.time.Instant
-
-import io.gearpump.cluster.UserConfig
 import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.task.{Task, TaskContext}
+import java.time.Instant
 
 object DataSinkTask {
   val DATA_SINK = "data_sink"

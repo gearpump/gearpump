@@ -14,21 +14,20 @@
 
 package io.gearpump.cluster.master
 
-import scala.util.Success
 import akka.actor._
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
-import io.gearpump.cluster.worker.WorkerId
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.AppMasterToWorker.{LaunchExecutor, ShutdownExecutor}
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
-import io.gearpump.cluster.MasterHarness
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorSystemBooter._
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import scala.util.Success
 
 class AppMasterLauncherSpec extends FlatSpec with Matchers
   with BeforeAndAfterEach with MasterHarness {

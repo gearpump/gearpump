@@ -14,9 +14,9 @@
 package io.gearpump.streaming.examples.complexdag
 
 import akka.actor.ActorSystem
+import io.gearpump.Message
 import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.streaming.MockUtil
-import io.gearpump.Message
 import io.gearpump.streaming.MockUtil._
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}

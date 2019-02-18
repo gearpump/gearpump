@@ -14,13 +14,11 @@
 
 package io.gearpump.streaming.examples.complexdag
 
+import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.ClientToMaster.SubmitApplication
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import io.gearpump.cluster.{MasterHarness, TestUtil}
-import io.gearpump.cluster.TestUtil
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
-
 import scala.concurrent.Future
 import scala.util.Success
 

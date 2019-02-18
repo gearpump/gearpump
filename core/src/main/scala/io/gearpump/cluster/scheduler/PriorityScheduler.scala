@@ -15,12 +15,11 @@
 package io.gearpump.cluster.scheduler
 
 import akka.actor.ActorRef
-import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.scheduler.Relaxation._
 import io.gearpump.cluster.scheduler.Scheduler.PendingRequest
-
+import io.gearpump.cluster.worker.WorkerId
 import scala.collection.mutable
 
 /** Assign resource to application based on the priority of the application */

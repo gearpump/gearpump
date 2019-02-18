@@ -14,16 +14,15 @@
 
 package io.gearpump.streaming.dsl.task
 
-import java.time.Instant
-import java.util.function.Consumer
-
 import com.gs.collections.impl.map.mutable.UnifiedMap
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.source.Watermark
 import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.Constants.{GEARPUMP_STREAMING_GROUPBY_FUNCTION, GEARPUMP_STREAMING_OPERATOR}
 import io.gearpump.streaming.dsl.window.impl.{StreamingOperator, TimestampedValue}
+import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
+import java.time.Instant
+import java.util.function.Consumer
 
 /**
  * Processes messages in groups as defined by groupBy function.

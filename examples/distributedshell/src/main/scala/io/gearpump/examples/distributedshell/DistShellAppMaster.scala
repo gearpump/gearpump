@@ -13,19 +13,18 @@
  */
 package io.gearpump.examples.distributedshell
 
-import io.gearpump.cluster.MasterToAppMaster.WorkerList
-
-import scala.concurrent.Future
 import akka.actor.{Deploy, Props}
 import akka.pattern.{ask, pipe}
 import akka.remote.RemoteScope
 import com.typesafe.config.Config
-import org.slf4j.Logger
-import io.gearpump.cluster.ClientToMaster.ShutdownApplication
-import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout}
 import io.gearpump.cluster._
+import io.gearpump.cluster.ClientToMaster.ShutdownApplication
+import io.gearpump.cluster.MasterToAppMaster.WorkerList
+import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemJvmConfig, ExecutorSystemStarted, StartExecutorSystemTimeout}
 import io.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult, ShellCommandResultAggregator}
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
+import org.slf4j.Logger
+import scala.concurrent.Future
 
 class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
   extends ApplicationMaster {
@@ -44,7 +43,7 @@ class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
 
   override def receive: Receive = {
     case ExecutorSystemStarted(executorSystem, _) =>
-      import executorSystem.{address, resource => executorResource, worker}
+      import executorSystem.{address, worker, resource => executorResource}
       val executorContext = ExecutorContext(currentExecutorId, worker, appId, app.name,
         self, executorResource)
       // Start executor

@@ -15,7 +15,6 @@ package io.gearpump.cluster.scheduler
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, WorkerRegistered}
@@ -24,8 +23,8 @@ import io.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Priority.{HIGH, LOW, NORMAL}
 import io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
+import io.gearpump.cluster.worker.WorkerId
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
 import scala.concurrent.duration._
 
 class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender

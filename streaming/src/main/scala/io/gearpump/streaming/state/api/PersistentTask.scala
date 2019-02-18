@@ -14,16 +14,14 @@
 
 package io.gearpump.streaming.state.api
 
-import java.time.Instant
-
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.state.impl.{CheckpointManager, PersistentStateConfig}
-import io.gearpump.streaming.transaction.api.CheckpointStoreFactory
-import io.gearpump.util.LogUtil
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
+import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.state.impl.{CheckpointManager, PersistentStateConfig}
 import io.gearpump.streaming.task.{Task, TaskContext, UpdateCheckpointClock}
+import io.gearpump.streaming.transaction.api.CheckpointStoreFactory
+import io.gearpump.util.LogUtil
+import java.time.Instant
 
 object PersistentTask {
   val LOG = LogUtil.getLogger(getClass)

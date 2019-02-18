@@ -16,8 +16,8 @@ package io.gearpump.jarstore
 
 import akka.actor.{Actor, Stash}
 import akka.pattern.pipe
-import io.gearpump.util.Constants
 import io.gearpump.cluster.ClientToMaster.{GetJarStoreServer, JarStoreServerAddress}
+import io.gearpump.util.Constants
 
 class JarStoreServer(jarStoreRootPath: String) extends Actor with Stash {
   private val host = context.system.settings.config.getString(Constants.GEARPUMP_HOSTNAME)

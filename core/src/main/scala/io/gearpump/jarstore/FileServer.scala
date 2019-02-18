@@ -13,26 +13,24 @@
  */
 package io.gearpump.jarstore
 
-import java.io.File
-
 import akka.Done
-
-import scala.concurrent.{ExecutionContext, Future}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest, MediaTypes, Multipart, _}
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ActorMaterializer, IOResult}
 import akka.stream.scaladsl.{FileIO, Sink, Source}
-import spray.json.DefaultJsonProtocol._
-import spray.json.JsonFormat
 import io.gearpump.jarstore.FileDirective._
 import io.gearpump.jarstore.FileServer.Port
+import java.io.File
+import scala.concurrent.{ExecutionContext, Future}
+import spray.json.DefaultJsonProtocol._
+import spray.json.JsonFormat
 
 /**
  * A simple file server implemented with akka-http to store/fetch large

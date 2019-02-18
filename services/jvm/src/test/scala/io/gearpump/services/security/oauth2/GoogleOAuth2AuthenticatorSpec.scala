@@ -14,22 +14,20 @@
 
 package io.gearpump.services.security.oauth2
 
-import scala.collection.JavaConverters._
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.Uri.{Path, Query}
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
 import io.gearpump.security.Authenticator
-import org.scalatest.FlatSpec
-// NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.services.security.oauth2.GoogleOAuth2AuthenticatorSpec.MockGoogleAuthenticator
 import io.gearpump.services.security.oauth2.impl.GoogleOAuth2Authenticator
+import org.scalatest.FlatSpec
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class GoogleOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
 

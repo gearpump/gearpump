@@ -14,12 +14,11 @@
 
 package io.gearpump.streaming.state.impl
 
-import org.slf4j.Logger
 import io.gearpump.Time.MilliSeconds
-import io.gearpump.streaming.state.api.{Monoid, Serializer}
-import NonWindowState._
 import io.gearpump.streaming.state.api.{Monoid, MonoidState, Serializer}
+import io.gearpump.streaming.state.impl.NonWindowState._
 import io.gearpump.util.LogUtil
+import org.slf4j.Logger
 
 object NonWindowState {
   val LOG: Logger = LogUtil.getLogger(classOf[NonWindowState[_]])

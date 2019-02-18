@@ -14,15 +14,14 @@
 package io.gearpump.cluster.scheduler
 
 import akka.actor.{Actor, ActorRef}
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.util.LogUtil
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, UpdateResourceSucceed, WorkerRegistered}
 import io.gearpump.cluster.WorkerToMaster.ResourceUpdate
 import io.gearpump.cluster.master.Master.WorkerTerminated
 import io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.util.LogUtil
 import org.slf4j.Logger
-
 import scala.collection.mutable
 
 /**

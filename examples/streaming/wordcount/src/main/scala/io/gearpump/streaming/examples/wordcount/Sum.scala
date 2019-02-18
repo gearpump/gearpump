@@ -14,15 +14,14 @@
 
 package io.gearpump.streaming.examples.wordcount
 
+import akka.actor.Cancellable
+import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.task.{Task, TaskContext}
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.Cancellable
-import io.gearpump.cluster.UserConfig
-import io.gearpump.Message
-import io.gearpump.streaming.task.{Task, TaskContext}
 
 class Sum(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
   private[wordcount] val map: mutable.HashMap[String, Long] = new mutable.HashMap[String, Long]()

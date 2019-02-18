@@ -15,13 +15,13 @@
 package io.gearpump.services.util
 
 import io.gearpump.cluster.UserConfig
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-import upickle.default.{read, write}
 import io.gearpump.metrics.Metrics.{Counter, MetricType}
-import io.gearpump.util.Graph
 import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.appmaster.{ProcessorSummary, StreamAppMasterSummary}
+import io.gearpump.util.Graph
+import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import upickle.default.{read, write}
 
 class UpickleSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 

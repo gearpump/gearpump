@@ -14,21 +14,10 @@
 
 package io.gearpump.cluster.worker
 
-import java.io.File
-import java.lang.management.ManagementFactory
-import java.net.URL
-import java.util.concurrent.{Executors, TimeUnit}
-
-import akka.actor.SupervisorStrategy.Stop
 import akka.actor._
+import akka.actor.SupervisorStrategy.Stop
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
-import io.gearpump.cluster.ClusterConfig
-import io.gearpump.metrics.Metrics.ReportMetrics
-import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
-import io.gearpump.util.ActorSystemBooter.Daemon
-import io.gearpump.util.Constants._
-import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
-import io.gearpump.util.{ActorUtil, Constants, HistoryMetricsService, LogUtil, RichProcess, TimeOutScheduler, Util}
+import io.gearpump.cluster.{ClusterConfig, ExecutorJVMConfig}
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.AppMasterToWorker._
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig}
@@ -37,14 +26,22 @@ import io.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, UpdateResourceS
 import io.gearpump.cluster.WorkerToAppMaster._
 import io.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, ResourceUpdate}
 import io.gearpump.cluster.master.Master.MasterInfo
-import io.gearpump.cluster.ExecutorJVMConfig
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.cluster.worker.Worker.ExecutorWatcher
 import io.gearpump.jarstore.JarStoreClient
+import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
+import io.gearpump.metrics.Metrics.ReportMetrics
+import io.gearpump.util.{ActorUtil, Constants, HistoryMetricsService, LogUtil, RichProcess, TimeOutScheduler, Util}
+import io.gearpump.util.ActorSystemBooter.Daemon
+import io.gearpump.util.Constants._
+import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
+import java.io.File
+import java.lang.management.ManagementFactory
+import java.net.URL
+import java.util.concurrent.{Executors, TimeUnit}
 import org.slf4j.Logger
-
-import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
 /**

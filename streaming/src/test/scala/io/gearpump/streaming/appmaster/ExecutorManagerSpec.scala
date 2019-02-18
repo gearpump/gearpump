@@ -18,14 +18,12 @@ import akka.actor._
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import io.gearpump.TestProbeUtil
-import io.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
-import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.cluster.{TestUtil, UserConfig, _}
 import io.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
-import io.gearpump.cluster.{TestUtil, UserConfig}
-import io.gearpump.cluster._
-import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemStarted, StartExecutorSystemTimeout, StartExecutorSystems}
 import io.gearpump.cluster.appmaster.{ExecutorSystem, WorkerInfo}
+import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.{ExecutorSystemStarted, StartExecutorSystems, StartExecutorSystemTimeout}
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.jarstore.FilePath
 import io.gearpump.streaming.ExecutorId
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterExecutor
@@ -34,7 +32,6 @@ import io.gearpump.streaming.appmaster.ExecutorManagerSpec.StartExecutorActorPle
 import io.gearpump.util.ActorSystemBooter.BindLifeCycle
 import io.gearpump.util.LogUtil
 import org.scalatest._
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

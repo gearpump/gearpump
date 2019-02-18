@@ -14,19 +14,18 @@
 
 package io.gearpump.transport.netty
 
+import akka.actor.Actor
+import io.gearpump.transport.HostPort
+import io.gearpump.util.LogUtil
 import java.net.{ConnectException, InetSocketAddress}
 import java.nio.channels.ClosedChannelException
 import java.util
 import java.util.Random
 import java.util.concurrent.TimeUnit
-
-import scala.concurrent.duration.FiniteDuration
-import scala.language.implicitConversions
-import akka.actor.Actor
-import io.gearpump.transport.HostPort
-import io.gearpump.util.LogUtil
 import org.jboss.netty.channel._
 import org.slf4j.Logger
+import scala.concurrent.duration.FiniteDuration
+import scala.language.implicitConversions
 
 /**
  * Netty Client implemented as an actor, on the other side, there is a netty server Actor.
@@ -100,7 +99,6 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
       } fail { (current, ex) =>
         LOG.error(s"failed to connect to $name, reason: ${ex.getMessage}, class: ${ex.getClass}")
         current.close()
-        import context.dispatcher
         context.system.scheduler.scheduleOnce(
           new FiniteDuration(
             getSleepTimeMs(tries), TimeUnit.MILLISECONDS), self, Connect(tries + 1))

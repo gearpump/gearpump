@@ -13,14 +13,13 @@
  */
 package io.gearpump.streaming.examples.sol
 
-import java.time.Instant
-
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
+import java.time.Instant
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{FlatSpec, Matchers}
-import io.gearpump.Message
 
 class SOLStreamProcessorSpec extends FlatSpec with Matchers {
 

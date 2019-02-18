@@ -16,9 +16,9 @@ package io.gearpump.streaming.source
 
 import akka.actor.ActorSystem
 import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.{Constants, Processor}
 import io.gearpump.streaming.dsl.plan.functions.DummyRunner
 import io.gearpump.streaming.dsl.window.impl.{FlatMapOperator, StreamingOperator}
-import io.gearpump.streaming.{Constants, Processor}
 
 /**
  * Utility that helps user to create a DAG starting with [[DataSourceTask]]

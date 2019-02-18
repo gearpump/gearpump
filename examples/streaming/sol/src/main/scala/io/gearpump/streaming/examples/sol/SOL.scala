@@ -17,8 +17,8 @@ package io.gearpump.streaming.examples.sol
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
-import io.gearpump.streaming.partitioner.ShufflePartitioner
 import io.gearpump.streaming.{Processor, StreamApplication}
+import io.gearpump.streaming.partitioner.ShufflePartitioner
 import io.gearpump.util.{AkkaApp, Graph}
 import io.gearpump.util.Graph._
 

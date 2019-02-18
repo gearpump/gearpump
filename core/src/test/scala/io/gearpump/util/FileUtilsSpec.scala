@@ -15,10 +15,8 @@
 package io.gearpump.util
 
 import com.google.common.io.Files
-
 import java.io.File
 import java.util
-
 import org.scalatest.FlatSpec
 
 class FileUtilsSpec extends FlatSpec {

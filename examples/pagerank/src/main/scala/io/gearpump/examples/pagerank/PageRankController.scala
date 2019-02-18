@@ -13,13 +13,12 @@
  */
 package io.gearpump.examples.pagerank
 
-import java.time.Instant
-
 import akka.actor.Actor.Receive
-import PageRankController.Tick
-import PageRankWorker.LatestWeight
 import io.gearpump.cluster.UserConfig
+import io.gearpump.examples.pagerank.PageRankController.Tick
+import io.gearpump.examples.pagerank.PageRankWorker.LatestWeight
 import io.gearpump.streaming.task._
+import java.time.Instant
 
 class PageRankController(taskContext: TaskContext, conf: UserConfig)
   extends Task(taskContext, conf) {

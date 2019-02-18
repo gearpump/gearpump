@@ -14,15 +14,13 @@
 
 package io.gearpump.cluster.master
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ddata.{DistributedData, LWWMap, LWWMapKey}
 import akka.cluster.ddata.Replicator._
 import io.gearpump.util.LogUtil
+import java.util.concurrent.TimeUnit
 import org.slf4j.Logger
-
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.Duration
 

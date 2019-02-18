@@ -14,14 +14,13 @@
 
 package io.gearpump.streaming.metrics
 
-import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
 import com.typesafe.config.Config
-import io.gearpump.metrics.MetricsAggregator
-import io.gearpump.util.{Constants, LogUtil}
 import io.gearpump.cluster.ClientToMaster.ReadOption
 import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
-import io.gearpump.util.LogUtil
+import io.gearpump.metrics.MetricsAggregator
+import io.gearpump.util.{Constants, LogUtil}
+import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success, Try}
 
 /**
  * Filters the latest metrics data by specifying a

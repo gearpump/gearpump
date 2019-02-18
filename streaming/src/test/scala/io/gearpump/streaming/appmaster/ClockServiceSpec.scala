@@ -16,17 +16,15 @@ package io.gearpump.streaming.appmaster
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import io.gearpump.cluster.{TestUtil, UserConfig}
-import io.gearpump.streaming.partitioner.HashPartitioner
-import io.gearpump.streaming.storage.AppDataStore
-import io.gearpump.util.Graph
-import io.gearpump.streaming.partitioner.{Partitioner, PartitionerDescription}
+import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess, HealthChecker, ProcessorClock}
 import io.gearpump.streaming.appmaster.ClockServiceSpec.Store
+import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner, PartitionerDescription}
+import io.gearpump.streaming.storage.AppDataStore
 import io.gearpump.streaming.task.{GetLatestMinClock, GetStartClock, UpstreamMinClock, _}
-import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
+import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
 import scala.concurrent.{Future, Promise}
 
 class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender

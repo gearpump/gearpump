@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.javaapi;
 
-import io.gearpump.streaming.partitioner.Partitioner;
 import io.gearpump.streaming.Processor;
+import io.gearpump.streaming.partitioner.Partitioner;
 import io.gearpump.streaming.task.Task;
 
 /**

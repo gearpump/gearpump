@@ -18,7 +18,6 @@ import akka.testkit.TestProbe
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{FlatSpec, Matchers}
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

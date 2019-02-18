@@ -14,26 +14,23 @@
 
 package io.gearpump.streaming.dsl.plan
 
-import java.time.Instant
-
 import akka.actor.ActorSystem
+import io.gearpump.Message
 import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.dsl.api.functions.ReduceFunction
-import io.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
-import io.gearpump.streaming.sink.DataSink
-import io.gearpump.streaming.source.DataSource
-import io.gearpump.util.Graph
-import io.gearpump.Message
-import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.dsl.plan.PlannerSpec._
 import io.gearpump.streaming.dsl.plan.functions.{FlatMapper, FoldRunner}
+import io.gearpump.streaming.dsl.scalaapi.functions.FlatMapFunction
 import io.gearpump.streaming.dsl.window.api.GlobalWindows
 import io.gearpump.streaming.partitioner.{CoLocationPartitioner, GroupByPartitioner}
+import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.source.DataSource
 import io.gearpump.streaming.task.{Task, TaskContext}
-import org.scalatest.mock.MockitoSugar
+import io.gearpump.util.Graph
+import java.time.Instant
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-
+import org.scalatest.mock.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

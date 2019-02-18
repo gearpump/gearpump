@@ -17,7 +17,6 @@ package io.gearpump.streaming
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.task.Task
 import io.gearpump.util.ReferenceEqual
-
 import scala.reflect.ClassTag
 
 /**

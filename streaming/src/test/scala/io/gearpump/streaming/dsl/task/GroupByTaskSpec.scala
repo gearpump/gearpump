@@ -13,16 +13,14 @@
  */
 package io.gearpump.streaming.dsl.task
 
-import java.time.Instant
-
-import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.source.Watermark
 import io.gearpump.Message
+import io.gearpump.cluster.UserConfig
+import io.gearpump.streaming.{Constants, MockUtil}
 import io.gearpump.streaming.dsl.plan.functions.DummyRunner
 import io.gearpump.streaming.dsl.window.api.GlobalWindows
-import io.gearpump.streaming.Constants
 import io.gearpump.streaming.dsl.window.impl.WindowOperator
+import io.gearpump.streaming.source.Watermark
+import java.time.Instant
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}

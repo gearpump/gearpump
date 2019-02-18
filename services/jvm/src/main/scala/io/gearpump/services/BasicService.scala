@@ -14,7 +14,6 @@
 
 package io.gearpump.services
 
-import scala.concurrent.ExecutionContext
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `no-cache`}
 import akka.http.scaladsl.model.headers.`Cache-Control`
@@ -22,6 +21,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import io.gearpump.util.Constants
+import scala.concurrent.ExecutionContext
 
 trait RouteService {
   def route: Route

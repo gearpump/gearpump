@@ -14,9 +14,8 @@
 
 package io.gearpump.streaming.partitioner
 
-import java.util.Random
-
 import io.gearpump.Message
+import java.util.Random
 
 /**
  * Round Robin partition the data to downstream processor tasks.

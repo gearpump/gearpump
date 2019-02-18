@@ -14,25 +14,23 @@
 
 package io.gearpump.cluster.client
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigValueFactory}
+import io.gearpump.cluster.{ClusterConfig, _}
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication, SubmitApplication}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
 import io.gearpump.cluster.MasterToClient._
-import io.gearpump.cluster.{ClusterConfig, _}
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.jarstore.JarStoreClient
-import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
+import io.gearpump.util.Constants._
+import java.util.concurrent.TimeUnit
 import org.slf4j.Logger
-
 import scala.collection.JavaConverters._
+import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
 /**

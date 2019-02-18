@@ -18,7 +18,6 @@ import com.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
 import com.typesafe.config.Config
 import io.gearpump.util.{Constants, LogUtil}
 import org.slf4j.Logger
-import io.gearpump.util.LogUtil
 
 class GearpumpSerialization(config: Config) {
 

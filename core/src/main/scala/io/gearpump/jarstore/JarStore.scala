@@ -14,13 +14,11 @@
 
 package io.gearpump.jarstore
 
+import com.typesafe.config.Config
+import io.gearpump.util.Util
 import java.io.{InputStream, OutputStream}
 import java.net.URI
 import java.util.ServiceLoader
-
-import com.typesafe.config.Config
-import io.gearpump.util.Util
-
 import scala.collection.JavaConverters._
 
 case class FilePath(path: String)

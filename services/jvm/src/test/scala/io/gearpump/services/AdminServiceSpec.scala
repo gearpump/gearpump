@@ -14,16 +14,15 @@
 
 package io.gearpump.services
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 // NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
 
 class AdminServiceSpec
   extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {

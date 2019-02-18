@@ -13,12 +13,11 @@
  */
 package io.gearpump.examples.distributedshell
 
+import io.gearpump.cluster.{Application, UserConfig}
 import io.gearpump.cluster.client.ClientContext
+import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.util.{AkkaApp, LogUtil}
 import org.slf4j.Logger
-import io.gearpump.cluster.{Application, UserConfig}
-import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import io.gearpump.util.LogUtil
 
 /** Demo application to distribute and execute shell command on all machines of the cluster */
 object DistributedShell extends AkkaApp with ArgumentsParser {

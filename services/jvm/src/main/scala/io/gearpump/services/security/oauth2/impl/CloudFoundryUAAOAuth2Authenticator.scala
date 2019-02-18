@@ -14,20 +14,18 @@
 
 package io.gearpump.services.security.oauth2.impl
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
-
-import com.typesafe.config.Config
 import com.github.scribejava.core.builder.api.DefaultApi20
 import com.github.scribejava.core.model._
 import com.github.scribejava.core.oauth.OAuth20Service
 import com.ning.http.client
 import com.ning.http.client.{AsyncCompletionHandler, AsyncHttpClient}
-import spray.json.{JsString, _}
-import sun.misc.BASE64Encoder
-
+import com.typesafe.config.Config
 import io.gearpump.services.SecurityService.UserSession
 import io.gearpump.services.security.oauth2.impl.BaseOAuth2Authenticator.BaseApi20
 import io.gearpump.util.Constants._
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import spray.json.{JsString, _}
+import sun.misc.BASE64Encoder
 
 /**
  *

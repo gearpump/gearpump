@@ -15,8 +15,7 @@ package io.gearpump.cluster.embedded
 
 import com.typesafe.config.Config
 import io.gearpump.cluster.client.{ClientContext, RuntimeEnvironment}
-import io.gearpump.cluster.client.ClientContext
-import EmbeddedRuntimeEnvironment.EmbeddedClientContext
+import io.gearpump.cluster.embedded.EmbeddedRuntimeEnvironment.EmbeddedClientContext
 
 /**
  * The EmbeddedRuntimeEnvironment is initiated when user trying to launch their application

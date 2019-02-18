@@ -15,8 +15,8 @@
 package io.gearpump.cluster.appmaster
 
 import akka.actor.{ActorRef, Address, PoisonPill}
-import io.gearpump.util.ActorSystemBooter.BindLifeCycle
 import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.util.ActorSystemBooter.BindLifeCycle
 
 /**
  * Configurations to start an executor system on remote machine

@@ -13,12 +13,10 @@
  */
 package io.gearpump.cluster.worker
 
-import java.io.File
-
 import com.typesafe.config.Config
-import io.gearpump.util.{LogUtil, RichProcess, Util}
 import io.gearpump.cluster.scheduler.Resource
-import io.gearpump.util.{LogUtil, RichProcess}
+import io.gearpump.util.{LogUtil, RichProcess, Util}
+import java.io.File
 import org.slf4j.Logger
 
 /** Launcher to start an executor process */

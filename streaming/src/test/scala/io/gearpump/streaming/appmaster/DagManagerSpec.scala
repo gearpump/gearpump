@@ -17,15 +17,13 @@ package io.gearpump.streaming.appmaster
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import io.gearpump.cluster.{TestUtil, UserConfig}
-import io.gearpump.streaming.partitioner.HashPartitioner
-import io.gearpump.util.Graph
-import io.gearpump.streaming.partitioner.Partitioner
-import io.gearpump.streaming.appmaster.DagManager.{DAGOperationFailed, DAGOperationSuccess, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}
-import io.gearpump.streaming.task.{Subscriber, TaskActor}
 import io.gearpump.streaming._
+import io.gearpump.streaming.appmaster.DagManager.{DAGOperationFailed, DAGOperationSuccess, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}
+import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
+import io.gearpump.streaming.task.{Subscriber, TaskActor}
+import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

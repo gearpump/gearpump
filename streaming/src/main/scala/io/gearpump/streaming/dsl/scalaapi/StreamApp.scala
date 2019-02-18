@@ -14,19 +14,16 @@
 
 package io.gearpump.streaming.dsl.scalaapi
 
-import java.time.Instant
-
 import akka.actor.ActorSystem
+import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.streaming.source.{DataSource, Watermark}
-import io.gearpump.util.Graph
-import io.gearpump.Message
 import io.gearpump.streaming.StreamApplication
 import io.gearpump.streaming.dsl.plan._
-import io.gearpump.streaming.source.Watermark
+import io.gearpump.streaming.source.{DataSource, Watermark}
 import io.gearpump.streaming.task.TaskContext
-
+import io.gearpump.util.Graph
+import java.time.Instant
 import scala.language.implicitConversions
 
 /**

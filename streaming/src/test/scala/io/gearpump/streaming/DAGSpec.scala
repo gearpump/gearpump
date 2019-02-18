@@ -16,10 +16,9 @@ package io.gearpump.streaming
 
 import io.gearpump.streaming.partitioner.PartitionerDescription
 import io.gearpump.streaming.task.TaskId
-import io.gearpump.util.Graph
 import org.scalacheck.Gen
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.prop.PropertyChecks
 
 class DAGSpec extends PropSpec with PropertyChecks with Matchers {
 

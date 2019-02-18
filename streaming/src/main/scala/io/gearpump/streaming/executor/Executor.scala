@@ -14,15 +14,13 @@
 
 package io.gearpump.streaming.executor
 
-import java.lang.management.ManagementFactory
-
-import akka.actor.SupervisorStrategy.Resume
 import akka.actor._
+import akka.actor.SupervisorStrategy.Resume
 import com.typesafe.config.Config
-import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.{ClusterConfig, ExecutorContext, UserConfig}
-import io.gearpump.metrics.Metrics.ReportMetrics
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
+import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.AppMasterToExecutor.{MsgLostException, TasksChanged, TasksLaunched, _}
 import io.gearpump.streaming.ExecutorToAppMaster.{MessageLoss, RegisterExecutor, RegisterTask, UnRegisterTask}
@@ -31,11 +29,11 @@ import io.gearpump.streaming.executor.Executor._
 import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.task.{Subscriber, TaskId}
 import io.gearpump.transport.{Express, HostPort}
-import io.gearpump.util.Constants._
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, TimeOutScheduler}
+import io.gearpump.util.Constants._
+import java.lang.management.ManagementFactory
 import org.apache.commons.lang.exception.ExceptionUtils
 import org.slf4j.Logger
-
 import scala.concurrent.duration._
 
 /**

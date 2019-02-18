@@ -14,9 +14,8 @@
 
 package io.gearpump.streaming
 
-import java.io.{DataInput, DataOutput}
-
 import io.gearpump.streaming.task._
+import java.io.{DataInput, DataOutput}
 
 class TaskIdSerializer extends TaskMessageSerializer[TaskId] {
   override def getLength(obj: TaskId): Int = 8

@@ -14,13 +14,12 @@
 
 package io.gearpump.streaming.appmaster
 
-import io.gearpump.util.Graph
 import io.gearpump.Time.MilliSeconds
+import io.gearpump.cluster.{ApplicationStatus, UserConfig}
 import io.gearpump.cluster.AppMasterToMaster.AppMasterSummary
-import io.gearpump.cluster.UserConfig
-import io.gearpump.cluster.ApplicationStatus
-import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
 import io.gearpump.streaming.{ExecutorId, LifeTime, ProcessorId}
+import io.gearpump.streaming.appmaster.AppMaster.ExecutorBrief
+import io.gearpump.util.Graph
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 
 /** Stream application summary, used for REST API */

@@ -14,9 +14,8 @@
 
 package io.gearpump.security
 
+import io.gearpump.security.Authenticator.AuthenticationResult
 import scala.concurrent.{ExecutionContext, Future}
-
-import Authenticator.AuthenticationResult
 
 /**
  * Authenticator for UI dashboard.

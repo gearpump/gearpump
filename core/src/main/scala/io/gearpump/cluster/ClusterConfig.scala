@@ -14,11 +14,10 @@
 
 package io.gearpump.cluster
 
-import java.io.File
-
 import com.typesafe.config._
-import io.gearpump.util.Constants._
 import io.gearpump.util.{Constants, FileUtils, LogUtil, Util}
+import io.gearpump.util.Constants._
+import java.io.File
 
 /**
  *

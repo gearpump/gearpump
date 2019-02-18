@@ -15,10 +15,10 @@
 package io.gearpump.streaming.task
 
 import akka.actor.{ActorRef, ExtendedActorSystem}
-import io.gearpump.transport.netty.TaskMessage
-import io.gearpump.util.AkkaHelper
 import io.gearpump.Message
 import io.gearpump.transport.{Express, HostPort}
+import io.gearpump.transport.netty.TaskMessage
+import io.gearpump.util.AkkaHelper
 /**
  * ExpressTransport wire the networking function from default akka
  * networking to customized implementation [[io.gearpump.transport.Express]].

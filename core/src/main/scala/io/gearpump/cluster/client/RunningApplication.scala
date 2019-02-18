@@ -18,17 +18,13 @@ import akka.pattern.ask
 import akka.util.Timeout
 import io.gearpump.cluster.ClientToMaster.{RegisterAppResultListener, ResolveAppId, ShutdownApplication}
 import io.gearpump.cluster.MasterToClient._
-import RunningApplication._
-import io.gearpump.util.LogUtil
-import org.slf4j.Logger
+import io.gearpump.cluster.client.RunningApplication._
+import io.gearpump.util.{ActorUtil, LogUtil}
 import java.time.Duration
 import java.util.concurrent.TimeUnit
-
-import io.gearpump.util.{ActorUtil, LogUtil}
-
+import org.slf4j.Logger
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 class RunningApplication(val appId: Int, master: ActorRef, timeout: Timeout) {

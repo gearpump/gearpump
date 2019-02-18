@@ -14,8 +14,6 @@
 
 package io.gearpump.streaming.metrics
 
-import java.util
-
 import com.google.common.collect.Iterators
 import com.typesafe.config.Config
 import io.gearpump.Time.MilliSeconds
@@ -25,6 +23,7 @@ import io.gearpump.metrics.Metrics.{Histogram, Meter}
 import io.gearpump.metrics.MetricsAggregator
 import io.gearpump.streaming.metrics.ProcessorAggregator.{Aggregator, AggregatorFactory, MultiLayerMap, TaskIdentity}
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
+import java.util
 
 /**
  *

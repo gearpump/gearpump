@@ -19,7 +19,6 @@ import io.gearpump.cluster.ExecutorContext
 import io.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
 import io.gearpump.util.LogUtil
 import org.slf4j.Logger
-
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 

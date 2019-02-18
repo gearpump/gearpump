@@ -17,15 +17,13 @@ package io.gearpump.streaming.appmaster
 import akka.actor.{Actor, ActorRef, ExtendedActorSystem, Stash}
 import akka.serialization.JavaSerializer
 import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.storage.AppDataStore
-import io.gearpump.util.{Graph, LogUtil}
 import io.gearpump.streaming._
-import io.gearpump.streaming.appmaster.DagManager.{DAGOperationFailed, DAGOperationSuccess, DagInitiated, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}
+import io.gearpump.streaming.appmaster.DagManager.{DagInitiated, DAGOperationFailed, DAGOperationSuccess, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}
 import io.gearpump.streaming.partitioner.PartitionerDescription
+import io.gearpump.streaming.storage.AppDataStore
 import io.gearpump.streaming.task.Subscriber
-import io.gearpump.util.LogUtil
+import io.gearpump.util.{Graph, LogUtil}
 import org.slf4j.Logger
-
 import scala.concurrent.Future
 
 /**

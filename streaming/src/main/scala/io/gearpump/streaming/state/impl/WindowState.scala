@@ -14,15 +14,13 @@
 
 package io.gearpump.streaming.state.impl
 
-import io.gearpump.streaming.state.api.{Group, MonoidState, Serializer}
-import io.gearpump.util.LogUtil
-
-import scala.collection.immutable.TreeMap
-import org.slf4j.Logger
 import io.gearpump.Time.MilliSeconds
-import io.gearpump.streaming.state.api.{Group, Serializer}
+import io.gearpump.streaming.state.api.{Group, MonoidState, Serializer}
 import io.gearpump.streaming.state.impl.WindowState._
 import io.gearpump.streaming.task.TaskContext
+import io.gearpump.util.LogUtil
+import org.slf4j.Logger
+import scala.collection.immutable.TreeMap
 
 /**
  * an interval is a dynamic time range that is divided by window boundary and checkpoint time

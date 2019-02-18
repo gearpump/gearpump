@@ -15,9 +15,8 @@
 package io.gearpump.util
 
 import java.io.{Closeable, Flushable}
-import scala.sys.process.ProcessLogger
-
 import org.slf4j.LoggerFactory
+import scala.sys.process.ProcessLogger
 
 /** Redirect the console output to parent process */
 class ProcessLogRedirector extends ProcessLogger with Closeable with Flushable with ConsoleOutput {

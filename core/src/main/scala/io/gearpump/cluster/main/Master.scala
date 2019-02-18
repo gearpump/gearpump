@@ -14,19 +14,17 @@
 
 package io.gearpump.cluster.main
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{ActorSystem, PoisonPill, Props}
 import akka.cluster.Cluster
 import akka.cluster.ddata.DistributedData
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
+import io.gearpump.util.{AkkaApp, Constants, LogUtil}
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
-import io.gearpump.util.{AkkaApp, Constants, LogUtil}
+import java.util.concurrent.TimeUnit
 import org.slf4j.Logger
-
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

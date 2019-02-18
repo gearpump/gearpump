@@ -17,20 +17,17 @@ package io.gearpump.cluster.appmaster
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
-import io.gearpump.cluster.worker.WorkerId
-import io.gearpump.util.LogUtil
+import io.gearpump.cluster.{MasterHarness, TestUtil, _}
 import io.gearpump.cluster.AppMasterToMaster.{AppDataSaved, RegisterAppMaster, _}
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication, SubmitApplication}
-import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterRegistered, AppMastersData, AppMastersDataRequest, _}
 import io.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ShutdownApplicationResult, SubmitApplicationResult}
-import io.gearpump.cluster.master.AppManager
+import io.gearpump.cluster.master.{AppManager, AppMasterLauncherFactory}
 import io.gearpump.cluster.master.AppManager._
-import io.gearpump.cluster.master.AppMasterLauncherFactory
 import io.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVSuccess, PutKV, PutKVSuccess}
-import io.gearpump.cluster.{TestUtil, _}
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.util.LogUtil
 import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-
 import scala.util.Success
 
 class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {

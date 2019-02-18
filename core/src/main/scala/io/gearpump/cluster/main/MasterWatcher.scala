@@ -14,16 +14,13 @@
 
 package io.gearpump.cluster.main
 
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.cluster.ClusterEvent.{CurrentClusterState, MemberEvent, MemberExited, MemberRemoved, MemberUp}
 import akka.cluster.{Cluster, Member, MemberStatus}
+import akka.cluster.ClusterEvent.{CurrentClusterState, MemberEvent, MemberExited, MemberRemoved, MemberUp}
+import io.gearpump.cluster.master.{Master => MasterActor, MasterNode}
 import io.gearpump.cluster.master.Master.MasterListUpdated
-import io.gearpump.cluster.master.MasterNode
-import io.gearpump.cluster.master.{Master => MasterActor}
 import io.gearpump.util.Constants.MASTER
-
+import java.util.concurrent.TimeUnit
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

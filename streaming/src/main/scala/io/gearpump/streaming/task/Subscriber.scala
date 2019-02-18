@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.task
 
-import io.gearpump.streaming.partitioner.PartitionerDescription
 import io.gearpump.streaming.{DAG, LifeTime}
+import io.gearpump.streaming.partitioner.PartitionerDescription
 
 /**
  * Each processor can have multiple downstream subscribers.

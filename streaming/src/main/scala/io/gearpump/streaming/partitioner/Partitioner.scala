@@ -14,9 +14,8 @@
 
 package io.gearpump.streaming.partitioner
 
-import org.apache.commons.lang.SerializationUtils
 import io.gearpump.Message
-
+import org.apache.commons.lang.SerializationUtils
 import scala.reflect.ClassTag
 
 /**

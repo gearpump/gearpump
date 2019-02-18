@@ -13,12 +13,10 @@
  */
 package io.gearpump.streaming.dsl.window.api
 
-import java.time.{Duration, Instant}
-
 import io.gearpump.Time
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.streaming.dsl.window.impl.Window
-
+import java.time.{Duration, Instant}
 import scala.collection.mutable.ArrayBuffer
 
 object WindowFunction {

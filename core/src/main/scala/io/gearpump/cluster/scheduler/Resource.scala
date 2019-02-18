@@ -15,6 +15,8 @@
 package io.gearpump.cluster.scheduler
 
 import akka.actor.ActorRef
+import io.gearpump.cluster.scheduler.Priority._
+import io.gearpump.cluster.scheduler.Relaxation._
 import io.gearpump.cluster.worker.WorkerId
 
 case class Resource(slots: Int) {
@@ -57,9 +59,6 @@ object Relaxation extends Enumeration {
   // Option ONEWORKER allow user to schedule a task on specific worker.
   val ANY, ONEWORKER, SPECIFICWORKER = Value
 }
-
-import io.gearpump.cluster.scheduler.Priority._
-import io.gearpump.cluster.scheduler.Relaxation._
 
 case class ResourceRequest(
     resource: Resource, workerId: WorkerId, priority: Priority = NORMAL,

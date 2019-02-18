@@ -13,10 +13,8 @@
  */
 package io.gearpump.streaming.source
 
+import io.gearpump.{Message, Time}
 import java.time.Instant
-
-import io.gearpump.Time
-import io.gearpump.Message
 
 /**
  * message used by source task to report source watermark.

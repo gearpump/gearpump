@@ -14,10 +14,9 @@
 
 package io.gearpump.streaming.source
 
-import java.time.Instant
-
-import io.gearpump.streaming.task.TaskContext
 import io.gearpump.Message
+import io.gearpump.streaming.task.TaskContext
+import java.time.Instant
 
 /**
  * Interface to implement custom source where data is read into the system.

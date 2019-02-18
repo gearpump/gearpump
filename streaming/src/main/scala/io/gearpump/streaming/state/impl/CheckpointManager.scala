@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.state.impl
 
-import io.gearpump.streaming.transaction.api.CheckpointStore
 import io.gearpump.Time.MilliSeconds
+import io.gearpump.streaming.transaction.api.CheckpointStore
 
 /** Manage physical checkpoints to persitent storage like HDFS */
 class CheckpointManager(checkpointInterval: Long,

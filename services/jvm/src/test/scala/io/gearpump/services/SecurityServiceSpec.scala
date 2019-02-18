@@ -14,18 +14,17 @@
 
 package io.gearpump.services
 
-import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.FormData
-import akka.http.scaladsl.model.headers.{Cookie, `Set-Cookie`, _}
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.model.headers.{`Set-Cookie`, Cookie, _}
 import akka.http.scaladsl.server.{AuthorizationFailedRejection, _}
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import scala.concurrent.duration._
 // NOTE: This cannot be removed!!!
-import io.gearpump.services.util.UpickleUtil._
 
 class SecurityServiceSpec
   extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {

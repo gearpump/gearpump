@@ -14,34 +14,31 @@
 
 package io.gearpump.cluster.master
 
-import java.lang.management.ManagementFactory
-
-import io.gearpump.jarstore.JarStoreServer
-
-import scala.collection.immutable
 import akka.actor._
 import akka.remote.DisassociatedEvent
 import com.typesafe.config.Config
-import io.gearpump.cluster.ClusterConfig
-import io.gearpump.cluster.worker.WorkerId
-import org.apache.commons.lang.exception.ExceptionUtils
-import org.slf4j.Logger
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.ClientToMaster._
+import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToAppMaster._
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, MasterConfig, ResolveWorkerIdResult}
 import io.gearpump.cluster.MasterToWorker._
 import io.gearpump.cluster.WorkerToMaster._
-import io.gearpump.cluster.master.InMemoryKVService.PutKVSuccess
-import io.gearpump.cluster.master.InMemoryKVService._
+import io.gearpump.cluster.master.InMemoryKVService.{PutKVSuccess, _}
 import io.gearpump.cluster.master.Master.{MasterInfo, WorkerTerminated, _}
 import io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
+import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.jarstore.JarStoreServer
+import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.metrics.Metrics.ReportMetrics
 import io.gearpump.transport.HostPort
 import io.gearpump.util.{ActorUtil, Constants, HistoryMetricsService, LogUtil}
-import io.gearpump.metrics.{JvmMetricsSet, Metrics, MetricsReporterService}
 import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
+import java.lang.management.ManagementFactory
+import org.apache.commons.lang.exception.ExceptionUtils
+import org.slf4j.Logger
+import scala.collection.immutable
 
 /**
  * Master Actor who manages resources of the whole cluster.

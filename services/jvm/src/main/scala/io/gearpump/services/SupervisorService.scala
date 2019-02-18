@@ -14,19 +14,18 @@
 
 package io.gearpump.services
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
-import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster._
+import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.services.SupervisorService.{Path, Status}
-import io.gearpump.util.ActorUtil._
-// NOTE: This cannot be removed!!!
 import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.util.ActorUtil._
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /** Responsible for adding/removing machines. Typically it delegates to YARN. */
 class SupervisorService(

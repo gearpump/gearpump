@@ -14,12 +14,10 @@
 
 package io.gearpump.cluster.main
 
+import io.gearpump.util.{Constants, LogUtil, MasterClientCommand, Util}
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.jar.JarFile
-
-import io.gearpump.util.{Constants, LogUtil, MasterClientCommand, Util}
-
 import scala.util.{Failure, Success, Try}
 
 /** Tool to submit an application jar to cluster */

@@ -17,13 +17,12 @@ package io.gearpump.cluster.main
 import akka.actor.{ActorSystem, Props}
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.MasterProxy
+import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import io.gearpump.transport.HostPort
 import io.gearpump.util.{AkkaApp, LogUtil}
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
-import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import org.slf4j.Logger
-
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

@@ -16,7 +16,6 @@ package io.gearpump.transport.netty
 
 import akka.actor.ActorRef
 import io.gearpump.transport.{ActorLookupById, HostPort}
-import io.gearpump.transport.HostPort
 
 trait IContext {
 
