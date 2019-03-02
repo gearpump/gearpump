@@ -82,7 +82,7 @@ trait MasterHarness {
 
   def createMockMaster(): TestProbe = {
     val masterReceiver = TestProbe()(system)
-    val master = system.actorOf(Props(classOf[MockMaster], masterReceiver), MASTER)
+    system.actorOf(Props(classOf[MockMaster], masterReceiver), MASTER)
     masterReceiver
   }
 
@@ -95,11 +95,11 @@ trait MasterHarness {
       socket.connect(new InetSocketAddress(host, port), 1000)
       socket.isConnected
     } catch {
-      case ex: SocketTimeoutException =>
+      case _: SocketTimeoutException =>
         isPortUsed = false
-      case ex: UnknownHostException =>
+      case _: UnknownHostException =>
         isPortUsed = false
-      case ex: Throwable =>
+      case _: Throwable =>
         // For other case, we think the port has been occupied.
         isPortUsed = true
     } finally {

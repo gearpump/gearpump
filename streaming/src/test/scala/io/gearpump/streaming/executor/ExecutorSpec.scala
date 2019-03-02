@@ -13,16 +13,18 @@
  */
 package io.gearpump.streaming.executor
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRefFactory, ActorSystem, Props}
 import akka.testkit.TestProbe
 import io.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.cluster.worker.WorkerId
+import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.{LifeTime, ProcessorDescription}
 import io.gearpump.streaming.AppMasterToExecutor._
 import io.gearpump.streaming.ExecutorToAppMaster.RegisterTask
 import io.gearpump.streaming.appmaster.TaskRegistry.TaskLocations
+import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.executor.TaskLauncherSpec.MockTask
 import io.gearpump.streaming.task.{Subscriber, TaskId}
 import io.gearpump.transport.HostPort
@@ -63,14 +65,16 @@ class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val launchTasks = LaunchTasks(taskIds, dagVersion = 0, processor, List.empty[Subscriber])
 
     val task = TestProbe()
-    when(taskLauncher.launch(any(), any(), any(), any(), any()))
+    when(taskLauncher.launch(any[List[TaskId]](), any[TaskArgument](), any[ActorRefFactory](),
+      any[SerializationFramework](), any[String]()))
       .thenReturn(taskIds.map((_, task.ref)).toMap)
 
     val client = TestProbe()
     client.send(executor, launchTasks)
     client.expectMsg(TasksLaunched)
 
-    verify(taskLauncher, times(1)).launch(any(), any(), any(), any(), any())
+    verify(taskLauncher, times(1)).launch(any[List[TaskId]](),
+      any[TaskArgument](), any[ActorRefFactory](), any[SerializationFramework](), any[String]())
 
     executor ! RegisterTask(TaskId(0, 0), executorId, HostPort("localhost:80"))
     executor ! RegisterTask(TaskId(0, 1), executorId, HostPort("localhost:80"))

@@ -16,9 +16,9 @@ package io.gearpump.util
 
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import com.github.ghik.silencer.silent
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
-import org.slf4j.Logger
 import scala.concurrent.duration._
 
 class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
@@ -34,6 +34,7 @@ class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with I
   "The TimeOutScheduler" should {
     "handle the time out event" in {
       val testActorRef = TestActorRef(Props(classOf[TestActor], mockActor.ref))
+      @silent
       val testActor = testActorRef.underlyingActor.asInstanceOf[TestActor]
       testActor.sendMsgToIgnore()
       mockActor.expectMsg(30.seconds, MessageTimeOut)
@@ -45,7 +46,6 @@ case object Echo
 case object MessageTimeOut
 
 class TestActor(mock: ActorRef) extends Actor with TimeOutScheduler {
-  private val LOG: Logger = LogUtil.getLogger(getClass)
 
   val target = context.actorOf(Props(classOf[EchoActor]))
 

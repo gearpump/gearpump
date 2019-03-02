@@ -33,6 +33,6 @@ class ApplicationStatusSpec extends FlatSpec with Matchers with BeforeAndAfterEa
     val succeed = ApplicationStatus.SUCCEEDED
     assert(!succeed.canTransitTo(ApplicationStatus.NONEXIST))
     assert(!succeed.canTransitTo(ApplicationStatus.SUCCEEDED))
-    assert(!succeed.canTransitTo(ApplicationStatus.FAILED))
+    assert(!succeed.canTransitTo(ApplicationStatus.FAILED(new Exception("Any exception"))))
   }
 }

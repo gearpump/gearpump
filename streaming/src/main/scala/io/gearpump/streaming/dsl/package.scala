@@ -19,7 +19,7 @@ package io.gearpump.streaming
  *
  * The architecture of Gearpump Streaming DSL consists of several layers:
  *
- *   * User facing [[Stream]] DSL. Stream is created by [[io.gearpump.streaming.dsl.scalaapi.StreamApp]]
+ *   * User facing [[io.gearpump.streaming.dsl.scalaapi.Stream]] DSL. Stream is created by [[io.gearpump.streaming.dsl.scalaapi.StreamApp]]
  *     from input source like Kafka or by applying high level operations (e.g. flatMap, window, groupBy) to user defined functions(UDFs). UDFs are subclasses
  *     of [[io.gearpump.streaming.dsl.api.functions.SerializableFunction]], represented by [[io.gearpump.streaming.dsl.plan.Op]]
  *     in the underlying [[io.gearpump.util.Graph]].

@@ -15,14 +15,13 @@
 package io.gearpump.streaming.dsl.window.impl
 
 import io.gearpump.Message
-import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.dsl.api.functions.ReduceFunction
 import io.gearpump.streaming.dsl.plan.functions.FoldRunner
 import io.gearpump.streaming.dsl.window.api.SessionWindows
 import io.gearpump.streaming.source.Watermark
 import java.time.{Duration, Instant}
 import org.scalatest.{Matchers, PropSpec}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
 class DefaultWindowRunnerSpec extends PropSpec with PropertyChecks
@@ -38,7 +37,6 @@ class DefaultWindowRunnerSpec extends PropSpec with PropertyChecks
     )
 
     type KV = (String, Long)
-    implicit val system = MockUtil.system
     val reduce = ReduceFunction[KV]((kv1, kv2) => (kv1._1, kv1._2 + kv2._2))
     val windows = SessionWindows.apply(Duration.ofMillis(4L))
     val windowRunner = new WindowOperator[KV, Option[KV]](windows,

@@ -29,7 +29,7 @@ import io.gearpump.streaming.task.{Task, TaskContext}
 import java.time.Instant
 import org.mockito.Mockito._
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

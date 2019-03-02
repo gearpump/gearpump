@@ -94,7 +94,7 @@ class ExecutorManagerSpec extends FlatSpec with Matchers with BeforeAndAfterAll 
 
   it should "report timeout to taskManager" in {
     import io.gearpump.streaming.appmaster.ExecutorManager._
-    val (master, executor, taskManager, executorManager) = startExecutorSystems
+    val (master, _, taskManager, _) = startExecutorSystems
     master.reply(StartExecutorSystemTimeout)
     taskManager.expectMsg(StartExecutorsTimeOut)
   }

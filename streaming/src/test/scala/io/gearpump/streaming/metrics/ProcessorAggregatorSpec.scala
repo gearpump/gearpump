@@ -14,6 +14,7 @@
 
 package io.gearpump.streaming.metrics
 
+import com.github.ghik.silencer.silent
 import io.gearpump.cluster.ClientToMaster.ReadOption
 import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
 import io.gearpump.metrics.Metrics.{Gauge, Histogram, Meter}
@@ -201,6 +202,7 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
     )))
   }
 
+  @silent // https://github.com/scala/bug/issues/7707
   private def histogram(
       taskId: TaskId, metricName: String = "latency", timeRange: Long = Long.MaxValue,
       repeat: Int = 1): List[HistoryMetricsItem] = {

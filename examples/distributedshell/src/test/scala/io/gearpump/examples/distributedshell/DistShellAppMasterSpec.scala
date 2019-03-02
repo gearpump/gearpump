@@ -19,7 +19,7 @@ import io.gearpump.cluster.{TestUtil, _}
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, RegisterAppMaster, RequestResource}
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterRegistered, ResourceAllocated, WorkerList}
-import io.gearpump.cluster.appmaster.{ApplicationRuntimeInfo, AppMasterRuntimeEnvironment}
+import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment
 import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, ResourceRequest}
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
@@ -31,19 +31,19 @@ import scala.concurrent.duration.Duration
 class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter {
   implicit val system = ActorSystem("AppMasterSpec", TestUtil.DEFAULT_CONFIG)
   val mockMaster = TestProbe()(system)
-  val mockWorker1 = TestProbe()(system)
   val masterProxy = mockMaster.ref
   val appId = 0
   val userName = "test"
   val masterExecutorId = 0
-  val workerList = List(WorkerId(1, 0L), WorkerId(2, 0L), WorkerId(3, 0L))
+  val workers = Map(WorkerId(1, 0L) -> TestProbe()(system),
+    WorkerId(2, 0L) -> TestProbe()(system),
+    WorkerId(3, 0L) -> TestProbe()(system))
   val resource = Resource(1)
   val appJar = None
   val appDescription = AppDescription("app0", classOf[DistShellAppMaster].getName, UserConfig.empty)
 
   "DistributedShell AppMaster" should {
     "launch one ShellTask on each worker" in {
-      val appMasterInfo = ApplicationRuntimeInfo(appId, appName = appId.toString)
       val appMasterContext = AppMasterContext(appId, userName, resource, null, appJar, masterProxy)
       TestActorRef[DistShellAppMaster](
         AppMasterRuntimeEnvironment.props(List(masterProxy.path), appDescription,
@@ -52,16 +52,16 @@ class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter 
       mockMaster.reply(AppMasterRegistered(appId))
       // The DistributedShell AppMaster asks for worker list from Master.
       mockMaster.expectMsg(GetAllWorkers)
-      mockMaster.reply(WorkerList(workerList))
+      mockMaster.reply(WorkerList(workers.keys.toList))
       // After worker list is ready, DistributedShell AppMaster requests resource on each worker
-      workerList.foreach { workerId =>
+      workers.foreach { case (workerId, mockWorker) =>
         mockMaster.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), workerId,
           relaxation = Relaxation.SPECIFICWORKER)))
+        mockMaster.reply(ResourceAllocated(
+          Array(ResourceAllocation(resource, mockWorker.ref, workerId))))
+        mockWorker.expectMsgClass(classOf[LaunchExecutor])
+        mockWorker.reply(RegisterActorSystem(ActorUtil.getSystemAddress(system).toString))
       }
-      mockMaster.reply(ResourceAllocated(
-        Array(ResourceAllocation(resource, mockWorker1.ref, WorkerId(1, 0L)))))
-      mockWorker1.expectMsgClass(classOf[LaunchExecutor])
-      mockWorker1.reply(RegisterActorSystem(ActorUtil.getSystemAddress(system).toString))
     }
   }
 

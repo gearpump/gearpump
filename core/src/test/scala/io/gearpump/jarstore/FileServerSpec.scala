@@ -60,7 +60,7 @@ class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
     val file = File.createTempFile("fileserverspec", "test")
     val future = client.download(remote, file)
     import scala.concurrent.duration._
-    val data = Await.result(future, 10.seconds)
+    Await.result(future, 10.seconds)
 
     val bytes = FileUtils.readFileToByteArray(file)
     file.delete()

@@ -17,7 +17,7 @@ package io.gearpump.streaming.state.impl
 import io.gearpump.Time.MilliSeconds
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
 class WindowSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
@@ -39,10 +39,10 @@ class WindowSpec extends PropSpec with PropertyChecks with Matchers with Mockito
     forAll(timestampGen, windowSizeGen, windowStepGen) {
       (timestamp: MilliSeconds, windowSize: Long, windowStep: Long) =>
         val window = new Window(windowSize, windowStep)
-        window.range shouldBe(0L, windowSize)
+        window.range shouldBe(0L -> windowSize)
 
         window.slideOneStep()
-        window.range shouldBe(windowStep, windowSize + windowStep)
+        window.range shouldBe(windowStep -> (windowSize + windowStep))
 
         window.slideTo(timestamp)
         val (startTime, endTime) = window.range

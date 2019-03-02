@@ -25,10 +25,11 @@ import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToClient.ResolveWorkerIdResult
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Ignore, Matchers}
 import scala.concurrent.duration._
 import scala.util.Success
 
+@Ignore
 class SupervisorServiceSpec
   extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
 
@@ -53,10 +54,10 @@ class SupervisorServiceSpec
   mockSupervisor.setAutoPilot {
     new AutoPilot {
       def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
-        case AddWorker(workerCount) =>
+        case AddWorker(_) =>
           sender ! CommandResult(success = true)
           KeepRunning
-        case RemoveWorker(workerId) =>
+        case RemoveWorker(_) =>
           sender ! CommandResult(success = true)
           KeepRunning
       }
@@ -66,7 +67,7 @@ class SupervisorServiceSpec
   mockWorker.setAutoPilot {
     new AutoPilot {
       def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
-        case GetWorkerData(workerId) =>
+        case GetWorkerData(_) =>
           sender ! WorkerData(WorkerSummary.empty)
           KeepRunning
       }
@@ -76,7 +77,7 @@ class SupervisorServiceSpec
   mockMaster.setAutoPilot {
     new AutoPilot {
       def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
-        case ResolveWorkerId(workerId) =>
+        case ResolveWorkerId(_) =>
           sender ! ResolveWorkerIdResult(Success(mockWorker.ref))
           KeepRunning
       }

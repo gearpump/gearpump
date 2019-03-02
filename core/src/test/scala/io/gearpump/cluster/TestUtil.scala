@@ -20,7 +20,7 @@ object TestUtil {
   val UI_CONFIG = ClusterConfig.ui("test.conf")
 
   class DummyAppMaster(context: AppMasterContext, app: AppDescription) extends ApplicationMaster {
-    context.masterProxy !(context, app)
+    context.masterProxy ! app
 
     def receive: Receive = null
   }

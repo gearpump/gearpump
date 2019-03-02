@@ -18,13 +18,11 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
 import java.time.Instant
 import org.mockito.Mockito._
-import org.scalacheck.Gen
 import org.scalatest.{FlatSpec, Matchers}
 
 class SOLStreamProcessorSpec extends FlatSpec with Matchers {
 
   it should "pass the message downstream" in {
-    val stringGenerator = Gen.alphaStr
     val context = MockUtil.mockTaskContext
 
     val sol = new SOLStreamProcessor(context, UserConfig.empty)

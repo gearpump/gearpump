@@ -16,11 +16,12 @@ package io.gearpump.util
 
 import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestProbe
+import com.github.ghik.silencer.silent
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.ActorSystemBooter.{ActorCreated, RegisterActorSystem, _}
 import io.gearpump.util.ActorSystemBooterSpec._
 import org.scalatest.{FlatSpec, Matchers}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -104,6 +105,7 @@ object ActorSystemBooterSpec {
     }
   }
 
+  @silent
   class AcceptThreeArguments(a: Int, b: Int, c: Int) extends Actor {
     def receive: Receive = {
       case _ =>

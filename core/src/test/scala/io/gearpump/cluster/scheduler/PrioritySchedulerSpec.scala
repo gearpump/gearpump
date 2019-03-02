@@ -59,7 +59,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       scheduler.tell(ApplicationFinished(appId), mockAppMaster.ref)
       scheduler.tell(WorkerRegistered(workerId1, MasterInfo.empty), mockWorker1.ref)
       scheduler.tell(ResourceUpdate(mockWorker1.ref, workerId1, Resource(100)), mockWorker1.ref)
-      mockAppMaster.expectNoMsg(5.seconds)
+      mockAppMaster.expectNoMessage(5.seconds)
     }
   }
 

@@ -103,6 +103,6 @@ object ExecutorSystemLauncher {
       import conf._
       ExecutorJVMConfig(classPath, jvmArguments, classOf[ActorSystemBooter].getName,
         Array(systemName, reportBack), jar, username, executorAkkaConfig)
-    }.getOrElse(null)
+    }.orNull
   }
 }

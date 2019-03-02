@@ -25,9 +25,9 @@ class SourceSpec extends WordSpec with Matchers {
 
   "Source" should {
     "Source should send a msg of Vector[String](classOf[Source].getCanonicalName)" in {
-      val system1 = ActorSystem("Source", TestUtil.DEFAULT_CONFIG)
+      ActorSystem("Source", TestUtil.DEFAULT_CONFIG)
 
-      val system2 = ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
+      ActorSystem("Reporter", TestUtil.DEFAULT_CONFIG)
 
       val context = MockUtil.mockTaskContext
 

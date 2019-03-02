@@ -60,9 +60,8 @@ object TaskLauncherSpec {
   class MockTaskActor(
       val taskId: TaskId,
       val taskContextData : TaskContextData,
-      userConf : UserConfig,
       val task: TaskWrapper,
-      serializer: SerializationFramework) extends Actor {
+      val serializer: SerializationFramework) extends Actor {
     def receive: Receive = null
   }
 

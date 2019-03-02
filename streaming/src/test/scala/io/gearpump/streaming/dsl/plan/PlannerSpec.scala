@@ -30,7 +30,7 @@ import io.gearpump.streaming.task.{Task, TaskContext}
 import io.gearpump.util.Graph
 import java.time.Instant
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

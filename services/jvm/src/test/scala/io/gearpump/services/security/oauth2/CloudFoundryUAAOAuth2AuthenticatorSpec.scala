@@ -55,7 +55,7 @@ class CloudFoundryUAAOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRout
   }
 
   it should "generate the correct authorization request" in {
-    val parameters = Uri(uaa.getAuthorizationUrl()).query().toMap
+    val parameters = Uri(uaa.getAuthorizationUrl).query().toMap
     assert(parameters("response_type") == "code")
     assert(parameters("client_id") == configMap("clientid"))
     assert(parameters("redirect_uri") == configMap("callback"))

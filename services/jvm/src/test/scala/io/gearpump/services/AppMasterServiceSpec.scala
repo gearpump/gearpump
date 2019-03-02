@@ -55,7 +55,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
         case QueryHistoryMetrics(path, _, _, _) =>
           sender ! HistoryMetrics(path, List.empty[HistoryMetricsItem])
           KeepRunning
-        case GetLastFailure(appId) =>
+        case GetLastFailure(_) =>
           sender ! failure
           KeepRunning
         case GetExecutorSummary(0) =>
@@ -75,10 +75,10 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
         case ResolveAppId(0) =>
           sender ! ResolveAppIdResult(Success(mockAppMaster.ref))
           KeepRunning
-        case AppMasterDataRequest(appId, _) =>
+        case AppMasterDataRequest(_, _) =>
           sender ! AppMasterData(ApplicationStatus.ACTIVE)
           KeepRunning
-        case QueryAppMasterConfig(appId) =>
+        case QueryAppMasterConfig(_) =>
           sender ! AppMasterConfig(null)
           KeepRunning
       }
@@ -98,7 +98,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
     }
 
     Get(s"/api/$REST_VERSION/appmaster/0?detail=true") ~> appMasterRoute ~> check {
-      val responseBody = responseAs[String]
+      val _ = responseAs[String]
     }
   }
 

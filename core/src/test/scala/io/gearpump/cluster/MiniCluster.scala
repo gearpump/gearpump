@@ -50,7 +50,6 @@ class MiniCluster {
 
   private def isWorkerRegistered(master: ActorRef): Boolean = {
     import scala.concurrent.duration._
-    implicit val dispatcher = system.dispatcher
 
     implicit val futureTimeout = Constants.FUTURE_TIMEOUT
 

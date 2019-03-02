@@ -21,7 +21,7 @@ import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.serializer.SerializerSpec._
 import org.scalatest.{FlatSpec, Matchers}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

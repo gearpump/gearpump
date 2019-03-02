@@ -18,7 +18,7 @@ script:
 - echo "TRAVIS_BRANCH" $TRAVIS_BRANCH
 - echo "TRAVIS_TAG" $TRAVIS_TAG
 - echo "repo" $TRAVIS_REPO_SLUG
-- set -o pipefail; skipLogs="Resolving |Compiling |Done updating|Updating |scoverage|coverage-report";
+- set -o pipefail; set -e; skipLogs="Resolving |Compiling |Done updating|Updating |scoverage|coverage-report";
   if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]]; then 
     sbt -jvm-opts project/travis/jvmopts clean +assembly scalastyle test:scalastyle unidoc coverage test | grep -v -E "$skipLogs";
     sbt coverageReport;

@@ -81,6 +81,7 @@ class ExecutorSystemScheduler(appId: Int, masterProxy: ActorRef,
     case ResourceAllocationTimeOut(session) =>
       if (isSessionAlive(session)) {
         resourceAgents = resourceAgents - session
+        LOG.error(s"Resource allocation for ${session.requestor} timed out")
         session.requestor ! StartExecutorSystemTimeout
       }
   }
@@ -152,7 +153,8 @@ object ExecutorSystemScheduler {
     import context.dispatcher
     import io.gearpump.util.Constants._
 
-    val timeout = context.system.settings.config.getInt(GEARPUMP_RESOURCE_ALLOCATION_TIMEOUT)
+    private val timeout = context.system.settings.config
+      .getInt(GEARPUMP_RESOURCE_ALLOCATION_TIMEOUT)
 
     def receive: Receive = {
       case request: RequestResource =>
@@ -165,9 +167,9 @@ object ExecutorSystemScheduler {
       case ResourceAllocated(allocations) =>
         unallocatedResource -= allocations.map(_.resource.slots).sum
         resourceRequestor forward ResourceAllocatedForSession(allocations, session)
-      case ResourceAllocationTimeOut =>
+      case timeout: ResourceAllocationTimeOut =>
         if (unallocatedResource > 0) {
-          resourceRequestor ! ResourceAllocationTimeOut(session)
+          resourceRequestor ! timeout
           // We will not receive any ResourceAllocation after timeout
           context.stop(self)
         }

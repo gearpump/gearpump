@@ -15,8 +15,10 @@
 package io.gearpump.cluster.scheduler
 
 import akka.actor.ActorRef
-import io.gearpump.cluster.scheduler.Priority._
-import io.gearpump.cluster.scheduler.Relaxation._
+import io.gearpump.cluster.scheduler.Priority.NORMAL
+import io.gearpump.cluster.scheduler.Priority.Priority
+import io.gearpump.cluster.scheduler.Relaxation.ANY
+import io.gearpump.cluster.scheduler.Relaxation.Relaxation
 import io.gearpump.cluster.worker.WorkerId
 
 case class Resource(slots: Int) {

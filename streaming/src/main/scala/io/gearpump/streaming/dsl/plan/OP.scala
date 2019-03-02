@@ -15,7 +15,6 @@
 package io.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
-import com.github.ghik.silencer.silent
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.{Constants, Processor}
 import io.gearpump.streaming.Processor.DefaultProcessor
@@ -51,7 +50,8 @@ object Op {
 
   /**
    * This adds a [[io.gearpump.streaming.dsl.plan.functions.DummyRunner]] in
-   * [[GlobalWindows]] if a targeting [[Task]] has no executable UDF.
+   * [[io.gearpump.streaming.dsl.window.api.GlobalWindows]] if a targeting
+   * [[io.gearpump.streaming.task.Task]] has no executable UDF.
    */
   def withGlobalWindowsDummyRunner(op: Op, userConfig: UserConfig,
       processor: Processor[_ <: Task])(implicit system: ActorSystem): Processor[_ <: Task] = {
@@ -287,22 +287,34 @@ case class WindowOp(
 
 }
 
+object GroupByOp {
+
+  // work around for https://github.com/scala/bug/issues/7707
+  def apply[IN, GROUP](groupBy: IN => GROUP): GroupByOp[IN, GROUP] = {
+    GroupByOp(groupBy, 1, "groupBy", UserConfig.empty)
+  }
+
+  def apply[IN, GROUP](groupBy: IN => GROUP,
+      parallelism: Int, description: String): GroupByOp[IN, GROUP] = {
+    GroupByOp(groupBy, parallelism, description, UserConfig.empty)
+  }
+}
 /**
  * This represents an operation with groupBy followed by window aggregation.
  *
- * It can only be chained with [[WindowTransformOp]] to be executed in
+ * It can only be chained with WindowTransformOp to be executed in
  * [[io.gearpump.streaming.dsl.task.GroupByTask]].
  * However, it's possible a window function has no following aggregations. In that case,
- * we manually tail a [[WindowOp]] with [[TransformOp]] of
- * [[io.gearpump.streaming.dsl.plan.functions.DummyRunner]] to create a
- * [[WindowTransformOp]].
+ * we manually tail a [[io.gearpump.streaming.dsl.plan.WindowOp]] with
+ * [[io.gearpump.streaming.dsl.plan.TransformOp]] of
+ * [[io.gearpump.streaming.dsl.plan.functions.DummyRunner]] to create a WindowTransformOp.
  */
+
 case class GroupByOp[IN, GROUP] private(
     groupBy: IN => GROUP,
     parallelism: Int,
     description: String,
-    // https://github.com/scala/bug/issues/7707
-    @silent override val userConfig: UserConfig = UserConfig.empty)
+    override val userConfig: UserConfig)
   extends Op {
 
   override def chain(other: Op)(implicit system: ActorSystem): Op = {
@@ -333,12 +345,12 @@ case class GroupByOp[IN, GROUP] private(
 /**
  * This represents an operation with merge followed by window aggregation.
  *
- * It can only be chained with [[WindowTransformOp]] to be executed in
+ * It can only be chained with WindowTransformOp to be executed in
  * [[io.gearpump.streaming.dsl.task.TransformTask]].
  * However, it's possible a merge function has no following aggregations. In that case,
  * we manually tail a [[WindowOp]] with [[TransformOp]] of
  * [[io.gearpump.streaming.dsl.plan.functions.DummyRunner]] to create a
- * [[WindowTransformOp]].
+ * WindowTransformOp.
  */
 case class MergeOp(
     parallelism: Int = 1,

@@ -57,16 +57,16 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
       taskScheduler.setDAG(dag)
       val resourceRequests = taskScheduler.getResourceRequests()
 
-      val acturalRequests = resourceRequests.sortBy(_.resource.slots)
-      assert(acturalRequests.sameElements(expectedRequests.sortBy(_.resource.slots)))
+      val actualRequests = resourceRequests.sortBy(_.resource.slots)
+      assert(actualRequests.sameElements(expectedRequests.sortBy(_.resource.slots)))
 
       val tasksOnWorker1 = ArrayBuffer[Int]()
       val tasksOnWorker2 = ArrayBuffer[Int]()
-      for (i <- 0 until 4) {
+      for (_ <- 0 until 4) {
         tasksOnWorker1.append(taskScheduler.schedule(WorkerId(1, 0L),
           executorId = 0, Resource(1)).head.processorId)
       }
-      for (i <- 0 until 2) {
+      for (_ <- 0 until 2) {
         tasksOnWorker2.append(taskScheduler.schedule(WorkerId(2, 0L), executorId = 1,
           Resource(1)).head.processorId)
       }
@@ -95,10 +95,6 @@ class TaskSchedulerSpec extends WordSpec with Matchers {
     "schedule task fairly" in {
       val appName = "app"
       val taskScheduler = new TaskSchedulerImpl(appName, config)
-
-      val expectedRequests =
-        Array(ResourceRequest(Resource(4), WorkerId(1, 0L), relaxation = Relaxation.SPECIFICWORKER),
-          ResourceRequest(Resource(2), WorkerId(2, 0L), relaxation = Relaxation.SPECIFICWORKER))
 
       taskScheduler.setDAG(dag)
       val tasks = taskScheduler.schedule(WorkerId(1, 0L), executorId = 0, Resource(4))

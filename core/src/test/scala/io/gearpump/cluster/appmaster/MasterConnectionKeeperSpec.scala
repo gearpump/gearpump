@@ -75,7 +75,7 @@ class MasterConnectionKeeperSpec extends FlatSpec with Matchers with BeforeAndAf
     masterChangeListener.expectMsg(MasterConnected)
 
     // Recovery from Master restart is transparent to listener
-    masterChangeListener.expectNoMsg()
+    masterChangeListener.expectNoMessage()
   }
 
   it should "notify listener and then shutdown itself when master is dead" in {
