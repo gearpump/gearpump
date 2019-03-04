@@ -99,6 +99,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
       } fail { (current, ex) =>
         LOG.error(s"failed to connect to $name, reason: ${ex.getMessage}, class: ${ex.getClass}")
         current.close()
+        import context.dispatcher
         context.system.scheduler.scheduleOnce(
           new FiniteDuration(
             getSleepTimeMs(tries), TimeUnit.MILLISECONDS), self, Connect(tries + 1))

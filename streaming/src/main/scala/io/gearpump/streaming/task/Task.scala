@@ -16,7 +16,6 @@ package io.gearpump.streaming.task
 
 import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
 import akka.actor.Actor.Receive
-import com.github.ghik.silencer.silent
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.UserConfig
@@ -167,7 +166,6 @@ trait TaskInterface {
   def onWatermarkProgress(watermark: Instant): Unit
 }
 
-@silent // parameter value userConfig in class Task is never used
 abstract class Task(taskContext: TaskContext, userConfig: UserConfig) extends TaskInterface {
 
   import taskContext.{appId, executorId, taskId}
@@ -192,6 +190,10 @@ abstract class Task(taskContext: TaskContext, userConfig: UserConfig) extends Ta
   def onNext(msg: Message): Unit = {}
 
   def onStop(): Unit = {}
+
+  // Work around errors, "parameter value userConfig in class Task is never used"
+  // @silent doesn't work with `sbt unidoc`
+  def config: UserConfig = userConfig
 
   override def receiveUnManagedMessage: Receive = {
     case msg =>

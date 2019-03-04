@@ -24,7 +24,7 @@ import java.time.Instant
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
 class GroupByTaskSpec extends PropSpec with PropertyChecks

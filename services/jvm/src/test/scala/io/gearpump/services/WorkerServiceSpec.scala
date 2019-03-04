@@ -45,10 +45,10 @@ class WorkerServiceSpec
   mockWorker.setAutoPilot {
     new AutoPilot {
       def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
-        case GetWorkerData(workerId) =>
+        case GetWorkerData(_) =>
           sender ! WorkerData(WorkerSummary.empty)
           KeepRunning
-        case QueryWorkerConfig(workerId) =>
+        case QueryWorkerConfig(_) =>
           sender ! WorkerConfig(null)
           KeepRunning
         case QueryHistoryMetrics(path, _, _, _) =>
@@ -62,7 +62,7 @@ class WorkerServiceSpec
   mockMaster.setAutoPilot {
     new AutoPilot {
       def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
-        case ResolveWorkerId(workerId) =>
+        case ResolveWorkerId(_) =>
           sender ! ResolveWorkerIdResult(Success(mockWorker.ref))
           KeepRunning
       }

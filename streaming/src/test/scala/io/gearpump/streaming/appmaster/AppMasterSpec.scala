@@ -112,8 +112,8 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       // triggers ResourceAllocationTimeout in ExecutorSystemScheduler
       mockMaster.reply(ResourceAllocated(Array(ResourceAllocation(Resource(2),
         mockWorker.ref, workerId))))
-      val statusChanged = mockMaster.expectMsgType[ApplicationStatusChanged](60.seconds)
-      statusChanged.newStatus shouldBe ApplicationStatus.FAILED
+      val statusChanged = mockMaster.expectMsgType[ApplicationStatusChanged](30.seconds)
+      statusChanged.newStatus.isInstanceOf[ApplicationStatus.FAILED] shouldBe true
     }
 
     "reschedule the resource when the worker reject to start executor" in {
@@ -132,7 +132,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       getActorSystem.stop(mockMasterProxy)
       watcher.expectTerminated(mockMasterProxy)
       // Make sure the parent of mockMasterProxy has received the Terminated message.
-      // Issus address: https://github.com/gearpump/gearpump/issues/1919
+      // Issues address: https://github.com/gearpump/gearpump/issues/1919
       Thread.sleep(2000)
 
       import scala.concurrent.duration._
@@ -144,6 +144,15 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     "launch executor and task properly" in {
       val workerSystem = startApp()
       expectAppStarted()
+
+      appMaster.tell(UpdateClock(TaskId(0, 0), 0), mockTask.ref)
+      mockTask.expectMsg(UpstreamMinClock(None))
+      appMaster.tell(UpdateClock(TaskId(0, 1), 0), mockTask.ref)
+      mockTask.expectMsg(UpstreamMinClock(None))
+      appMaster.tell(UpdateClock(TaskId(1, 0), 0), mockTask.ref)
+      mockTask.expectMsg(UpstreamMinClock(Some(0)))
+      appMaster.tell(UpdateClock(TaskId(1, 1), 0), mockTask.ref)
+      mockTask.expectMsg(UpstreamMinClock(Some(0)))
 
       // clock status: task(0,0) -> 1, task(0,1)->0, task(1,0)->0, task(1,1)->0
       appMaster.tell(UpdateClock(TaskId(0, 0), 1), mockTask.ref)
@@ -202,7 +211,7 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       appMaster.tell(AppMasterDataDetailRequest(appId), mockTask.ref)
       mockTask.expectMsgType[StreamAppMasterSummary](30.seconds)
       appMaster.tell(AppMasterDataDetailRequest(invalidAppId), mockTask.ref)
-      mockTask.expectNoMsg()
+      mockTask.expectNoMessage()
 
       for {
         i <- 0 to 1
@@ -235,13 +244,13 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
         failure.error shouldBe cause
 
         appMaster.tell(GetLastFailure(invalidAppId), mockTask.ref)
-        mockTask.expectNoMsg()
+        mockTask.expectNoMessage()
       }
 
       // fail to recover after restarting a tasks for 5 times
       appMaster.tell(MessageLoss(0, TaskId(0, 0), "message loss"), mockTask.ref)
       val statusChanged = mockMaster.expectMsgType[ApplicationStatusChanged](60.seconds)
-      statusChanged.newStatus shouldBe ApplicationStatus.FAILED
+      statusChanged.newStatus.isInstanceOf[ApplicationStatus.FAILED] shouldBe true
 
       workerSystem.terminate()
     }
@@ -254,12 +263,12 @@ class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       expectAppStarted()
 
       appMaster.tell(ReplayFromTimestampWindowTrailingEdge(invalidAppId), mockTask.ref)
-      mockMaster.expectNoMsg()
+      mockMaster.expectNoMessage()
     }
   }
 
   def ignoreSaveAppData: PartialFunction[Any, Boolean] = {
-    case msg: SaveAppData => true
+    case _: SaveAppData => true
   }
 
   def startApp(): ActorSystem = {

@@ -24,7 +24,7 @@ object TestProbeUtil {
       val probeRef = probe.ref
       context.watch(probeRef)
       def receive: Receive = {
-        case Terminated(probeRef) => context.stop(self)
+        case Terminated(_) => context.stop(self)
         case x => probeRef.forward(x)
       }
     })

@@ -29,7 +29,7 @@ import java.time.Instant
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.{Matchers, WordSpec}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
   import io.gearpump.streaming.dsl.plan.functions.FunctionRunnerSpec._
@@ -273,7 +273,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
 
       task.onWatermarkProgress(Watermark.MAX)
 
-      verify(taskContext, times(data.length * 2)).output(anyObject())
+      verify(taskContext, times(data.length * 2)).output(any[Message])
     }
   }
 }

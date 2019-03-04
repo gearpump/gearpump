@@ -22,7 +22,6 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import io.gearpump.util.Util
 import scala.concurrent.{Await, Future}
-// NOTE: This cannot be removed!!
 
 /**
  * Serves as a fake OAuth2 server.

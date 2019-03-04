@@ -23,7 +23,6 @@ import io.gearpump.streaming.appmaster.AppMaster
 import io.gearpump.util.Graph
 
 object StreamingTestUtil {
-  private var executorId = 0
   val testUserName = "testuser"
 
   def startAppMaster(miniCluster: MiniCluster, appId: Int): TestActorRef[AppMaster] = {

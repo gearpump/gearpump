@@ -119,7 +119,6 @@ class HistoryMetricsServiceSpec extends FlatSpec with Matchers with BeforeAndAft
   "HistoryMetricsService" should
     "retain lastest metrics data and allow user to query metrics by path" in {
     implicit val system = ActorSystem("test", TestUtil.DEFAULT_CONFIG)
-    val appId = 0
     val service = system.actorOf(Props(new HistoryMetricsService("app0", config)))
     service ! Counter("metric.counter", 0)
     service ! Meter("metric.meter", 0, 0, 0, null)
@@ -174,9 +173,9 @@ class HistoryMetricsServiceSpec extends FlatSpec with Matchers with BeforeAndAft
 
         metricList.foreach(metricItem =>
           metricItem.value match {
-            case v: Counter => counterFound = true
-            case v: Meter => meterFound = true
-            case v: Histogram => histogramFound = true
+            case _: Counter => counterFound = true
+            case _: Meter => meterFound = true
+            case _: Histogram => histogramFound = true
             case _ => // Skip
           }
         )

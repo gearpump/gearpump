@@ -36,7 +36,7 @@ import io.gearpump.streaming.ProcessorDescription
 import io.gearpump.util.Graph
 import java.io.File
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
 
@@ -89,7 +89,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest
         case QueryMasterConfig =>
           sender ! MasterConfig(null)
           KeepRunning
-        case submit: SubmitApplication =>
+        case _: SubmitApplication =>
           sender ! SubmitApplicationResult(Success(0))
           KeepRunning
       }
@@ -157,7 +157,7 @@ class MasterServiceSpec extends FlatSpec with ScalatestRouteTest
     }
   }
 
-  private def entity(file: File)(implicit ec: ExecutionContext): Future[RequestEntity] = {
+  private def entity(file: File): Future[RequestEntity] = {
     val entity = HttpEntity(MediaTypes.`application/octet-stream`, file.length(),
       FileIO.fromPath(file.toPath, chunkSize = 100000))
 

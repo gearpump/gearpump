@@ -71,7 +71,7 @@ class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with
     appMaster.send(appManager, register)
     appMaster.expectMsgType[AppMasterRegistered]
 
-    val active = ApplicationStatusChanged(appId, ApplicationStatus.ACTIVE, 0, null)
+    val active = ApplicationStatusChanged(appId, ApplicationStatus.ACTIVE, 0)
     appMaster.send(appManager, active)
     appMaster.expectMsgType[AppMasterActivated]
   }

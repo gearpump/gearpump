@@ -14,15 +14,17 @@
 
 package io.gearpump.streaming.state.impl
 
+import com.github.ghik.silencer.silent
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.streaming.state.api.{Monoid, Serializer}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import scala.util.Success
 
+@silent // dead code following this construct
 class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   val longGen = Gen.chooseNum[Long](100L, System.currentTimeMillis())

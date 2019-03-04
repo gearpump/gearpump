@@ -56,9 +56,9 @@ class InMemoryKVServiceSpec
 
     // After DeleteGroup, it no longer accept Get and Put message for this group.
     client.send(kvService, GetKV(group, "key"))
-    client.expectNoMsg(3.seconds)
+    client.expectNoMessage(3.seconds)
 
     client.send(kvService, PutKV(group, "key", 3))
-    client.expectNoMsg(3.seconds)
+    client.expectNoMessage(3.seconds)
   }
 }

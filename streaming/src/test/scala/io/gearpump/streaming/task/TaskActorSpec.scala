@@ -17,7 +17,7 @@ import akka.actor.{ExtendedActorSystem, Props}
 import akka.testkit._
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.Message
-import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig}
+import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.serializer.{FastKryoSerializer, SerializationFramework}
 import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import io.gearpump.streaming.AppMasterToExecutor.{ChangeTask, MsgLostException, StartTask, TaskChanged, TaskRegistered}
@@ -69,7 +69,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     "register itself to AppMaster when started" in {
       val mockTask = mock(classOf[TaskWrapper])
       val testActor = TestActorRef[TaskActor](Props(
-        new TaskActor(taskId1, taskContext1, UserConfig.empty,
+        new TaskActor(taskId1, taskContext1,
           mockTask, mockSerializerPool)))(getActorSystem)
       testActor ! TaskRegistered(taskId1, 0, Util.randInt())
       testActor ! StartTask(taskId1)
@@ -84,7 +84,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
     "respond to ChangeTask" in {
       val mockTask = mock(classOf[TaskWrapper])
       val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1,
-      UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
+        mockTask, mockSerializerPool)))(getActorSystem)
       testActor ! TaskRegistered(taskId1, 0, Util.randInt())
       testActor ! StartTask(taskId1)
       mockMaster.expectMsgType[GetUpstreamMinClock]
@@ -98,7 +98,7 @@ class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with 
       val msg = Message("test")
 
       val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1,
-      UserConfig.empty, mockTask, mockSerializerPool)))(getActorSystem)
+        mockTask, mockSerializerPool)))(getActorSystem)
       testActor.tell(TaskRegistered(taskId1, 0, Util.randInt()), mockMaster.ref)
       testActor.tell(StartTask(taskId1), mockMaster.ref)
 

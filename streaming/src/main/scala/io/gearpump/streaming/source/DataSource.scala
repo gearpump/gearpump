@@ -43,7 +43,7 @@ trait DataSource extends java.io.Serializable {
 
   /**
    * Opens connection to data source
-   * invoked in onStart() method of [[DataSourceTask]]
+   * invoked in onStart() method of [[io.gearpump.streaming.source.DataSourceTask]]
    *
    * @param context is the task context at runtime
    * @param startTime is the start time of system
@@ -60,7 +60,7 @@ trait DataSource extends java.io.Serializable {
 
   /**
    * Closes connection to data source.
-   * invoked in onStop() method of [[DataSourceTask]]
+   * invoked in onStop() method of [[io.gearpump.streaming.source.DataSourceTask]]
    */
   def close(): Unit
 

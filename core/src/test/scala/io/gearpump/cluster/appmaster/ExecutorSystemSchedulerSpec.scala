@@ -54,7 +54,7 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
     client = TestProbe()
 
     val scheduler = system.actorOf(
-      Props(new ExecutorSystemScheduler(appId, masterProxy.ref, (appId: Int, session: Session) => {
+      Props(new ExecutorSystemScheduler(appId, masterProxy.ref, (_: Int, session: Session) => {
         Props(new MockExecutorSystemLauncher(launcher, session))
       })))
 
@@ -72,7 +72,7 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
 
     launcherStarted match {
       case start: ExecutorSystemLauncherStarted => Some(start)
-      case x =>
+      case _ =>
         assert(false, "ExecutorSystemLauncherStarted == false")
         None
     }
@@ -84,7 +84,7 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
 
     val ExecutorSystemLauncherStarted(session) = launcherStarted(launcher).get
 
-    var systemId = 0
+    val systemId = 0
     launcher.expectMsg(LaunchExecutorSystem(workerInfo, systemId, resource))
 
     val executorSystemProbe = TestProbe()
@@ -103,7 +103,7 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
     masterProxy.reply(ResourceAllocated(Array(ResourceAllocation(resource, worker.ref, workerId))))
     val ExecutorSystemLauncherStarted(session) = launcherStarted(launcher).get
 
-    var systemId = 0
+    val systemId = 0
     launcher.expectMsg(LaunchExecutorSystem(workerInfo, systemId, resource))
     launcher.reply(LaunchExecutorSystemRejected(resource, "", session))
     masterProxy.expectMsg(RequestResource(appId, resourceRequest))
@@ -114,7 +114,7 @@ class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndA
     masterProxy.reply(ResourceAllocated(Array(ResourceAllocation(resource, worker.ref, workerId))))
     val ExecutorSystemLauncherStarted(session) = launcherStarted(launcher).get
 
-    var systemId = 0
+    val systemId = 0
     launcher.expectMsg(LaunchExecutorSystem(workerInfo, systemId, resource))
     launcher.reply(LaunchExecutorSystemTimeout(session))
     client.expectMsg(StartExecutorSystemTimeout)

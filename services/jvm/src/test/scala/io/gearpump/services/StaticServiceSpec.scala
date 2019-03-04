@@ -16,13 +16,11 @@ package io.gearpump.services
 
 import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.Constants
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import scala.concurrent.duration._
-import scala.util.Try
-// NOTE: This cannot be removed!!!
 
 class StaticServiceSpec
   extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
@@ -37,7 +35,6 @@ class StaticServiceSpec
     implicit val customTimeout = RouteTestTimeout(15.seconds)
     (Get(s"/version") ~> route) ~> check {
       val responseBody = responseAs[String]
-      val config = Try(ConfigFactory.parseString(responseBody))
       assert(responseBody == "Unknown-Version")
 
       // By default, it will be cached.

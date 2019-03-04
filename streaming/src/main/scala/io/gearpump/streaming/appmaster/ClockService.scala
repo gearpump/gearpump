@@ -58,6 +58,7 @@ class ClockService(
       // (null).asInstanceOf[MilliSeconds] is zero
       val startClock = if (clock != null) clock.asInstanceOf[MilliSeconds] else Time.MIN_TIME_MILLIS
 
+      minClock = startClock
       minCheckpointClock = Some(startClock)
 
       // Recover the application by restarting from last persisted startClock.
@@ -301,7 +302,6 @@ class ClockService(
     if (clocks.contains(task.processorId)) {
       clocks(task.processorId).updateMinClock(task.index, clock)
       minClock = ProcessorClocks.minClock(processorClocks)
-
     } else {
       LOG.error(s"Cannot updateClock for task $task")
     }

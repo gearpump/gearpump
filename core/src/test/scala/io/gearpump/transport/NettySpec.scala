@@ -22,7 +22,7 @@ import io.gearpump.transport.netty.{Context, TaskMessage}
 import io.gearpump.util.Util
 import java.util.concurrent.TimeUnit
 import org.scalatest.{FlatSpec, Matchers}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

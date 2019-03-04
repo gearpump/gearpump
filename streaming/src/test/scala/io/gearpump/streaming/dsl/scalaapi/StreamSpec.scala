@@ -28,7 +28,7 @@ import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.mockito.Mockito.when
 import org.scalatest._
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.util.{Either, Left, Right}
@@ -75,7 +75,7 @@ class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Mock
     val dag = app.userConfig
       .getValue[Graph[ProcessorDescription, PartitionerDescription]](StreamApplication.DAG).get
 
-    val dagTopology = dag.mapVertex(_.taskClass).mapEdge { (node1, edge, node2) =>
+    val dagTopology = dag.mapVertex(_.taskClass).mapEdge { (_, edge, _) =>
       edge.partitionerFactory.partitioner.getClass.getName
     }
     val expectedDagTopology = getExpectedDagTopology

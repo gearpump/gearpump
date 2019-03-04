@@ -22,7 +22,7 @@ import java.time.Instant
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
 class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
@@ -31,7 +31,6 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
     forAll(Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) {
       (startTime: Instant) =>
       val taskContext = MockUtil.mockTaskContext
-      implicit val system = MockUtil.system
       val dataSource = mock[DataSource]
       val config = UserConfig.empty
         .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
@@ -48,7 +47,6 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
     forAll(Gen.alphaStr, Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) {
       (str: String, timestamp: Instant) =>
         val taskContext = MockUtil.mockTaskContext
-        implicit val system = MockUtil.system
         val dataSource = mock[DataSource]
         val config = UserConfig.empty
           .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
@@ -74,7 +72,6 @@ class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with
 
   property("DataSourceTask should teardown DataSource") {
     val taskContext = MockUtil.mockTaskContext
-    implicit val system = MockUtil.system
     val dataSource = mock[DataSource]
     val config = UserConfig.empty
       .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)

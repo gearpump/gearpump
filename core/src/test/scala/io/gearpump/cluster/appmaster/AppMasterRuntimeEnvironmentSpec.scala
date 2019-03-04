@@ -76,7 +76,7 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
   }
 
   "AppMasterRuntimeEnvironment" should "start appMaster when master is connected" in {
-    val TestAppMasterEnv(master, appMaster, masterConnectionKeeper, runtimeEnv) =
+    val TestAppMasterEnv(_, appMaster, masterConnectionKeeper, runtimeEnv) =
       setupAppMasterRuntimeEnv()
 
     masterConnectionKeeper.send(runtimeEnv, MasterConnected)
@@ -85,7 +85,7 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
 
   "AppMasterRuntimeEnvironment" should "shutdown itself when master is stopped" in {
 
-    val TestAppMasterEnv(master, appMaster, masterConnectionKeeper, runtimeEnv) =
+    val TestAppMasterEnv(_, _, masterConnectionKeeper, runtimeEnv) =
       setupAppMasterRuntimeEnv()
 
     masterConnectionKeeper.send(runtimeEnv, MasterStopped)
@@ -96,7 +96,7 @@ class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with Before
 
   "AppMasterRuntimeEnvironment" should "shutdown itself when appMaster is stopped" in {
 
-    val TestAppMasterEnv(master, appMaster, masterConnectionKeeper, runtimeEnv) =
+    val TestAppMasterEnv(_, appMaster, _, runtimeEnv) =
       setupAppMasterRuntimeEnv()
 
     val client = TestProbe()

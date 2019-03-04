@@ -21,11 +21,10 @@ import java.time.Instant
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
 class DataSinkTaskSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
-
 
   property("DataSinkTask.onStart should call DataSink.open" ) {
     forAll(Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) { (startTime: Instant) =>

@@ -22,8 +22,6 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-// NOTE: This cannot be removed!!!
-
 class AdminServiceSpec
   extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
 
