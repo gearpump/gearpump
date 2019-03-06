@@ -15,6 +15,7 @@
 package io.gearpump.streaming.dsl.plan
 
 import akka.actor.ActorSystem
+import com.github.ghik.silencer.silent
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.{Constants, Processor}
 import io.gearpump.streaming.Processor.DefaultProcessor
@@ -25,6 +26,7 @@ import io.gearpump.streaming.dsl.window.impl.{AndThenOperator, FlatMapOperator, 
 import io.gearpump.streaming.sink.{DataSink, DataSinkProcessor}
 import io.gearpump.streaming.source.{DataSource, DataSourceTask}
 import io.gearpump.streaming.task.Task
+
 import scala.reflect.ClassTag
 
 object Op {
@@ -290,14 +292,14 @@ case class WindowOp(
 object GroupByOp {
 
   // work around for https://github.com/scala/bug/issues/7707
-  def apply[IN, GROUP](groupBy: IN => GROUP): GroupByOp[IN, GROUP] = {
+/*  def apply[IN, GROUP](groupBy: IN => GROUP): GroupByOp[IN, GROUP] = {
     GroupByOp(groupBy, 1, "groupBy", UserConfig.empty)
   }
 
   def apply[IN, GROUP](groupBy: IN => GROUP,
       parallelism: Int, description: String): GroupByOp[IN, GROUP] = {
     GroupByOp(groupBy, parallelism, description, UserConfig.empty)
-  }
+  }*/
 }
 /**
  * This represents an operation with groupBy followed by window aggregation.
@@ -310,11 +312,12 @@ object GroupByOp {
  * [[io.gearpump.streaming.dsl.plan.functions.DummyRunner]] to create a WindowTransformOp.
  */
 
+@silent //https://github.com/scala/bug/issues/7707
 case class GroupByOp[IN, GROUP] private(
     groupBy: IN => GROUP,
-    parallelism: Int,
-    description: String,
-    override val userConfig: UserConfig)
+    parallelism: Int = 1,
+    description: String = "groupBy",
+    override val userConfig: UserConfig = UserConfig.empty)
   extends Op {
 
   override def chain(other: Op)(implicit system: ActorSystem): Op = {

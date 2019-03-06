@@ -14,8 +14,8 @@
 
 import Dependencies._
 import com.typesafe.sbt.SbtPgp.autoImport._
-import sbt.Keys._
 import sbt._
+import sbt.Keys._
 import sbtassembly.AssemblyPlugin.autoImport._
 import xerial.sbt.Sonatype._
 

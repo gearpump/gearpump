@@ -12,8 +12,9 @@
  * limitations under the License.
  */
 
-import sbt.Keys._
+import Dependencies._
 import sbt._
+import sbt.Keys._
 import sbtunidoc.BaseUnidocPlugin.autoImport.{unidoc, unidocAllSources, unidocProjectFilter}
 import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
 import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
@@ -35,7 +36,9 @@ object Docs {
     // Skip class names containing $ and some internal packages in Javadocs
     unidocAllSources in(JavaUnidoc, unidoc) := {
      ignoreUndocumentedPackages((unidocAllSources in(JavaUnidoc, unidoc)).value)
-    }
+    },
+
+    libraryDependencies ++= compilerDependencies
   )
 
   private def ignoreUndocumentedPackages(packages: Seq[Seq[File]]): Seq[Seq[File]] = {
