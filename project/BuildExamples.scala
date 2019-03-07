@@ -12,9 +12,9 @@
  * limitations under the License.
  */
 
-import sbt.Keys._
-import sbt._
 import BuildGearpump._
+import sbt._
+import sbt.Keys._
 import sbtassembly.AssemblyPlugin.autoImport._
 
 import scala.annotation.tailrec

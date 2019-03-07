@@ -13,8 +13,8 @@
  */
 
 import BuildGearpump._
-import Docs._
 import Dependencies._
+import Docs._
 import sbt._
 import sbt.Keys._
 

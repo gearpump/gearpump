@@ -12,9 +12,9 @@
  * limitations under the License.
  */
 
-import sbt.Keys._
-import sbt._
 import BuildGearpump._
+import sbt._
+import sbt.Keys._
 import xerial.sbt.pack.PackPlugin.autoImport._
 
 object Pack {
