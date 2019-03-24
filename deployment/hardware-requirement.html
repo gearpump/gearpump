@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Hardware Requirement - Apache Gearpump(incubating)</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Hardware Requirement";
+    var mkdocs_page_input_path = "deployment/hardware-requirement.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="icon icon-home"> Apache Gearpump(incubating)</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../index.html">Overview</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Introduction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../introduction/quick-start.html">Quick Start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/submit-your-1st-application.html">Submit Your 1st Application</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/commandline.html">Client Command Line</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/basic-concepts.html">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/features.html">Technical Highlights</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/message-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/performance-report.html">Performance</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Deployment</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="deployment-local.html">Local Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-standalone.html">Standalone Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-yarn.html">YARN Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-docker.html">Docker Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-ui-authentication.html">UI Authentication</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-ha.html">High Availability</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-msg-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-configuration.html">Configuration</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-resource-isolation.html">Resource Isolation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-security.html">YARN Security Guide</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="get-gearpump-distribution.html">How to Get Your Gearpump Distribution</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="hardware-requirement.html">Hardware Requirement</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#pre-requisite">Pre-requisite</a></li>
+    
+
+    </ul>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Programming Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../dev/dev-write-1st-app.html">Write Your 1st App</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-custom-serializer.html">Customized Message Passing</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-connectors.html">Gearpump Connectors</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-storm.html">Storm Compatibility</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-ide-setup.html">IDE Setup</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-non-streaming-example.html">Non Streaming Examples</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-rest-api.html">REST API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/scala.html">Scala API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/java.html">Java API</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Internals</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../internals/gearpump-internals.html">Gearpump Internals</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Apache Gearpump(incubating)</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Deployment &raquo;</li>
+        
+      
+    
+    <li>Hardware Requirement</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/apache/incubator-gearpump/edit/master/docs/contents/deployment/hardware-requirement.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h3 id="pre-requisite">Pre-requisite</h3>
+<p>Gearpump cluster can be installed on Windows OS and Linux.</p>
+<p>Before installation, you need to decide how many machines are used to run this cluster.</p>
+<p>For each machine, the requirements are listed in table below.</p>
+<p><strong>Table: Environment requirement on single machine</strong></p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Requirements</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Memory</td>
+<td>2GB free memory is required to run the cluster. For any production system, 32GB memory is recommended.</td>
+</tr>
+<tr>
+<td>Java</td>
+<td>JRE 6 or above</td>
+</tr>
+<tr>
+<td>User permission</td>
+<td>Root permission is not required</td>
+</tr>
+<tr>
+<td>Network Ethernet</td>
+<td>(TCP/IP)</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>Nothing special</td>
+</tr>
+<tr>
+<td>HDFS installation</td>
+<td>Default is not required. You only need to install it when you want to store the application jars in HDFS.</td>
+</tr>
+<tr>
+<td>Kafka installation</td>
+<td>Default is not required. You need to install Kafka when you want the at-least once message delivery feature. Currently, the only supported data source for this feature is Kafka</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Table: The default port used in Gearpump:</strong></p>
+<table>
+<thead>
+<tr>
+<th>usage</th>
+<th>Port</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dashboard UI</td>
+<td>8090</td>
+<td>Web UI.</td>
+</tr>
+<tr>
+<td>Dashboard web socket service</td>
+<td>8091</td>
+<td>UI backend web socket service for long connection.</td>
+</tr>
+<tr>
+<td>Master port</td>
+<td>3000</td>
+<td>Every other role like worker, appmaster, executor, user use this port to communicate with Master.</td>
+</tr>
+</tbody>
+</table>
+<p>You need to ensure that your firewall has not banned these ports to ensure Gearpump can work correctly.
+And you can modify the port configuration. Check <a href="deployment-configuration">Configuration</a> section for details.  </p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../dev/dev-write-1st-app.html" class="btn btn-neutral float-right" title="Write Your 1st App">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="get-gearpump-distribution.html" class="btn btn-neutral" title="How to Get Your Gearpump Distribution"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/apache/incubator-gearpump/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="get-gearpump-distribution.html" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../dev/dev-write-1st-app.html" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Customized Message Passing - Apache Gearpump(incubating)</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Customized Message Passing";
+    var mkdocs_page_input_path = "dev/dev-custom-serializer.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="icon icon-home"> Apache Gearpump(incubating)</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../index.html">Overview</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Introduction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../introduction/quick-start.html">Quick Start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/submit-your-1st-application.html">Submit Your 1st Application</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/commandline.html">Client Command Line</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/basic-concepts.html">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/features.html">Technical Highlights</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/message-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/performance-report.html">Performance</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Deployment</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-local.html">Local Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-standalone.html">Standalone Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-yarn.html">YARN Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-docker.html">Docker Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ui-authentication.html">UI Authentication</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ha.html">High Availability</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-msg-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-configuration.html">Configuration</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-resource-isolation.html">Resource Isolation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-security.html">YARN Security Guide</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/get-gearpump-distribution.html">How to Get Your Gearpump Distribution</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/hardware-requirement.html">Hardware Requirement</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Programming Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="dev-write-1st-app.html">Write Your 1st App</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="dev-custom-serializer.html">Customized Message Passing</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#register-a-class-before-serialization">Register a class before serialization.</a></li>
+    
+
+    <li class="toctree-l3"><a href="#how-to-define-a-custom-serializer-for-built-in-kryo-serialization-framework">How to define a custom serializer for built-in kryo serialization framework</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#system-level-serializer">System Level Serializer</a></li>
+        
+            <li><a class="toctree-l4" href="#define-application-level-custom-serializer">Define Application level custom serializer</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#advanced-choose-another-serialization-framework">Advanced: Choose another serialization framework</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-connectors.html">Gearpump Connectors</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-storm.html">Storm Compatibility</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-ide-setup.html">IDE Setup</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-non-streaming-example.html">Non Streaming Examples</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-rest-api.html">REST API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/scala.html">Scala API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/java.html">Java API</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Internals</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../internals/gearpump-internals.html">Gearpump Internals</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Apache Gearpump(incubating)</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Programming Guide &raquo;</li>
+        
+      
+    
+    <li>Customized Message Passing</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/apache/incubator-gearpump/edit/master/docs/contents/dev/dev-custom-serializer.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p>Gearpump has a built-in serialization framework with a shaded Kryo version, which allows you to customize how a specific message type can be serialized. </p>
+<h4 id="register-a-class-before-serialization">Register a class before serialization.</h4>
+<p>Note, to use built-in kryo serialization framework, Gearpump requires all classes to be registered explicitly before using, no matter you want to use a custom serializer or not. If not using custom serializer, Gearpump will use default com.esotericsoftware.kryo.serializers.FieldSerializer to serialize the class. </p>
+<p>To register a class, you need to change the configuration file gear.conf(or application.conf if you want it only take effect for single application).</p>
+<pre class="codehilite"><code class="language-json">gearpump {
+  serializers {
+    ## We will use default FieldSerializer to serialize this class type
+    &quot;io.gearpump.UserMessage&quot; = &quot;&quot;
+
+    ## we will use custom serializer to serialize this class type
+    &quot;io.gearpump.UserMessage2&quot; = &quot;io.gearpump.UserMessageSerializer&quot;
+  }
+}</code></pre>
+
+
+<h4 id="how-to-define-a-custom-serializer-for-built-in-kryo-serialization-framework">How to define a custom serializer for built-in kryo serialization framework</h4>
+<p>When you decide that you want to define a custom serializer, you can do this in two ways.</p>
+<p>Please note that Gearpump shaded the original Kryo dependency. The package name <code>com.esotericsoftware</code> was relocated to <code>io.gearpump.esotericsoftware</code>. So in the following customization, you should import corresponding shaded classes, the example code will show that part.</p>
+<p>In general you should use the shaded version of a library whenever possible in order to avoid binary incompatibilities, eg don't use:</p>
+<pre class="codehilite"><code class="language-scala">import com.google.common.io.Files</code></pre>
+
+
+<p>but rather</p>
+<pre class="codehilite"><code class="language-scala">import io.gearpump.google.common.io.Files</code></pre>
+
+
+<h5 id="system-level-serializer">System Level Serializer</h5>
+<p>If the serializer is widely used, you can define a global serializer which is available to all applications(or worker or master) in the system.</p>
+<h6 id="step1-you-first-need-to-develop-a-java-library-which-contains-the-custom-serializer-class-here-is-an-example">Step1: you first need to develop a java library which contains the custom serializer class. here is an example:</h6>
+<pre class="codehilite"><code class="language-scala">package io.gearpump
+
+import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
+import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
+
+class UserMessage(longField: Long, intField: Int)
+
+class UserMessageSerializer extends Serializer[UserMessage] {
+  override def write(kryo: Kryo, output: Output, obj: UserMessage) = {
+    output.writeLong(obj.longField)
+    output.writeInt(obj.intField)
+  }
+
+  override def read(kryo: Kryo, input: Input, typ: Class[UserMessage]): UserMessage = {
+    val longField = input.readLong()
+    val intField = input.readInt()
+    new UserMessage(longField, intField)
+  }
+}</code></pre>
+
+
+<h6 id="step2-distribute-the-libraries">Step2: Distribute the libraries</h6>
+<p>Distribute the jar file to lib/ folder of every Gearpump installation in the cluster.</p>
+<h6 id="step3-change-gearconf-on-every-machine-of-the-cluster">Step3: change gear.conf on every machine of the cluster:</h6>
+<pre class="codehilite"><code class="language-json">gearpump {
+  serializers {
+    &quot;io.gearpump.UserMessage&quot; = &quot;io.gearpump.UserMessageSerializer&quot;
+  }
+}</code></pre>
+
+
+<h6 id="all-set">All set!</h6>
+<h5 id="define-application-level-custom-serializer">Define Application level custom serializer</h5>
+<p>If all you want is to define an application level serializer, which is only visible to current application AppMaster and Executors(including tasks), you can follow a different approach.</p>
+<h6 id="step1-define-your-custom-serializer-class">Step1: Define your custom Serializer class</h6>
+<p>You should include the Serializer class in your application jar. Here is an example to define a custom serializer:</p>
+<pre class="codehilite"><code class="language-scala">package io.gearpump
+
+import io.gearpump.esotericsoftware.kryo.{Kryo, Serializer}
+import io.gearpump.esotericsoftware.kryo.io.{Input, Output}
+
+class UserMessage(longField: Long, intField: Int)
+
+class UserMessageSerializer extends Serializer[UserMessage] {
+  override def write(kryo: Kryo, output: Output, obj: UserMessage) = {
+    output.writeLong(obj.longField)
+    output.writeInt(obj.intField)
+  }
+
+  override def read(kryo: Kryo, input: Input, typ: Class[UserMessage]): UserMessage = {
+    val longField = input.readLong()
+    val intField = input.readInt()
+    new UserMessage(longField, intField)
+  }
+}</code></pre>
+
+
+<h6 id="step2-put-a-applicationconf-in-your-classpath-on-client-machine-where-you-submit-the-application">Step2: Put a application.conf in your classpath on Client machine where you submit the application,</h6>
+<pre class="codehilite"><code class="language-json">### content of application.conf
+gearpump {
+  serializers {
+    &quot;io.gearpump.UserMessage&quot; = &quot;io.gearpump.UserMessageSerializer&quot;
+  }
+}</code></pre>
+
+
+<h6 id="step3-all-set">Step3: All set!</h6>
+<h4 id="advanced-choose-another-serialization-framework">Advanced: Choose another serialization framework</h4>
+<p>Note: This is only for advanced user which require deep customization of Gearpump platform.</p>
+<p>There are other serialization framework besides Kryo, like Protobuf. If user don't want to use the built-in kryo serialization framework, he can customize a new serialization framework. </p>
+<p>basically, user need to define in gear.conf(or application.conf for single application's scope) file like this:</p>
+<pre class="codehilite"><code class="language-bash">gearpump.serialization-framework = &quot;io.gearpump.serializer.CustomSerializationFramework&quot;</code></pre>
+
+
+<p>Please find an example in gearpump storm module, search "StormSerializationFramework" in source code.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="dev-connectors.html" class="btn btn-neutral float-right" title="Gearpump Connectors">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="dev-write-1st-app.html" class="btn btn-neutral" title="Write Your 1st App"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/apache/incubator-gearpump/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="dev-write-1st-app.html" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="dev-connectors.html" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>

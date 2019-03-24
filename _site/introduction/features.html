@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Technical Highlights - Apache Gearpump(incubating)</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Technical Highlights";
+    var mkdocs_page_input_path = "introduction/features.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="icon icon-home"> Apache Gearpump(incubating)</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../index.html">Overview</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Introduction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="quick-start.html">Quick Start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="submit-your-1st-application.html">Submit Your 1st Application</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="commandline.html">Client Command Line</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="basic-concepts.html">Basic Concepts</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="features.html">Technical Highlights</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#technical-highlights-of-gearpump">Technical highlights of Gearpump</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#actors-everywhere">Actors everywhere</a></li>
+        
+            <li><a class="toctree-l4" href="#exactly-once-message-processing">Exactly once Message Processing</a></li>
+        
+            <li><a class="toctree-l4" href="#topology-dag-dsl">Topology DAG DSL</a></li>
+        
+            <li><a class="toctree-l4" href="#flow-control">Flow control</a></li>
+        
+            <li><a class="toctree-l4" href="#no-inherent-end-to-end-latency">No inherent end to end latency</a></li>
+        
+            <li><a class="toctree-l4" href="#high-performance-message-passing">High Performance message passing</a></li>
+        
+            <li><a class="toctree-l4" href="#high-availability-no-single-point-of-failure">High availability, No single point of failure</a></li>
+        
+            <li><a class="toctree-l4" href="#dynamic-computation-dag">Dynamic Computation DAG</a></li>
+        
+            <li><a class="toctree-l4" href="#able-to-handle-out-of-order-messages">Able to handle out of order messages</a></li>
+        
+            <li><a class="toctree-l4" href="#customizable-platform">Customizable platform</a></li>
+        
+            <li><a class="toctree-l4" href="#built-in-dashboard-ui">Built-in Dashboard UI</a></li>
+        
+            <li><a class="toctree-l4" href="#data-connectors-for-kafka-and-hdfs">Data connectors for Kafka and HDFS</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="message-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="performance-report.html">Performance</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Deployment</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-local.html">Local Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-standalone.html">Standalone Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-yarn.html">YARN Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-docker.html">Docker Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ui-authentication.html">UI Authentication</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ha.html">High Availability</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-msg-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-configuration.html">Configuration</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-resource-isolation.html">Resource Isolation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-security.html">YARN Security Guide</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/get-gearpump-distribution.html">How to Get Your Gearpump Distribution</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/hardware-requirement.html">Hardware Requirement</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Programming Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../dev/dev-write-1st-app.html">Write Your 1st App</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-custom-serializer.html">Customized Message Passing</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-connectors.html">Gearpump Connectors</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-storm.html">Storm Compatibility</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-ide-setup.html">IDE Setup</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-non-streaming-example.html">Non Streaming Examples</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-rest-api.html">REST API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/scala.html">Scala API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/java.html">Java API</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Internals</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../internals/gearpump-internals.html">Gearpump Internals</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Apache Gearpump(incubating)</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Introduction &raquo;</li>
+        
+      
+    
+    <li>Technical Highlights</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/apache/incubator-gearpump/edit/master/docs/contents/introduction/features.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h3 id="technical-highlights-of-gearpump">Technical highlights of Gearpump</h3>
+<p>Gearpump is a high performance, flexible, fault-tolerant, and responsive streaming platform with a lot of nice features, its technical highlights include:</p>
+<h4 id="actors-everywhere">Actors everywhere</h4>
+<p>The Actor model is a concurrency model proposed by Carl Hewitt at 1973. The Actor model is like a micro-service which is cohesive in the inside and isolated from other outside actors. Actors are the cornerstone of Gearpump, they provide facilities to do message passing, error handling, liveliness monitoring. Gearpump uses Actors everywhere; every entity within the cluster that can be treated as a service.</p>
+<p><img alt="Actor Hierarchy" src="../img/actor_hierarchy.png" /></p>
+<h4 id="exactly-once-message-processing">Exactly once Message Processing</h4>
+<p>Exactly once is defined as: the effect of a message will be calculated only once in the persisted state and computation errors in the history will not be propagated to future computations.</p>
+<p><img alt="Exact Once Semantics" src="../img/exact.png" /></p>
+<h4 id="topology-dag-dsl">Topology DAG DSL</h4>
+<p>User can submit to Gearpump a computation DAG, which contains a list of nodes and edges, and each node can be parallelized to a set of tasks. Gearpump will then schedule and distribute different tasks in the DAG to different machines automatically. Each task will be started as an actor, which is long running micro-service.</p>
+<p><img alt="DAG" src="../img/dag.png" /></p>
+<h4 id="flow-control">Flow control</h4>
+<p>Gearpump has built-in support for flow control. For all message passing between different tasks, the framework will assure the upstream tasks will not flood the downstream tasks.
+<img alt="Flow Control" src="../img/flowcontrol.png" /></p>
+<h4 id="no-inherent-end-to-end-latency">No inherent end to end latency</h4>
+<p>Gearpump is a message level streaming engine, which means every task in the DAG will process messages immediately upon receiving, and deliver messages to downstream immediately without waiting. Gearpump doesn't do batching when data sourcing.</p>
+<h4 id="high-performance-message-passing">High Performance message passing</h4>
+<p>By implementing smart batching strategies, Gearpump is extremely effective in transferring small messages. In one test of 4 machines, the whole cluster throughput can reach 18 million messages per second, with message size of 100 bytes.
+<img alt="Dashboard" src="../img/dashboard.png" /></p>
+<h4 id="high-availability-no-single-point-of-failure">High availability, No single point of failure</h4>
+<p>Gearpump has a careful design for high availability. We have considered message loss, worker machine crash, application crash, master crash, brain-split, and have made sure Gearpump recovers when these errors may occur. When there is message loss, the lost message will be replayed; when there is a worker machine crash or application crash, the related computation tasks will be rescheduled on new machines. For master high availability, several master nodes will form a Akka cluster, and CRDTs (conflict free data types) are used to exchange the state, so as long as there is still a quorum, the master will stay functional. When one master node fails, other master nodes in the cluster will take over and state will be recovered.</p>
+<p><img alt="HA" src="../img/ha.png" /></p>
+<h4 id="dynamic-computation-dag">Dynamic Computation DAG</h4>
+<p>Gearpump provides a feature which allows the user to dynamically add, remove, or replace a sub graph at runtime, without the need to restart the whole computation topology.</p>
+<p><img alt="Dynamic DAG" src="../img/dynamic.png" /></p>
+<h4 id="able-to-handle-out-of-order-messages">Able to handle out of order messages</h4>
+<p>For a window operation like moving average on a sliding window, it is important to make sure we have received all messages in that time window so that we can get an accurate result, but how do we handle stranglers or late arriving messages? Gearpump solves this problem by tracking the low watermark of timestamp of all messages, so it knows whether we've received all the messages in the time window or not.</p>
+<p><img alt="Clock" src="../img/clock.png" /></p>
+<h4 id="customizable-platform">Customizable platform</h4>
+<p>Different applications have different requirements related to performance metrics, some may want higher throughput, some may require strong eventual data consistency; and different applications have different resource requirements profiles, some may demand high CPU performance, some may require data locality. Gearpump meets these requirements by allowing the user to arbitrate between different performance metrics and define customized resource scheduling strategies.</p>
+<h4 id="built-in-dashboard-ui">Built-in Dashboard UI</h4>
+<p>Gearpump has a built-in dashboard UI to manage the cluster and visualize the applications. The UI uses REST calls to connect with backend, so it is easy to embed the UI within other dashboards.</p>
+<p><img alt="Dashboard" src="../img/dashboard.gif" /></p>
+<h4 id="data-connectors-for-kafka-and-hdfs">Data connectors for Kafka and HDFS</h4>
+<p>Gearpump has built-in data connectors for Kafka and HDFS. For the Kafka connector, we support message replay from a specified timestamp.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="message-delivery.html" class="btn btn-neutral float-right" title="Reliable Message Delivery">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="basic-concepts.html" class="btn btn-neutral" title="Basic Concepts"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/apache/incubator-gearpump/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="basic-concepts.html" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="message-delivery.html" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>

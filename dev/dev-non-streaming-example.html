@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Non Streaming Examples - Apache Gearpump(incubating)</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Non Streaming Examples";
+    var mkdocs_page_input_path = "dev/dev-non-streaming-example.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="icon icon-home"> Apache Gearpump(incubating)</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../index.html">Overview</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Introduction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../introduction/quick-start.html">Quick Start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/submit-your-1st-application.html">Submit Your 1st Application</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/commandline.html">Client Command Line</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/basic-concepts.html">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/features.html">Technical Highlights</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/message-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/performance-report.html">Performance</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Deployment</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-local.html">Local Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-standalone.html">Standalone Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-yarn.html">YARN Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-docker.html">Docker Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ui-authentication.html">UI Authentication</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ha.html">High Availability</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-msg-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-configuration.html">Configuration</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-resource-isolation.html">Resource Isolation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-security.html">YARN Security Guide</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/get-gearpump-distribution.html">How to Get Your Gearpump Distribution</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/hardware-requirement.html">Hardware Requirement</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Programming Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="dev-write-1st-app.html">Write Your 1st App</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-custom-serializer.html">Customized Message Passing</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-connectors.html">Gearpump Connectors</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-storm.html">Storm Compatibility</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-ide-setup.html">IDE Setup</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="dev-non-streaming-example.html">Non Streaming Examples</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#mavensbt-settings">Maven/Sbt Settings</a></li>
+    
+
+    <li class="toctree-l3"><a href="#define-executor-class">Define Executor Class</a></li>
+    
+
+    <li class="toctree-l3"><a href="#define-appmaster-class">Define AppMaster Class</a></li>
+    
+
+    <li class="toctree-l3"><a href="#define-application">Define Application</a></li>
+    
+
+    <li class="toctree-l3"><a href="#define-an-optional-client-class">Define an optional Client class</a></li>
+    
+
+    <li class="toctree-l3"><a href="#submit-application">Submit application</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-rest-api.html">REST API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/scala.html">Scala API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/java.html">Java API</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Internals</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../internals/gearpump-internals.html">Gearpump Internals</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Apache Gearpump(incubating)</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Programming Guide &raquo;</li>
+        
+      
+    
+    <li>Non Streaming Examples</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/apache/incubator-gearpump/edit/master/docs/contents/dev/dev-non-streaming-example.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p>We'll use <a href="https://github.com/apache/incubator-gearpump/blob/master/examples/distributedshell">Distributed Shell</a> as an example to illustrate how to do that.</p>
+<p>What Distributed Shell do is that user send a shell command to the cluster and the command will the executed on each node, then the result will be return to user.</p>
+<h3 id="mavensbt-settings">Maven/Sbt Settings</h3>
+<p>Repository and library dependencies can be found at <a href="http://gearpump.incubator.apache.org/downloads.html#maven-dependencies">Maven Setting</a></p>
+<h3 id="define-executor-class">Define Executor Class</h3>
+<pre class="codehilite"><code class="language-scala">class ShellExecutor(executorContext: ExecutorContext, userConf : UserConfig) extends Actor{
+  import executorContext._
+
+  override def receive: Receive = {
+    case ShellCommand(command, args) =&gt;
+      val process = Try(s&quot;$command $args&quot; !!)
+      val result = process match {
+        case Success(msg) =&gt; msg
+        case Failure(ex) =&gt; ex.getMessage
+      }
+      sender ! ShellCommandResult(executorId, result)
+  }
+}</code></pre>
+
+
+<p>So ShellExecutor just receive the ShellCommand and try to execute it and return the result to the sender, which is quite simple.</p>
+<h3 id="define-appmaster-class">Define AppMaster Class</h3>
+<p>For a non-streaming application, you have to write your own AppMaster.</p>
+<p>Here is a typical user defined AppMaster, please note that some trivial codes are omitted.</p>
+<pre class="codehilite"><code class="language-scala">class DistShellAppMaster(appContext : AppMasterContext, app : Application) extends ApplicationMaster {
+  protected var currentExecutorId = 0
+
+  override def preStart(): Unit = {
+    ActorUtil.launchExecutorOnEachWorker(masterProxy, getExecutorJvmConfig, self)
+  }
+
+  override def receive: Receive = {
+    case ExecutorSystemStarted(executorSystem) =&gt;
+      import executorSystem.{address, worker, resource =&gt; executorResource}
+      val executorContext = ExecutorContext(currentExecutorId, worker.workerId, appId, self, executorResource)
+      val executor = context.actorOf(Props(classOf[ShellExecutor], executorContext, app.userConfig)
+          .withDeploy(Deploy(scope = RemoteScope(address))), currentExecutorId.toString)
+      executorSystem.bindLifeCycleWith(executor)
+      currentExecutorId += 1
+    case StartExecutorSystemTimeout =&gt;
+      masterProxy ! ShutdownApplication(appId)
+      context.stop(self)
+    case msg: ShellCommand =&gt;
+      Future.fold(context.children.map(_ ? msg))(new ShellCommandResultAggregator) { (aggregator, response) =&gt;
+        aggregator.aggregate(response.asInstanceOf[ShellCommandResult])
+      }.map(_.toString()) pipeTo sender
+  }
+
+  private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
+    val config: Config = Option(app.clusterConfig).map(_.getConfig).getOrElse(ConfigFactory.empty())
+    val jvmSetting = Util.resolveJvmSetting(config.withFallback(context.system.settings.config)).executor
+    ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs,
+      appJar, username, config)
+  }
+}</code></pre>
+
+
+<p>So when this <code>DistShellAppMaster</code> started, first it will request resources to launch one executor on each node, which is done in method <code>preStart</code></p>
+<p>Then the DistShellAppMaster's receive handler will handle the allocated resource to launch the <code>ShellExecutor</code> we want. If you want to write your application, you can just use this part of code. The only thing needed is replacing the Executor class.</p>
+<p>There may be a situation that the resource allocation failed which will bring the message <code>StartExecutorSystemTimeout</code>, the normal pattern to handle that is just what we do: shut down the application.</p>
+<p>The real application logic part is in <code>ShellCommand</code> message handler, which is specific to different applications. Here we distribute the shell command to each executor and aggregate the results to the client.</p>
+<p>For method <code>getExecutorJvmConfig</code>, you can just use this part of code in your own application.</p>
+<h3 id="define-application">Define Application</h3>
+<p>Now its time to launch the application.</p>
+<pre class="codehilite"><code class="language-scala">object DistributedShell extends App with ArgumentsParser {
+  private val LOG: Logger = LogUtil.getLogger(getClass)
+
+  override val options: Array[(String, CLIOption[Any])] = Array.empty
+
+  LOG.info(s&quot;Distributed shell submitting application...&quot;)
+  val context = ClientContext()
+  val appId = context.submit(Application[DistShellAppMaster](&quot;DistributedShell&quot;, UserConfig.empty))
+  context.close()
+  LOG.info(s&quot;Distributed Shell Application started with appId $appId !&quot;)
+}</code></pre>
+
+
+<p>The application class extends <code>App</code> and `ArgumentsParser which make it easier to parse arguments and run main functions. This part is similar to the streaming applications.</p>
+<p>The main class <code>DistributeShell</code> will submit an application to <code>Master</code>, whose <code>AppMaster</code> is <code>DistShellAppMaster</code>.</p>
+<h3 id="define-an-optional-client-class">Define an optional Client class</h3>
+<p>Now, we can define a <code>Client</code> class to talk with <code>AppMaster</code> to pass our commands to it.</p>
+<pre class="codehilite"><code class="language-scala">object DistributedShellClient extends App with ArgumentsParser  {
+  implicit val timeout = Constants.FUTURE_TIMEOUT
+  import scala.concurrent.ExecutionContext.Implicits.global
+  private val LOG: Logger = LoggerFactory.getLogger(getClass)
+
+  override val options: Array[(String, CLIOption[Any])] = Array(
+    &quot;master&quot; -&gt; CLIOption[String](&quot;&lt;host1:port1,host2:port2,host3:port3&gt;&quot;, required = true),
+    &quot;appid&quot; -&gt; CLIOption[Int](&quot;&lt;the distributed shell appid&gt;&quot;, required = true),
+    &quot;command&quot; -&gt; CLIOption[String](&quot;&lt;shell command&gt;&quot;, required = true),
+    &quot;args&quot; -&gt; CLIOption[String](&quot;&lt;shell arguments&gt;&quot;, required = true)
+  )
+
+  val config = parse(args)
+  val context = ClientContext(config.getString(&quot;master&quot;))
+  val appid = config.getInt(&quot;appid&quot;)
+  val command = config.getString(&quot;command&quot;)
+  val arguments = config.getString(&quot;args&quot;)
+  val appMaster = context.resolveAppID(appid)
+  (appMaster ? ShellCommand(command, arguments)).map { reslut =&gt;
+    LOG.info(s&quot;Result: $reslut&quot;)
+    context.close()
+  }
+}</code></pre>
+
+
+<p>In the <code>DistributedShellClient</code>, it will resolve the appid to the real appmaster(the application id will be printed when launching <code>DistributedShell</code>).</p>
+<p>Once we got the <code>AppMaster</code>, then we can send <code>ShellCommand</code> to it and wait for the result.</p>
+<h3 id="submit-application">Submit application</h3>
+<p>After all these, you need to package everything into a uber jar and submit the jar to Gearpump Cluster. Please check <a href="../introduction/commandline">Application submission tool</a> to command line tool syntax.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="dev-rest-api.html" class="btn btn-neutral float-right" title="REST API">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="dev-ide-setup.html" class="btn btn-neutral" title="IDE Setup"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/apache/incubator-gearpump/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="dev-ide-setup.html" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="dev-rest-api.html" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>

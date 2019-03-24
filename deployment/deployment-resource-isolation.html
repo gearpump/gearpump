@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Resource Isolation - Apache Gearpump(incubating)</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Resource Isolation";
+    var mkdocs_page_input_path = "deployment/deployment-resource-isolation.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="icon icon-home"> Apache Gearpump(incubating)</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../index.html">Overview</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Introduction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../introduction/quick-start.html">Quick Start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/submit-your-1st-application.html">Submit Your 1st Application</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/commandline.html">Client Command Line</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/basic-concepts.html">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/features.html">Technical Highlights</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/message-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/performance-report.html">Performance</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Deployment</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="deployment-local.html">Local Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-standalone.html">Standalone Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-yarn.html">YARN Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-docker.html">Docker Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-ui-authentication.html">UI Authentication</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-ha.html">High Availability</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-msg-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-configuration.html">Configuration</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="deployment-resource-isolation.html">Resource Isolation</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#start-cgroup-service">Start CGroup Service</a></li>
+    
+
+    <li class="toctree-l3"><a href="#enable-cgroups-in-gearpump">Enable Cgroups in Gearpump</a></li>
+    
+
+    <li class="toctree-l3"><a href="#launch-application-from-command-line">Launch Application From Command Line</a></li>
+    
+
+    <li class="toctree-l3"><a href="#launch-application-from-dashboard">Launch Application From Dashboard</a></li>
+    
+
+    <li class="toctree-l3"><a href="#limitations">Limitations</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="deployment-security.html">YARN Security Guide</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="get-gearpump-distribution.html">How to Get Your Gearpump Distribution</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="hardware-requirement.html">Hardware Requirement</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Programming Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../dev/dev-write-1st-app.html">Write Your 1st App</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-custom-serializer.html">Customized Message Passing</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-connectors.html">Gearpump Connectors</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-storm.html">Storm Compatibility</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-ide-setup.html">IDE Setup</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-non-streaming-example.html">Non Streaming Examples</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-rest-api.html">REST API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/scala.html">Scala API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/java.html">Java API</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Internals</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../internals/gearpump-internals.html">Gearpump Internals</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Apache Gearpump(incubating)</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Deployment &raquo;</li>
+        
+      
+    
+    <li>Resource Isolation</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/apache/incubator-gearpump/edit/master/docs/contents/deployment/deployment-resource-isolation.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p>CGroup (abbreviated from control groups) is a Linux kernel feature to limit, account, and isolate resource usage (CPU, memory, disk I/O, etc.) of process groups.In Gearpump, we use cgroup to manage CPU resources.</p>
+<h2 id="start-cgroup-service">Start CGroup Service</h2>
+<p>CGroup feature is only supported by Linux whose kernel version is larger than 2.6.18. Please also make sure the SELinux is disabled before start CGroup.</p>
+<p>The following steps are supposed to be executed by root user.</p>
+<ol>
+<li>
+<p>Check <code>/etc/cgconfig.conf</code> exist or not. If not exists, please <code>yum install libcgroup</code>.</p>
+</li>
+<li>
+<p>Run following command to see whether the <strong>cpu</strong> subsystem is already mounted to the file system.</p>
+<pre class="codehilite"><code class="language-bash">lssubsys -m</code></pre>
+
+
+<p>Each subsystem in CGroup will have a corresponding mount file path in local file system. For example, the following output shows that <strong>cpu</strong> subsystem is mounted to file path <code>/sys/fs/cgroup/cpu</code></p>
+<pre class="codehilite"><code class="language-bash">cpu /sys/fs/cgroup/cpu
+net_cls /sys/fs/cgroup/net_cls
+blkio /sys/fs/cgroup/blkio
+perf_event /sys/fs/cgroup/perf_event</code></pre>
+
+
+</li>
+<li>
+<p>If you want to assign permission to user <strong>gear</strong> to launch Gearpump Worker and applications with resource isolation enabled, you need to check gear's uid and gid in <code>/etc/passwd</code> file, let's take <strong>500</strong> for example.</p>
+</li>
+<li>
+<p>Add following content to <code>/etc/cgconfig.conf</code></p>
+<pre class="codehilite"><code># The mount point of cpu subsystem.
+# If your system already mounted it, this segment should be eliminated.
+mount {    
+  cpu = /cgroup/cpu;
+}
+
+# Here the group name &quot;gearpump&quot; represents a node in CGroup's hierarchy tree.
+# When the CGroup service is started, there will be a folder generated under the mount point of cpu subsystem,
+# whose name is &quot;gearpump&quot;.
+
+group gearpump {
+   perm {
+       task {
+           uid = 500;
+           gid = 500;
+        }
+       admin {
+           uid = 500;
+           gid = 500;
+       }
+   }
+   cpu {
+   }
+}</code></pre>
+
+
+</li>
+</ol>
+<p>Please note that if the output of step 2 shows that <strong>cpu</strong> subsystem is already mounted, then the <code>mount</code> segment should not be included.</p>
+<ol>
+<li>
+<p>Then Start cgroup service</p>
+<pre class="codehilite"><code class="language-bash">sudo service cgconfig restart</code></pre>
+
+
+</li>
+<li>
+<p>There should be a folder <strong>gearpump</strong> generated under the mount point of cpu subsystem and its owner is <strong>gear:gear</strong>.  </p>
+</li>
+<li>
+<p>Repeat the above-mentioned steps on each machine where you want to launch Gearpump.   </p>
+</li>
+</ol>
+<h2 id="enable-cgroups-in-gearpump">Enable Cgroups in Gearpump</h2>
+<ol>
+<li>
+<p>Login into the machine which has CGroup prepared with user <strong>gear</strong>.</p>
+<pre class="codehilite"><code class="language-bash">ssh gear@node</code></pre>
+
+
+</li>
+<li>
+<p>Enter into Gearpump's home folder, edit gear.conf under folder <code>${GEARPUMP_HOME}/conf/</code></p>
+<pre class="codehilite"><code class="language-bash">gearpump.worker.executor-process-launcher = &quot;io.gearpump.cluster.worker.CGroupProcessLauncher&quot;
+
+gearpump.cgroup.root = &quot;gearpump&quot;</code></pre>
+
+
+</li>
+</ol>
+<p>Please note the gearpump.cgroup.root <strong>gearpump</strong> must be consistent with the group name in /etc/cgconfig.conf.</p>
+<ol>
+<li>
+<p>Repeat the above-mentioned steps on each machine where you want to launch Gearpump</p>
+</li>
+<li>
+<p>Start the Gearpump cluster, please refer to <a href="deployment-standalone">Deploy Gearpump in Standalone Mode</a></p>
+</li>
+</ol>
+<h2 id="launch-application-from-command-line">Launch Application From Command Line</h2>
+<ol>
+<li>
+<p>Login into the machine which has Gearpump distribution.</p>
+</li>
+<li>
+<p>Enter into Gearpump's home folder, edit gear.conf under folder <code>${GEARPUMP_HOME}/conf/</code></p>
+<pre class="codehilite"><code class="language-bash">gearpump.cgroup.cpu-core-limit-per-executor = ${your_preferred_int_num}</code></pre>
+
+
+</li>
+</ol>
+<p>Here the configuration is the number of CPU cores per executor can use and -1 means no limitation</p>
+<ol>
+<li>
+<p>Submit application</p>
+<pre class="codehilite"><code class="language-bash">bin/gear app -jar examples/sol-2.12-0.9.0-assembly.jar -streamProducer 10 -streamProcessor 10</code></pre>
+
+
+</li>
+<li>
+<p>Then you can run command <code>top</code> to monitor the cpu usage.</p>
+</li>
+</ol>
+<h2 id="launch-application-from-dashboard">Launch Application From Dashboard</h2>
+<p>If you want to submit the application from dashboard, by default the <code>gearpump.cgroup.cpu-core-limit-per-executor</code> is inherited from Worker's configuration. You can provide your own conf file to override it.</p>
+<h2 id="limitations">Limitations</h2>
+<p>Windows and Mac OS X don't support CGroup, so the resource isolation will not work even if you turn it on. There will not be any limitation for single executor's cpu usage.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="deployment-security.html" class="btn btn-neutral float-right" title="YARN Security Guide">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="deployment-configuration.html" class="btn btn-neutral" title="Configuration"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/apache/incubator-gearpump/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="deployment-configuration.html" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="deployment-security.html" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>REST API - Apache Gearpump(incubating)</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "REST API";
+    var mkdocs_page_input_path = "dev/dev-rest-api.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="icon icon-home"> Apache Gearpump(incubating)</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../index.html">Overview</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Introduction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../introduction/quick-start.html">Quick Start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/submit-your-1st-application.html">Submit Your 1st Application</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/commandline.html">Client Command Line</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/basic-concepts.html">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/features.html">Technical Highlights</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/message-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../introduction/performance-report.html">Performance</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Deployment</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-local.html">Local Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-standalone.html">Standalone Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-yarn.html">YARN Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-docker.html">Docker Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ui-authentication.html">UI Authentication</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ha.html">High Availability</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-msg-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-configuration.html">Configuration</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-resource-isolation.html">Resource Isolation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-security.html">YARN Security Guide</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/get-gearpump-distribution.html">How to Get Your Gearpump Distribution</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/hardware-requirement.html">Hardware Requirement</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Programming Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="dev-write-1st-app.html">Write Your 1st App</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-custom-serializer.html">Customized Message Passing</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-connectors.html">Gearpump Connectors</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-storm.html">Storm Compatibility</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-ide-setup.html">IDE Setup</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="dev-non-streaming-example.html">Non Streaming Examples</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="dev-rest-api.html">REST API</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#authentication">Authentication.</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#how-to-disable-authentication">How to disable Authentication</a></li>
+        
+            <li><a class="toctree-l4" href="#how-to-authenticate-if-authentication-is-enabled">How to authenticate if Authentication is enabled.</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#query-version">Query version</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#get-version">GET version</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#master-service">Master Service</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#get-apiv10master">GET api/v1.0/master</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10masterapplist">GET api/v1.0/master/applist</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10masterworkerlist">GET api/v1.0/master/workerlist</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10masterconfig">GET api/v1.0/master/config</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10mastermetricsquery_pathreadlatesttruefalse">GET api/v1.0/master/metrics/&lt;query_path&gt;?readLatest=&lt;true|false&gt;</a></li>
+        
+            <li><a class="toctree-l4" href="#post-apiv10mastersubmitapp">POST api/v1.0/master/submitapp</a></li>
+        
+            <li><a class="toctree-l4" href="#post-apiv10mastersubmitstormapp">POST api/v1.0/master/submitstormapp</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#worker-service">Worker service</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#get-apiv10workerworkerid">GET api/v1.0/worker/&lt;workerId&gt;</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10workerworkeridconfig">GET api/v1.0/worker/&lt;workerId&gt;/config</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10workerworkeridmetricsquery_pathreadlatesttruefalse">GET api/v1.0/worker/&lt;workerId&gt;/metrics/&lt;query_path&gt;?readLatest=&lt;true|false&gt;</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#supervisor-service">Supervisor Service</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#post-apiv10supervisorstatus">POST api/v1.0/supervisor/status</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10supervisor">GET api/v1.0/supervisor</a></li>
+        
+            <li><a class="toctree-l4" href="#post-apiv10supervisoraddworkerworker-count">POST api/v1.0/supervisor/addworker/&lt;worker-count&gt;</a></li>
+        
+            <li><a class="toctree-l4" href="#post-apiv10supervisorremoveworkerworker-id">POST api/v1.0/supervisor/removeworker/&lt;worker-id&gt;</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#application-service">Application service</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#get-apiv10appmasterappiddetailtruefalse">GET api/v1.0/appmaster/&lt;appId&gt;?detail=&lt;true|false&gt;</a></li>
+        
+            <li><a class="toctree-l4" href="#delete-apiv10appmasterappid">DELETE api/v1.0/appmaster/&lt;appId&gt;</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10appmasterappidstallingtasks">GET api/v1.0/appmaster/&lt;appId&gt;/stallingtasks</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10appmasterappidconfig">GET api/v1.0/appmaster/&lt;appId&gt;/config</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10appmasterappidmetricsquery_pathreadlatesttruefalseaggregatoraggregator_class">GET api/v1.0/appmaster/&lt;appId&gt;/metrics/&lt;query_path&gt;?readLatest=&lt;true|false&gt;&amp;aggregator=&lt;aggregator_class&gt;</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10appmasterappiderrors">GET api/v1.0/appmaster/&lt;appId&gt;/errors</a></li>
+        
+            <li><a class="toctree-l4" href="#post-apiv10appmasterappidrestart">POST api/v1.0/appmaster/&lt;appId&gt;/restart</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#executor-service">Executor Service</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#get-apiv10appmasterappidexecutorexecutoridconfig">GET api/v1.0/appmaster/&lt;appId&gt;/executor/&lt;executorid&gt;/config</a></li>
+        
+            <li><a class="toctree-l4" href="#get-apiv10appmasterappidexecutorexecutorid">GET api/v1.0/appmaster/&lt;appId&gt;/executor/&lt;executorid&gt;</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/scala.html">Scala API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/java.html">Java API</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Internals</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../internals/gearpump-internals.html">Gearpump Internals</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Apache Gearpump(incubating)</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Programming Guide &raquo;</li>
+        
+      
+    
+    <li>REST API</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/apache/incubator-gearpump/edit/master/docs/contents/dev/dev-rest-api.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="authentication">Authentication.</h2>
+<p>For all REST API calls, We need authentication by default. If you don't want authentication, you can disable them.</p>
+<h3 id="how-to-disable-authentication">How to disable Authentication</h3>
+<p>To disable Authentication, you can set <code>gearpump-ui.gearpump.ui-security.authentication-enabled = false</code>
+in gear.conf, please check <a href="../deployment/deployment-ui-authentication">UI Authentication</a> for details.</p>
+<h3 id="how-to-authenticate-if-authentication-is-enabled">How to authenticate if Authentication is enabled.</h3>
+<h4 id="for-user-password-based-authentication">For User-Password based authentication</h4>
+<p>If Authentication is enabled, then you need to login before calling REST API.</p>
+<pre class="codehilite"><code class="language-bash">curl  -X POST  --data username=admin --data password=admin --cookie-jar outputAuthenticationCookie.txt http://127.0.0.1:8090/login</code></pre>
+
+
+<p>This will use default user "admin:admin" to login, and store the authentication cookie to file outputAuthenticationCookie.txt.</p>
+<p>In All subsequent Rest API calls, you need to add the authentication cookie. For example</p>
+<pre class="codehilite"><code class="language-bash">curl --cookie outputAuthenticationCookie.txt http://127.0.0.1/api/v1.0/master</code></pre>
+
+
+<p>for more information, please check <a href="../deployment/deployment-ui-authentication">UI Authentication</a>.</p>
+<h4 id="for-oauth2-based-authentication">For OAuth2 based authentication</h4>
+<p>For OAuth2 based authentication, it requires you to have an access token in place.</p>
+<p>Different OAuth2 service provider have different way to return an access token.</p>
+<p><strong>For Google</strong>, you can refer to <a href="https://developers.google.com/identity/protocols/OAuth2">OAuth Doc</a>.</p>
+<p><strong>For CloudFoundry UAA</strong>, you can use the uaac command to get the access token.</p>
+<pre class="codehilite"><code class="language-bash">$ uaac target http://login.gearpump.gotapaas.eu/
+$ uaac token get &lt;user_email_address&gt;
+
+### Find access token
+$ uaac context
+
+[0]*[http://login.gearpump.gotapaas.eu]
+
+  [0]*[&lt;user_email_address&gt;]
+      user_id: 34e33a79-42c6-479b-a8c1-8c471ff027fb
+      client_id: cf
+      token_type: bearer
+      access_token: eyJhbGciOiJSUzI1NiJ9.eyJqdGkiOiI
+      expires_in: 599
+      scope: password.write openid cloud_controller.write cloud_controller.read
+      jti: 74ea49e4-1001-4757-9f8d-a66e52a27557</code></pre>
+
+
+<p>For more information on uaac, please check <a href="https://docs.cloudfoundry.org/adminguide/uaa-user-management.html">UAAC guide</a></p>
+<p>Now, we have the access token, then let's login to Gearpump UI server with this access token:</p>
+<pre class="codehilite"><code class="language-bash">## Please replace cloudfoundryuaa with actual OAuth2 service name you have configured in gear.conf
+curl  -X POST  --data accesstoken=eyJhbGciOiJSUzI1NiJ9.eyJqdGkiOiI --cookie-jar outputAuthenticationCookie.txt http://127.0.0.1:8090/login/oauth2/cloudfoundryuaa/accesstoken</code></pre>
+
+
+<p>This will use user  <code>user_email_address</code> to login, and store the authentication cookie to file outputAuthenticationCookie.txt.</p>
+<p>In All subsequent Rest API calls, you need to add the authentication cookie. For example</p>
+<pre class="codehilite"><code class="language-bash">curl --cookie outputAuthenticationCookie.txt http://127.0.0.1/api/v1.0/master</code></pre>
+
+
+<p><strong>NOTE:</strong> You can default the default permission level for OAuth2 user. for more information,
+please check <a href="../deployment/deployment-ui-authentication">UI Authentication</a>.</p>
+<h2 id="query-version">Query version</h2>
+<h3 id="get-version">GET version</h3>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/version</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-bash">0.9.0</code></pre>
+
+
+<h2 id="master-service">Master Service</h2>
+<h3 id="get-apiv10master">GET api/v1.0/master</h3>
+<p>Get information of masters</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;masterDescription&quot;: {
+    &quot;leader&quot;:{&quot;host&quot;:&quot;master@127.0.0.1&quot;,&quot;port&quot;:3000},
+    &quot;cluster&quot;:[{&quot;host&quot;:&quot;127.0.0.1&quot;,&quot;port&quot;:3000}]
+    &quot;aliveFor&quot;: &quot;642941&quot;,
+    &quot;logFile&quot;: &quot;/Users/foobar/gearpump/logs&quot;,
+    &quot;jarStore&quot;: &quot;jarstore/&quot;,
+    &quot;masterStatus&quot;: &quot;synced&quot;,
+    &quot;homeDirectory&quot;: &quot;/Users/foobar/gearpump&quot;
+  }
+}</code></pre>
+
+
+<h3 id="get-apiv10masterapplist">GET api/v1.0/master/applist</h3>
+<p>Query information of all applications</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master/applist</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;appMasters&quot;: [
+    {
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;appId&quot;: 1,
+      &quot;appName&quot;: &quot;wordCount&quot;,
+      &quot;appMasterPath&quot;: &quot;akka.tcp://app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c&quot;,
+      &quot;workerPath&quot;: &quot;akka.tcp://master@127.0.0.1:3000/user/Worker0&quot;,
+      &quot;submissionTime&quot;: &quot;1450758114766&quot;,
+      &quot;startTime&quot;: &quot;1450758117294&quot;,
+      &quot;user&quot;: &quot;lisa&quot;
+    }
+  ]
+}</code></pre>
+
+
+<h3 id="get-apiv10masterworkerlist">GET api/v1.0/master/workerlist</h3>
+<p>Query information of all workers</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master/workerlist</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">[
+  {
+    &quot;workerId&quot;: &quot;1&quot;,
+    &quot;state&quot;: &quot;active&quot;,
+    &quot;actorPath&quot;: &quot;akka.tcp://master@127.0.0.1:3000/user/Worker0&quot;,
+    &quot;aliveFor&quot;: &quot;431565&quot;,
+    &quot;logFile&quot;: &quot;logs/&quot;,
+    &quot;executors&quot;: [
+      {
+        &quot;appId&quot;: 1,
+        &quot;executorId&quot;: -1,
+        &quot;slots&quot;: 1
+      },
+      {
+        &quot;appId&quot;: 1,
+        &quot;executorId&quot;: 0,
+        &quot;slots&quot;: 1
+      }
+    ],
+    &quot;totalSlots&quot;: 1000,
+    &quot;availableSlots&quot;: 998,
+    &quot;homeDirectory&quot;: &quot;/usr/lisa/gearpump/&quot;,
+    &quot;jvmName&quot;: &quot;11788@lisa&quot;
+  },
+  {
+    &quot;workerId&quot;: &quot;0&quot;,
+    &quot;state&quot;: &quot;active&quot;,
+    &quot;actorPath&quot;: &quot;akka.tcp://master@127.0.0.1:3000/user/Worker1&quot;,
+    &quot;aliveFor&quot;: &quot;431546&quot;,
+    &quot;logFile&quot;: &quot;logs/&quot;,
+    &quot;executors&quot;: [
+      {
+        &quot;appId&quot;: 1,
+        &quot;executorId&quot;: 1,
+        &quot;slots&quot;: 1
+      }
+    ],
+    &quot;totalSlots&quot;: 1000,
+    &quot;availableSlots&quot;: 999,
+    &quot;homeDirectory&quot;: &quot;/usr/lisa/gearpump/&quot;,
+    &quot;jvmName&quot;: &quot;11788@lisa&quot;
+  }
+]</code></pre>
+
+
+<h3 id="get-apiv10masterconfig">GET api/v1.0/master/config</h3>
+<p>Get the configuration of all masters</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master/config</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;extensions&quot;: [
+    &quot;akka.contrib.datareplication.DataReplication$&quot;
+  ]
+  &quot;akka&quot;: {
+    &quot;loglevel&quot;: &quot;INFO&quot;
+    &quot;log-dead-letters&quot;: &quot;off&quot;
+    &quot;log-dead-letters-during-shutdown&quot;: &quot;off&quot;
+    &quot;actor&quot;: {
+      ## Master forms a akka cluster
+      &quot;provider&quot;: &quot;akka.cluster.ClusterActorRefProvider&quot;
+    }
+    &quot;cluster&quot;: {
+      &quot;roles&quot;: [&quot;master&quot;]
+      &quot;auto-down-unreachable-after&quot;: &quot;15s&quot;
+    }
+    &quot;remote&quot;: {
+      &quot;log-remote-lifecycle-events&quot;: &quot;off&quot;
+    }
+  }
+}</code></pre>
+
+
+<h3 id="get-apiv10mastermetricsquery_pathreadlatesttruefalse">GET api/v1.0/master/metrics/&lt;query_path&gt;?readLatest=&lt;true|false&gt;</h3>
+<p>Get the master node metrics.</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/master/metrics/master?readLatest=true</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-bash">{
+    &quot;path&quot;
+:
+    &quot;master&quot;, &quot;metrics&quot;
+:
+    [{
+        &quot;time&quot;: &quot;1450758725070&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;master:memory.heap.used&quot;, &quot;value&quot;: &quot;59764272&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450758725070&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;master:thread.daemon.count&quot;, &quot;value&quot;: &quot;18&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450758725070&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;master:memory.total.committed&quot;,
+            &quot;value&quot;: &quot;210239488&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450758725070&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;master:memory.heap.max&quot;, &quot;value&quot;: &quot;880017408&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450758725070&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;master:memory.total.max&quot;, &quot;value&quot;: &quot;997457920&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450758725070&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;master:memory.heap.committed&quot;,
+            &quot;value&quot;: &quot;179830784&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450758725070&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;master:memory.total.used&quot;, &quot;value&quot;: &quot;89117352&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450758725070&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;master:thread.count&quot;, &quot;value&quot;: &quot;28&quot;}
+    }]
+}</code></pre>
+
+
+<h3 id="post-apiv10mastersubmitapp">POST api/v1.0/master/submitapp</h3>
+<p>Submit a streaming job jar to Gearpump cluster. It functions like command line</p>
+<pre class="codehilite"><code class="language-bash">gear app -jar xx.jar -conf yy.conf -executors 1 &lt;command line arguments&gt;</code></pre>
+
+
+<p>Required MIME type: "multipart/form-data"</p>
+<p>Required post form fields:</p>
+<ol>
+<li>field name "jar", job jar file.</li>
+</ol>
+<p>Optional post form fields:</p>
+<ol>
+<li>"configfile", configuration file, in UTF8 format.</li>
+<li>"configstring", text body of configuration file, in UTF8 format.</li>
+<li>"executorcount", The count of JVM process to start across the cluster for this application job</li>
+<li>"args", command line arguments for this job jar.</li>
+</ol>
+<p>Example html:</p>
+<pre class="codehilite"><code class="language-html">&lt;form id=&quot;submitapp&quot; action=&quot;http://127.0.0.1:8090/api/v1.0/master/submitapp&quot;
+method=&quot;POST&quot; enctype=&quot;multipart/form-data&quot;&gt;
+
+Job Jar (*.jar) [Required]:  &lt;br/&gt;
+&lt;input type=&quot;file&quot; name=&quot;jar&quot;/&gt; &lt;br/&gt; &lt;br/&gt;
+
+Config file (*.conf) [Optional]:  &lt;br/&gt;
+&lt;input type=&quot;file&quot; name=&quot;configfile&quot;/&gt; &lt;br/&gt;  &lt;br/&gt;
+
+Config String, Config File in string format. [Optional]: &lt;br/&gt;
+&lt;input type=&quot;text&quot; name=&quot;configstring&quot; value=&quot;a.b.c.d=1&quot;/&gt; &lt;br/&gt;&lt;br/&gt;
+
+Executor count (integer, how many process to start for this streaming job) [Optional]: &lt;br/&gt;
+&lt;input type=&quot;text&quot; name=&quot;executorcount&quot; value=&quot;1&quot;/&gt; &lt;br/&gt;&lt;br/&gt;
+
+Application arguments (String) [Optional]: &lt;br/&gt;
+&lt;input type=&quot;text&quot; name=&quot;args&quot; value=&quot;&quot;/&gt; &lt;br/&gt;&lt;br/&gt;
+
+&lt;input type=&quot;submit&quot; value=&quot;Submit&quot;/&gt;
+
+&lt;/table&gt;
+
+&lt;/form&gt;</code></pre>
+
+
+<h3 id="post-apiv10mastersubmitstormapp">POST api/v1.0/master/submitstormapp</h3>
+<p>Submit a storm jar to Gearpump cluster. It functions like command line</p>
+<pre class="codehilite"><code class="language-bash">storm app -jar xx.jar -conf yy.yaml &lt;command line arguments&gt;</code></pre>
+
+
+<p>Required MIME type: "multipart/form-data"</p>
+<p>Required post form fields:</p>
+<ol>
+<li>field name "jar", job jar file.</li>
+</ol>
+<p>Optional post form fields:</p>
+<ol>
+<li>"configfile", .yaml configuration file, in UTF8 format.</li>
+<li>"args", command line arguments for this job jar.</li>
+</ol>
+<p>Example html:</p>
+<pre class="codehilite"><code class="language-html">&lt;form id=&quot;submitstormapp&quot; action=&quot;http://127.0.0.1:8090/api/v1.0/master/submitstormapp&quot;
+method=&quot;POST&quot; enctype=&quot;multipart/form-data&quot;&gt;
+
+Job Jar (*.jar) [Required]:  &lt;br/&gt;
+&lt;input type=&quot;file&quot; name=&quot;jar&quot;/&gt; &lt;br/&gt; &lt;br/&gt;
+
+Config file (*.yaml) [Optional]:  &lt;br/&gt;
+&lt;input type=&quot;file&quot; name=&quot;configfile&quot;/&gt; &lt;br/&gt;  &lt;br/&gt;
+
+Application arguments (String) [Optional]: &lt;br/&gt;
+&lt;input type=&quot;text&quot; name=&quot;args&quot; value=&quot;&quot;/&gt; &lt;br/&gt;&lt;br/&gt;
+
+&lt;input type=&quot;submit&quot; value=&quot;Submit&quot;/&gt;
+
+&lt;/table&gt;
+
+&lt;/form&gt;</code></pre>
+
+
+<h2 id="worker-service">Worker service</h2>
+<h3 id="get-apiv10workerworkerid">GET api/v1.0/worker/&lt;workerId&gt;</h3>
+<p>Query worker information.</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/worker/0</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;workerId&quot;: &quot;0&quot;,
+  &quot;state&quot;: &quot;active&quot;,
+  &quot;actorPath&quot;: &quot;akka.tcp://master@127.0.0.1:3000/user/Worker1&quot;,
+  &quot;aliveFor&quot;: &quot;831069&quot;,
+  &quot;logFile&quot;: &quot;logs/&quot;,
+  &quot;executors&quot;: [
+    {
+      &quot;appId&quot;: 1,
+      &quot;executorId&quot;: 1,
+      &quot;slots&quot;: 1
+    }
+  ],
+  &quot;totalSlots&quot;: 1000,
+  &quot;availableSlots&quot;: 999,
+  &quot;homeDirectory&quot;: &quot;/usr/lisa/gearpump/&quot;,
+  &quot;jvmName&quot;: &quot;11788@lisa&quot;
+}</code></pre>
+
+
+<h3 id="get-apiv10workerworkeridconfig">GET api/v1.0/worker/&lt;workerId&gt;/config</h3>
+<p>Query worker config</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/worker/0/config</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;extensions&quot;: [
+    &quot;akka.contrib.datareplication.DataReplication$&quot;
+  ]
+  &quot;akka&quot;: {
+    &quot;loglevel&quot;: &quot;INFO&quot;
+    &quot;log-dead-letters&quot;: &quot;off&quot;
+    &quot;log-dead-letters-during-shutdown&quot;: &quot;off&quot;
+    &quot;actor&quot;: {
+      ## Master forms a akka cluster
+      &quot;provider&quot;: &quot;akka.cluster.ClusterActorRefProvider&quot;
+    }
+    &quot;cluster&quot;: {
+      &quot;roles&quot;: [&quot;master&quot;]
+      &quot;auto-down-unreachable-after&quot;: &quot;15s&quot;
+    }
+    &quot;remote&quot;: {
+      &quot;log-remote-lifecycle-events&quot;: &quot;off&quot;
+    }
+  }
+}</code></pre>
+
+
+<h3 id="get-apiv10workerworkeridmetricsquery_pathreadlatesttruefalse">GET api/v1.0/worker/&lt;workerId&gt;/metrics/&lt;query_path&gt;?readLatest=&lt;true|false&gt;</h3>
+<p>Get the worker node metrics.</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/worker/0/metrics/worker?readLatest=true</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+    &quot;path&quot;
+:
+    &quot;worker&quot;, &quot;metrics&quot;
+:
+    [{
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.total.used&quot;,
+            &quot;value&quot;: &quot;152931440&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker1:thread.daemon.count&quot;, &quot;value&quot;: &quot;18&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.heap.used&quot;,
+            &quot;value&quot;: &quot;123139640&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.total.max&quot;,
+            &quot;value&quot;: &quot;997457920&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.heap.committed&quot;,
+            &quot;value&quot;: &quot;179830784&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker0:thread.count&quot;, &quot;value&quot;: &quot;28&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker0:memory.heap.max&quot;, &quot;value&quot;: &quot;880017408&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker1:memory.heap.max&quot;, &quot;value&quot;: &quot;880017408&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.total.committed&quot;,
+            &quot;value&quot;: &quot;210239488&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.total.used&quot;,
+            &quot;value&quot;: &quot;152931440&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker1:thread.count&quot;, &quot;value&quot;: &quot;28&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.total.max&quot;,
+            &quot;value&quot;: &quot;997457920&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.heap.committed&quot;,
+            &quot;value&quot;: &quot;179830784&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.total.committed&quot;,
+            &quot;value&quot;: &quot;210239488&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker0:thread.daemon.count&quot;, &quot;value&quot;: &quot;18&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.heap.used&quot;,
+            &quot;value&quot;: &quot;123139640&quot;
+        }
+    }]
+}</code></pre>
+
+
+<h2 id="supervisor-service">Supervisor Service</h2>
+<p>Supervisor service allows user to add or remove a worker machine.</p>
+<h3 id="post-apiv10supervisorstatus">POST api/v1.0/supervisor/status</h3>
+<p>Query whether the supervisor service is enabled. If Supervisor service is disabled, you are not allowed to use API like addworker/removeworker.</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl -X POST [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/supervisor/status</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{&quot;enabled&quot;:true}</code></pre>
+
+
+<h3 id="get-apiv10supervisor">GET api/v1.0/supervisor</h3>
+<p>Get the supervisor path</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/supervisor</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{path: &quot;supervisor actor path&quot;}</code></pre>
+
+
+<h3 id="post-apiv10supervisoraddworkerworker-count">POST api/v1.0/supervisor/addworker/&lt;worker-count&gt;</h3>
+<p>Add workerCount new workers in the cluster. It will use the low level resource scheduler like
+YARN to start new containers and then boot Gearpump worker process.</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl -X POST [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/supervisor/addworker/2</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{success: true}</code></pre>
+
+
+<h3 id="post-apiv10supervisorremoveworkerworker-id">POST api/v1.0/supervisor/removeworker/&lt;worker-id&gt;</h3>
+<p>Remove single worker instance by specifying a worker Id.</p>
+<p>*<em>NOTE:</em> Use with caution!</p>
+<p><strong>NOTE:</strong> All executors JVMs under this worker JVM will also be destroyed. It will trigger failover for all
+applications that have executor started under this worker.</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl -X POST [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/supervisor/removeworker/3</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{success: true}</code></pre>
+
+
+<h2 id="application-service">Application service</h2>
+<h3 id="get-apiv10appmasterappiddetailtruefalse">GET api/v1.0/appmaster/&lt;appId&gt;?detail=&lt;true|false&gt;</h3>
+<p>Query information of an specific application of Id appId</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1?detail=true</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;appId&quot;: 1,
+  &quot;appName&quot;: &quot;wordCount&quot;,
+  &quot;processors&quot;: [
+    [
+      0,
+      {
+        &quot;id&quot;: 0,
+        &quot;taskClass&quot;: &quot;io.gearpump.streaming.examples.wordcount.Split&quot;,
+        &quot;parallelism&quot;: 1,
+        &quot;description&quot;: &quot;&quot;,
+        &quot;taskConf&quot;: {
+          &quot;_config&quot;: {}
+        },
+        &quot;life&quot;: {
+          &quot;birth&quot;: &quot;0&quot;,
+          &quot;death&quot;: &quot;9223372036854775807&quot;
+        },
+        &quot;executors&quot;: [
+          1
+        ],
+        &quot;taskCount&quot;: [
+          [
+            1,
+            {
+              &quot;count&quot;: 1
+            }
+          ]
+        ]
+      }
+    ],
+    [
+      1,
+      {
+        &quot;id&quot;: 1,
+        &quot;taskClass&quot;: &quot;io.gearpump.streaming.examples.wordcount.Sum&quot;,
+        &quot;parallelism&quot;: 1,
+        &quot;description&quot;: &quot;&quot;,
+        &quot;taskConf&quot;: {
+          &quot;_config&quot;: {}
+        },
+        &quot;life&quot;: {
+          &quot;birth&quot;: &quot;0&quot;,
+          &quot;death&quot;: &quot;9223372036854775807&quot;
+        },
+        &quot;executors&quot;: [
+          0
+        ],
+        &quot;taskCount&quot;: [
+          [
+            0,
+            {
+              &quot;count&quot;: 1
+            }
+          ]
+        ]
+      }
+    ]
+  ],
+  &quot;processorLevels&quot;: [
+    [
+      0,
+      0
+    ],
+    [
+      1,
+      1
+    ]
+  ],
+  &quot;dag&quot;: {
+    &quot;vertexList&quot;: [
+      0,
+      1
+    ],
+    &quot;edgeList&quot;: [
+      [
+        0,
+        &quot;io.gearpump.partitioner.HashPartitioner&quot;,
+        1
+      ]
+    ]
+  },
+  &quot;actorPath&quot;: &quot;akka.tcp://app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster&quot;,
+  &quot;clock&quot;: &quot;1450759382430&quot;,
+  &quot;executors&quot;: [
+    {
+      &quot;executorId&quot;: 0,
+      &quot;executor&quot;: &quot;akka.tcp://app1system0@127.0.0.1:52240/remote/akka.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/0#-1554950276&quot;,
+      &quot;workerId&quot;: &quot;1&quot;,
+      &quot;status&quot;: &quot;active&quot;
+    },
+    {
+      &quot;executorId&quot;: 1,
+      &quot;executor&quot;: &quot;akka.tcp://app1system1@127.0.0.1:52241/remote/akka.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/1#928082134&quot;,
+      &quot;workerId&quot;: &quot;0&quot;,
+      &quot;status&quot;: &quot;active&quot;
+    },
+    {
+      &quot;executorId&quot;: -1,
+      &quot;executor&quot;: &quot;akka://app1-executor-1/user/daemon/appdaemon1/$c/appmaster&quot;,
+      &quot;workerId&quot;: &quot;1&quot;,
+      &quot;status&quot;: &quot;active&quot;
+    }
+  ],
+  &quot;startTime&quot;: &quot;1450758117306&quot;,
+  &quot;uptime&quot;: &quot;1268472&quot;,
+  &quot;user&quot;: &quot;lisa&quot;,
+  &quot;homeDirectory&quot;: &quot;/usr/lisa/gearpump/&quot;,
+  &quot;logFile&quot;: &quot;logs/&quot;,
+  &quot;historyMetricsConfig&quot;: {
+    &quot;retainHistoryDataHours&quot;: 72,
+    &quot;retainHistoryDataIntervalMs&quot;: 3600000,
+    &quot;retainRecentDataSeconds&quot;: 300,
+    &quot;retainRecentDataIntervalMs&quot;: 15000
+  }
+}</code></pre>
+
+
+<h3 id="delete-apiv10appmasterappid">DELETE api/v1.0/appmaster/&lt;appId&gt;</h3>
+<p>shutdown application appId</p>
+<h3 id="get-apiv10appmasterappidstallingtasks">GET api/v1.0/appmaster/&lt;appId&gt;/stallingtasks</h3>
+<p>Query list of unhealthy tasks of an specific application of Id appId</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/2/stallingtasks</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;tasks&quot;: [
+    {
+      &quot;processorId&quot;: 0,
+      &quot;index&quot;: 0
+    }
+  ]
+}</code></pre>
+
+
+<h3 id="get-apiv10appmasterappidconfig">GET api/v1.0/appmaster/&lt;appId&gt;/config</h3>
+<p>Query the configuration of specific application appId</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/config</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+    &quot;gearpump&quot; : {
+        &quot;appmaster&quot; : {
+            &quot;extraClasspath&quot; : &quot;&quot;,
+            &quot;vmargs&quot; : &quot;-server -Xms512M -Xmx1024M -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3&quot;
+        },
+        &quot;cluster&quot; : {
+            &quot;masters&quot; : [
+                &quot;127.0.0.1:3000&quot;
+            ]
+        },
+        &quot;executor&quot; : {
+            &quot;extraClasspath&quot; : &quot;&quot;,
+            &quot;vmargs&quot; : &quot;-server -Xms512M -Xmx1024M -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3&quot;
+        },
+        &quot;jarstore&quot; : {
+            &quot;rootpath&quot; : &quot;jarstore/&quot;
+        },
+        &quot;log&quot; : {
+            &quot;application&quot; : {
+                &quot;dir&quot; : &quot;logs&quot;
+            },
+            &quot;daemon&quot; : {
+                &quot;dir&quot; : &quot;logs&quot;
+            }
+        },
+        &quot;metrics&quot; : {
+            &quot;enabled&quot; : true,
+            &quot;graphite&quot; : {
+                &quot;host&quot; : &quot;127.0.0.1&quot;,
+                &quot;port&quot; : 2003
+            },
+            &quot;logfile&quot; : {},
+            &quot;report-interval-ms&quot; : 15000,
+            &quot;reporter&quot; : &quot;akka&quot;,
+            &quot;retainHistoryData&quot; : {
+                &quot;hours&quot; : 72,
+                &quot;intervalMs&quot; : 3600000
+            },
+            &quot;retainRecentData&quot; : {
+                &quot;intervalMs&quot; : 15000,
+                &quot;seconds&quot; : 300
+            },
+            &quot;sample-rate&quot; : 10
+        },
+        &quot;netty&quot; : {
+            &quot;base-sleep-ms&quot; : 100,
+            &quot;buffer-size&quot; : 5242880,
+            &quot;flush-check-interval&quot; : 10,
+            &quot;max-retries&quot; : 30,
+            &quot;max-sleep-ms&quot; : 1000,
+            &quot;message-batch-size&quot; : 262144
+        },
+        &quot;netty-dispatcher&quot; : &quot;akka.actor.default-dispatcher&quot;,
+        &quot;scheduling&quot; : {
+            &quot;scheduler-class&quot; : &quot;io.gearpump.cluster.scheduler.PriorityScheduler&quot;
+        },
+        &quot;serializers&quot; : {
+            &quot;[B&quot; : &quot;&quot;,
+            &quot;[C&quot; : &quot;&quot;,
+            &quot;[D&quot; : &quot;&quot;,
+            &quot;[F&quot; : &quot;&quot;,
+            &quot;[I&quot; : &quot;&quot;,
+            &quot;[J&quot; : &quot;&quot;,
+            &quot;[Ljava.lang.String;&quot; : &quot;&quot;,
+            &quot;[S&quot; : &quot;&quot;,
+            &quot;[Z&quot; : &quot;&quot;,
+            &quot;io.gearpump.Message&quot; : &quot;io.gearpump.streaming.MessageSerializer&quot;,
+            &quot;io.gearpump.streaming.task.Ack&quot; : &quot;io.gearpump.streaming.AckSerializer&quot;,
+            &quot;io.gearpump.streaming.task.AckRequest&quot; : &quot;io.gearpump.streaming.AckRequestSerializer&quot;,
+            &quot;io.gearpump.streaming.task.LatencyProbe&quot; : &quot;io.gearpump.streaming.LatencyProbeSerializer&quot;,
+            &quot;io.gearpump.streaming.task.TaskId&quot; : &quot;io.gearpump.streaming.TaskIdSerializer&quot;,
+            &quot;scala.Tuple1&quot; : &quot;&quot;,
+            &quot;scala.Tuple2&quot; : &quot;&quot;,
+            &quot;scala.Tuple3&quot; : &quot;&quot;,
+            &quot;scala.Tuple4&quot; : &quot;&quot;,
+            &quot;scala.Tuple5&quot; : &quot;&quot;,
+            &quot;scala.Tuple6&quot; : &quot;&quot;,
+            &quot;scala.collection.immutable.$colon$colon&quot; : &quot;&quot;,
+            &quot;scala.collection.immutable.List&quot; : &quot;&quot;
+        },
+        &quot;services&quot; : {
+            # gear.conf: 112
+            &quot;host&quot; : &quot;127.0.0.1&quot;,
+            # gear.conf: 113
+            &quot;http&quot; : 8090,
+            # gear.conf: 114
+            &quot;ws&quot; : 8091
+        },
+        &quot;task-dispatcher&quot; : &quot;akka.actor.pined-dispatcher&quot;,
+        &quot;worker&quot; : {
+            # reference.conf: 100
+            # # How many slots each worker contains
+            &quot;slots&quot; : 100
+        }
+    }
+}</code></pre>
+
+
+<h3 id="get-apiv10appmasterappidmetricsquery_pathreadlatesttruefalseaggregatoraggregator_class">GET api/v1.0/appmaster/&lt;appId&gt;/metrics/&lt;query_path&gt;?readLatest=&lt;true|false&gt;&amp;aggregator=&lt;aggregator_class&gt;</h3>
+<p>Query metrics information of a specific application appId
+Filter metrics with path metrics path</p>
+<p>aggregator points to a aggregator class, which will aggregate on the current metrics, and return a smaller set.</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/metrics/app1?readLatest=true&amp;aggregator=io.gearpump.streaming.metrics.ProcessorAggregator</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+    &quot;path&quot;
+:
+    &quot;worker&quot;, &quot;metrics&quot;
+:
+    [{
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.total.used&quot;,
+            &quot;value&quot;: &quot;152931440&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker1:thread.daemon.count&quot;, &quot;value&quot;: &quot;18&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.heap.used&quot;,
+            &quot;value&quot;: &quot;123139640&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.total.max&quot;,
+            &quot;value&quot;: &quot;997457920&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.heap.committed&quot;,
+            &quot;value&quot;: &quot;179830784&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker0:thread.count&quot;, &quot;value&quot;: &quot;28&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker0:memory.heap.max&quot;, &quot;value&quot;: &quot;880017408&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker1:memory.heap.max&quot;, &quot;value&quot;: &quot;880017408&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.total.committed&quot;,
+            &quot;value&quot;: &quot;210239488&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker0:memory.total.used&quot;,
+            &quot;value&quot;: &quot;152931440&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker1:thread.count&quot;, &quot;value&quot;: &quot;28&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.total.max&quot;,
+            &quot;value&quot;: &quot;997457920&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.heap.committed&quot;,
+            &quot;value&quot;: &quot;179830784&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.total.committed&quot;,
+            &quot;value&quot;: &quot;210239488&quot;
+        }
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {&quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;, &quot;name&quot;: &quot;worker0:thread.daemon.count&quot;, &quot;value&quot;: &quot;18&quot;}
+    }, {
+        &quot;time&quot;: &quot;1450759137860&quot;,
+        &quot;value&quot;: {
+            &quot;$type&quot;: &quot;io.gearpump.metrics.Metrics.Gauge&quot;,
+            &quot;name&quot;: &quot;worker1:memory.heap.used&quot;,
+            &quot;value&quot;: &quot;123139640&quot;
+        }
+    }]
+}</code></pre>
+
+
+<h3 id="get-apiv10appmasterappiderrors">GET api/v1.0/appmaster/&lt;appId&gt;/errors</h3>
+<p>Get task error messages</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/errors</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{&quot;time&quot;:&quot;0&quot;,&quot;error&quot;:null}</code></pre>
+
+
+<h3 id="post-apiv10appmasterappidrestart">POST api/v1.0/appmaster/&lt;appId&gt;/restart</h3>
+<p>Restart the application</p>
+<h2 id="executor-service">Executor Service</h2>
+<h3 id="get-apiv10appmasterappidexecutorexecutoridconfig">GET api/v1.0/appmaster/&lt;appId&gt;/executor/&lt;executorid&gt;/config</h3>
+<p>Get executor config</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl http://127.0.0.1:8090/api/v1.0/appmaster/1/executor/1/config</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;extensions&quot;: [
+    &quot;akka.contrib.datareplication.DataReplication$&quot;
+  ]
+  &quot;akka&quot;: {
+    &quot;loglevel&quot;: &quot;INFO&quot;
+    &quot;log-dead-letters&quot;: &quot;off&quot;
+    &quot;log-dead-letters-during-shutdown&quot;: &quot;off&quot;
+    &quot;actor&quot;: {
+      ## Master forms a akka cluster
+      &quot;provider&quot;: &quot;akka.cluster.ClusterActorRefProvider&quot;
+    }
+    &quot;cluster&quot;: {
+      &quot;roles&quot;: [&quot;master&quot;]
+      &quot;auto-down-unreachable-after&quot;: &quot;15s&quot;
+    }
+    &quot;remote&quot;: {
+      &quot;log-remote-lifecycle-events&quot;: &quot;off&quot;
+    }
+  }
+}</code></pre>
+
+
+<h3 id="get-apiv10appmasterappidexecutorexecutorid">GET api/v1.0/appmaster/&lt;appId&gt;/executor/&lt;executorid&gt;</h3>
+<p>Get executor information.</p>
+<p>Example:</p>
+<pre class="codehilite"><code class="language-bash">curl [--cookie outputAuthenticationCookie.txt] http://127.0.0.1:8090/api/v1.0/appmaster/1/executor/1</code></pre>
+
+
+<p>Sample Response:</p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;id&quot;: 1,
+  &quot;workerId&quot;: &quot;0&quot;,
+  &quot;actorPath&quot;: &quot;akka.tcp://app1system1@127.0.0.1:52241/remote/akka.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/1&quot;,
+  &quot;logFile&quot;: &quot;logs/&quot;,
+  &quot;status&quot;: &quot;active&quot;,
+  &quot;taskCount&quot;: 1,
+  &quot;tasks&quot;: [
+    [
+      0,
+      [
+        {
+          &quot;processorId&quot;: 0,
+          &quot;index&quot;: 0
+        }
+      ]
+    ]
+  ],
+  &quot;jvmName&quot;: &quot;21304@lisa&quot;
+}</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../api/scala.html" class="btn btn-neutral float-right" title="Scala API">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="dev-non-streaming-example.html" class="btn btn-neutral" title="Non Streaming Examples"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/apache/incubator-gearpump/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="dev-non-streaming-example.html" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../api/scala.html" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>

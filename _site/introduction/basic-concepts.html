@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Basic Concepts - Apache Gearpump(incubating)</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Basic Concepts";
+    var mkdocs_page_input_path = "introduction/basic-concepts.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../index.html" class="icon icon-home"> Apache Gearpump(incubating)</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../index.html">Overview</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Introduction</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="quick-start.html">Quick Start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="submit-your-1st-application.html">Submit Your 1st Application</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="commandline.html">Client Command Line</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="basic-concepts.html">Basic Concepts</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#system-timestamp-and-application-timestamp">System timestamp and Application timestamp</a></li>
+    
+
+    <li class="toctree-l3"><a href="#master-and-worker">Master, and Worker</a></li>
+    
+
+    <li class="toctree-l3"><a href="#application">Application</a></li>
+    
+
+    <li class="toctree-l3"><a href="#appmaster-and-executor">AppMaster and Executor</a></li>
+    
+
+    <li class="toctree-l3"><a href="#application-submission-flow">Application Submission Flow</a></li>
+    
+
+    <li class="toctree-l3"><a href="#streaming-topology-processor-and-task">Streaming Topology, Processor, and Task</a></li>
+    
+
+    <li class="toctree-l3"><a href="#streaming-task-and-partitioner">Streaming Task and Partitioner</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="features.html">Technical Highlights</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="message-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="performance-report.html">Performance</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Deployment</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-local.html">Local Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-standalone.html">Standalone Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-yarn.html">YARN Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-docker.html">Docker Mode</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ui-authentication.html">UI Authentication</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-ha.html">High Availability</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-msg-delivery.html">Reliable Message Delivery</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-configuration.html">Configuration</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-resource-isolation.html">Resource Isolation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/deployment-security.html">YARN Security Guide</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/get-gearpump-distribution.html">How to Get Your Gearpump Distribution</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../deployment/hardware-requirement.html">Hardware Requirement</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Programming Guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../dev/dev-write-1st-app.html">Write Your 1st App</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-custom-serializer.html">Customized Message Passing</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-connectors.html">Gearpump Connectors</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-storm.html">Storm Compatibility</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-ide-setup.html">IDE Setup</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-non-streaming-example.html">Non Streaming Examples</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../dev/dev-rest-api.html">REST API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/scala.html">Scala API</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../api/java.html">Java API</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Internals</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../internals/gearpump-internals.html">Gearpump Internals</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Apache Gearpump(incubating)</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Introduction &raquo;</li>
+        
+      
+    
+    <li>Basic Concepts</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/apache/incubator-gearpump/edit/master/docs/contents/introduction/basic-concepts.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h3 id="system-timestamp-and-application-timestamp">System timestamp and Application timestamp</h3>
+<p>System timestamp denotes the time of backend cluster system. Application timestamp denotes the time at which message is generated. For example, for IoT edge device, the timestamp at which field sensor device creates a message is type of application timestamp, while the timestamp at which that message get received by the backend is type of system time.</p>
+<h3 id="master-and-worker">Master, and Worker</h3>
+<p>Gearpump follow master slave architecture. Every cluster contains one or more Master node, and several worker nodes. Worker node is responsible to manage local resources on single machine, and Master node is responsible to manage global resources of the whole cluster.</p>
+<p><img alt="Actor Hierarchy" src="../img/actor_hierarchy.png" /></p>
+<h3 id="application">Application</h3>
+<p>Application is what we want to parallel and run on the cluster. There are different application types, for example MapReduce application and streaming application are different application types. Gearpump natively supports Streaming Application types, it also contains several templates to help user to create custom application types, like distributedShell.</p>
+<h3 id="appmaster-and-executor">AppMaster and Executor</h3>
+<p>In runtime, every application instance is represented by a single AppMaster and a list of Executors. AppMaster represents the command and controls center of the Application instance. It communicates with user, master, worker, and executor to get the job done. Each executor is a parallel unit for distributed application. Typically AppMaster and Executor will be started as JVM processes on worker nodes.</p>
+<h3 id="application-submission-flow">Application Submission Flow</h3>
+<p>When user submits an application to Master, Master will first find an available worker to start the AppMaster. After AppMaster is started, AppMaster will request Master for more resources (worker) to start executors. The Executor now is only an empty container. After the executors are started, the AppMaster will then distribute real computation tasks to the executor and run them in parallel way.</p>
+<p>To submit an application, a Gearpump client specifies a computation defined within a DAG and submits this to an active master. The SubmitApplication message is sent to the Master who then forwards this to an AppManager.</p>
+<p><img alt="Submit App" src="../img/submit.png" />
+Figure: User Submit Application</p>
+<p>The AppManager locates an available worker and launches an AppMaster in a sub-process JVM of the worker. The AppMaster will then negotiate with the Master for Resource allocation in order to distribute the DAG as defined within the Application. The allocated workers will then launch Executors (new JVMs).</p>
+<p><img alt="Launch Executors and Tasks" src="../img/submit2.png" />
+Figure: Launch Executors and Tasks</p>
+<h3 id="streaming-topology-processor-and-task">Streaming Topology, Processor, and Task</h3>
+<p>For streaming application type, each application contains a topology, which is a DAG (directed acyclic graph) to describe the data flow. Each node in the DAG is a processor. For example, for word count it contains two processors, Split and Sum. The Split processor splits a line to a list of words, and then the Sum processor summarize the frequency of each word.
+An application is a DAG of processors. Each processor handles messages.</p>
+<p><img alt="DAG" src="../img/dag.png" />
+Figure: Processor DAG</p>
+<h3 id="streaming-task-and-partitioner">Streaming Task and Partitioner</h3>
+<p>For streaming application type, Task is the minimum unit of parallelism. In runtime, each Processor is paralleled to a list of tasks, with different tasks running in different executor. You can define Partitioner to denote the data shuffling rule between upstream processor tasks and downstream processor tasks.</p>
+<p><img alt="Data Shuffle" src="../img/shuffle.png" />
+Figure: Task Data Shuffling</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="features.html" class="btn btn-neutral float-right" title="Technical Highlights">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="commandline.html" class="btn btn-neutral" title="Client Command Line"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/apache/incubator-gearpump/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="commandline.html" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="features.html" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>
