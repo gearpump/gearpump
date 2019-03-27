@@ -21,7 +21,8 @@ import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 
 object Docs {
   lazy val javadocSettings = Seq(
-    scalacOptions += s"-P:genjavadoc:out=${target.value}/java"
+    scalacOptions += s"-P:genjavadoc:out=${target.value}/java",
+    scalacOptions -= "-Xfatal-warnings"
   )
 
   def gearpumpUnidocSetting(projects: ProjectReference*) = Seq(
