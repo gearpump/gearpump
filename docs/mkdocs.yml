@@ -56,7 +56,7 @@ plugins:
     - markdownextradata
         
 extra:
-    GEARPUMP_VERSION: "0.9.0"
+    GEARPUMP_VERSION: "0.9.1"
     SCALA_BINARY_VERSION: "2.12"
     SCALA_VERSION: "2.12.7"
  
