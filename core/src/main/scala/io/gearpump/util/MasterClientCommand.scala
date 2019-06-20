@@ -21,7 +21,7 @@ import scala.util.Try
 trait MasterClientCommand extends AkkaApp {
 
   override def main(args: Array[String]): Unit = {
-    ClientContext.setRemote
+    ClientContext.setRemote()
     LogUtil.loadConfiguration(akkaConfig, ProcessType.CLIENT)
 
     Try {
