@@ -21,7 +21,6 @@ import io.gearpump.cluster.master.Master
 import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import io.gearpump.util.{LogUtil, Util}
 import io.gearpump.util.Constants.{GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS, GEARPUMP_CLUSTER_MASTERS, GEARPUMP_METRIC_ENABLED, MASTER}
-
 import scala.collection.JavaConverters._
 
 /**

@@ -27,10 +27,8 @@ import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 import io.gearpump.util.Constants._
-import java.util.concurrent.{TimeUnit, TimeoutException}
-
+import java.util.concurrent.{TimeoutException, TimeUnit}
 import org.slf4j.Logger
-
 import scala.collection.JavaConverters._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
