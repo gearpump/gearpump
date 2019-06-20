@@ -22,8 +22,6 @@ import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import io.gearpump.util.{LogUtil, Util}
 import io.gearpump.util.Constants.{GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS, GEARPUMP_CLUSTER_MASTERS, GEARPUMP_METRIC_ENABLED, MASTER}
 import scala.collection.JavaConverters._
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 /**
  * Create a in-process cluster with single worker
@@ -32,9 +30,10 @@ class EmbeddedCluster(inputConfig: Config) {
   private val LOG = LogUtil.getLogger(getClass)
   private val workerCount: Int = 1
   private val port = Util.findFreePort().get
-  private[embedded] val config: Config = getConfig(inputConfig, port)
-  private[embedded] val system: ActorSystem = ActorSystem(MASTER, config)
-  private[embedded] val master: ActorRef = system.actorOf(Props[Master], MASTER)
+
+  val config: Config = getConfig(inputConfig, port)
+  val system: ActorSystem = ActorSystem(MASTER, config)
+  val master: ActorRef = system.actorOf(Props[Master], MASTER)
 
   0.until(workerCount).foreach { id =>
     system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)
@@ -56,12 +55,6 @@ class EmbeddedCluster(inputConfig: Config) {
       withValue("akka.actor.provider",
         ConfigValueFactory.fromAnyRef("akka.cluster.ClusterActorRefProvider"))
     config
-  }
-
-  def stop(): Unit = {
-    system.stop(master)
-    system.terminate()
-    Await.result(system.whenTerminated, Duration.Inf)
   }
 }
 

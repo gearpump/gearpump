@@ -18,7 +18,7 @@ import akka.actor.{Actor, ActorSystem, Address, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigValueFactory}
 import io.gearpump.cluster.MasterHarness._
-import io.gearpump.cluster.client.{RemoteRuntimeEnvironment, RuntimeEnvironment}
+import io.gearpump.cluster.client.ClientContext
 import io.gearpump.util.{ActorUtil, FileUtils, LogUtil}
 import io.gearpump.util.Constants._
 import java.io.File
@@ -58,7 +58,7 @@ trait MasterHarness {
 
     LOG.info(s"Actor system is started, $host, $port")
     // Make sure there will be no EmbeddedCluster created, otherwise mock master won't work
-    RuntimeEnvironment.setRuntimeEnv(new RemoteRuntimeEnvironment)
+    ClientContext.setRemote()
   }
 
   def shutdownActorSystem(): Unit = {

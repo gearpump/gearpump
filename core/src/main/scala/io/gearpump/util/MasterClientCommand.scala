@@ -14,14 +14,14 @@
 
 package io.gearpump.util
 
-import io.gearpump.cluster.client.{RemoteRuntimeEnvironment, RuntimeEnvironment}
+import io.gearpump.cluster.client.ClientContext
 import io.gearpump.util.LogUtil.ProcessType
 import scala.util.Try
 
 trait MasterClientCommand extends AkkaApp {
 
   override def main(args: Array[String]): Unit = {
-    RuntimeEnvironment.setRuntimeEnv(new RemoteRuntimeEnvironment)
+    ClientContext.setRemote()
     LogUtil.loadConfiguration(akkaConfig, ProcessType.CLIENT)
 
     Try {
