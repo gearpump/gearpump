@@ -14,6 +14,7 @@
 
 package io.gearpump.cluster.client
 
+import acyclic.file
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigValueFactory}
@@ -21,39 +22,54 @@ import io.gearpump.cluster.{ClusterConfig, _}
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication, SubmitApplication}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, ReplayFromTimestampWindowTrailingEdge}
 import io.gearpump.cluster.MasterToClient._
+import io.gearpump.cluster.embedded.EmbeddedCluster
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 import io.gearpump.util.Constants._
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{TimeUnit, TimeoutException}
+
 import org.slf4j.Logger
+
 import scala.collection.JavaConverters._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
+
 /**
  * ClientContext is a user facing utility to interact with the master.
  * (e.g. submit/manage an application).
  */
-class ClientContext protected(config: Config, sys: ActorSystem, _master: ActorRef) {
+class ClientContext protected(config: Config,
+    sysOpt: Option[ActorSystem], masterOpt: Option[ActorRef]) {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
-  implicit val system = Option(sys).getOrElse(ActorSystem(s"client${Util.randInt()}", config))
+  implicit val system = sysOpt.getOrElse(ActorSystem(s"client${Util.randInt()}", config))
   private val jarStoreClient = new JarStoreClient(config, system)
   private val masterClientTimeout = {
-    val timeout = Try(config.getInt(Constants.GEARPUMP_MASTERCLIENT_TIMEOUT)).getOrElse(90)
+    val timeout = Try(config.getInt(Constants.GEARPUMP_MASTERCLIENT_TIMEOUT)).getOrElse(30)
     Timeout(timeout, TimeUnit.SECONDS)
   }
 
   private lazy val master: ActorRef = {
-    val masters = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
-      .flatMap(Util.parseHostList)
-    val master = Option(_master).getOrElse(system.actorOf(MasterProxy.props(masters),
-      s"masterproxy${system.name}"))
-    LOG.info(s"Creating master proxy $master for master list: $masters")
-    master
+    masterOpt match {
+      case Some(m) => m
+      case None =>
+        val masterList = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
+          .flatMap(Util.parseHostList)
+        if (masterList.isEmpty) {
+          throw new IllegalArgumentException(s"No remote masters is configured. " +
+            s"Please check value of ${Constants.GEARPUMP_CLUSTER_MASTERS} or " +
+            s"run with EmbeddedCluster")
+        } else {
+          val masterProxy = system.actorOf(MasterProxy.props(masterList),
+            s"masterproxy${system.name}")
+          LOG.debug(s"Creating master proxy $masterProxy for master list: $masterList")
+          masterProxy
+        }
+    }
   }
 
   /**
@@ -126,10 +142,8 @@ class ClientContext protected(config: Config, sys: ActorSystem, _master: ActorRe
   }
 
   def close(): Unit = {
-    if (sys == null) {
-      LOG.info(s"Shutting down system ${system.name}")
-      system.terminate()
-    }
+    LOG.info(s"Shutting down system ${system.name}")
+    system.terminate()
   }
 
   private def loadFile(jarPath: String): AppJar = {
@@ -157,21 +171,39 @@ class ClientContext protected(config: Config, sys: ActorSystem, _master: ActorRe
   }
 
   private def submitApplication(submitApplication: SubmitApplication): RunningApplication = {
-    val result = ActorUtil.askActor[SubmitApplicationResult](master,
-      submitApplication, masterClientTimeout)
-    val application = result.appId match {
-      case Success(appId) =>
-        // scalastyle:off println
-        Console.println(s"Submit application succeed. The application id is $appId")
+    try {
+      val result =
+        ActorUtil.askActor[SubmitApplicationResult](master,
+          submitApplication, masterClientTimeout)
+
+      val application = result.appId match {
+        case Success(appId) =>
+          // scalastyle:off println
+          Console.println(s"Submit application succeed. The application id is $appId")
+          // scalastyle:on println
+          new RunningApplication(appId, master, masterClientTimeout)
+        case Failure(ex) => throw ex
+      }
+      application
+    } catch {
+      case ex: Exception =>
+        if (ex.isInstanceOf[TimeoutException]) {
+          // scalastyle:off println
+          Console.err.println(s"Failed to find a remote master at ${master.path}. ")
+        }
+        throw ex
         // scalastyle:on println
-        new RunningApplication(appId, master, masterClientTimeout)
-      case Failure(ex) => throw ex
     }
-    application
   }
 }
 
 object ClientContext {
+
+  private var remote: Boolean = false
+
+  private[gearpump] def setRemote(): Unit = {
+    remote = true
+  }
 
   /**
    * Create a [[ClientContext]] which will instantiate an actor system
@@ -186,7 +218,12 @@ object ClientContext {
    * through the given config.
    */
   def apply(config: Config): ClientContext = {
-    RuntimeEnvironment.newClientContext(config)
+    if (remote) {
+      new ClientContext(config, None, None)
+    } else {
+      val cluster = new EmbeddedCluster(config)
+      new ClientContext(cluster.config, Option(cluster.system), Option(cluster.master))
+    }
   }
 
   /**
@@ -195,7 +232,7 @@ object ClientContext {
    * through the given config.
    */
   def apply(config: Config, system: ActorSystem): ClientContext = {
-    new ClientContext(config, system, null)
+    new ClientContext(config, Option(system), None)
   }
 
   /**
@@ -203,6 +240,6 @@ object ClientContext {
    * to interact with the given master.
    */
   def apply(config: Config, system: ActorSystem, master: ActorRef): ClientContext = {
-    new ClientContext(config, system, master)
+    new ClientContext(config, Option(system), Option(master))
   }
 }
