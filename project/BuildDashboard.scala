@@ -44,7 +44,7 @@ object BuildDashboard {
         "org.webjars" % "jquery-cookie" % "1.4.1",
         "org.webjars.bower" % "angular-loading-bar" % "0.8.0"
           exclude("org.webjars.bower", "angular"),
-        "org.webjars.bower" % "angular-smart-table" % "2.1.6"
+        "org.webjars.bower" % "angular-smart-table" % "2.1.8"
           exclude("org.webjars.bower", "angular"),
         "org.webjars.bower" % "angular-motion" % "0.4.3",
         "org.webjars.bower" % "bootstrap-additions" % "0.3.1",
