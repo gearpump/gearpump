@@ -53,7 +53,7 @@ object BuildDashboard {
         "org.webjars.npm" % "ui-select" % "0.14.2",
         "org.webjars.bower" % "ng-file-upload" % "5.0.9",
         "org.webjars.bower" % "vis" % "4.7.0",
-        "org.webjars.bower" % "clipboard.js" % "0.1.1",
+        "org.webjars.bower" % "clipboard.js" % "0.2.0",
         "org.webjars.npm" % "dashing-deps" % "0.1.2",
         "org.webjars.npm" % "dashing" % "0.4.8"
       ).map(_.exclude("org.scalamacros", "quasiquotes_2.10"))
