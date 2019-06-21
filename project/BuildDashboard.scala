@@ -33,7 +33,7 @@ object BuildDashboard {
         "org.webjars" % "angularjs" % "1.4.9",
 
         // angular 1.5 breaks ui-select, but we need ng-touch 1.5
-        "org.webjars.npm" % "angular-touch" % "1.5.0",
+        "org.webjars.npm" % "angular-touch" % "1.5.8",
         "org.webjars" % "angular-ui-router" % "0.2.15",
         "org.webjars" % "bootstrap" % "3.3.6",
         "org.webjars" % "d3js" % "3.5.6",
