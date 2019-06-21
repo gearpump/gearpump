@@ -46,7 +46,7 @@ object BuildDashboard {
           exclude("org.webjars.bower", "angular"),
         "org.webjars.bower" % "angular-smart-table" % "2.1.6"
           exclude("org.webjars.bower", "angular"),
-        "org.webjars.bower" % "angular-motion" % "0.4.3",
+        "org.webjars.bower" % "angular-motion" % "0.4.4",
         "org.webjars.bower" % "bootstrap-additions" % "0.3.1",
         "org.webjars.bower" % "angular-strap" % "2.3.5"
           exclude("org.webjars.bower", "angular"),
