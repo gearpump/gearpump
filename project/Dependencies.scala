@@ -59,9 +59,7 @@ object Dependencies {
 
   val compilerDependencies = Seq(
     compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
-    "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided,
-    compilerPlugin("com.lihaoyi" %% "acyclic" % "0.1.7"),
-    "com.lihaoyi" %% "acyclic" % "0.1.7" % Provided
+    "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided
   )
 
   val coreDependencies = Seq(

@@ -14,7 +14,6 @@
 
 package io.gearpump.cluster.client
 
-import acyclic.file
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigValueFactory}
