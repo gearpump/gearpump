@@ -50,7 +50,7 @@ object BuildDashboard {
         "org.webjars.bower" % "bootstrap-additions" % "0.3.1",
         "org.webjars.bower" % "angular-strap" % "2.3.5"
           exclude("org.webjars.bower", "angular"),
-        "org.webjars.npm" % "ui-select" % "0.14.2",
+        "org.webjars.npm" % "ui-select" % "0.14.7",
         "org.webjars.bower" % "ng-file-upload" % "5.0.9",
         "org.webjars.bower" % "vis" % "4.7.0",
         "org.webjars.bower" % "clipboard.js" % "0.1.1",
