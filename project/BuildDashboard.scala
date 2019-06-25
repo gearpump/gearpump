@@ -29,7 +29,7 @@ object BuildDashboard {
         "com.softwaremill.akka-http-session" %% "core" % "0.3.0",
         "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
         "com.github.scribejava" % "scribejava-apis" % "2.4.0",
-        "com.ning" % "async-http-client" % "1.9.33",
+        "com.ning" % "async-http-client" % "1.9.40",
         "org.webjars" % "angularjs" % "1.4.9",
 
         // angular 1.5 breaks ui-select, but we need ng-touch 1.5
