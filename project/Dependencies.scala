@@ -79,7 +79,7 @@ object Dependencies {
        *
        * @see https://github.com/gearpump/gearpump/pull/2017 for more discussions.
        */
-      "io.netty" % "netty" % "3.8.0.Final",
+      "io.netty" % "netty" % "3.8.3.Final",
       "com.typesafe.akka" %% "akka-remote" % akkaVersion
         exclude("io.netty", "netty"),
 
