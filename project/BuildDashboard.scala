@@ -28,7 +28,7 @@ object BuildDashboard {
         "com.lihaoyi" %% "upickle" % upickleVersion,
         "com.softwaremill.akka-http-session" %% "core" % "0.3.0",
         "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
-        "com.github.scribejava" % "scribejava-apis" % "2.4.0",
+        "com.github.scribejava" % "scribejava-apis" % "2.8.1",
         "com.ning" % "async-http-client" % "1.9.33",
         "org.webjars" % "angularjs" % "1.4.9",
 
