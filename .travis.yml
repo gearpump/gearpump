@@ -21,11 +21,11 @@ script:
 - set -o pipefail; set -e; skipLogs="Resolving |Compiling |Done updating|Updating |scoverage|coverage-report";
   if [[ $TRAVIS_PULL_REQUEST != "false" || $TRAVIS_REPO_SLUG != "gearpump/gearpump" ]]; then 
     sbt -jvm-opts project/travis/jvmopts clean +assembly scalastyle test:scalastyle unidoc coverage test | grep -v -E "$skipLogs";
-    sbt coverageReport;
+    sbt coverageAggregate;
   elif [[ $TRAVIS_BRANCH == "master" ]]; then
     sbt -jvm-opts project/travis/jvmopts clean +assembly +publish | grep -v -E "$skipLogs";
     sbt -jvm-opts project/travis/jvmopts scalastyle test:scalastyle unidoc coverage test  | grep -v -E "$skipLogs";
-    sbt coverageReport;
+    sbt coverageAggregate;
   elif [[ $TRAVIS_TAG != "" ]]; then
     sbt -jvm-opts project/travis/jvmopts clean +assembly +packArchiveZip | grep -v -E "$skipLogs";
   fi
