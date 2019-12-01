@@ -54,6 +54,7 @@ markdown_extensions:
 plugins:
     - search
     - markdownextradata
+    - htmlproofer
         
 extra:
     GEARPUMP_VERSION: "0.9.1"

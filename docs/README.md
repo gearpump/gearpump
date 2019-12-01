@@ -3,46 +3,23 @@ This README gives an overview of how to build and contribute to the documentatio
 The documentation is included with the source of Gearpump in order to ensure that you always
 have docs corresponding to your checked out version.
 
-# Requirements
+## Requirements
 
-You need to install ruby and ruby-dev first. On Ubuntu, you ca run command like this:
+* Python >= 3.5
+* [MkDocs](https://www.mkdocs.org/) >= 17.0
+* [mkdocs-markdownextradata-plugin](https://github.com/rosscdh/mkdocs-markdownextradata-plugin) and [mkdocs-htmlproofer-plugin](https://github.com/manuzhang/mkdocs-htmlproofer-plugin)
 
-    sudo apt-get install ruby
-    sudo apt-get install ruby-dev
-    sudo apt-get install python-setuptools
-    sudo apt-get install pip
+Install the packages with pip
 
-We use Markdown to write and Jekyll to translate the documentation to static HTML. You can install
-all needed software via:
-
-    sudo pip install mkdocs
-    sudo gem install html-proofer
-
-
-If you are using Mac OSX 10.11+ (El Capitan), you will need to execute following command:
 ```
-sudo gvim /Library/Ruby/Gems/2.0.0/gems/ffi-1.9.10/lib/ffi/library.rb
-```
-And change following code in this file:
-```ruby
-module FFI
-...
-    def self.map_library_name(lib)
-        ...
-        lib = Library::LIBC if lib == 'c'
-        lib = Library::LIBCURL if lib == 'libcurl'
-...
-module Library
-    CURRENT_PROCESS = FFI::CURRENT_PROCESS
-    LIBC = '/usr/lib/libc.dylib'
-    LIBCURL = '/usr/lib/libcurl.dylib'
+pip install mkdocs mkdocs-markdownextradata-plugin mkdocs-htmlproofer-plugin
 ```
 
 
-# How to Build
-Command `./build_doc.sh` can be used to create a full document folder under site/. 
+## How to Build
+Command `./build_doc.sh` can be used to create a full document folder under `site/`. 
 
-# How to contribute
+## How to contribute
 
 The documentation pages are written in
 [Markdown](http://daringfireball.net/projects/markdown/syntax). 
@@ -63,7 +40,7 @@ Please stick to the "logical order" when using the headlines, e.g. start with le
 use level-3 headings for subsections, etc. Don't use a different ordering, because you don't like
 how a headline looks.
 
-# How to Test
+## How to Test
 
 Command `mkdocs build` can be used to make a test build.
 
