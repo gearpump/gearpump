@@ -38,7 +38,7 @@ object Dependencies {
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
   val scalaTestVersion = "3.0.5"
-  val scalaCheckVersion = "1.14.0"
+  val scalaCheckVersion = "1.14.2"
   val mockitoVersion = "1.10.17"
   val bijectionVersion = "0.8.0"
   val scalazVersion = "7.1.1"
