@@ -26,7 +26,7 @@ object BuildDashboard {
         "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "com.lihaoyi" %% "upickle" % upickleVersion,
-        "com.softwaremill.akka-http-session" %% "core" % "0.3.0",
+        "com.softwaremill.akka-http-session" %% "core" % "0.6.0",
         "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
         "com.github.scribejava" % "scribejava-apis" % "2.4.0",
         "com.ning" % "async-http-client" % "1.9.33",
