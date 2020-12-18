@@ -40,7 +40,7 @@ object BuildDashboard {
         "org.webjars" % "momentjs" % "2.10.6",
         "org.webjars" % "lodash" % "3.10.1",
         "org.webjars" % "font-awesome" % "4.5.0",
-        "org.webjars" % "jquery" % "2.2.0",
+        "org.webjars" % "jquery" % "2.2.4",
         "org.webjars" % "jquery-cookie" % "1.4.1",
         "org.webjars.bower" % "angular-loading-bar" % "0.8.0"
           exclude("org.webjars.bower", "angular"),
