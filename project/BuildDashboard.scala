@@ -36,7 +36,7 @@ object BuildDashboard {
         "org.webjars.npm" % "angular-touch" % "1.5.0",
         "org.webjars" % "angular-ui-router" % "0.2.15",
         "org.webjars" % "bootstrap" % "3.3.6",
-        "org.webjars" % "d3js" % "3.5.6",
+        "org.webjars" % "d3js" % "3.5.17",
         "org.webjars" % "momentjs" % "2.10.6",
         "org.webjars" % "lodash" % "3.10.1",
         "org.webjars" % "font-awesome" % "4.5.0",
