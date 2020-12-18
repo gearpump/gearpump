@@ -40,7 +40,7 @@ object Dependencies {
   val scalaTestVersion = "3.0.5"
   val scalaCheckVersion = "1.14.0"
   val mockitoVersion = "1.10.17"
-  val bijectionVersion = "0.8.0"
+  val bijectionVersion = "0.9.6"
   val scalazVersion = "7.1.1"
   val algebirdVersion = "0.13.5"
   val chillVersion = "0.6.0"
