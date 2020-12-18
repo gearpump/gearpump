@@ -19,7 +19,7 @@ object Dependencies {
 
   val crossScalaVersionNumbers = Seq("2.12.7")
   val scalaVersionNumber = crossScalaVersionNumbers.last
-  val akkaVersion = "2.5.18"
+  val akkaVersion = "2.5.25"
   val akkaHttpVersion = "10.1.3"
   val hadoopVersion = "3.1.1"
   val commonsHttpVersion = "3.1"
