@@ -23,7 +23,7 @@ object Dependencies {
   val akkaHttpVersion = "10.1.3"
   val hadoopVersion = "3.1.1"
   val commonsHttpVersion = "3.1"
-  val commonsLoggingVersion = "1.1.3"
+  val commonsLoggingVersion = "1.2"
   val commonsLangVersion = "2.6"
   val commonsIOVersion = "2.4"
   val dataReplicationVersion = "0.7"
