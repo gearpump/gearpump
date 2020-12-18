@@ -34,7 +34,7 @@ object Dependencies {
   val guavaVersion = "16.0.1"
   val codahaleVersion = "3.0.2"
   val kryoVersion = "0.5.2"
-  val gsCollectionsVersion = "6.2.0"
+  val gsCollectionsVersion = "7.0.3"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
   val scalaTestVersion = "3.0.5"
