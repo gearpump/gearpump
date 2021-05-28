@@ -17,7 +17,7 @@ import sbt.Keys._
 
 object Dependencies {
 
-  val crossScalaVersionNumbers = Seq("2.12.7")
+  val crossScalaVersionNumbers = Seq("2.12.14")
   val scalaVersionNumber = crossScalaVersionNumbers.last
   val akkaVersion = "2.5.18"
   val akkaHttpVersion = "10.1.3"
