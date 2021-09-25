@@ -31,7 +31,7 @@ object Dependencies {
   val junitVersion = "4.12"
   val jsonSimpleVersion = "1.1"
   val slf4jVersion = "1.7.16"
-  val guavaVersion = "16.0.1"
+  val guavaVersion = "31.0-jre"
   val codahaleVersion = "3.0.2"
   val kryoVersion = "0.5.2"
   val gsCollectionsVersion = "6.2.0"
