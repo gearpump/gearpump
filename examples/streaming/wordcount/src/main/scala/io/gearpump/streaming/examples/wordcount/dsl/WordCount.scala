@@ -18,15 +18,15 @@ import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.streaming.dsl.scalaapi.StreamApp
 import io.gearpump.streaming.dsl.scalaapi.StreamApp._
-import io.gearpump.util.AkkaApp
+import io.gearpump.util.PekkoApp
 
 /** Same WordCount with High level DSL syntax */
-object WordCount extends AkkaApp with ArgumentsParser {
+object WordCount extends PekkoApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  override def main(akkaConf: Config, args: Array[String]): Unit = {
-    val context: ClientContext = ClientContext(akkaConf)
+  override def main(pekkoConf: Config, args: Array[String]): Unit = {
+    val context: ClientContext = ClientContext(pekkoConf)
     val app = StreamApp("dsl", context)
     val data = "This is a good start, bingo!! bingo!!"
     app.source(data.lines.toList, 1, "source").

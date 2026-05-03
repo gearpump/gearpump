@@ -14,24 +14,15 @@
 
 package io.gearpump.serializer
 
-import akka.actor.ExtendedActorSystem
-import com.esotericsoftware.kryo.Kryo.DefaultInstantiatorStrategy
-import com.romix.akka.serialization.kryo.{KryoBasedSerializer, KryoSerializer}
+import org.apache.pekko.actor.ExtendedActorSystem
+import io.altoo.serialization.kryo.pekko.PekkoKryoSerializer
 import io.gearpump.serializer.FastKryoSerializer.KryoSerializationException
 import io.gearpump.util.LogUtil
-import org.objenesis.strategy.StdInstantiatorStrategy
 
 class FastKryoSerializer(system: ExtendedActorSystem) extends Serializer {
 
   private val LOG = LogUtil.getLogger(getClass)
-  private val config = system.settings.config
-
-  private val kryoSerializer: KryoBasedSerializer = new KryoSerializer(system).serializer
-  private val kryo = kryoSerializer.kryo
-  val strategy = new DefaultInstantiatorStrategy
-  strategy.setFallbackInstantiatorStrategy(new StdInstantiatorStrategy)
-  kryo.setInstantiatorStrategy(strategy)
-  new GearpumpSerialization(config).customize(kryo)
+  private val kryoSerializer = new PekkoKryoSerializer(system)
 
   override def serialize(message: Any): Array[Byte] = {
     try {
@@ -68,7 +59,7 @@ class FastKryoSerializer(system: ExtendedActorSystem) extends Serializer {
   }
 
   override def deserialize(msg: Array[Byte]): Any = {
-    kryoSerializer.fromBinary(msg)
+    kryoSerializer.fromBinary(msg, None)
   }
 }
 

@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.{AppJar, Application, ApplicationMaster, UserConfig}
 import io.gearpump.streaming.appmaster.AppMaster
 import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner, PartitionerDescription, PartitionerObject}

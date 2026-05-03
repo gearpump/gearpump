@@ -152,7 +152,6 @@ object BuildGearpump {
       s"${name.value}_${scalaBinaryVersion.value}-${version.value}-assembly.jar"
     },
     assemblyShadeRules in assembly := Seq(
-      ShadeRule.rename("com.romix.**" -> "io.gearpump.@0").inAll,
       ShadeRule.rename("com.esotericsoftware.**" ->
         "io.gearpump.@0").inAll,
       ShadeRule.rename("org.objenesis.**" -> "io.gearpump.@0").inAll,

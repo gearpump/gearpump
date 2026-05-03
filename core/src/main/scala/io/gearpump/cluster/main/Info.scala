@@ -30,8 +30,8 @@ object Info extends MasterClientCommand with ArgumentsParser {
   override val description = "Query the Application list"
 
   // scalastyle:off println
-  def main(akkaConf: Config, args: Array[String]): Unit = {
-    val client = ClientContext(akkaConf)
+  def main(pekkoConf: Config, args: Array[String]): Unit = {
+    val client = ClientContext(pekkoConf)
 
     val AppMastersData(appMasters) = client.listApps
     Console.println("== Application Information ==")

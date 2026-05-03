@@ -14,11 +14,11 @@
 package io.gearpump.examples.pagerank
 
 import io.gearpump.cluster.client.ClientContext
-import io.gearpump.util.{AkkaApp, Graph}
+import io.gearpump.util.{PekkoApp, Graph}
 import io.gearpump.util.Graph.Node
 
 /** A very simple PageRank example, Cyclic graph is not supported */
-object PageRankExample extends AkkaApp {
+object PageRankExample extends PekkoApp {
 
   val a = "a"
   val b = "b"
@@ -27,10 +27,10 @@ object PageRankExample extends AkkaApp {
 
   def help(): Unit = Unit
 
-  def main(akkaConf: Config, args: Array[String]): Unit = {
+  def main(pekkoConf: Config, args: Array[String]): Unit = {
     val pageRankGraph = Graph(a ~> b, a ~> c, a ~> d, b ~> a, b ~> d, d ~> b, d ~> c, c ~> b)
     val app = new PageRankApplication("pagerank", iteration = 100, delta = 0.001, pageRankGraph)
-    val context = ClientContext(akkaConf)
+    val context = ClientContext(pekkoConf)
     context.submit(app)
     context.close()
   }

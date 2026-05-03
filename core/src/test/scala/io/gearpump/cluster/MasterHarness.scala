@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster
 
-import akka.actor.{Actor, ActorSystem, Address, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{Actor, ActorSystem, Address, Props}
+import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigValueFactory}
 import io.gearpump.cluster.MasterHarness._
 import io.gearpump.cluster.client.ClientContext

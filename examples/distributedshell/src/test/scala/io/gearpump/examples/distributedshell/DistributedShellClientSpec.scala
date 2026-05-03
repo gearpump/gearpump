@@ -13,7 +13,7 @@
  */
 package io.gearpump.examples.distributedshell
 
-import akka.testkit.TestProbe
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.ClientToMaster.ResolveAppId
 import io.gearpump.cluster.MasterToClient.ResolveAppIdResult

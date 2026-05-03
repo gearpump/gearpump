@@ -13,7 +13,7 @@
  */
 package io.gearpump.examples.pagerank
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.{Application, ApplicationMaster, UserConfig}
 import io.gearpump.examples.pagerank.PageRankApplication.NodeWithTaskId
 import io.gearpump.streaming.{Processor, StreamApplication}

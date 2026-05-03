@@ -20,15 +20,15 @@ import io.gearpump.streaming.dsl.scalaapi.{LoggerSink, StreamApp}
 import io.gearpump.streaming.dsl.window.api.{EventTimeTrigger, FixedWindows}
 import io.gearpump.streaming.source.{DataSource, Watermark}
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.util.AkkaApp
+import io.gearpump.util.PekkoApp
 import java.time.{Duration, Instant}
 
-object WindowedWordCount extends AkkaApp with ArgumentsParser {
+object WindowedWordCount extends PekkoApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  override def main(akkaConf: Config, args: Array[String]): Unit = {
-    val context = ClientContext(akkaConf)
+  override def main(pekkoConf: Config, args: Array[String]): Unit = {
+    val context = ClientContext(pekkoConf)
     val app = StreamApp("dsl", context)
     app.source[String](new TimedDataSource).
       // word => (word, count)

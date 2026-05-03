@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.task
 
-import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import akka.actor.Actor._
+import org.apache.pekko.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import org.apache.pekko.actor.Actor._
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.UserConfig

@@ -14,7 +14,7 @@
 
 package io.gearpump.metrics
 
-import akka.actor.{Actor, ActorRef}
+import org.apache.pekko.actor.{Actor, ActorRef}
 import com.codahale.metrics.{MetricFilter, Slf4jReporter}
 import com.codahale.metrics.graphite.{Graphite, GraphiteReporter}
 import io.gearpump.metrics.Metrics.{DemandMoreMetrics, ReportMetrics}
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 
 /**
- * Reports the metrics data to some where, like Ganglia, remote Akka actor, log files...
+ * Reports the metrics data to some where, like Ganglia, a remote Pekko actor, or log files.
  *
  * @param metrics Holds a list of metrics object.
  */
@@ -78,8 +78,8 @@ class MetricsReporterService(metrics: Metrics) extends Actor {
     }
   }
 
-  def startAkkaReporter(): ReportTo = {
-    new AkkaReporter(metrics.registry)
+  def startPekkoReporter(): ReportTo = {
+    new PekkoReporter(metrics.registry)
   }
 
   def getReporter: ReportTo = {
@@ -88,7 +88,8 @@ class MetricsReporterService(metrics: Metrics) extends Actor {
     val reporter = reporterType match {
       case "graphite" => startGraphiteReporter()
       case "logfile" => startSlf4jReporter()
-      case "akka" => startAkkaReporter()
+      case "pekko" => startPekkoReporter()
+      case "akka" => startPekkoReporter()
     }
     reporter
   }

@@ -14,7 +14,7 @@
 
 package io.gearpump.examples.distributedshell
 
-import akka.actor.Actor
+import org.apache.pekko.actor.Actor
 import io.gearpump.cluster.ExecutorContext
 import io.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
 import io.gearpump.util.LogUtil

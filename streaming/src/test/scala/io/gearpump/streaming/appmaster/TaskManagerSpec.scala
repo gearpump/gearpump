@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{ActorRef, ActorSystem, Props}
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.{AppJar, TestUtil, UserConfig}
 import io.gearpump.cluster.MasterToAppMaster.ReplayFromTimestampWindowTrailingEdge

@@ -45,6 +45,6 @@ object Docs {
   private def ignoreUndocumentedPackages(packages: Seq[Seq[File]]): Seq[Seq[File]] = {
     packages
       .map(_.filterNot(_.getName.contains("$")))
-      .map(_.filterNot(_.getCanonicalPath.contains("akka")))
+      .map(_.filterNot(_.getCanonicalPath.contains("pekko")))
   }
 }

@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor.{Actor, ActorSystem, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{Actor, ActorSystem, Props}
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.cluster.{AppJar, TestUtil}
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated

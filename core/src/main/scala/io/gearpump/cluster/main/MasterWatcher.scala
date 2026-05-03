@@ -14,9 +14,9 @@
 
 package io.gearpump.cluster.main
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.cluster.{Cluster, Member, MemberStatus}
-import akka.cluster.ClusterEvent.{CurrentClusterState, MemberEvent, MemberExited, MemberRemoved, MemberUp}
+import org.apache.pekko.actor.{Actor, ActorLogging, ActorRef, Props}
+import org.apache.pekko.cluster.{Cluster, Member, MemberStatus}
+import org.apache.pekko.cluster.ClusterEvent.{CurrentClusterState, MemberEvent, MemberExited, MemberRemoved, MemberUp}
 import io.gearpump.cluster.master.{Master => MasterActor, MasterNode}
 import io.gearpump.cluster.master.Master.MasterListUpdated
 import io.gearpump.util.Constants.MASTER
@@ -31,7 +31,7 @@ class MasterWatcher(role: String) extends Actor with ActorLogging {
   val cluster = Cluster(context.system)
 
   val config = context.system.settings.config
-  val masters = config.getList("akka.cluster.seed-nodes")
+  val masters = config.getList("pekko.cluster.seed-nodes")
   val quorum = masters.size() / 2 + 1
 
   val system = context.system

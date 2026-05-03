@@ -13,8 +13,8 @@
  */
 package io.gearpump.streaming.executor
 
-import akka.actor.{Actor, ActorSystem}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{Actor, ActorSystem}
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.ProcessorDescription

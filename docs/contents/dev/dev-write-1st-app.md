@@ -4,12 +4,12 @@ We'll use the classical [wordcount](https://github.com/apache/incubator-gearpump
 
 	:::scala     
 	/** WordCount with High level DSL */
-	object WordCount extends AkkaApp with ArgumentsParser {
+	object WordCount extends PekkoApp with ArgumentsParser {
 	
 	  override val options: Array[(String, CLIOption[Any])] = Array.empty
 	
-	  override def main(akkaConf: Config, args: Array[String]): Unit = {
-	    val context = ClientContext(akkaConf)
+	  override def main(pekkoConf: Config, args: Array[String]): Unit = {
+	    val context = ClientContext(pekkoConf)
 	    val app = StreamApp("dsl", context)
 	    val data = "This is a good start, bingo!! bingo!!"
 	

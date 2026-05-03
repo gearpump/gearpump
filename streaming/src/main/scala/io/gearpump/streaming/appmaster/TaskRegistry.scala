@@ -40,7 +40,7 @@ class TaskRegistry(val expectedTasks: List[TaskId],
    *
    * @param taskId   Task that register itself to TaskRegistry.
    * @param location The host and port where this task is running on. NOTE: The host and port
-   *                 is NOT the same host and port of Akka remoting. Instead, it is host and port
+   *                 is NOT the same host and port of Pekko remoting. Instead, it is host and port
    *                 of custom netty layer, see [[io.gearpump.transport.netty.Context]].
    */
   def registerTask(taskId: TaskId, location: TaskLocation): RegisterTaskStatus = {

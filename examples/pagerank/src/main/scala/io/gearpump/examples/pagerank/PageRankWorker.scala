@@ -13,7 +13,7 @@
  */
 package io.gearpump.examples.pagerank
 
-import akka.actor.Actor.Receive
+import org.apache.pekko.actor.Actor.Receive
 import io.gearpump.cluster.UserConfig
 import io.gearpump.examples.pagerank.PageRankApplication.NodeWithTaskId
 import io.gearpump.examples.pagerank.PageRankController.Tick

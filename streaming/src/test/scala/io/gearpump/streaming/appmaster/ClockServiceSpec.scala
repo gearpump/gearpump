@@ -13,8 +13,8 @@
  */
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{ActorSystem, Props}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import org.apache.pekko.actor.{ActorSystem, Props}
+import org.apache.pekko.testkit.{ImplicitSender, TestKit, TestProbe}
 import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess, HealthChecker, ProcessorClock}

@@ -23,11 +23,12 @@ object BuildDashboard {
   lazy val serviceJvmSettings = commonSettings ++ noPublish ++ myAssemblySettings ++
     javadocSettings ++ Seq(
       libraryDependencies ++= Seq(
-        "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test",
+        "org.apache.pekko" %% "pekko-http-testkit" % pekkoHttpVersion % "test",
+        "org.apache.pekko" %% "pekko-stream-testkit" % pekkoVersion % "test",
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
         "com.lihaoyi" %% "upickle" % upickleVersion,
-        "com.softwaremill.akka-http-session" %% "core" % "0.3.0",
-        "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
+        "com.softwaremill.pekko-http-session" %% "core" % pekkoHttpSessionVersion,
+        "org.apache.pekko" %% "pekko-http-spray-json" % pekkoHttpVersion,
         "com.github.scribejava" % "scribejava-apis" % "2.4.0",
         "com.ning" % "async-http-client" % "1.9.33",
         "org.webjars" % "angularjs" % "1.4.9",

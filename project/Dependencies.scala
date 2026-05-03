@@ -19,8 +19,9 @@ object Dependencies {
 
   val crossScalaVersionNumbers = Seq("2.12.7")
   val scalaVersionNumber = crossScalaVersionNumbers.last
-  val akkaVersion = "2.5.18"
-  val akkaHttpVersion = "10.1.3"
+  val pekkoVersion = "1.4.0"
+  val pekkoHttpVersion = "1.3.0"
+  val pekkoHttpSessionVersion = "0.7.1"
   val hadoopVersion = "3.1.1"
   val commonsHttpVersion = "3.1"
   val commonsLoggingVersion = "1.1.3"
@@ -33,7 +34,7 @@ object Dependencies {
   val slf4jVersion = "1.7.16"
   val guavaVersion = "16.0.1"
   val codahaleVersion = "3.0.2"
-  val kryoVersion = "0.5.2"
+  val pekkoKryoVersion = "1.4.0"
   val gsCollectionsVersion = "6.2.0"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
@@ -69,38 +70,40 @@ object Dependencies {
       "commons-lang" % "commons-lang" % commonsLangVersion,
 
       /**
-       * Overrides Netty version 3.10.3.Final used by Akka 2.4.2 to work-around netty hang issue
+       * Overrides Netty version 3.10.3.Final used by the original Akka 2.4.2 stack to
+       * work around a Netty hang issue
        * (https://github.com/gearpump/gearpump/issues/2020)
        *
-       * Akka 2.4.2 by default use Netty 3.10.3.Final, which has a serious issue which can hang
+       * Akka 2.4.2 used Netty 3.10.3.Final by default, which has a serious issue that can hang
        * the network. The same issue also happens in version range (3.10.0.Final, 3.10.5.Final)
        * Netty 3.10.6.Final have this issue fixed, however, we find there is a 20% performance
-       * drop. So we decided to downgrade netty to 3.8.0.Final (Same version used in akka 2.3.12).
+       * drop. So we decided to downgrade netty to 3.8.0.Final (the same version used in
+       * Akka 2.3.12).
        *
        * @see https://github.com/gearpump/gearpump/pull/2017 for more discussions.
        */
       "io.netty" % "netty" % "3.8.0.Final",
-      "com.typesafe.akka" %% "akka-remote" % akkaVersion
+      "org.apache.pekko" %% "pekko-remote" % pekkoVersion
         exclude("io.netty", "netty"),
 
-      "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
-      "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
+      "org.apache.pekko" %% "pekko-cluster" % pekkoVersion,
+      "org.apache.pekko" %% "pekko-cluster-tools" % pekkoVersion,
       "commons-logging" % "commons-logging" % commonsLoggingVersion,
-      "com.typesafe.akka" %% "akka-distributed-data" % akkaVersion,
-      "com.typesafe.akka" %% "akka-actor" % akkaVersion,
-      "com.typesafe.akka" %% "akka-agent" % akkaVersion,
-      "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-      "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
-      "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
+      "org.apache.pekko" %% "pekko-distributed-data" % pekkoVersion,
+      "org.apache.pekko" %% "pekko-actor" % pekkoVersion,
+      "org.apache.pekko" %% "pekko-slf4j" % pekkoVersion,
+      "org.apache.pekko" %% "pekko-stream" % pekkoVersion,
+      "org.apache.pekko" %% "pekko-http" % pekkoHttpVersion,
+      "org.apache.pekko" %% "pekko-http-spray-json" % pekkoHttpVersion,
       "org.scala-lang" % "scala-reflect" % scalaVersionNumber,
-      "com.github.romix.akka" %% "akka-kryo-serialization" % kryoVersion,
+      "io.altoo" %% "pekko-kryo-serialization" % pekkoKryoVersion,
       "com.google.guava" % "guava" % guavaVersion,
       "com.codahale.metrics" % "metrics-graphite" % codahaleVersion
         exclude("org.slf4j", "slf4j-api"),
       "com.codahale.metrics" % "metrics-jvm" % codahaleVersion
         exclude("org.slf4j", "slf4j-api"),
 
-      "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
+      "org.apache.pekko" %% "pekko-testkit" % pekkoVersion % "test",
       "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
       "org.mockito" % "mockito-core" % mockitoVersion % "test",

@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming
 
-import akka.actor.{ActorRef, Props}
-import akka.testkit.TestActorRef
+import org.apache.pekko.actor.{ActorRef, Props}
+import org.apache.pekko.testkit.TestActorRef
 import io.gearpump.cluster.{AppDescription, AppMasterContext, MiniCluster, UserConfig}
 import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.scheduler.Resource

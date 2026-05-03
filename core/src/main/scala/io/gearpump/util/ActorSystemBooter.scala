@@ -14,7 +14,7 @@
 
 package io.gearpump.util
 
-import akka.actor._
+import org.apache.pekko.actor._
 import com.typesafe.config.Config
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.util.LogUtil.ProcessType

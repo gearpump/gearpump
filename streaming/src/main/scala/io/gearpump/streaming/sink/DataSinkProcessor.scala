@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.sink
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.Processor
 

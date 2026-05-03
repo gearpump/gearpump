@@ -14,8 +14,8 @@
 
 package io.gearpump.services
 
-import akka.http.scaladsl.model.headers.`Cache-Control`
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
+import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.Constants

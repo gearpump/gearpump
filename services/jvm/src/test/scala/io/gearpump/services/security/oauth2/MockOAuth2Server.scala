@@ -14,12 +14,11 @@
 
 package io.gearpump.services.security.oauth2
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.Http.ServerBinding
+import org.apache.pekko.http.scaladsl.model.{HttpRequest, HttpResponse}
+import org.apache.pekko.stream.Materializer
 import io.gearpump.util.Util
 import scala.concurrent.{Await, Future}
 
@@ -31,7 +30,7 @@ class MockOAuth2Server(
     var requestHandler: HttpRequest => HttpResponse) {
 
   implicit val system: ActorSystem = actorSystem
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: Materializer = Materializer(system)
   implicit val ec = system.dispatcher
 
   private var _port: Int = 0
@@ -41,13 +40,7 @@ class MockOAuth2Server(
 
   def start(): Unit = {
     _port = Util.findFreePort().get
-
-    val serverSource = Http().bind(interface = "127.0.0.1", port = _port)
-    bindingFuture = {
-      serverSource.to(Sink.foreach { connection =>
-        connection handleWithSyncHandler requestHandler
-      }).run()
-    }
+    bindingFuture = Http().newServerAt("127.0.0.1", _port).bindSync(requestHandler)
   }
 
   def stop(): Unit = {

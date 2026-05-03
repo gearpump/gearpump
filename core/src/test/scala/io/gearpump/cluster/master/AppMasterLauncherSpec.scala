@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster.master
 
-import akka.actor._
-import akka.testkit.TestProbe
+import org.apache.pekko.actor._
+import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.Config
 import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.AppMasterToMaster.RequestResource

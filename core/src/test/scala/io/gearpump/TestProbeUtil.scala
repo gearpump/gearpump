@@ -14,8 +14,8 @@
 
 package io.gearpump
 
-import akka.actor.{Actor, Props, Terminated}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{Actor, Props, Terminated}
+import org.apache.pekko.testkit.TestProbe
 import scala.language.implicitConversions
 
 object TestProbeUtil {

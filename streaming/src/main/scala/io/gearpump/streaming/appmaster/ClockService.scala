@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{Actor, ActorRef, Cancellable, Stash}
+import org.apache.pekko.actor.{Actor, ActorRef, Cancellable, Stash}
 import com.google.common.primitives.Longs
 import io.gearpump.Time
 import io.gearpump.Time.MilliSeconds

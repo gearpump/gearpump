@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.master
 
-import akka.actor.{Actor, ActorRef, Props, _}
+import org.apache.pekko.actor.{Actor, ActorRef, Props, _}
 import com.typesafe.config.Config
 import io.gearpump.cluster.{AppDescription, AppJar, _}
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
@@ -49,7 +49,7 @@ class AppMasterLauncher(
   private val systemConfig = context.system.settings.config
   private val TIMEOUT = Duration(15, TimeUnit.SECONDS)
 
-  private val appMasterAkkaConfig: Config = app.clusterConfig
+  private val appMasterPekkoConfig: Config = app.clusterConfig
 
   LOG.info(s"Ask Master resource to start AppMaster $appId...")
   master ! RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified))
@@ -68,10 +68,10 @@ class AppMasterLauncher(
       val selfPath = ActorUtil.getFullPath(context.system, self.path)
 
       val jvmSetting =
-        Util.resolveJvmSetting(appMasterAkkaConfig.withFallback(systemConfig)).appMater
+        Util.resolveJvmSetting(appMasterPekkoConfig.withFallback(systemConfig)).appMater
       val executorJVM = ExecutorJVMConfig(jvmSetting.classPath, jvmSetting.vmargs,
         classOf[ActorSystemBooter].getName, Array(name, selfPath), jar,
-        username, appMasterAkkaConfig)
+        username, appMasterPekkoConfig)
 
       worker ! LaunchExecutor(appId, executorId, resource, executorJVM)
       context.become(waitForActorSystemToStart(worker, appMasterContext, resource))

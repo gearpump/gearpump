@@ -13,8 +13,8 @@
  */
 package io.gearpump.jarstore
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.pattern.ask
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.pattern.ask
 import com.typesafe.config.Config
 import io.gearpump.cluster.ClientToMaster.{GetJarStoreServer, JarStoreServerAddress}
 import io.gearpump.cluster.master.MasterProxy

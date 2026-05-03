@@ -14,11 +14,11 @@
 
 package io.gearpump.services
 
-import akka.actor.ActorRef
-import akka.http.scaladsl.model.headers.`Cache-Control`
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import akka.testkit.{TestKit, TestProbe}
-import akka.testkit.TestActor.{AutoPilot, KeepRunning}
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
+import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import org.apache.pekko.testkit.{TestKit, TestProbe}
+import org.apache.pekko.testkit.TestActor.{AutoPilot, KeepRunning}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig, ResolveWorkerId}

@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.embedded
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import org.apache.pekko.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.{Config, ConfigValueFactory}
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.Master
@@ -46,14 +46,14 @@ class EmbeddedCluster(inputConfig: Config) {
 
   private def getConfig(inputConfig: Config, port: Int): Config = {
     val config = inputConfig.
-      withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
+      withValue("pekko.remote.classic.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
       withValue(GEARPUMP_CLUSTER_MASTERS,
         ConfigValueFactory.fromIterable(List(s"127.0.0.1:$port").asJava)).
       withValue(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS,
         ConfigValueFactory.fromAnyRef(true)).
       withValue(GEARPUMP_METRIC_ENABLED, ConfigValueFactory.fromAnyRef(true)).
-      withValue("akka.actor.provider",
-        ConfigValueFactory.fromAnyRef("akka.cluster.ClusterActorRefProvider"))
+      withValue("pekko.actor.provider",
+        ConfigValueFactory.fromAnyRef("cluster"))
     config
   }
 }

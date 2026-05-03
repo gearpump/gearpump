@@ -29,11 +29,11 @@ object Kill extends MasterClientCommand with ArgumentsParser {
 
   override val description = "Kill an application with application Id"
 
-  def main(akkaConf: Config, args: Array[String]): Unit = {
+  def main(pekkoConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
 
     if (null != config) {
-      val client = ClientContext(akkaConf)
+      val client = ClientContext(pekkoConf)
       client.shutdown(config.getInt("appid"))
       client.close()
     }

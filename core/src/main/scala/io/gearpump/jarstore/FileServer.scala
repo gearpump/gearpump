@@ -13,18 +13,18 @@
  */
 package io.gearpump.jarstore
 
-import akka.Done
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model.{HttpEntity, HttpRequest, MediaTypes, Multipart, _}
-import akka.http.scaladsl.model.Uri.{Path, Query}
-import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.{ActorMaterializer, IOResult}
-import akka.stream.scaladsl.{FileIO, Sink, Source}
+import org.apache.pekko.Done
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.Http.ServerBinding
+import org.apache.pekko.http.scaladsl.marshalling.Marshal
+import org.apache.pekko.http.scaladsl.model.{HttpEntity, HttpRequest, MediaTypes, Multipart, _}
+import org.apache.pekko.http.scaladsl.model.Uri.{Path, Query}
+import org.apache.pekko.http.scaladsl.server._
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.unmarshalling.Unmarshal
+import org.apache.pekko.stream.{IOResult, Materializer}
+import org.apache.pekko.stream.scaladsl.{FileIO, Sink, Source}
 import io.gearpump.jarstore.FileDirective._
 import io.gearpump.jarstore.FileServer.Port
 import java.io.File
@@ -33,13 +33,13 @@ import spray.json.DefaultJsonProtocol._
 import spray.json.JsonFormat
 
 /**
- * A simple file server implemented with akka-http to store/fetch large
+ * A simple file server implemented with Pekko HTTP to store/fetch large
  * binary files.
  */
 class FileServer(system: ActorSystem, host: String, port: Int = 0, jarStore: JarStore) {
   import system.dispatcher
   implicit val actorSystem = system
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: Materializer = Materializer(actorSystem)
   implicit def ec: ExecutionContext = system.dispatcher
 
   val route: Route = {
@@ -82,7 +82,7 @@ class FileServer(system: ActorSystem, host: String, port: Int = 0, jarStore: Jar
   private var connection: Future[ServerBinding] = _
 
   def start: Future[Port] = {
-    connection = Http().bindAndHandle(Route.handlerFlow(route), host, port)
+    connection = Http().newServerAt(host, port).bind(route)
     connection.map(address => Port(address.localAddress.getPort))
   }
 
@@ -107,7 +107,7 @@ object FileServer {
     }
 
     private implicit val actorSystem = system
-    private implicit val materializer = ActorMaterializer()
+    private implicit val materializer: Materializer = Materializer(actorSystem)
     private implicit val ec = system.dispatcher
 
     val server = Uri(s"http://$host:$port")

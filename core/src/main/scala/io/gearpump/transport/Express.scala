@@ -14,8 +14,7 @@
 
 package io.gearpump.transport
 
-import akka.actor._
-import akka.agent.Agent
+import org.apache.pekko.actor._
 import com.github.ghik.silencer.silent
 import io.gearpump.transport.netty.{Context, TaskMessage}
 import io.gearpump.transport.netty.Client.Close
@@ -23,6 +22,7 @@ import io.gearpump.util.LogUtil
 import org.slf4j.Logger
 import scala.collection.immutable.LongMap
 import scala.concurrent._
+import java.util.concurrent.atomic.AtomicReference
 
 trait ActorLookupById {
 
@@ -40,10 +40,10 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   import io.gearpump.transport.Express._
   import system.dispatcher
-  @silent val localActorMap = Agent(LongMap.empty[ActorRef])
-  @silent val remoteAddressMap = Agent(Map.empty[Long, HostPort])
+  @silent val localActorMap = StateRef(LongMap.empty[ActorRef])
+  @silent val remoteAddressMap = StateRef(Map.empty[Long, HostPort])
 
-  @silent val remoteClientMap = Agent(Map.empty[HostPort, ActorRef])
+  @silent val remoteClientMap = StateRef(Map.empty[HostPort, ActorRef])
 
   val conf = system.settings.config
 
@@ -103,7 +103,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   /** Send message to remote task */
   def transport(taskMessage: TaskMessage, remote: HostPort): Unit = {
 
-    val remoteClient = remoteClientMap.get.get(remote)
+    val remoteClient = remoteClientMap.get().get(remote)
     if (remoteClient.isDefined) {
       remoteClient.get.tell(taskMessage, Actor.noSender)
     } else {
@@ -115,9 +115,30 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   }
 }
 
-/** A customized transport layer by using Akka extension */
+/** A customized transport layer implemented as a Pekko extension. */
 object Express extends ExtensionId[Express] with ExtensionIdProvider {
   val LOG: Logger = LogUtil.getLogger(getClass)
+
+  private final case class StateRef[A](initial: A)(implicit ec: ExecutionContext) {
+    private val ref = new AtomicReference[A](initial)
+
+    def get(): A = ref.get()
+
+    def sendOff(update: A => A): Future[A] = Future(alterNow(update))
+
+    def alter(update: A => A): Future[A] = Future(alterNow(update))
+
+    private def alterNow(update: A => A): A = {
+      var updated = false
+      var next = ref.get()
+      while (!updated) {
+        val current = ref.get()
+        next = update(current)
+        updated = ref.compareAndSet(current, next)
+      }
+      next
+    }
+  }
 
   override def get(system: ActorSystem): Express = super.get(system)
 

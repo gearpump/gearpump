@@ -13,9 +13,9 @@
  */
 package io.gearpump.cluster
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.pattern.ask
-import akka.testkit.TestActorRef
+import org.apache.pekko.actor.{Actor, ActorRef, ActorSystem, Props}
+import org.apache.pekko.pattern.ask
+import org.apache.pekko.testkit.TestActorRef
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.AppMasterToMaster.GetAllWorkers
 import io.gearpump.cluster.MasterToAppMaster.WorkerList

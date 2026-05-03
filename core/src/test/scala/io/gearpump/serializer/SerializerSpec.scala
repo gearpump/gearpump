@@ -14,7 +14,7 @@
 
 package io.gearpump.serializer
 
-import akka.actor.{ActorSystem, ExtendedActorSystem}
+import org.apache.pekko.actor.{ActorSystem, ExtendedActorSystem}
 import com.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}

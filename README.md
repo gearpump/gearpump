@@ -7,13 +7,13 @@
 [![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
 [![Join the chat at https://gitter.im/gearpump/gearpump](https://badges.gitter.im/gearpump/gearpump.svg)](https://gitter.im/gearpump/gearpump)
 
-Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Akka](https://github.com/akka/akka) framework and a desire to improve on existing streaming frameworks.
+Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Apache Pekko](https://pekko.apache.org/) framework and a desire to improve on existing streaming frameworks.
 
 The name Gearpump is a reference to the engineering term "gear pump", which is a super simple pump that consists of only two gears, but is very powerful at streaming water.
 
 ![](http://gearpump.apache.org/img/dashboard.gif)
 
-We model streaming within the Akka actor hierarchy.
+We model streaming within the Pekko actor hierarchy.
 
 ![](docs/contents/img/actor_hierarchy.png)
 
@@ -25,7 +25,7 @@ For steps to reproduce the performance test, please check [Performance benchmark
 
 ## Useful Resources
 
-* Read the [Introduction on TypeSafe's Blog](https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-akka)
+* Read the [Introduction on TypeSafe's Blog](https://typesafe.com/blog/gearpump-real-time-streaming-engine-using-pekko)
 * Learn the [Basic Concepts](http://gearpump.apache.org/releases/latest/introduction/basic-concepts/index.html)
 * How to [Develop your first application](http://gearpump.apache.org/releases/latest/dev/dev-write-1st-app/index.html)
 * How to [Submit your first application](http://gearpump.apache.org/releases/latest/introduction/submit-your-1st-application/index.html)

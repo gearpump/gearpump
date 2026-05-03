@@ -13,8 +13,8 @@
  */
 package io.gearpump.streaming.executor
 
-import akka.actor.{ActorRefFactory, ActorSystem, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{ActorRefFactory, ActorSystem, Props}
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.cluster.{ExecutorContext, TestUtil, UserConfig}
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource

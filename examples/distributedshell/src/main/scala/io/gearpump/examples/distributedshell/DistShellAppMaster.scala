@@ -13,9 +13,9 @@
  */
 package io.gearpump.examples.distributedshell
 
-import akka.actor.{Deploy, Props}
-import akka.pattern.{ask, pipe}
-import akka.remote.RemoteScope
+import org.apache.pekko.actor.{Deploy, Props}
+import org.apache.pekko.pattern.{ask, pipe}
+import org.apache.pekko.remote.RemoteScope
 import com.typesafe.config.Config
 import io.gearpump.cluster._
 import io.gearpump.cluster.ClientToMaster.ShutdownApplication

@@ -14,7 +14,7 @@
 
 package io.gearpump.transport.netty
 
-import akka.actor.Actor
+import org.apache.pekko.actor.Actor
 import io.gearpump.transport.HostPort
 import io.gearpump.util.LogUtil
 import java.net.{ConnectException, InetSocketAddress}

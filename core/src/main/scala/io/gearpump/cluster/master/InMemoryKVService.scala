@@ -14,10 +14,10 @@
 
 package io.gearpump.cluster.master
 
-import akka.actor._
-import akka.cluster.Cluster
-import akka.cluster.ddata.{DistributedData, LWWMap, LWWMapKey}
-import akka.cluster.ddata.Replicator._
+import org.apache.pekko.actor._
+import org.apache.pekko.cluster.Cluster
+import org.apache.pekko.cluster.ddata.{DistributedData, LWWMap, LWWMapKey}
+import org.apache.pekko.cluster.ddata.Replicator._
 import io.gearpump.util.LogUtil
 import java.util.concurrent.TimeUnit
 import org.slf4j.Logger

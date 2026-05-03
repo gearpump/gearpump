@@ -14,8 +14,8 @@
 
 package io.gearpump.util
 
-import akka.actor.{Actor, ActorRef}
-import akka.pattern.ask
+import org.apache.pekko.actor.{Actor, ActorRef}
+import org.apache.pekko.pattern.ask
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}

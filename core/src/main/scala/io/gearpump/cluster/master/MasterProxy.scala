@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.master
 
-import akka.actor._
+import org.apache.pekko.actor._
 import io.gearpump.transport.HostPort
 import io.gearpump.util.{ActorUtil, LogUtil}
 import org.slf4j.Logger

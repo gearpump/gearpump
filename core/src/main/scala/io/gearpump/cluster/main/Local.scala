@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.main
 
-import akka.actor.{ActorSystem, Props}
+import org.apache.pekko.actor.{ActorSystem, Props}
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.{Master => MasterActor}
@@ -28,7 +28,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object Local extends MasterClientCommand with ArgumentsParser {
-  override def akkaConfig: Config = ClusterConfig.master()
+  override def pekkoConfig: Config = ClusterConfig.master()
 
   var LOG: Logger = LogUtil.getLogger(getClass)
 
@@ -39,27 +39,27 @@ object Local extends MasterClientCommand with ArgumentsParser {
 
   override val description = "Start a local cluster"
 
-  def main(akkaConf: Config, args: Array[String]): Unit = {
+  def main(pekkoConf: Config, args: Array[String]): Unit = {
 
     this.LOG = {
-      LogUtil.loadConfiguration(akkaConf, ProcessType.LOCAL)
+      LogUtil.loadConfiguration(pekkoConf, ProcessType.LOCAL)
       LogUtil.getLogger(getClass)
     }
 
     val config = parse(args)
     if (null != config) {
-      local(config.getInt("workernum"), config.getBoolean("sameprocess"), akkaConf)
+      local(config.getInt("workernum"), config.getBoolean("sameprocess"), pekkoConf)
     }
   }
 
-  def local(workerCount: Int, sameProcess: Boolean, akkaConf: Config): Unit = {
+  def local(workerCount: Int, sameProcess: Boolean, pekkoConf: Config): Unit = {
     if (sameProcess) {
       LOG.info("Starting local in same process")
       System.setProperty("LOCAL", "true")
     }
-    val masters = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS)
+    val masters = pekkoConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS)
       .asScala.flatMap(Util.parseHostList)
-    val local = akkaConf.getString(Constants.GEARPUMP_HOSTNAME)
+    val local = pekkoConf.getString(Constants.GEARPUMP_HOSTNAME)
 
     if (masters.size != 1 && masters.head.host != local) {
       LOG.error(s"The ${Constants.GEARPUMP_CLUSTER_MASTERS} is not match " +
@@ -67,8 +67,8 @@ object Local extends MasterClientCommand with ArgumentsParser {
     } else {
 
       val hostPort = masters.head
-      implicit val system = ActorSystem(MASTER, akkaConf.
-        withValue("akka.remote.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port))
+      implicit val system = ActorSystem(MASTER, pekkoConf.
+        withValue("pekko.remote.classic.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port))
       )
 
       val master = system.actorOf(Props[MasterActor], MASTER)

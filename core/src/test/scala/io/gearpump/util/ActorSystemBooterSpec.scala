@@ -14,8 +14,8 @@
 
 package io.gearpump.util
 
-import akka.actor.{Actor, ActorSystem, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{Actor, ActorSystem, Props}
+import org.apache.pekko.testkit.TestProbe
 import com.github.ghik.silencer.silent
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.ActorSystemBooter.{ActorCreated, RegisterActorSystem, _}

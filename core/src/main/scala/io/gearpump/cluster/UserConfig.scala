@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster
 
-import akka.actor.{ActorSystem, ExtendedActorSystem}
-import akka.serialization.JavaSerializer
+import org.apache.pekko.actor.{ActorSystem, ExtendedActorSystem}
+import org.apache.pekko.serialization.JavaSerializer
 import com.google.common.io.BaseEncoding
 
 
@@ -103,11 +103,11 @@ final class UserConfig(private val _config: Map[String, String]) extends Seriali
    * This de-serializes value to object instance
    *
    * To do de-serialization, this requires an implicit ActorSystem, as
-   * the ActorRef and possibly other akka classes deserialization
+   * the ActorRef and possibly other Pekko classes deserialization
    * requires an implicit ActorSystem.
    *
    * See Link:
-   * http://doc.akka.io/docs/akka/snapshot/scala/serialization.html#A_Word_About_Java_Serialization
+   * https://pekko.apache.org/docs/pekko/current/serialization.html
    */
 
   def getValue[T](key: String)(implicit system: ActorSystem): Option[T] = {
@@ -120,11 +120,11 @@ final class UserConfig(private val _config: Map[String, String]) extends Seriali
    * This serializes the object and store it as string.
    *
    * To do serialization, this requires an implicit ActorSystem, as
-   * the ActorRef and possibly other akka classes serialization
+   * the ActorRef and possibly other Pekko classes serialization
    * requires an implicit ActorSystem.
    *
    * See Link:
-   * http://doc.akka.io/docs/akka/snapshot/scala/serialization.html#A_Word_About_Java_Serialization
+   * https://pekko.apache.org/docs/pekko/current/serialization.html
    */
   def withValue[T <: AnyRef](key: String, value: T)(implicit system: ActorSystem): UserConfig = {
 

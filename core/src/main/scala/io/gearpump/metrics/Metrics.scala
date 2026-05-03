@@ -14,7 +14,7 @@
 
 package io.gearpump.metrics
 
-import akka.actor._
+import org.apache.pekko.actor._
 import com.codahale.metrics._
 import io.gearpump
 import io.gearpump.util.Constants._

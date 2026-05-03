@@ -14,12 +14,12 @@
 
 package io.gearpump.cluster.main
 
-import akka.actor.{ActorSystem, Props}
+import org.apache.pekko.actor.{ActorSystem, Props}
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import io.gearpump.transport.HostPort
-import io.gearpump.util.{AkkaApp, LogUtil}
+import io.gearpump.util.{PekkoApp, LogUtil}
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
 import org.slf4j.Logger
@@ -28,8 +28,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 /** Tool to start a worker daemon process */
-object Worker extends AkkaApp with ArgumentsParser {
-  protected override def akkaConfig = ClusterConfig.worker()
+object Worker extends PekkoApp with ArgumentsParser {
+  protected override def pekkoConfig = ClusterConfig.worker()
 
   override val description = "Start a worker daemon"
 
@@ -37,19 +37,19 @@ object Worker extends AkkaApp with ArgumentsParser {
 
   private def uuid = java.util.UUID.randomUUID.toString
 
-  def main(akkaConf: Config, args: Array[String]): Unit = {
+  def main(pekkoConf: Config, args: Array[String]): Unit = {
     val id = uuid
 
     this.LOG = {
-      LogUtil.loadConfiguration(akkaConf, ProcessType.WORKER)
+      LogUtil.loadConfiguration(pekkoConf, ProcessType.WORKER)
       // Delay creation of LOG instance to avoid creating an empty log file as we
       // reset the log file name here
       LogUtil.getLogger(getClass)
     }
 
-    val system = ActorSystem(id, akkaConf)
+    val system = ActorSystem(id, pekkoConf)
 
-    val masterAddress = akkaConf.getStringList(GEARPUMP_CLUSTER_MASTERS).asScala.map { address =>
+    val masterAddress = pekkoConf.getStringList(GEARPUMP_CLUSTER_MASTERS).asScala.map { address =>
       val hostAndPort = address.split(":")
       HostPort(hostAndPort(0), hostAndPort(1).toInt)
     }

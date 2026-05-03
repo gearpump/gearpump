@@ -25,7 +25,7 @@ object MainRunner extends MasterClientCommand with ArgumentsParser {
     Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false,
       defaultValue = None))
 
-  def main(akkaConf: Config, args: Array[String]): Unit = {
+  def main(pekkoConf: Config, args: Array[String]): Unit = {
     val mainClazz = args(0)
     val commandArgs = args.drop(1)
 

@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.task
 
-import akka.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import akka.actor.Actor.Receive
+import org.apache.pekko.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import org.apache.pekko.actor.Actor.Receive
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.UserConfig
@@ -87,7 +87,7 @@ trait TaskContext {
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit): Cancellable
 
   /**
-   * akka.actor.ActorRefProvider.scheduleOnce
+   * org.apache.pekko.actor.ActorRefProvider.scheduleOnce
    *
    * @param initialDelay  the initial delay
    * @param f  the function to execute after initial delay

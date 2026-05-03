@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import io.gearpump.cluster.worker.WorkerId
 
 case class WorkerInfo(workerId: WorkerId, ref: ActorRef)

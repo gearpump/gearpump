@@ -13,7 +13,7 @@
  */
 package io.gearpump.streaming.appmaster
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.{AppJar, TestUtil}
 import io.gearpump.cluster.scheduler.{Resource, ResourceRequest}
 import io.gearpump.cluster.worker.WorkerId

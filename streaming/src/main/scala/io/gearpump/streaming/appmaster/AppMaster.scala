@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor._
+import org.apache.pekko.actor._
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster._
 import io.gearpump.cluster.AppMasterToMaster.ApplicationStatusChanged
@@ -58,7 +58,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
   private implicit val actorSystem = context.system
   private implicit val timeOut = FUTURE_TIMEOUT
 
-  import akka.pattern.ask
+  import org.apache.pekko.pattern.ask
   private implicit val dispatcher = context.dispatcher
 
   private val startTime: MilliSeconds = System.currentTimeMillis()

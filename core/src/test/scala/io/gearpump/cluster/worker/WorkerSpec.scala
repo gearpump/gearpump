@@ -13,8 +13,8 @@
  */
 package io.gearpump.cluster.worker
 
-import akka.actor.{ActorSystem, PoisonPill, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{ActorSystem, PoisonPill, Props}
+import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.{ExecutorJVMConfig, MasterHarness, TestUtil}
 import io.gearpump.cluster.AppMasterToWorker.{ChangeExecutorResource, LaunchExecutor, ShutdownExecutor}

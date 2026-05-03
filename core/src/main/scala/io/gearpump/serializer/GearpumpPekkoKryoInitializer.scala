@@ -12,25 +12,15 @@
  * limitations under the License.
  */
 
-package io.gearpump.transport.netty
+package io.gearpump.serializer
 
-import org.apache.pekko.actor.ActorRef
-import io.gearpump.transport.{ActorLookupById, HostPort}
+import io.altoo.serialization.kryo.pekko.DefaultKryoInitializer
+import io.altoo.serialization.kryo.scala.serializer.ScalaKryo
 
-trait IContext {
+class GearpumpPekkoKryoInitializer extends DefaultKryoInitializer {
 
-  /**
-   * Create a Netty server connection.
-   */
-  def bind(name: String, lookupActor: ActorLookupById, deserializeFlag: Boolean, port: Int): Int
-
-  /**
-   * Create a Netty client actor
-   */
-  def connect(hostPort: HostPort): ActorRef
-
-  /**
-   * Close resource for this context
-   */
-  def close()
+  override def postInit(kryo: ScalaKryo): Unit = {
+    super.postInit(kryo)
+    new GearpumpSerialization(system.settings.config).customize(kryo)
+  }
 }

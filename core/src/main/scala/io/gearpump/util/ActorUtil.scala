@@ -14,10 +14,10 @@
 
 package io.gearpump.util
 
-import akka.actor._
-import akka.actor.Actor.Receive
-import akka.pattern.ask
-import akka.util.Timeout
+import org.apache.pekko.actor._
+import org.apache.pekko.actor.Actor.Receive
+import org.apache.pekko.pattern.ask
+import org.apache.pekko.util.Timeout
 import io.gearpump.cluster.{ApplicationStatus, AppMasterContext}
 import io.gearpump.cluster.AppMasterToMaster.{ApplicationStatusChanged, GetAllWorkers}
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ResolveWorkerId}
@@ -81,10 +81,10 @@ object ActorUtil {
     executorId
 
   // TODO: Currently we explicitly require the master contacts to be started with this path pattern
-  // akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER
+  // pekko.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER
   def getMasterActorPath(master: HostPort): ActorPath = {
     import Constants.MASTER
-    ActorPath.fromString(s"akka.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER")
+    ActorPath.fromString(s"pekko.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER")
   }
 
   def launchExecutorOnEachWorker(master: ActorRef, executorJvmConfig: ExecutorSystemJvmConfig,

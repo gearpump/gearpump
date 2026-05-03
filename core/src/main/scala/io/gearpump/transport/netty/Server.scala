@@ -14,9 +14,9 @@
 
 package io.gearpump.transport.netty
 
-import akka.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
+import org.apache.pekko.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import io.gearpump.transport.ActorLookupById
-import io.gearpump.util.{AkkaHelper, LogUtil}
+import io.gearpump.util.{PekkoHelper, LogUtil}
 import java.util
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
@@ -111,7 +111,7 @@ object Server {
       if (!taskIdtoActorRef.contains(sessionId)) {
 
         // A fake ActorRef for performance optimization.
-        val actorRef = AkkaHelper.actorFor(context.system, s"/session#$sessionId")
+        val actorRef = PekkoHelper.actorFor(context.system, s"/session#$sessionId")
         taskIdtoActorRef += sessionId -> actorRef
       }
       taskIdtoActorRef.get(sessionId).get

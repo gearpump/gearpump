@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.dsl.plan
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.github.ghik.silencer.silent
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.{Constants, Processor}

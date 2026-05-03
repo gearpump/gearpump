@@ -20,7 +20,7 @@ import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.streaming.partitioner.HashPartitioner
 import io.gearpump.streaming.task.TaskContext
-import io.gearpump.util.{AkkaApp, Graph}
+import io.gearpump.util.{PekkoApp, Graph}
 import io.gearpump.util.Graph.{Node => GraphNode}
 
 case class Source_0(_context: TaskContext, _conf: UserConfig) extends Source(_context, _conf)
@@ -56,7 +56,7 @@ case class Sink_4(_context: TaskContext, _conf: UserConfig) extends Sink(_contex
  *   Source_1 -> Sink_4;
  * }
  */
-object Dag extends AkkaApp with ArgumentsParser {
+object Dag extends PekkoApp with ArgumentsParser {
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
   def application(): StreamApplication = {
@@ -94,8 +94,8 @@ object Dag extends AkkaApp with ArgumentsParser {
     app
   }
 
-  override def main(akkaConf: Config, args: Array[String]): Unit = {
-    val context = ClientContext(akkaConf)
+  override def main(pekkoConf: Config, args: Array[String]): Unit = {
+    val context = ClientContext(pekkoConf)
     context.submit(application())
     context.close()
   }

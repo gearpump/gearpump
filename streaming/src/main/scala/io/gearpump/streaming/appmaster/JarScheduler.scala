@@ -13,8 +13,8 @@
  */
 package io.gearpump.streaming.appmaster
 
-import akka.actor._
-import akka.pattern.ask
+import org.apache.pekko.actor._
+import org.apache.pekko.pattern.ask
 import com.typesafe.config.Config
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.AppJar

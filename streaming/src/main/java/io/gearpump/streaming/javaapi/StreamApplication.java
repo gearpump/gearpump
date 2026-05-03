@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.javaapi;
 
-import akka.actor.ActorSystem;
+import org.apache.pekko.actor.ActorSystem;
 import io.gearpump.cluster.Application;
 import io.gearpump.cluster.ApplicationMaster;
 import io.gearpump.cluster.UserConfig;

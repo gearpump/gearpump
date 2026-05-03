@@ -13,7 +13,7 @@
  */
 package io.gearpump.streaming.dsl.plan
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import io.gearpump.Message
 import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.streaming.Processor

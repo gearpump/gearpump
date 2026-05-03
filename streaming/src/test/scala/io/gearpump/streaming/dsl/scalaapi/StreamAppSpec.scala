@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.dsl.scalaapi
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.streaming.{ProcessorDescription, StreamApplication}

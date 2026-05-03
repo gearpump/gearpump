@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.task
 
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import io.gearpump.streaming.LifeTime
 
 case class TaskContextData(
