@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor.{Actor, ActorRef, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{Actor, ActorRef, Props}
+import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.Config
 import io.gearpump.cluster.{MasterHarness, TestUtil, _}
 import io.gearpump.cluster.AppMasterToMaster.{AppDataSaved, RegisterAppMaster, _}

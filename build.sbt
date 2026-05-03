@@ -70,7 +70,7 @@ lazy val core = Project(
       pomPostProcess := {
         (node: xml.Node) => changeShadedDeps(
           Set(
-            "com.github.romix.akka",
+            "io.altoo",
             "com.google.guava",
             "com.codahale.metrics",
             "org.scoverage"
@@ -184,5 +184,4 @@ lazy val distributedshell = Project(
   base = file("examples/distributedshell"))
   .settings(exampleSettings("io.gearpump.examples.distributedshell.DistributedShell"))
   .dependsOn(core % "compile; test->test")
-
 

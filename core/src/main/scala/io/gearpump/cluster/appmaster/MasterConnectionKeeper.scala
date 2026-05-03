@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor._
+import org.apache.pekko.actor._
 import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster
 import io.gearpump.cluster.MasterToAppMaster.AppMasterRegistered
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.AppMasterRegisterTimeout

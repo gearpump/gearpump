@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor.{ActorRef, Address, PoisonPill}
+import org.apache.pekko.actor.{ActorRef, Address, PoisonPill}
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.util.ActorSystemBooter.BindLifeCycle
 

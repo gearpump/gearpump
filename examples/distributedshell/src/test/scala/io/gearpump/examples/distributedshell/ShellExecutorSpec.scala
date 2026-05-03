@@ -13,8 +13,8 @@
  */
 package io.gearpump.examples.distributedshell
 
-import akka.actor.{ActorSystem, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{ActorSystem, Props}
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.cluster.{ExecutorContext, TestUtil}
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource

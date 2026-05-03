@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster.worker
 
-import akka.actor._
-import akka.actor.SupervisorStrategy.Stop
+import org.apache.pekko.actor._
+import org.apache.pekko.actor.SupervisorStrategy.Stop
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import io.gearpump.cluster.{ClusterConfig, ExecutorJVMConfig}
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
@@ -343,7 +343,7 @@ private[cluster] object Worker {
       val workerConfig = context.system.settings.config
 
       val submissionConfig = Option(launch.executorJvmConfig).flatMap { jvmConfig =>
-        Option(jvmConfig.executorAkkaConfig)
+        Option(jvmConfig.executorPekkoConfig)
       }.getOrElse(ConfigFactory.empty())
 
       resolveExecutorConfig(workerConfig, submissionConfig)
@@ -361,11 +361,11 @@ private[cluster] object Worker {
         // Falls back to workerConfig
         .withFallback(workerConfig)
 
-      // Minimum supported akka.scheduler.tick-duration on Windows is 10ms
-      val duration = config.getInt(AKKA_SCHEDULER_TICK_DURATION)
-      val updatedConf = if (akka.util.Helpers.isWindows && duration < 10) {
-        LOG.warn(s"$AKKA_SCHEDULER_TICK_DURATION on Windows must be larger than 10ms, set to 10ms")
-        config.withValue(AKKA_SCHEDULER_TICK_DURATION, ConfigValueFactory.fromAnyRef(10))
+      // Minimum supported pekko.scheduler.tick-duration on Windows is 10ms
+      val duration = config.getInt(PEKKO_SCHEDULER_TICK_DURATION)
+      val updatedConf = if (org.apache.pekko.util.Helpers.isWindows && duration < 10) {
+        LOG.warn(s"$PEKKO_SCHEDULER_TICK_DURATION on Windows must be larger than 10ms, set to 10ms")
+        config.withValue(PEKKO_SCHEDULER_TICK_DURATION, ConfigValueFactory.fromAnyRef(10))
       } else {
         config
       }

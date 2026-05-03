@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster
 
-import akka.actor.{Actor, ActorRef}
+import org.apache.pekko.actor.{Actor, ActorRef}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.MasterToClient.{ApplicationFailed, ApplicationResult, ApplicationSucceeded, ApplicationTerminated}
 import io.gearpump.cluster.appmaster.WorkerInfo
@@ -86,7 +86,7 @@ case class ExecutorContext(
  * @param mainClass Executor main class name like io.gearpump.xx.AppMaster
  * @param arguments Executor command line arguments
  * @param jar application jar
- * @param executorAkkaConfig Akka config used to initialize the actor system of this executor.
+ * @param executorPekkoConfig Pekko config used to initialize the actor system of this executor.
  *                           It uses io.gearpump.util.Constants.GEARPUMP_CUSTOM_CONFIG_FILE
  *                           to pass the config to executor process
  */
@@ -94,7 +94,7 @@ case class ExecutorContext(
 case class ExecutorJVMConfig(
     classPath: Array[String], jvmArguments: Array[String], mainClass: String,
     arguments: Array[String], jar: Option[AppJar], username: String,
-    executorAkkaConfig: Config = ConfigFactory.empty())
+    executorPekkoConfig: Config = ConfigFactory.empty())
 
 sealed abstract class ApplicationStatus(val status: String)
   extends Serializable{

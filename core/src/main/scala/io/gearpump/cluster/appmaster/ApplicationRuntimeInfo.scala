@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.{ApplicationStatus, ApplicationTerminalStatus}

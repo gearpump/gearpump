@@ -14,7 +14,7 @@
 
 package io.gearpump.jarstore
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import com.google.common.io.Files
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.TestUtil
@@ -29,7 +29,7 @@ import scala.concurrent.duration.Duration
 
 class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
-  implicit val timeout = akka.util.Timeout(25, TimeUnit.SECONDS)
+  implicit val timeout = org.apache.pekko.util.Timeout(25, TimeUnit.SECONDS)
   val host = "localhost"
   private val LOG = LogUtil.getLogger(getClass)
 

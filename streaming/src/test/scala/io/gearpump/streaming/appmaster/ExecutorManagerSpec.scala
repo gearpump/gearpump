@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor._
-import akka.testkit.TestProbe
+import org.apache.pekko.actor._
+import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import io.gearpump.TestProbeUtil
 import io.gearpump.cluster.{TestUtil, UserConfig, _}
@@ -80,14 +80,14 @@ class ExecutorManagerSpec extends FlatSpec with Matchers with BeforeAndAfterAll 
     import scala.concurrent.duration._
     val startExecutorSystem = master.receiveOne(5.seconds).asInstanceOf[StartExecutorSystems]
     assert(startExecutorSystem.resources == resourceRequest)
-    import startExecutorSystem.executorSystemConfig.{classPath, executorAkkaConfig, jar, jvmArguments, username => returnedUserName}
+    import startExecutorSystem.executorSystemConfig.{classPath, executorPekkoConfig, jar, jvmArguments, username => returnedUserName}
     assert(startExecutorSystem.resources == resourceRequest)
 
     assert(classPath.length == 0)
     assert(jvmArguments.length == 0)
     assert(jar == appJar)
     assert(returnedUserName == username)
-    assert(executorAkkaConfig.isEmpty)
+    assert(executorPekkoConfig.isEmpty)
 
     (master, executor, taskManager, executorManager)
   }

@@ -136,8 +136,8 @@ Sample Response:
 	      "status": "active",
 	      "appId": 1,
 	      "appName": "wordCount",
-	      "appMasterPath": "akka.tcp://app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c",
-	      "workerPath": "akka.tcp://master@127.0.0.1:3000/user/Worker0",
+	      "appMasterPath": "pekko.tcp://app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c",
+	      "workerPath": "pekko.tcp://master@127.0.0.1:3000/user/Worker0",
 	      "submissionTime": "1450758114766",
 	      "startTime": "1450758117294",
 	      "user": "lisa"
@@ -160,7 +160,7 @@ Sample Response:
 	  {
 	    "workerId": "1",
 	    "state": "active",
-	    "actorPath": "akka.tcp://master@127.0.0.1:3000/user/Worker0",
+	    "actorPath": "pekko.tcp://master@127.0.0.1:3000/user/Worker0",
 	    "aliveFor": "431565",
 	    "logFile": "logs/",
 	    "executors": [
@@ -183,7 +183,7 @@ Sample Response:
 	  {
 	    "workerId": "0",
 	    "state": "active",
-	    "actorPath": "akka.tcp://master@127.0.0.1:3000/user/Worker1",
+	    "actorPath": "pekko.tcp://master@127.0.0.1:3000/user/Worker1",
 	    "aliveFor": "431546",
 	    "logFile": "logs/",
 	    "executors": [
@@ -213,15 +213,15 @@ Sample Response:
 	:::json
 	{
 	  "extensions": [
-	    "akka.contrib.datareplication.DataReplication$"
+	    "org.apache.pekko.cluster.ddata.DistributedData$"
 	  ]
-	  "akka": {
+	  "pekko" : {
 	    "loglevel": "INFO"
 	    "log-dead-letters": "off"
 	    "log-dead-letters-during-shutdown": "off"
 	    "actor": {
-	      ## Master forms a akka cluster
-	      "provider": "akka.cluster.ClusterActorRefProvider"
+	      ## Master forms a pekko cluster
+	      "provider": "cluster"
 	    }
 	    "cluster": {
 	      "roles": ["master"]
@@ -388,7 +388,7 @@ Sample Response:
 	{
 	  "workerId": "0",
 	  "state": "active",
-	  "actorPath": "akka.tcp://master@127.0.0.1:3000/user/Worker1",
+	  "actorPath": "pekko.tcp://master@127.0.0.1:3000/user/Worker1",
 	  "aliveFor": "831069",
 	  "logFile": "logs/",
 	  "executors": [
@@ -418,15 +418,15 @@ Sample Response:
 	:::json
 	{
 	  "extensions": [
-	    "akka.contrib.datareplication.DataReplication$"
+	    "org.apache.pekko.cluster.ddata.DistributedData$"
 	  ]
-	  "akka": {
+	  "pekko" : {
 	    "loglevel": "INFO"
 	    "log-dead-letters": "off"
 	    "log-dead-letters-during-shutdown": "off"
 	    "actor": {
-	      ## Master forms a akka cluster
-	      "provider": "akka.cluster.ClusterActorRefProvider"
+	      ## Master forms a pekko cluster
+	      "provider": "cluster"
 	    }
 	    "cluster": {
 	      "roles": ["master"]
@@ -709,24 +709,24 @@ Sample Response:
 	      ]
 	    ]
 	  },
-	  "actorPath": "akka.tcp://app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster",
+	  "actorPath": "pekko.tcp://app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster",
 	  "clock": "1450759382430",
 	  "executors": [
 	    {
 	      "executorId": 0,
-	      "executor": "akka.tcp://app1system0@127.0.0.1:52240/remote/akka.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/0#-1554950276",
+	      "executor": "pekko.tcp://app1system0@127.0.0.1:52240/remote/pekko.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/0#-1554950276",
 	      "workerId": "1",
 	      "status": "active"
 	    },
 	    {
 	      "executorId": 1,
-	      "executor": "akka.tcp://app1system1@127.0.0.1:52241/remote/akka.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/1#928082134",
+	      "executor": "pekko.tcp://app1system1@127.0.0.1:52241/remote/pekko.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/1#928082134",
 	      "workerId": "0",
 	      "status": "active"
 	    },
 	    {
 	      "executorId": -1,
-	      "executor": "akka://app1-executor-1/user/daemon/appdaemon1/$c/appmaster",
+	      "executor": "pekko://app1-executor-1/user/daemon/appdaemon1/$c/appmaster",
 	      "workerId": "1",
 	      "status": "active"
 	    }
@@ -816,7 +816,7 @@ Sample Response:
 	            },
 	            "logfile" : {},
 	            "report-interval-ms" : 15000,
-	            "reporter" : "akka",
+	            "reporter" : "pekko",
 	            "retainHistoryData" : {
 	                "hours" : 72,
 	                "intervalMs" : 3600000
@@ -835,7 +835,7 @@ Sample Response:
 	            "max-sleep-ms" : 1000,
 	            "message-batch-size" : 262144
 	        },
-	        "netty-dispatcher" : "akka.actor.default-dispatcher",
+	        "netty-dispatcher" : "pekko.actor.default-dispatcher",
 	        "scheduling" : {
 	            "scheduler-class" : "io.gearpump.cluster.scheduler.PriorityScheduler"
 	        },
@@ -871,7 +871,7 @@ Sample Response:
 	            # gear.conf: 114
 	            "ws" : 8091
 	        },
-	        "task-dispatcher" : "akka.actor.pined-dispatcher",
+	        "task-dispatcher" : "pekko.actor.pinned-dispatcher",
 	        "worker" : {
 	            # reference.conf: 100
 	            # # How many slots each worker contains
@@ -1027,15 +1027,15 @@ Sample Response:
 	:::json
 	{
 	  "extensions": [
-	    "akka.contrib.datareplication.DataReplication$"
+	    "org.apache.pekko.cluster.ddata.DistributedData$"
 	  ]
-	  "akka": {
+	  "pekko" : {
 	    "loglevel": "INFO"
 	    "log-dead-letters": "off"
 	    "log-dead-letters-during-shutdown": "off"
 	    "actor": {
-	      ## Master forms a akka cluster
-	      "provider": "akka.cluster.ClusterActorRefProvider"
+	      ## Master forms a pekko cluster
+	      "provider": "cluster"
 	    }
 	    "cluster": {
 	      "roles": ["master"]
@@ -1063,7 +1063,7 @@ Sample Response:
 	{
 	  "id": 1,
 	  "workerId": "0",
-	  "actorPath": "akka.tcp://app1system1@127.0.0.1:52241/remote/akka.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/1",
+	  "actorPath": "pekko.tcp://app1system1@127.0.0.1:52241/remote/pekko.tcp/app1-executor-1@127.0.0.1:52212/user/daemon/appdaemon1/$c/appmaster/executors/1",
 	  "logFile": "logs/",
 	  "status": "active",
 	  "taskCount": 1,

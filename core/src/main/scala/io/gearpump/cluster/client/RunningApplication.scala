@@ -13,9 +13,9 @@
  */
 package io.gearpump.cluster.client
 
-import akka.actor.ActorRef
-import akka.pattern.ask
-import akka.util.Timeout
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.pattern.ask
+import org.apache.pekko.util.Timeout
 import io.gearpump.cluster.ClientToMaster.{RegisterAppResultListener, ResolveAppId, ShutdownApplication}
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.cluster.client.RunningApplication._
@@ -76,7 +76,6 @@ class RunningApplication(val appId: Int, master: ActorRef, timeout: Timeout) {
 
 object RunningApplication {
   private val LOG: Logger = LogUtil.getLogger(getClass)
-  // This magic number is derived from Akka's configuration, which is the maximum delay
+  // This magic number is derived from Pekko's configuration, which is the maximum delay
   private val INF_DURATION = Duration.ofSeconds(2147482)
 }
-

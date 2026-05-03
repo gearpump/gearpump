@@ -14,7 +14,7 @@
 
 package io.gearpump.util
 
-import akka.actor.Actor
+import org.apache.pekko.actor.Actor
 import com.typesafe.config.Config
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, ReadOption}

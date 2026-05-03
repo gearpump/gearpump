@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.main
 
-import akka.testkit.TestProbe
+import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.{ApplicationStatus, MasterHarness, TestUtil}
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication}

@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.util
 
-import akka.actor.{ActorPath, ActorRef}
+import org.apache.pekko.actor.{ActorPath, ActorRef}
 import io.gearpump.streaming.task.TaskId
 
 object ActorPathUtil {

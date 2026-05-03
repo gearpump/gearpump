@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.examples.wordcount
 
-import akka.actor.Cancellable
+import org.apache.pekko.actor.Cancellable
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.task.{Task, TaskContext}

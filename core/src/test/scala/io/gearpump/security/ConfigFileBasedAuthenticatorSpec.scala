@@ -14,7 +14,7 @@
 
 package io.gearpump.security
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{FlatSpec, Matchers}
 import scala.concurrent.Await

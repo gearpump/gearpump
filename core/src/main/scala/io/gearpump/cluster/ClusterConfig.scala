@@ -23,7 +23,7 @@ import java.io.File
  *
  * All Gearpump application should use this class to load configurations.
  *
- * Compared with Akka built-in com.typesafe.config.ConfigFactory, this class also
+ * Compared with Pekko's built-in com.typesafe.config.ConfigFactory usage, this class also
  * resolve config from file gear.conf and geardefault.conf.
  *
  * Overriding order:
@@ -104,7 +104,7 @@ object ClusterConfig {
     }
   }
 
-  /** filter JVM reserved keys and akka default reference.conf */
+  /** filter JVM reserved keys and Pekko default reference.conf */
   def filterOutDefaultConfig(input: Config): Config = {
     val updated = filterOutJvmReservedKeys(input)
     Util.filterOutOrigin(updated, "reference.conf")
@@ -129,9 +129,9 @@ object ClusterConfig {
     var basic = all.withoutPath(MASTER_CONFIG).withoutPath(WORKER_CONFIG).
       withoutPath(UI_CONFIG).withoutPath(LINUX_CONFIG)
 
-    if (!akka.util.Helpers.isWindows) {
+    if (!org.apache.pekko.util.Helpers.isWindows) {
 
-      // Change the akka.scheduler.tick-duration to 1 ms for Linux or Mac
+      // Change the pekko.scheduler.tick-duration to 1 ms for Linux or Mac
       basic = linux.withFallback(basic)
     }
 

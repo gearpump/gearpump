@@ -13,8 +13,8 @@
  */
 package io.gearpump.streaming.storage
 
-import akka.actor.ActorRef
-import akka.pattern.ask
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.pattern.ask
 import io.gearpump.cluster.AppMasterToMaster.{GetAppData, GetAppDataResult, SaveAppData}
 import io.gearpump.util.Constants
 import scala.concurrent.Future

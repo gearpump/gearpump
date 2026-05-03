@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor.{ActorSystem, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{ActorSystem, Props}
+import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.TestUtil
@@ -35,7 +35,7 @@ class ExecutorSystemLauncherSpec extends FlatSpec with Matchers with BeforeAndAf
   val workerId: WorkerId = WorkerId(0, 0L)
   val appId = 0
   val executorId = 0
-  val url = "akka.tcp://worker@127.0.0.1:3000"
+  val url = "pekko.tcp://worker@127.0.0.1:3000"
   val session = Session(null, null)
   val launchExecutorSystemTimeout = 3000
   val activeConfig = TestUtil.DEFAULT_CONFIG.

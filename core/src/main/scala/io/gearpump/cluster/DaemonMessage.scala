@@ -13,7 +13,7 @@
  */
 package io.gearpump.cluster
 
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.cluster.worker.WorkerId

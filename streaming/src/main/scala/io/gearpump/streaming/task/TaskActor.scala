@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.task
 
-import akka.actor._
+import org.apache.pekko.actor._
 import com.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
@@ -423,7 +423,7 @@ object TaskActor {
     // We store the session Id in the uid of ActorPath
     // ActorPath.hashCode is same as uid.
     private def getSessionId(actor: ActorRef): Int = {
-      // TODO: As method uid is protected in [akka] package. We
+      // TODO: As method uid is protected in the Pekko package, we
       // are using hashCode instead of uid.
       actor.hashCode()
     }

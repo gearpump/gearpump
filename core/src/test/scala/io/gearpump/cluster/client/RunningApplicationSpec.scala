@@ -14,9 +14,9 @@
 
 package io.gearpump.cluster.client
 
-import akka.actor.ActorSystem
-import akka.testkit.TestProbe
-import akka.util.Timeout
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.testkit.TestProbe
+import org.apache.pekko.util.Timeout
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication}
 import io.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ShutdownApplicationResult}
 import io.gearpump.cluster.TestUtil

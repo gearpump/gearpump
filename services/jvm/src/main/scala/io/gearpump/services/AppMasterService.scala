@@ -14,12 +14,12 @@
 
 package io.gearpump.services
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.{FormData, Multipart}
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
-import akka.stream.Materializer
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.http.scaladsl.model.{FormData, Multipart}
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
+import org.apache.pekko.stream.Materializer
 import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.ClusterConfig

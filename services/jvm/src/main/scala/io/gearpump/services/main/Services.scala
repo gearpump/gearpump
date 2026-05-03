@@ -14,25 +14,26 @@
 
 package io.gearpump.services.main
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Route
-import akka.stream.ActorMaterializer
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.Http
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.stream.Materializer
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, Gear}
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.services.{RestServices, SecurityService}
-import io.gearpump.util.{AkkaApp, Constants, LogUtil, Util}
+import io.gearpump.util.{PekkoApp, Constants, LogUtil, Util}
 import io.gearpump.util.LogUtil.ProcessType
 import java.util.Random
 import org.slf4j.Logger
 import scala.collection.JavaConverters._
 import scala.concurrent.Await
+import scala.concurrent.Future
 import sun.misc.BASE64Encoder
 
 /** Command line to start UI server */
-object Services extends AkkaApp with ArgumentsParser {
+object Services extends PekkoApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "master" -> CLIOption("<host:port>", required = false),
@@ -41,7 +42,7 @@ object Services extends AkkaApp with ArgumentsParser {
 
   override val description = "UI Server"
 
-  override def akkaConfig: Config = {
+  override def pekkoConfig: Config = {
     ClusterConfig.ui()
   }
 
@@ -53,28 +54,28 @@ object Services extends AkkaApp with ArgumentsParser {
 
   private var killFunction: Option[() => Unit] = None
 
-  override def main(inputAkkaConf: Config, args: Array[String]): Unit = {
+  override def main(inputPekkoConf: Config, args: Array[String]): Unit = {
 
     val argConfig = parse(args)
-    var akkaConf =
+    var pekkoConf =
       if (argConfig.exists(Gear.OPTION_CONFIG)) {
         ClusterConfig.ui(argConfig.getString(Gear.OPTION_CONFIG))
       } else {
-        inputAkkaConf
+        inputPekkoConf
       }
 
     val LOG: Logger = {
-      LogUtil.loadConfiguration(akkaConf, ProcessType.UI)
+      LogUtil.loadConfiguration(pekkoConf, ProcessType.UI)
       LogUtil.getLogger(getClass)
     }
 
     if (argConfig.exists("master")) {
       val master = argConfig.getString("master")
-      akkaConf = akkaConf.withValue(Constants.GEARPUMP_CLUSTER_MASTERS,
+      pekkoConf = pekkoConf.withValue(Constants.GEARPUMP_CLUSTER_MASTERS,
         ConfigValueFactory.fromIterable(List(master).asJava))
     }
 
-    akkaConf = akkaConf.withValue(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH,
+    pekkoConf = pekkoConf.withValue(Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH,
       ConfigValueFactory.fromAnyRef(argConfig.getString("supervisor")))
       // Creates a random unique secret key for session manager.
       // All previous stored session token cookies will be invalidated when UI
@@ -82,10 +83,10 @@ object Services extends AkkaApp with ArgumentsParser {
       .withValue(SecurityService.SESSION_MANAGER_KEY,
         ConfigValueFactory.fromAnyRef(randomSeverSecret()))
 
-    val masterCluster = akkaConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
+    val masterCluster = pekkoConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
       .flatMap(Util.parseHostList)
 
-    implicit val system = ActorSystem("services", akkaConf)
+    implicit val system = ActorSystem("services", pekkoConf)
     implicit val executionContext = system.dispatcher
 
     import scala.concurrent.duration._
@@ -95,8 +96,8 @@ object Services extends AkkaApp with ArgumentsParser {
 
     val services = new RestServices(master, system)
 
-    implicit val mat = ActorMaterializer()
-    val bindFuture = Http().bindAndHandle(Route.handlerFlow(services.route), host, port)
+    implicit val mat: Materializer = Materializer(system)
+    val bindFuture: Future[Http.ServerBinding] = Http().newServerAt(host, port).bind(services.route)
     Await.result(bindFuture, 15.seconds)
 
     val displayHost = if (host == "0.0.0.0") "127.0.0.1" else host

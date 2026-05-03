@@ -36,11 +36,11 @@ To change the log level, you need to change both `gear.conf`, and `log4j.propert
 
 ### To change the log level for master and worker daemon
 
-Please change `log4j.rootLevel` in `log4j.properties`, `gearpump-master.akka.loglevel` and `gearpump-worker.akka.loglevel` in `gear.conf`.
+Please change `log4j.rootLevel` in `log4j.properties`, `gearpump-master.pekko.loglevel` and `gearpump-worker.pekko.loglevel` in `gear.conf`.
 
 ### To change the log level for application job
 
-Please change `log4j.rootLevel` in `log4j.properties`, and `akka.loglevel` in `gear.conf` or `application.conf`.
+Please change `log4j.rootLevel` in `log4j.properties`, and `pekko.loglevel` in `gear.conf` or `application.conf`.
 
 ## Gearpump Default Configuration
 
@@ -54,7 +54,7 @@ This is the default configuration for `gear.conf`.
 | gearpump.metrics.enabled | true | flag to enable the metrics system |
 | gearpump.metrics.sample-rate | 1 | We will take one sample every `gearpump.metrics.sample-rate` data points. Note it may have impact that the statistics on UI portal is not accurate. Change it to 1 if you want accurate metrics in UI |
 | gearpump.metrics.report-interval-ms | 15000 | we will report once every 15 seconds |
-| gearpump.metrics.reporter  | "akka" | available value: "graphite", "akka", "logfile" which write the metrics data to different places. |
+| gearpump.metrics.reporter  | "pekko" | available value: "graphite", "pekko", "logfile" which write the metrics data to different places. |
 | gearpump.retainHistoryData.hours | 72 | max hours of history data to retain, Note: Due to implementation limitation(we store all history in memory), please don't set this to too big which may exhaust memory. |
 | gearpump.retainHistoryData.intervalMs | 3600000 |  time interval between two data points for history data (unit: ms). Usually this is set to a big value so that we only store coarse-grain data |
 | gearpump.retainRecentData.seconds | 300 | max seconds of recent data to retain. This is for the fine-grain data |

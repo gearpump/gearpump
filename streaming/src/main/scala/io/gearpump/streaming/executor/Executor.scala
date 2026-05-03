@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.executor
 
-import akka.actor._
-import akka.actor.SupervisorStrategy.Resume
+import org.apache.pekko.actor._
+import org.apache.pekko.actor.SupervisorStrategy.Resume
 import com.typesafe.config.Config
 import io.gearpump.cluster.{ClusterConfig, ExecutorContext, UserConfig}
 import io.gearpump.cluster.worker.WorkerId

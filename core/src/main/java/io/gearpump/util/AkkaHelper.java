@@ -14,23 +14,11 @@
 
 package io.gearpump.util;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
+/**
+ * Compatibility shim for code that still calls AkkaHelper.actorFor.
+ */
+public final class AkkaHelper extends PekkoHelper {
 
-public class AkkaHelper {
-
-  /**
-   * Helper util to access the private[akka] system.actorFor method
-   *
-   * This is used for performance optimization, we encode the session Id
-   * in the ActorRef path. Session Id is used to identity sender Task.
-   *
-   * @param system ActorSystem
-   * @param path Relative or absolute path of this Actor System.
-   * @return Full qualified ActorRef.
-   */
-  @SuppressWarnings("deprecation")
-  public static ActorRef actorFor(ActorSystem system, String path) {
-    return system.actorFor(path);
+  private AkkaHelper() {
   }
 }

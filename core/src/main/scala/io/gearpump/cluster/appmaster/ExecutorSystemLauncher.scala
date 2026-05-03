@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor._
+import org.apache.pekko.actor._
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor
 import io.gearpump.cluster.ExecutorJVMConfig
 import io.gearpump.cluster.WorkerToAppMaster._
@@ -102,7 +102,7 @@ object ExecutorSystemLauncher {
     Option(conf).map { conf =>
       import conf._
       ExecutorJVMConfig(classPath, jvmArguments, classOf[ActorSystemBooter].getName,
-        Array(systemName, reportBack), jar, username, executorAkkaConfig)
+        Array(systemName, reportBack), jar, username, executorPekkoConfig)
     }.orNull
   }
 }

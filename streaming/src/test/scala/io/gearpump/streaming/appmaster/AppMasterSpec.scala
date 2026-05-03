@@ -13,8 +13,8 @@
  */
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.testkit.{TestActorRef, TestProbe}
+import org.apache.pekko.actor.{ActorRef, ActorSystem, Props}
+import org.apache.pekko.testkit.{TestActorRef, TestProbe}
 import io.gearpump.cluster.{MasterHarness, TestUtil, UserConfig, _}
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.AppMasterToWorker.LaunchExecutor

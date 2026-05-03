@@ -13,18 +13,18 @@
  */
 package io.gearpump.examples.distributedshell
 
-import akka.pattern.ask
+import org.apache.pekko.pattern.ask
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
-import io.gearpump.util.{AkkaApp, Constants}
+import io.gearpump.util.{PekkoApp, Constants}
 import java.util.concurrent.TimeUnit
 import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 /** Client to DistributedShell to input "shell command" */
-object DistributedShellClient extends AkkaApp with ArgumentsParser {
+object DistributedShellClient extends PekkoApp with ArgumentsParser {
   implicit val timeout = Constants.FUTURE_TIMEOUT
   private val LOG: Logger = LoggerFactory.getLogger(getClass)
 
@@ -33,9 +33,9 @@ object DistributedShellClient extends AkkaApp with ArgumentsParser {
     "command" -> CLIOption[String]("<shell command>", required = true)
   )
 
-  override def main(akkaConf: Config, args: Array[String]): Unit = {
+  override def main(pekkoConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
-    val context = ClientContext(akkaConf)
+    val context = ClientContext(pekkoConf)
     implicit val system = context.system
     implicit val dispatcher = system.dispatcher
     val appid = config.getInt("appid")

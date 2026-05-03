@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.scheduler
 
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
 import io.gearpump.cluster.MasterToAppMaster.ResourceAllocated
 import io.gearpump.cluster.scheduler.Relaxation._

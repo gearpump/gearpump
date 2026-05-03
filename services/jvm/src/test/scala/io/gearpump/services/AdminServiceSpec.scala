@@ -14,8 +14,8 @@
 
 package io.gearpump.services
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}

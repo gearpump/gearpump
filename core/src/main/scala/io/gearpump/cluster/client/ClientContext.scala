@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster.client
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.util.Timeout
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.util.Timeout
 import com.typesafe.config.{Config, ConfigValueFactory}
 import io.gearpump.cluster.{ClusterConfig, _}
 import io.gearpump.cluster.ClientToMaster.{ResolveAppId, ShutdownApplication, SubmitApplication}

@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.scheduler
 
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import io.gearpump.cluster.scheduler.Priority.NORMAL
 import io.gearpump.cluster.scheduler.Priority.Priority
 import io.gearpump.cluster.scheduler.Relaxation.ANY

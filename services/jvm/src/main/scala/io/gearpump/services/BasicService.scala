@@ -14,12 +14,12 @@
 
 package io.gearpump.services
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `no-cache`}
-import akka.http.scaladsl.model.headers.`Cache-Control`
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
-import akka.stream.Materializer
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.model.headers.CacheDirectives.{`max-age`, `no-cache`}
+import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.stream.Materializer
 import io.gearpump.util.Constants
 import scala.concurrent.ExecutionContext
 
@@ -34,7 +34,7 @@ trait BasicService extends RouteService {
 
   implicit def system: ActorSystem
 
-  implicit def timeout: akka.util.Timeout = Constants.FUTURE_TIMEOUT
+  implicit def timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
 
   implicit def ec: ExecutionContext = system.dispatcher
 

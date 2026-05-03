@@ -14,7 +14,7 @@
 
 package io.gearpump.util
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.{ClusterConfig, ClusterConfigSource, UserConfig}
 import java.io.File
 import org.scalatest.{FlatSpec, Matchers}

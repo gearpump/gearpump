@@ -18,14 +18,14 @@ import io.gearpump.cluster.client.ClientContext
 import io.gearpump.util.LogUtil.ProcessType
 import scala.util.Try
 
-trait MasterClientCommand extends AkkaApp {
+trait MasterClientCommand extends PekkoApp {
 
   override def main(args: Array[String]): Unit = {
     ClientContext.setRemote()
-    LogUtil.loadConfiguration(akkaConfig, ProcessType.CLIENT)
+    LogUtil.loadConfiguration(pekkoConfig, ProcessType.CLIENT)
 
     Try {
-      main(akkaConfig, args)
+      main(pekkoConfig, args)
     }.failed.foreach { ex => help(); throw ex }
   }
 

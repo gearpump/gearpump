@@ -14,12 +14,12 @@
 
 package io.gearpump.services
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.marshalling.ToResponseMarshallable._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Directives._
-import akka.stream.Materializer
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.marshalling.ToResponseMarshallable
+import org.apache.pekko.http.scaladsl.marshalling.ToResponseMarshallable._
+import org.apache.pekko.http.scaladsl.model._
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.stream.Materializer
 import io.gearpump.util.Util
 
 /**

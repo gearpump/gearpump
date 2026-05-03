@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{Actor, ActorRef, ExtendedActorSystem, Stash}
-import akka.serialization.JavaSerializer
+import org.apache.pekko.actor.{Actor, ActorRef, ExtendedActorSystem, Stash}
+import org.apache.pekko.serialization.JavaSerializer
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.DagManager.{DagInitiated, DAGOperationFailed, DAGOperationSuccess, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}

@@ -14,13 +14,13 @@
 
 package io.gearpump.streaming.task
 
-import akka.actor.{ActorRef, ExtendedActorSystem}
+import org.apache.pekko.actor.{ActorRef, ExtendedActorSystem}
 import io.gearpump.Message
 import io.gearpump.transport.{Express, HostPort}
 import io.gearpump.transport.netty.TaskMessage
-import io.gearpump.util.AkkaHelper
+import io.gearpump.util.PekkoHelper
 /**
- * ExpressTransport wire the networking function from default akka
+ * ExpressTransport wires the networking function from default Pekko
  * networking to customized implementation [[io.gearpump.transport.Express]].
  *
  * See [[io.gearpump.transport.Express]] for more information.
@@ -35,7 +35,7 @@ trait ExpressTransport {
   lazy val sourceId = TaskId.toLong(taskId)
 
   lazy val sessionRef: ActorRef = {
-    AkkaHelper.actorFor(system, s"/session#$sessionId")
+    PekkoHelper.actorFor(system, s"/session#$sessionId")
   }
 
   def transport(msg: AnyRef, remotes: TaskId*): Unit = {

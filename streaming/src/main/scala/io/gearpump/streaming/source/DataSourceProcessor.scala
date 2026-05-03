@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.source
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.{Constants, Processor}
 import io.gearpump.streaming.dsl.plan.functions.DummyRunner

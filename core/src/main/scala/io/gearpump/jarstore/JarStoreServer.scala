@@ -14,8 +14,8 @@
 
 package io.gearpump.jarstore
 
-import akka.actor.{Actor, Stash}
-import akka.pattern.pipe
+import org.apache.pekko.actor.{Actor, Stash}
+import org.apache.pekko.pattern.pipe
 import io.gearpump.cluster.ClientToMaster.{GetJarStoreServer, JarStoreServerAddress}
 import io.gearpump.util.Constants
 

@@ -14,20 +14,20 @@
 
 package io.gearpump.jarstore
 
-import akka.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
-import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.Directives._
-import akka.stream.Materializer
-import akka.stream.scaladsl.{FileIO, StreamConverters}
-import akka.util.ByteString
+import org.apache.pekko.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
+import org.apache.pekko.http.scaladsl.server._
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{FileIO, StreamConverters}
+import org.apache.pekko.util.ByteString
 import java.io.File
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 
 /**
- * FileDirective is a set of Akka-http directive to upload/download
- * huge binary files to/from Akka-Http server.
+ * FileDirective is a set of Pekko HTTP directives to upload/download
+ * huge binary files to/from a Pekko HTTP server.
  */
 object FileDirective {
 

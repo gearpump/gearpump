@@ -28,8 +28,7 @@ class ActorUtilSpec extends FlatSpec {
     assert(masterPath.address.port == Some(port))
     assert(masterPath.address.system == MASTER)
     assert(masterPath.address.host == Some(host))
-    assert(masterPath.address.protocol == "akka.tcp")
+    assert(masterPath.address.protocol == "pekko.tcp")
     assert(masterPath.toStringWithoutAddress == s"/user/$MASTER")
   }
 }
-

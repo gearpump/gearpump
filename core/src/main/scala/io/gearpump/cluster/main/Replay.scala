@@ -28,11 +28,11 @@ object Replay extends MasterClientCommand with ArgumentsParser {
 
   override val description = "Replay the application from current min clock(low watermark)"
 
-  def main(akkaConf: Config, args: Array[String]): Unit = {
+  def main(pekkoConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
 
     if (null != config) {
-      val client = ClientContext(akkaConf)
+      val client = ClientContext(pekkoConf)
       client.replayFromTimestampWindowTrailingEdge(config.getInt("appid"))
       client.close()
     }

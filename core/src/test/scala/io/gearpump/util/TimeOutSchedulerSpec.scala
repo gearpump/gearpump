@@ -14,8 +14,8 @@
 
 package io.gearpump.util
 
-import akka.actor._
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
+import org.apache.pekko.actor._
+import org.apache.pekko.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import com.github.ghik.silencer.silent
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}

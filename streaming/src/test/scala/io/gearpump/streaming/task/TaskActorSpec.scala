@@ -13,8 +13,8 @@
  */
 package io.gearpump.streaming.task
 
-import akka.actor.{ExtendedActorSystem, Props}
-import akka.testkit._
+import org.apache.pekko.actor.{ExtendedActorSystem, Props}
+import org.apache.pekko.testkit._
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.Message
 import io.gearpump.cluster.{MasterHarness, TestUtil}
@@ -31,8 +31,8 @@ import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
 class TaskActorSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   protected override def config: Config = {
     ConfigFactory.parseString(
-      """ akka.loggers = ["akka.testkit.TestEventListener"]
-        | akka.test.filter-leeway = 20000
+      """ pekko.loggers = ["org.apache.pekko.testkit.TestEventListener"]
+        | pekko.test.filter-leeway = 20000
       """.stripMargin).
       withFallback(TestUtil.DEFAULT_CONFIG)
   }

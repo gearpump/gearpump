@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster.master
 
-import akka.actor._
-import akka.pattern.ask
+import org.apache.pekko.actor._
+import org.apache.pekko.pattern.ask
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.{ApplicationStatus, ApplicationTerminalStatus}

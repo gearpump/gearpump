@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor._
-import akka.testkit.TestProbe
+import org.apache.pekko.actor._
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.TestProbeUtil._
 import io.gearpump.cluster.{TestUtil, _}
 import io.gearpump.cluster.AppMasterToMaster.RegisterAppMaster

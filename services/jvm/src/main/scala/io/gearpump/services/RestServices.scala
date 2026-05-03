@@ -14,12 +14,12 @@
 
 package io.gearpump.services
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.server.{Route, _}
-import akka.http.scaladsl.server.Directives._
-import akka.util.Timeout
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.http.scaladsl.model.HttpResponse
+import org.apache.pekko.http.scaladsl.model.StatusCodes._
+import org.apache.pekko.http.scaladsl.server.{Route, _}
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.util.Timeout
 import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.util.{Constants, LogUtil}
 import org.apache.commons.lang.exception.ExceptionUtils

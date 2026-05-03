@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming
 
-import akka.actor.{Actor, ActorSystem}
-import akka.testkit.TestActorRef
+import org.apache.pekko.actor.{Actor, ActorSystem}
+import org.apache.pekko.testkit.TestActorRef
 import io.gearpump.cluster.TestUtil
 import io.gearpump.streaming.task.{TaskContext, TaskId}
 import org.mockito.{ArgumentMatcher, Matchers, Mockito}

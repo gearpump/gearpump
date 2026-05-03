@@ -14,12 +14,12 @@
 
 package io.gearpump.services
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.FormData
-import akka.http.scaladsl.model.headers.{`Set-Cookie`, Cookie, _}
-import akka.http.scaladsl.server.{AuthorizationFailedRejection, _}
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.model.FormData
+import org.apache.pekko.http.scaladsl.model.headers.{`Set-Cookie`, Cookie, _}
+import org.apache.pekko.http.scaladsl.server.{AuthorizationFailedRejection, _}
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}

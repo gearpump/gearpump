@@ -74,7 +74,7 @@ object Constants {
   // responsive time if set to too big. Please make sure you have
   // enough justification to change this global setting, otherwise
   // please use your local timeout setting instead.
-  val FUTURE_TIMEOUT = akka.util.Timeout(15, TimeUnit.SECONDS)
+  val FUTURE_TIMEOUT = org.apache.pekko.util.Timeout(15, TimeUnit.SECONDS)
 
   val GEARPUMP_START_EXECUTOR_SYSTEM_TIMEOUT_MS = "gearpump.start-executor-system-timeout-ms"
 
@@ -86,7 +86,7 @@ object Constants {
   val NETTY_MAX_SLEEP_MS = "gearpump.netty.max-sleep-ms"
   val NETTY_MESSAGE_BATCH_SIZE = "gearpump.netty.message-batch-size"
   val NETTY_FLUSH_CHECK_INTERVAL = "gearpump.netty.flush-check-interval"
-  val NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname"
+  val NETTY_TCP_HOSTNAME = "pekko.remote.classic.netty.tcp.hostname"
   val NETTY_DISPATCHER = "gearpump.netty.dispatcher"
 
   val GEARPUMP_USERNAME = "gearpump.username"
@@ -138,8 +138,8 @@ object Constants {
   val GEARPUMP_KEYTAB_FILE = "gearpump.keytab.file"
   val GEARPUMP_KERBEROS_PRINCIPAL = "gearpump.kerberos.principal"
 
-  val GEARPUMP_METRICS_MAX_LIMIT = "gearpump.metrics.akka.max-limit-on-query"
-  val GEARPUMP_METRICS_AGGREGATORS = "gearpump.metrics.akka.metrics-aggregator-class"
+  val GEARPUMP_METRICS_MAX_LIMIT = "gearpump.metrics.pekko.max-limit-on-query"
+  val GEARPUMP_METRICS_AGGREGATORS = "gearpump.metrics.pekko.metrics-aggregator-class"
 
   val GEARPUMP_UI_SECURITY = "gearpump.ui-security"
   val GEARPUMP_UI_SECURITY_AUTHENTICATION_ENABLED = "gearpump.ui-security.authentication-enabled"
@@ -161,5 +161,5 @@ object Constants {
 
   val APPLICATION_TOTAL_RETRIES = "gearpump.application.total-retries"
 
-  val AKKA_SCHEDULER_TICK_DURATION = "akka.scheduler.tick-duration"
+  val PEKKO_SCHEDULER_TICK_DURATION = "pekko.scheduler.tick-duration"
 }

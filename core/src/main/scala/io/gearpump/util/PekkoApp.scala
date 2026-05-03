@@ -12,25 +12,29 @@
  * limitations under the License.
  */
 
-package io.gearpump.transport.netty
+package io.gearpump.util
 
-import org.apache.pekko.actor.ActorRef
-import io.gearpump.transport.{ActorLookupById, HostPort}
+import io.gearpump.cluster.ClusterConfig
+import scala.util.Try
 
-trait IContext {
+/**
+ * A main class helper to load Pekko configuration automatically.
+ */
+trait PekkoApp {
 
-  /**
-   * Create a Netty server connection.
-   */
-  def bind(name: String, lookupActor: ActorLookupById, deserializeFlag: Boolean, port: Int): Int
+  type Config = com.typesafe.config.Config
 
-  /**
-   * Create a Netty client actor
-   */
-  def connect(hostPort: HostPort): ActorRef
+  def main(pekkoConf: Config, args: Array[String]): Unit
 
-  /**
-   * Close resource for this context
-   */
-  def close()
+  def help(): Unit
+
+  protected def pekkoConfig: Config = {
+    ClusterConfig.default()
+  }
+
+  def main(args: Array[String]): Unit = {
+    Try {
+      main(pekkoConfig, args)
+    }.failed.foreach { ex => help(); throw ex }
+  }
 }

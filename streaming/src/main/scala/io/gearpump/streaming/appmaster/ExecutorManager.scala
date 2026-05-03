@@ -14,9 +14,9 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor._
-import akka.actor.SupervisorStrategy.Stop
-import akka.remote.RemoteScope
+import org.apache.pekko.actor._
+import org.apache.pekko.actor.SupervisorStrategy.Stop
+import org.apache.pekko.remote.RemoteScope
 import com.typesafe.config.Config
 import io.gearpump.cluster.{AppJar, AppMasterContext, ExecutorContext, UserConfig}
 import io.gearpump.cluster.AppMasterToWorker.ChangeExecutorResource
@@ -174,11 +174,11 @@ private[appmaster] class ExecutorManager(
   }
 
   private def getExecutorJvmConfig(jar: Option[AppJar]): ExecutorSystemJvmConfig = {
-    val executorAkkaConfig = clusterConfig
-    val jvmSetting = Util.resolveJvmSetting(executorAkkaConfig.withFallback(systemConfig)).executor
+    val executorPekkoConfig = clusterConfig
+    val jvmSetting = Util.resolveJvmSetting(executorPekkoConfig.withFallback(systemConfig)).executor
 
     ExecutorSystemJvmConfig(jvmSetting.classPath, jvmSetting.vmargs, jar,
-      username, executorAkkaConfig)
+      username, executorPekkoConfig)
   }
 }
 

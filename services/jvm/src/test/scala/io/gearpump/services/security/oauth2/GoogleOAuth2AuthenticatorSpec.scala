@@ -14,12 +14,12 @@
 
 package io.gearpump.services.security.oauth2
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.HttpEntity.Strict
-import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model.Uri.{Path, Query}
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.model._
+import org.apache.pekko.http.scaladsl.model.HttpEntity.Strict
+import org.apache.pekko.http.scaladsl.model.MediaTypes._
+import org.apache.pekko.http.scaladsl.model.Uri.{Path, Query}
+import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
 import io.gearpump.security.Authenticator
 import io.gearpump.services.security.oauth2.GoogleOAuth2AuthenticatorSpec.MockGoogleAuthenticator

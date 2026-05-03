@@ -16,18 +16,18 @@ package io.gearpump.examples.distributedshell
 import io.gearpump.cluster.{Application, UserConfig}
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
-import io.gearpump.util.{AkkaApp, LogUtil}
+import io.gearpump.util.{PekkoApp, LogUtil}
 import org.slf4j.Logger
 
 /** Demo application to distribute and execute shell command on all machines of the cluster */
-object DistributedShell extends AkkaApp with ArgumentsParser {
+object DistributedShell extends PekkoApp with ArgumentsParser {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array.empty
 
-  override def main(akkaConf: Config, args: Array[String]): Unit = {
+  override def main(pekkoConf: Config, args: Array[String]): Unit = {
     LOG.info(s"Distributed shell submitting application...")
-    val context = ClientContext(akkaConf)
+    val context = ClientContext(pekkoConf)
     val app = context.submit(Application[DistShellAppMaster]("DistributedShell",
     UserConfig.empty))
     context.close()

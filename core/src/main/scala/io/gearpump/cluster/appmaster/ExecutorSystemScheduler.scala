@@ -14,7 +14,7 @@
 
 package io.gearpump.cluster.appmaster
 
-import akka.actor._
+import org.apache.pekko.actor._
 import com.typesafe.config.Config
 import io.gearpump.cluster._
 import io.gearpump.cluster.AppMasterToMaster.RequestResource
@@ -130,7 +130,7 @@ object ExecutorSystemScheduler {
   case object StartExecutorSystemTimeout
 
   case class ExecutorSystemJvmConfig(classPath: Array[String], jvmArguments: Array[String],
-      jar: Option[AppJar], username: String, executorAkkaConfig: Config = null)
+      jar: Option[AppJar], username: String, executorPekkoConfig: Config = null)
 
   /**
    * For each client which ask for an executor system, the scheduler will create a session for it.

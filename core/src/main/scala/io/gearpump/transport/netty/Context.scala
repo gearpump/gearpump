@@ -14,7 +14,7 @@
 
 package io.gearpump.transport.netty
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import org.apache.pekko.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.Config
 import io.gearpump.transport.{ActorLookupById, HostPort}
 import io.gearpump.transport.netty.Server.ServerPipelineFactory

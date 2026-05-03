@@ -14,14 +14,14 @@
 
 package io.gearpump.services
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{RemoteAddress, StatusCodes, Uri}
-import akka.http.scaladsl.model.headers.{HttpChallenge, HttpCookie, HttpCookiePair}
-import akka.http.scaladsl.server._
-import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
-import akka.stream.Materializer
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.model.{RemoteAddress, StatusCodes, Uri}
+import org.apache.pekko.http.scaladsl.model.headers.{HttpChallenge, HttpCookie, HttpCookiePair}
+import org.apache.pekko.http.scaladsl.server._
+import org.apache.pekko.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
+import org.apache.pekko.stream.Materializer
 import com.github.ghik.silencer.silent
 import com.softwaremill.session.{MultiValueSessionSerializer, SessionConfig, SessionManager}
 import com.softwaremill.session.SessionDirectives._
@@ -252,6 +252,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
 
 object SecurityService {
 
+  // The pekko-http-session library still reads akka.http.session.* keys.
   val SESSION_MANAGER_KEY = "akka.http.session.server-secret"
 
   case class UserSession(user: String, permissionLevel: Int)

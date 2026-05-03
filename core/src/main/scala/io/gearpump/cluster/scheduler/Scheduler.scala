@@ -13,7 +13,7 @@
  */
 package io.gearpump.cluster.scheduler
 
-import akka.actor.{Actor, ActorRef}
+import org.apache.pekko.actor.{Actor, ActorRef}
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.MasterToWorker.{UpdateResourceFailed, UpdateResourceSucceed, WorkerRegistered}
 import io.gearpump.cluster.WorkerToMaster.ResourceUpdate

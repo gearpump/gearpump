@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming
 
-import akka.actor.ActorRef
+import org.apache.pekko.actor.ActorRef
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.streaming.task.TaskId

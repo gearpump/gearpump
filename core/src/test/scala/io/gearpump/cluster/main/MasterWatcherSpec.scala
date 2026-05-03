@@ -13,8 +13,8 @@
  */
 package io.gearpump.cluster.main
 
-import akka.actor.{ActorSystem, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{ActorSystem, Props}
+import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{FlatSpec, Matchers}

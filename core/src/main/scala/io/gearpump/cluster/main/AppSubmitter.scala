@@ -40,7 +40,7 @@ object AppSubmitter extends MasterClientCommand with ArgumentsParser {
     Gear.OPTION_CONFIG -> CLIOption("custom configuration file", required = false,
       defaultValue = None))
 
-  def main(akkaConf: Config, args: Array[String]): Unit = {
+  def main(pekkoConf: Config, args: Array[String]): Unit = {
 
     val config = parse(args)
     if (null != config) {

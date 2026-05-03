@@ -14,8 +14,8 @@
 
 package io.gearpump.streaming.appmaster
 
-import akka.actor.{ActorSystem, Props}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{ActorSystem, Props}
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.cluster.ClientToMaster.QueryHistoryMetrics
 import io.gearpump.cluster.MasterToClient.HistoryMetrics
 import io.gearpump.cluster.TestUtil

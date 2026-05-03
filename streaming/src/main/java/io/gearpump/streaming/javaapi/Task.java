@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.javaapi;
 
-import akka.actor.ActorRef;
+import org.apache.pekko.actor.ActorRef;
 import io.gearpump.Message;
 import io.gearpump.cluster.UserConfig;
 import io.gearpump.streaming.task.TaskContext;

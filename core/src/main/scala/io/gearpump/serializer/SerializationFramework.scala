@@ -14,7 +14,7 @@
 
 package io.gearpump.serializer
 
-import akka.actor.ExtendedActorSystem
+import org.apache.pekko.actor.ExtendedActorSystem
 import io.gearpump.cluster.UserConfig
 
 /**

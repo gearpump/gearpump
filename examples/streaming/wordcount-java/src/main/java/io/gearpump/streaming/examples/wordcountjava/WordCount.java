@@ -31,7 +31,7 @@ public class WordCount {
     main(ClusterConfig.defaultConfig(), args);
   }
 
-  public static void main(Config akkaConf, String[] args) throws InterruptedException {
+  public static void main(Config pekkoConf, String[] args) throws InterruptedException {
     // For split task, we config to create two tasks
     int splitTaskNumber = 2;
     Processor split = new Processor(Split.class).withParallelism(splitTaskNumber);
@@ -50,7 +50,7 @@ public class WordCount {
 
     UserConfig conf = UserConfig.empty();
     StreamApplication app = new StreamApplication("wordcountJava", conf, graph);
-    ClientContext masterClient = ClientContext.apply(akkaConf);
+    ClientContext masterClient = ClientContext.apply(pekkoConf);
     masterClient.submit(app);
 
     masterClient.close();

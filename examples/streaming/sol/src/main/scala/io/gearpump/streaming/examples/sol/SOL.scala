@@ -19,10 +19,10 @@ import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, ParseResult}
 import io.gearpump.streaming.{Processor, StreamApplication}
 import io.gearpump.streaming.partitioner.ShufflePartitioner
-import io.gearpump.util.{AkkaApp, Graph}
+import io.gearpump.util.{PekkoApp, Graph}
 import io.gearpump.util.Graph._
 
-object SOL extends AkkaApp with ArgumentsParser {
+object SOL extends PekkoApp with ArgumentsParser {
 
   override val options: Array[(String, CLIOption[Any])] = Array(
     "streamProducer" -> CLIOption[Int]("<stream producer number>", required = false,
@@ -52,9 +52,9 @@ object SOL extends AkkaApp with ArgumentsParser {
     app
   }
 
-  override def main(akkaConf: Config, args: Array[String]): Unit = {
+  override def main(pekkoConf: Config, args: Array[String]): Unit = {
     val config = parse(args)
-    val context = ClientContext(akkaConf)
+    val context = ClientContext(pekkoConf)
     context.submit(application(config))
     context.close()
   }

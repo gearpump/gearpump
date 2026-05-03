@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.executor
 
-import akka.actor.{Actor, ActorRef, ActorRefFactory, Props}
+import org.apache.pekko.actor.{Actor, ActorRef, ActorRefFactory, Props}
 import io.gearpump.cluster.{ExecutorContext, UserConfig}
 import io.gearpump.serializer.SerializationFramework
 import io.gearpump.streaming.ProcessorDescription

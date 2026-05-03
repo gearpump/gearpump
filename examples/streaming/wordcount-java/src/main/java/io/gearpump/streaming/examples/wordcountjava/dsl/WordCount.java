@@ -42,8 +42,8 @@ public class WordCount {
     main(ClusterConfig.defaultConfig(), args);
   }
 
-  public static void main(Config akkaConf, String[] args) throws InterruptedException {
-    ClientContext context = ClientContext.apply(akkaConf);
+  public static void main(Config pekkoConf, String[] args) throws InterruptedException {
+    ClientContext context = ClientContext.apply(pekkoConf);
     JavaStreamApp app = new JavaStreamApp("JavaDSL", context, UserConfig.empty());
 
     JavaStream<String> sentence = app.source(new StringSource("This is a good start, bingo!! bingo!!"),

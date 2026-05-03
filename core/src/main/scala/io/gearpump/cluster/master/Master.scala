@@ -14,8 +14,8 @@
 
 package io.gearpump.cluster.master
 
-import akka.actor._
-import akka.remote.DisassociatedEvent
+import org.apache.pekko.actor._
+import org.apache.pekko.remote.DisassociatedEvent
 import com.typesafe.config.Config
 import io.gearpump.cluster.AppMasterToMaster._
 import io.gearpump.cluster.ClientToMaster._

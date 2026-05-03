@@ -13,8 +13,8 @@
  */
 package io.gearpump.streaming.examples.wordcount
 
-import akka.actor.ActorSystem
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.Message
 import io.gearpump.cluster.TestUtil
 import io.gearpump.streaming.MockUtil

@@ -14,8 +14,8 @@
 
 package io.gearpump.transport
 
-import akka.actor.{ActorRef, ActorSystem}
-import akka.testkit.TestProbe
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.testkit.TestProbe
 import io.gearpump.cluster.TestUtil
 import io.gearpump.transport.MockTransportSerializer.NettyMessage
 import io.gearpump.transport.netty.{Context, TaskMessage}
