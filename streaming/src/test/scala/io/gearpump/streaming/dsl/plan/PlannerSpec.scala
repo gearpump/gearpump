@@ -93,7 +93,7 @@ class PlannerSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Moc
 object PlannerSpec {
 
   private val anyFlatMapper = new FlatMapper[Any, Any](
-    FlatMapFunction((t => Option(t)): Any => TraversableOnce[Any]), "flatMap")
+    FlatMapFunction((t => Option(t)): Any => IterableOnce[Any]), "flatMap")
   private val anyReducer = new FoldRunner[Any, Option[Any]](
     ReduceFunction((left: Any, right: Any) => (left, right)), "reduce")
 

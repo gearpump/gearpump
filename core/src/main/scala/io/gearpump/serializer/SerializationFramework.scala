@@ -22,7 +22,7 @@ import io.gearpump.cluster.UserConfig
  * interface.
  */
 trait SerializationFramework {
-  def init(system: ExtendedActorSystem, config: UserConfig)
+  def init(system: ExtendedActorSystem, config: UserConfig): Unit
 
   /**
    * Need to be thread safe

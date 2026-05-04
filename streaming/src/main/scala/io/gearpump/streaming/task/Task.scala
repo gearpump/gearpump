@@ -172,9 +172,9 @@ abstract class Task(taskContext: TaskContext, userConfig: UserConfig) extends Ta
 
   val LOG: Logger = LogUtil.getLogger(getClass, app = appId, executor = executorId, task = taskId)
 
-  protected implicit val system = taskContext.system
+  protected implicit val system: ActorSystem = taskContext.system
 
-  implicit val self = taskContext.self
+  implicit val self: ActorRef = taskContext.self
 
   /**
    * For managed message(type of Message), the sender mean nothing,

@@ -104,7 +104,7 @@ class WorkerServiceSpec
     }
   }
 
-  override def afterAll {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 }

@@ -146,7 +146,7 @@ class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
     }
   }
 
-  override def afterAll {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 }

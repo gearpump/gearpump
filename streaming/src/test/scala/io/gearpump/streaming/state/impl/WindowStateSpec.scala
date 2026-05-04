@@ -14,7 +14,6 @@
 
 package io.gearpump.streaming.state.impl
 
-import com.github.ghik.silencer.silent
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.state.api.{Group, Serializer}
@@ -26,7 +25,6 @@ import org.scalatest.prop.PropertyChecks
 import scala.collection.immutable.TreeMap
 import scala.util.Success
 
-@silent // dead code following this construct
 class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   val longGen = Gen.chooseNum[Long](100L, 10000L)
@@ -50,9 +48,9 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
         val data = mock[AnyRef]
         val checkpoint = TreeMap(interval -> data)
         when(group.zero).thenReturn(zero, zero)
-        when(group.plus(zero, data)).thenReturn(data, Nil: _*)
-        when(group.plus(data, zero)).thenReturn(data, Nil: _*)
-        when(group.plus(zero, zero)).thenReturn(zero, Nil: _*)
+        when(group.plus(zero, data)).thenReturn(data)
+        when(group.plus(data, zero)).thenReturn(data)
+        when(group.plus(zero, zero)).thenReturn(zero)
         when(serializer.deserialize(bytes)).thenReturn(Success(checkpoint))
 
         val state = new WindowState[AnyRef](group, serializer, taskContext, window)
@@ -82,7 +80,7 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       val plus = mock[AnyRef]
 
       when(group.zero).thenReturn(zero, zero)
-      when(group.plus(zero, zero)).thenReturn(zero, Nil: _*)
+      when(group.plus(zero, zero)).thenReturn(zero)
       val state = new WindowState[AnyRef](group, serializer, taskContext, window)
       state.left shouldBe zero
       state.right shouldBe zero
@@ -97,9 +95,9 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       when(window.windowSize).thenReturn(size)
       when(window.windowStep).thenReturn(step)
       when(group.zero).thenReturn(zero, zero)
-      when(group.plus(zero, left)).thenReturn(left, Nil: _*)
-      when(group.plus(zero, right)).thenReturn(right, Nil: _*)
-      when(group.plus(left, right)).thenReturn(plus, Nil: _*)
+      when(group.plus(zero, left)).thenReturn(left)
+      when(group.plus(zero, right)).thenReturn(right)
+      when(group.plus(left, right)).thenReturn(plus)
 
       state.left = left
       state.updateIntervalStates(start, left, checkpointTime)
@@ -140,7 +138,7 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       when(window.windowStep).thenReturn(step)
       when(window.shouldSlide).thenReturn(false)
       when(group.plus(zero, left)).thenReturn(left, left)
-      when(group.plus(left, zero)).thenReturn(left, Nil: _*)
+      when(group.plus(left, zero)).thenReturn(left)
       when(taskContext.upstreamMinClock).thenReturn(0L)
 
       // Time < checkpointTime
@@ -159,7 +157,7 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       when(window.windowStep).thenReturn(step)
       when(window.shouldSlide).thenReturn(false)
       when(group.plus(zero, right)).thenReturn(right, right)
-      when(group.plus(left, right)).thenReturn(plus, Nil: _*)
+      when(group.plus(left, right)).thenReturn(plus)
       when(taskContext.upstreamMinClock).thenReturn(0L)
 
       // Time >= checkpointTime
@@ -178,10 +176,10 @@ class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with Mo
       when(window.range).thenReturn((start, end), (start + step, end + step))
       when(window.shouldSlide).thenReturn(true)
       when(taskContext.upstreamMinClock).thenReturn(checkpointTime)
-      when(group.minus(left, left)).thenReturn(zero, Nil: _*)
-      when(group.plus(zero, right)).thenReturn(right, Nil: _*)
-      when(group.plus(right, right)).thenReturn(plus, Nil: _*)
-      when(group.plus(zero, plus)).thenReturn(plus, Nil: _*)
+      when(group.minus(left, left)).thenReturn(zero)
+      when(group.plus(zero, right)).thenReturn(right)
+      when(group.plus(right, right)).thenReturn(plus)
+      when(group.plus(zero, plus)).thenReturn(plus)
 
       state.setNextCheckpointTime(checkpointTime)
       state.update(end, right)

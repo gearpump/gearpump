@@ -38,7 +38,7 @@ import spray.json.JsonFormat
  */
 class FileServer(system: ActorSystem, host: String, port: Int = 0, jarStore: JarStore) {
   import system.dispatcher
-  implicit val actorSystem = system
+  implicit val actorSystem: ActorSystem = system
   implicit val materializer: Materializer = Materializer(actorSystem)
   implicit def ec: ExecutionContext = system.dispatcher
 
@@ -106,9 +106,9 @@ object FileServer {
       this(system, Uri(url).authority.host.address(), Uri(url).authority.port)
     }
 
-    private implicit val actorSystem = system
+    private implicit val actorSystem: ActorSystem = system
     private implicit val materializer: Materializer = Materializer(actorSystem)
-    private implicit val ec = system.dispatcher
+    private implicit val ec: scala.concurrent.ExecutionContextExecutor = system.dispatcher
 
     val server = Uri(s"http://$host:$port")
     val httpClient = Http(system).outgoingConnection(server.authority.host.address(),
@@ -121,7 +121,7 @@ object FileServer {
         HttpRequest(HttpMethods.POST, uri = target, entity = entity)
       }
 
-      val response = Source.fromFuture(request).via(httpClient).runWith(Sink.head)
+      val response = Source.future(request).via(httpClient).runWith(Sink.head)
       response.flatMap { some =>
         Unmarshal(some).to[String]
       }.map { path =>

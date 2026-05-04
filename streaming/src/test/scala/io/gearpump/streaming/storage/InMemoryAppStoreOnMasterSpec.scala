@@ -21,8 +21,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class InMemoryAppStoreOnMasterSpec extends WordSpec with Matchers with BeforeAndAfterAll {
-  implicit val timeout = Constants.FUTURE_TIMEOUT
-  implicit val dispatcher = MasterHarness.cachedPool
+  implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
+  implicit val dispatcher: scala.concurrent.ExecutionContext = MasterHarness.cachedPool
 
   "InMemoryAppStoreOnMaster" should {
     "save and return the data properly" in {

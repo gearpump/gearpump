@@ -24,7 +24,7 @@ class TaskLocatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
     val localities = new Localities(Map(WorkerId(0, 0L) -> Array(TaskId(0, 1), TaskId(1, 2))))
     Localities.toJson(localities)
 
-    localities.localities.mapValues(_.toList) shouldBe
-      Localities.fromJson(Localities.toJson(localities)).localities.mapValues(_.toList)
+    localities.localities.view.mapValues(_.toList).toMap shouldBe
+      Localities.fromJson(Localities.toJson(localities)).localities.view.mapValues(_.toList).toMap
   }
 }

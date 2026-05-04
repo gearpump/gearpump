@@ -72,8 +72,8 @@ private[appmaster] class ExecutorManager(
   // and wait for AppMaster to start a new executor.
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10,
     withinTimeRange = 1.minute) {
-    case ex: Throwable =>
-      val executorId = Try(sender.path.name.toInt)
+      case ex: Throwable =>
+      val executorId = Try(sender().path.name.toInt)
       executorId match {
         case scala.util.Success(id) => {
           executors -= id
@@ -81,7 +81,7 @@ private[appmaster] class ExecutorManager(
             ExceptionUtils.getStackTrace(ex))
         }
         case Failure(ex) => {
-          LOG.error(s"Sender ${sender.path} is dead, but seems it is not an executor...", ex)
+          LOG.error(s"Sender ${sender().path} is dead, but seems it is not an executor...", ex)
         }
       }
       Stop
@@ -134,7 +134,7 @@ private[appmaster] class ExecutorManager(
       executor.foreach(_.executor forward msg)
 
     case GetExecutorInfo =>
-      sender ! executors
+      sender() ! executors
 
     // Tells Executor manager resources that are occupied. The Executor Manager can use this
     // information to tell worker to reclaim un-used resources

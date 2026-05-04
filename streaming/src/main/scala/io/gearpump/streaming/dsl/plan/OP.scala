@@ -15,7 +15,7 @@
 package io.gearpump.streaming.dsl.plan
 
 import org.apache.pekko.actor.ActorSystem
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.{Constants, Processor}
 import io.gearpump.streaming.Processor.DefaultProcessor
@@ -121,6 +121,8 @@ case class ProcessorOp[T <: Task](
     this(classTag.runtimeClass.asInstanceOf[Class[T]], parallelism, userConfig, description)
   }
 
+  @nowarn("cat=unchecked")
+  @nowarn("msg=abstract type OUT in type pattern.*")
   override def chain(other: Op)(implicit system: ActorSystem): Op = {
     throw new OpChainException(this, other)
   }
@@ -142,6 +144,8 @@ case class DataSourceOp(
     operator: Option[StreamingOperator[Any, Any]] = None)
   extends Op {
 
+  @nowarn("cat=unchecked")
+  @nowarn("msg=abstract type OUT in type pattern.*")
   override def chain(other: Op)(implicit system: ActorSystem): Op = {
     other match {
       case op: WindowTransformOp[Any, Any] @unchecked =>
@@ -224,6 +228,7 @@ case class TransformOp[IN, OUT](
 
   override def description: String = runner.description
 
+  @nowarn("msg=abstract type OUT in type pattern.*")
   override def chain(other: Op)(implicit system: ActorSystem): Op = {
     other match {
       case op: TransformOp[OUT, _] =>
@@ -299,7 +304,6 @@ case class WindowOp(
  * [[io.gearpump.streaming.dsl.plan.functions.DummyRunner]] to create a WindowTransformOp.
  */
 
-@silent // https://github.com/scala/bug/issues/7707
 case class GroupByOp[IN, GROUP] private(
     groupBy: IN => GROUP,
     parallelism: Int = 1,
@@ -382,6 +386,7 @@ private case class WindowTransformOp[IN, OUT](
     description: String,
     userConfig: UserConfig) extends Op {
 
+  @nowarn("msg=abstract type OUT in type pattern.*")
   override def chain(other: Op)(implicit system: ActorSystem): Op = {
     other match {
       case op: WindowTransformOp[OUT, _] =>

@@ -27,7 +27,7 @@ object WorkerId {
   val unspecified: WorkerId = new WorkerId(-1, 0L)
 
   def render(workerId: WorkerId): String = {
-    workerId.registerTime + "_" + workerId.sessionId
+    s"${workerId.registerTime}_${workerId.sessionId}"
   }
 
   def parse(str: String): WorkerId = {

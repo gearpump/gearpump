@@ -45,8 +45,8 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
 
   private val appTotalRetries: Int = systemConfig.getInt(Constants.APPLICATION_TOTAL_RETRIES)
 
-  implicit val timeout = FUTURE_TIMEOUT
-  implicit val executionContext = context.dispatcher
+  implicit val timeout: org.apache.pekko.util.Timeout = FUTURE_TIMEOUT
+  implicit val executionContext: scala.concurrent.ExecutionContextExecutor = context.dispatcher
 
   // Next available appId
   private var nextAppId: Int = 1
@@ -139,7 +139,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
       appInfo match {
         case Some(info) =>
           shutdownApplication(info)
-          sender ! ShutdownApplicationResult(Success(appId))
+          sender() ! ShutdownApplicationResult(Success(appId))
           // Here we use the function to make sure the status is consistent because
           // sending another message to self will involve timing problem
           this.onApplicationStatusChanged(appId, ApplicationStatus.TERMINATED,
@@ -147,16 +147,16 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
         case None =>
           val errorMsg = s"Failed to find registration information for appId: $appId"
           LOG.error(errorMsg)
-          sender ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
+          sender() ! ShutdownApplicationResult(Failure(new Exception(errorMsg)))
       }
 
     case ResolveAppId(appId) =>
       val appMaster = applicationRegistry.get(appId).map(_.appMaster)
       appMaster match {
         case Some(appMasterActor) =>
-          sender ! ResolveAppIdResult(Success(appMasterActor))
+          sender() ! ResolveAppIdResult(Success(appMasterActor))
         case None =>
-          sender ! ResolveAppIdResult(Failure(new Exception(s"Can not find Application: $appId")))
+          sender() ! ResolveAppIdResult(Failure(new Exception(s"Can not find Application: $appId")))
       }
 
     case AppMastersDataRequest =>
@@ -170,11 +170,11 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
           info.status, id, info.appName, appMasterPath, workerPath.orNull,
           info.submissionTime, info.startTime, info.finishTime, info.user)
       })
-      sender ! AppMastersData(appMastersData.toList)
+      sender() ! AppMastersData(appMastersData.toList)
 
     case QueryAppMasterConfig(appId) =>
       val config = applicationRegistry.get(appId).map(_.config).getOrElse(ConfigFactory.empty())
-      sender ! AppMasterConfig(config)
+      sender() ! AppMasterConfig(config)
 
     case appMasterDataRequest: AppMasterDataRequest =>
       val appId = appMasterDataRequest.appId
@@ -184,11 +184,11 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
           val appMasterPath = ActorUtil.getFullPath(context.system, info.appMaster.path)
           val workerPath = Option(info.worker).map(
             worker => ActorUtil.getFullPath(context.system, worker.path)).orNull
-          sender ! AppMasterData(
+          sender() ! AppMasterData(
             info.status, appId, info.appName, appMasterPath, workerPath,
             info.submissionTime, info.startTime, info.finishTime, info.user)
         case None =>
-          sender ! AppMasterData(ApplicationStatus.NONEXIST)
+          sender() ! AppMasterData(ApplicationStatus.NONEXIST)
       }
 
     case RegisterAppResultListener(appId) =>
@@ -213,7 +213,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
           context.watch(appMaster)
           applicationRegistry += appId -> updatedInfo
           kvService ! PutKV(MASTER_GROUP, MASTER_STATE, MasterState(nextAppId, applicationRegistry))
-          sender ! AppMasterRegistered(appId)
+          sender() ! AppMasterRegistered(appId)
         case None =>
           LOG.error(s"Can not find submitted application $appId")
       }
@@ -232,7 +232,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
           newStatus match {
             case ApplicationStatus.ACTIVE =>
               updatedStatus = appRuntimeInfo.onAppMasterActivated(timeStamp)
-              sender ! AppMasterActivated(appId)
+              sender() ! AppMasterActivated(appId)
             case status: ApplicationTerminalStatus =>
               shutdownApplication(appRuntimeInfo)
               updatedStatus = appRuntimeInfo.onFinalStatus(timeStamp, status)
@@ -286,7 +286,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
   def terminationWatch: Receive = {
     case terminate: Terminated =>
       LOG.info(s"AppMaster(${terminate.actor.path}) is terminated, " +
-        s"network down: ${terminate.getAddressTerminated}")
+        s"network down: ${terminate.getAddressTerminated()}")
 
       // Now we assume that the only normal way to stop the application is submitting a
       // ShutdownApplication request

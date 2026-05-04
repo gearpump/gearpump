@@ -14,6 +14,7 @@
 
 package io.gearpump.services.security.oauth2.impl
 
+import java.util.Base64
 import com.github.scribejava.core.builder.api.DefaultApi20
 import com.github.scribejava.core.model._
 import com.github.scribejava.core.oauth.OAuth20Service
@@ -25,7 +26,6 @@ import io.gearpump.services.security.oauth2.impl.BaseOAuth2Authenticator.BaseApi
 import io.gearpump.util.Constants._
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import spray.json.{JsString, _}
-import sun.misc.BASE64Encoder
 
 /**
  *
@@ -112,7 +112,9 @@ class CloudFoundryUAAOAuth2Authenticator extends BaseOAuth2Authenticator {
       val authenticatorClass = additionalAuthenticatorConfig
         .getString(GEARPUMP_UI_OAUTH2_AUTHENTICATOR_CLASS)
       val clazz = Thread.currentThread().getContextClassLoader.loadClass(authenticatorClass)
-      val authenticator = clazz.newInstance().asInstanceOf[AdditionalAuthenticator]
+      val authenticator = clazz.getDeclaredConstructor()
+        .newInstance()
+        .asInstanceOf[AdditionalAuthenticator]
       authenticator.init(additionalAuthenticatorConfig, executionContext)
       additionalAuthenticator = Option(authenticator)
     }
@@ -152,9 +154,7 @@ object CloudFoundryUAAOAuth2Authenticator {
     extends BaseApi20(authorizeUrl, accessTokenEndpoint) {
 
     private def base64(in: String): String = {
-      val encoder = new BASE64Encoder()
-      val utf8 = "UTF-8"
-      encoder.encode(in.getBytes(utf8))
+      Base64.getEncoder.encodeToString(in.getBytes("UTF-8"))
     }
 
     override def createService(config: OAuthConfig): OAuth20Service = {

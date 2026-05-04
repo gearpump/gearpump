@@ -29,20 +29,21 @@ import scala.concurrent.duration.Duration
 
 class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
 
-  implicit val timeout = org.apache.pekko.util.Timeout(25, TimeUnit.SECONDS)
+  implicit val timeout: org.apache.pekko.util.Timeout =
+    org.apache.pekko.util.Timeout(25, TimeUnit.SECONDS)
   val host = "localhost"
   private val LOG = LogUtil.getLogger(getClass)
 
   var system: ActorSystem = _
 
-  override def afterAll {
+  override def afterAll(): Unit = {
     if (null != system) {
       system.terminate()
       Await.result(system.whenTerminated, Duration.Inf)
     }
   }
 
-  override def beforeAll {
+  override def beforeAll(): Unit = {
     system = ActorSystem("FileServerSpec", TestUtil.DEFAULT_CONFIG)
   }
 

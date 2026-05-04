@@ -49,7 +49,7 @@ class GearpumpSerialization(config: Config) {
   }
 
   private final def configToMap(config: Config, path: String) = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) => k -> v.toString }
   }
 }

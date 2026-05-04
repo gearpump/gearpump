@@ -47,7 +47,7 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
   def receive: Receive = metricHandler orElse commandHandler
   def metricHandler: Receive = {
     case ReportMetrics =>
-      sender ! DemandMoreMetrics(self)
+      sender() ! DemandMoreMetrics(self)
     case metrics: MetricType =>
       val name = metrics.name
       if (metricsStore.contains(name)) {
@@ -83,11 +83,11 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
       if (matcher.matches()) {
         readOption match {
           case ReadOption.ReadLatest =>
-            result.append(store.readLatest: _*)
+            result.appendAll(store.readLatest)
           case ReadOption.ReadRecent =>
-            result.append(store.readRecent: _*)
+            result.appendAll(store.readRecent)
           case ReadOption.ReadHistory =>
-            result.append(store.readHistory: _*)
+            result.appendAll(store.readHistory)
           case _ =>
           // Skip all other options.
         }
@@ -99,7 +99,7 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
   val dummyAggregator = new DummyMetricsAggregator
   private var aggregators: Map[String, MetricsAggregator] = Map.empty[String, MetricsAggregator]
 
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
   private val validAggregators: Set[String] = {
     val rootConfig = systemConfig.getConfig(Constants.GEARPUMP_METRICS_AGGREGATORS).root.unwrapped
     rootConfig.keySet().asScala.toSet
@@ -130,7 +130,7 @@ class HistoryMetricsService(name: String, config: HistoryMetricsConfig) extends 
       }
 
       val metrics = fetchMetricsHistory(inputPath, readOption).iterator
-      sender ! HistoryMetrics(inputPath, aggregator.aggregate(options, metrics))
+      sender() ! HistoryMetrics(inputPath, aggregator.aggregate(options, metrics))
   }
 }
 
@@ -166,7 +166,7 @@ object HistoryMetricsService {
 
     val empty = List.empty[HistoryMetricsItem]
 
-    override def add(inputMetrics: MetricType): Unit = Unit
+    override def add(inputMetrics: MetricType): Unit = ()
 
     override def readRecent: List[HistoryMetricsItem] = empty
 
@@ -229,7 +229,7 @@ object HistoryMetricsService {
 
     def read: List[HistoryMetricsItem] = {
       val result = new ListBuffer[HistoryMetricsItem]
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
       queue.iterator().asScala.foreach(result.prepend(_))
       result.toList
     }

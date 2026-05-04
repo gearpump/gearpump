@@ -36,6 +36,6 @@ class ShellExecutor(executorContext: ExecutorContext) extends Actor {
         case Success(msg) => msg
         case Failure(ex) => ex.getMessage
       }
-      sender ! ShellCommandResult(executorId, result)
+      sender() ! ShellCommandResult(executorId, result)
   }
 }

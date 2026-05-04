@@ -27,9 +27,9 @@ sealed trait FunctionRunner[IN, OUT] extends java.io.Serializable {
 
   def setup(): Unit = {}
 
-  def process(value: IN): TraversableOnce[OUT]
+  def process(value: IN): IterableOnce[OUT]
 
-  def finish(): TraversableOnce[OUT] = None
+  def finish(): IterableOnce[OUT] = None
 
   def teardown(): Unit = {}
 
@@ -46,12 +46,12 @@ case class AndThen[IN, MIDDLE, OUT](first: FunctionRunner[IN, MIDDLE],
     second.setup()
   }
 
-  override def process(value: IN): TraversableOnce[OUT] = {
-    first.process(value).flatMap(second.process)
+  override def process(value: IN): IterableOnce[OUT] = {
+    first.process(value).iterator.flatMap(second.process)
   }
 
-  override def finish(): TraversableOnce[OUT] = {
-    val firstResult = first.finish().flatMap(second.process)
+  override def finish(): IterableOnce[OUT] = {
+    val firstResult = first.finish().iterator.flatMap(second.process)
     if (firstResult.isEmpty) {
       second.finish()
     } else {
@@ -78,7 +78,7 @@ class FlatMapper[IN, OUT](fn: FlatMapFunction[IN, OUT], val description: String)
     fn.setup()
   }
 
-  override def process(value: IN): TraversableOnce[OUT] = {
+  override def process(value: IN): IterableOnce[OUT] = {
     fn.flatMap(value)
   }
 
@@ -97,12 +97,12 @@ class FoldRunner[T, A](fn: FoldFunction[T, A], val description: String)
     state = Option(fn.init)
   }
 
-  override def process(value: T): TraversableOnce[A] = {
+  override def process(value: T): IterableOnce[A] = {
     state = state.map(fn.fold(_, value))
     None
   }
 
-  override def finish(): TraversableOnce[A] = {
+  override def finish(): IterableOnce[A] = {
     state
   }
 
@@ -113,5 +113,4 @@ class FoldRunner[T, A](fn: FoldFunction[T, A], val description: String)
 }
 
 class DummyRunner[T] extends FlatMapper[T, T](
-    FlatMapFunction((t => Option(t)): T => TraversableOnce[T]), "")
-
+    FlatMapFunction((t => Option(t)): T => IterableOnce[T]), "")

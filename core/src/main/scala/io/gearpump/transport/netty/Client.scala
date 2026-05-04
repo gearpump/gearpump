@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit
 import org.jboss.netty.channel._
 import org.slf4j.Logger
 import scala.concurrent.duration.FiniteDuration
-import scala.language.implicitConversions
 
 /**
  * Netty Client implemented as an actor, on the other side, there is a netty server Actor.
@@ -51,7 +50,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
       batch.add(msg)
     case flush@Flush(flushChannel) =>
       if (channel != flushChannel) {
-        Unit // Drop, as it belong to old channel flush message
+        () // Drop, as it belong to old channel flush message
       } else if (batch.size > 0 && flushChannel.isWritable) {
         send(flushChannel, batch.iterator)
         batch.clear()
@@ -110,7 +109,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
     }
   }
 
-  private def send(flushChannel: Channel, msgs: util.Iterator[TaskMessage]) {
+  private def send(flushChannel: Channel, msgs: util.Iterator[TaskMessage]): Unit = {
     var messageBatch: MessageBatch = null
 
     while (msgs.hasNext) {
@@ -130,7 +129,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
     }
   }
 
-  private def close() {
+  private def close(): Unit = {
     LOG.info(s"closing netty client $name...")
     if (null != channel) {
       channel.close()
@@ -143,11 +142,11 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
     close()
   }
 
-  private def flushRequest(channel: Channel, requests: MessageBatch) {
+  private def flushRequest(channel: Channel, requests: MessageBatch): Unit = {
     val future: ChannelFuture = channel.write(requests)
     future.fail { (channel, ex) =>
       if (channel.isOpen) {
-        channel.close
+        channel.close()
       }
       LOG.error(s"failed to send requests " +
         s"to ${channel.getRemoteAddress} ${ex.getClass.getSimpleName}")
@@ -184,9 +183,9 @@ object Client {
 
   class ClientErrorHandler(name: String) extends SimpleChannelUpstreamHandler {
 
-    override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent) {
+    override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent): Unit = {
       event.getCause match {
-        case _: ConnectException => Unit
+        case _: ConnectException => ()
         case ex: ClosedChannelException =>
           LOG.warn("exception found when trying to close netty connection", ex.getMessage)
         case ex => LOG.error("Connection failed " + name, ex)
@@ -212,7 +211,7 @@ object Client {
 
     def success(handler: (Channel => Unit)): ChannelFuture = {
       channelFuture.addListener(new ChannelFutureListener {
-        def operationComplete(future: ChannelFuture) {
+        def operationComplete(future: ChannelFuture): Unit = {
           if (future.isSuccess) {
             handler(future.getChannel)
           }
@@ -223,7 +222,7 @@ object Client {
 
     def fail(handler: ((Channel, Throwable) => Unit)): ChannelFuture = {
       channelFuture.addListener(new ChannelFutureListener {
-        def operationComplete(future: ChannelFuture) {
+        def operationComplete(future: ChannelFuture): Unit = {
           if (!future.isSuccess) {
             handler(future.getChannel, future.getCause)
           }

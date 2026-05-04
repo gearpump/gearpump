@@ -132,7 +132,9 @@ object OAuth2Authenticator {
             val authenticatorClass = authenticatorConfig.getString(
               GEARPUMP_UI_OAUTH2_AUTHENTICATOR_CLASS)
             val clazz = Thread.currentThread().getContextClassLoader.loadClass(authenticatorClass)
-            val authenticator = clazz.newInstance().asInstanceOf[OAuth2Authenticator]
+            val authenticator = clazz.getDeclaredConstructor()
+              .newInstance()
+              .asInstanceOf[OAuth2Authenticator]
             authenticator.init(authenticatorConfig, executionContext)
             providers += provider -> authenticator
             authenticator

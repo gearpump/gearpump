@@ -23,11 +23,11 @@ class Counter(val name: String, counter: CodaHaleCounter, sampleRate: Int = 1) {
   private var sampleCount = 0L
   private var toBeIncremented = 0L
 
-  def inc() {
+  def inc(): Unit = {
     inc(1)
   }
 
-  def inc(n: Long) {
+  def inc(n: Long): Unit = {
     toBeIncremented += n
     sampleCount += 1
     if (null != counter && sampleCount % sampleRate == 0) {

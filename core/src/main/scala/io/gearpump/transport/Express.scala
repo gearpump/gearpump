@@ -15,7 +15,6 @@
 package io.gearpump.transport
 
 import org.apache.pekko.actor._
-import com.github.ghik.silencer.silent
 import io.gearpump.transport.netty.{Context, TaskMessage}
 import io.gearpump.transport.netty.Client.Close
 import io.gearpump.util.LogUtil
@@ -40,10 +39,10 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   import io.gearpump.transport.Express._
   import system.dispatcher
-  @silent val localActorMap = StateRef(LongMap.empty[ActorRef])
-  @silent val remoteAddressMap = StateRef(Map.empty[Long, HostPort])
+  private val localActorMap = StateRef(LongMap.empty[ActorRef])
+  private val remoteAddressMap = StateRef(Map.empty[Long, HostPort])
 
-  @silent val remoteClientMap = StateRef(Map.empty[HostPort, ActorRef])
+  private val remoteClientMap = StateRef(Map.empty[HostPort, ActorRef])
 
   val conf = system.settings.config
 
@@ -66,7 +65,7 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   /** Start Netty client actors to connect to remote machines */
   def startClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
-    val clientsToClose = remoteClientMap.get().filterKeys(!hostPorts.contains(_)).keySet
+    val clientsToClose = remoteClientMap.get().keySet.filterNot(hostPorts.contains)
     closeClients(clientsToClose)
     hostPorts.toList.foldLeft(Future(Map.empty[HostPort, ActorRef])) { (_, hostPort) =>
       remoteClientMap.alter { map =>
@@ -82,9 +81,10 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
 
   def closeClients(hostPorts: Set[HostPort]): Future[Map[HostPort, ActorRef]] = {
     remoteClientMap.alter { map =>
-      map.filterKeys(hostPorts.contains).foreach { hostAndClient =>
-        val (_, client) = hostAndClient
-        client ! Close
+      map.foreach {
+        case (hostPort, client) if hostPorts.contains(hostPort) =>
+          client ! Close
+        case _ =>
       }
       map -- hostPorts
     }
@@ -99,6 +99,14 @@ class Express(val system: ExtendedActorSystem) extends Extension with ActorLooku
   def lookupLocalActor(id: Long): Option[ActorRef] = localActorMap.get().get(id)
 
   def lookupRemoteAddress(id: Long): Option[HostPort] = remoteAddressMap.get().get(id)
+
+  def replaceRemoteAddresses(addresses: Map[Long, HostPort]): Unit = {
+    remoteAddressMap.set(addresses)
+  }
+
+  def remoteAddressesFuture(): Future[Map[Long, HostPort]] = {
+    remoteAddressMap.future()
+  }
 
   /** Send message to remote task */
   def transport(taskMessage: TaskMessage, remote: HostPort): Unit = {
@@ -123,6 +131,10 @@ object Express extends ExtensionId[Express] with ExtensionIdProvider {
     private val ref = new AtomicReference[A](initial)
 
     def get(): A = ref.get()
+
+    def set(value: A): Unit = ref.set(value)
+
+    def future(): Future[A] = Future.successful(get())
 
     def sendOff(update: A => A): Future[A] = Future(alterNow(update))
 

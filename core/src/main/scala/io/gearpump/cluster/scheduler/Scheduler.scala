@@ -35,7 +35,7 @@ abstract class Scheduler extends Actor {
     case WorkerRegistered(id, _) =>
       if (!resources.contains(id)) {
         LOG.info(s"Worker $id added to the scheduler")
-        resources.put(id, (sender, Resource.empty))
+        resources.put(id, (sender(), Resource.empty))
       }
     case update@ResourceUpdate(worker, workerId, resource) =>
       LOG.info(s"$update...")
@@ -45,10 +45,10 @@ abstract class Scheduler extends Actor {
         if (resourceReturned) {
           allocateResource()
         }
-        sender ! UpdateResourceSucceed
+        sender() ! UpdateResourceSucceed
       }
       else {
-        sender ! UpdateResourceFailed(
+        sender() ! UpdateResourceFailed(
           s"ResourceUpdate failed! The worker $workerId has not been registered into master")
       }
     case WorkerTerminated(workerId) =>

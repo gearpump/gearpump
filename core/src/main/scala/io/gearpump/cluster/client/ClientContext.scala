@@ -28,7 +28,7 @@ import io.gearpump.util.{ActorUtil, Constants, LogUtil, Util}
 import io.gearpump.util.Constants._
 import java.util.concurrent.{TimeoutException, TimeUnit}
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -43,7 +43,8 @@ class ClientContext protected(config: Config,
     sysOpt: Option[ActorSystem], masterOpt: Option[ActorRef]) {
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
-  implicit val system = sysOpt.getOrElse(ActorSystem(s"client${Util.randInt()}", config))
+  implicit val system: ActorSystem =
+    sysOpt.getOrElse(ActorSystem(s"client${Util.randInt()}", config))
   private val jarStoreClient = new JarStoreClient(config, system)
   private val masterClientTimeout = {
     val timeout = Try(config.getInt(Constants.GEARPUMP_MASTERCLIENT_TIMEOUT)).getOrElse(30)
@@ -154,7 +155,7 @@ class ClientContext protected(config: Config,
 
   private def checkAndAddNamePrefix(appName: String, namePrefix: String): String = {
     val fullName = if (namePrefix != null && namePrefix != "") {
-      namePrefix + "_" + appName
+      s"${namePrefix}_$appName"
     } else {
       appName
     }

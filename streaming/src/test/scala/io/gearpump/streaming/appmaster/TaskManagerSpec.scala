@@ -94,7 +94,7 @@ class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
 
     // Asks for new executors
     val returned = executorManager.receiveN(1).head.asInstanceOf[StartExecutors]
-    assert(returned.resources.deep == resourceRequest.deep)
+    assert(returned.resources.toSeq == resourceRequest.toSeq)
     executorManager.reply(StartExecutorsTimeOut)
 
     // TaskManager cannot handle the TimeOut error itself, escalate to AppMaster.

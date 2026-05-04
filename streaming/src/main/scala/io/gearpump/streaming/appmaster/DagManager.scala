@@ -41,7 +41,7 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
 
   private var dags = List.empty[DAG]
   private var maxProcessorId = -1
-  private implicit val system = context.system
+  private implicit val system: org.apache.pekko.actor.ActorSystem = context.system
 
   private var watchers = List.empty[ActorRef]
   private val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
@@ -93,12 +93,12 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
   def dagService: Receive = {
     case GetLatestDAG =>
       // Get the latest version of DAG.
-      sender ! LatestDAG(dags.last)
+      sender() ! LatestDAG(dags.last)
     case GetTaskLaunchData(version, processorId, launchContext) =>
       // Task information like Processor class, downstream subscriber processors and etc.
       dags.find(_.version == version).foreach { dag =>
         LOG.info(s"Get task launcher data for processor: $processorId, dagVersion: $version")
-        sender ! taskLaunchData(dag, processorId, launchContext)
+        sender() ! taskLaunchData(dag, processorId, launchContext)
       }
     case ReplaceProcessor(oldProcessorId, inputNewProcessor, inheritConfig) =>
       // Replace a processor with new implementation. The upstream processors and downstream
@@ -115,7 +115,7 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
       }
 
       if (dags.length > 1) {
-        sender ! DAGOperationFailed(
+        sender() ! DAGOperationFailed(
           "We are in the process of handling previous dynamic dag change")
       } else {
         val oldDAG = dags.last
@@ -126,7 +126,7 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
         LOG.info(s"ReplaceProcessor old: $oldProcessorId, new: $newProcessor")
         LOG.info(s"new DAG: $newDAG")
         watchers.foreach(_ ! LatestDAG(newDAG))
-        sender ! DAGOperationSuccess
+        sender() ! DAGOperationSuccess
       }
 
     case WatchChange(watcher) =>

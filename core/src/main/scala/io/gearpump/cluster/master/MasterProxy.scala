@@ -95,7 +95,9 @@ class MasterProxy(masters: Iterable[ActorPath], timeout: FiniteDuration)
   def scheduler: Scheduler = context.system.scheduler
   import scala.concurrent.duration._
   private def repeatActionUtil(timeout: FiniteDuration)(action: => Unit): Cancellable = {
-    val send = scheduler.schedule(0.seconds, 2.seconds)(action)
+    val send = scheduler.scheduleAtFixedRate(0.seconds, 2.seconds)(new Runnable {
+      override def run(): Unit = action
+    })
     val suicide = scheduler.scheduleOnce(timeout) {
       send.cancel()
       self ! PoisonPill

@@ -79,7 +79,7 @@ object ArgumentsParser {
     @annotation.tailrec
     def doParse(argument: List[String]): Unit = {
       argument match {
-        case Nil => Unit // true if everything processed successfully
+        case Nil => () // true if everything processed successfully
 
         case key :: value :: rest if key.startsWith("-") && !value.startsWith("-") =>
           val fixedKey = key.substring(1)

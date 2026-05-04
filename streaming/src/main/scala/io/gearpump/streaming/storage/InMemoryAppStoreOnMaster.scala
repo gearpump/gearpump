@@ -23,7 +23,7 @@ import scala.concurrent.Future
  * In memory application storage located on master nodes
  */
 class InMemoryAppStoreOnMaster(appId: Int, master: ActorRef) extends AppDataStore {
-  implicit val timeout = Constants.FUTURE_TIMEOUT
+  implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
   import scala.concurrent.ExecutionContext.Implicits.global
 
   override def put(key: String, value: Any): Future[Any] = {

@@ -105,14 +105,14 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   override val supervisorStrategy =
     OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1.minute) {
       case _: MsgLostException =>
-        val taskId = getTaskId(sender)
-        val cause = s"We got MessageLossException from task ${getTaskId(sender)}, " +
+        val taskId = getTaskId(sender())
+        val cause = s"We got MessageLossException from task ${getTaskId(sender())}, " +
           s"replaying application..."
         LOG.error(cause)
         taskId.foreach(appMaster ! MessageLoss(executorId, _, cause))
         Resume
       case ex: Throwable =>
-        val taskId = getTaskId(sender)
+        val taskId = getTaskId(sender())
         val errorMsg = s"We got ${ex.getClass.getName} from $taskId, we will treat it as" +
           s" MessageLoss, so that the system will replay all lost message"
         LOG.error(errorMsg, ex)
@@ -152,7 +152,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           context.watch(newAddedTask._2)
         }
         tasks ++= newAdded
-        sender ! TasksLaunched
+        sender() ! TasksLaunched
         context.become(dynamicDagPhase1(version, launched ++ taskIds, changed, registered))
       }
       case change@ChangeTasks(taskIds, version, life, subscribers) =>
@@ -168,7 +168,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           }
           ChangeTask(taskId, dagVersion, life, subscribers)
         }
-        sender ! TasksChanged(taskIds)
+        sender() ! TasksChanged(taskIds)
         context.become(dynamicDagPhase1(dagVersion, launched, changed ++ newChangedTasks,
           registered))
 
@@ -186,10 +186,10 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
             taskIdList.map(taskId => (TaskId.toLong(taskId), host))
           }
 
-          val replyTo = sender
+          val replyTo = sender()
           express.startClients(taskLocations.locations.keySet).foreach { _ =>
-            express.remoteAddressMap.send(result)
-            express.remoteAddressMap.future().foreach { _ =>
+            express.replaceRemoteAddresses(result)
+            express.remoteAddressesFuture().foreach { _ =>
               LOG.info(s"sending TaskLocationsReceived back to appmaster")
               replyTo ! TaskLocationsReceived(version, executorId)
             }
@@ -205,7 +205,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           val errorMsg = "We have not received TaskRegistered for following tasks: " +
             missedTasks.mkString(", ")
           LOG.error(errorMsg)
-          sender ! TaskLocationsRejected(dagVersion, executorId, errorMsg, null)
+          sender() ! TaskLocationsRejected(dagVersion, executorId, errorMsg, null)
           // Stays with current status...
         }
 
@@ -242,7 +242,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         changed.foreach(changeTask => tasks.get(changeTask.taskId).foreach(_ ! changeTask))
 
         taskArgumentStore.removeNewerVersion(dagVersion)
-        taskArgumentStore.removeObsoleteVersion
+        taskArgumentStore.removeObsoleteVersion()
         context.become(applicationReady(dagVersion))
     }
   }
@@ -341,7 +341,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
       transitionStart = System.currentTimeMillis()
       LOG.info(s"Executor received restart tasks")
       val tasksToRestart = tasks.keys.count(taskArgumentStore.get(dagVersion, _).nonEmpty)
-      express.remoteAddressMap.send(Map.empty[Long, HostPort])
+      express.replaceRemoteAddresses(Map.empty[Long, HostPort])
       context.become(restartingTasks(dagVersion, remain = tasksToRestart,
         needRestart = List.empty[TaskId]))
 
@@ -354,8 +354,8 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     case _: TaskChanged => // Skip
     case _: GetExecutorSummary =>
       val logFile = LogUtil.applicationLogDir(systemConfig)
-      val processorTasks = tasks.keySet.groupBy(_.processorId).mapValues(_.toList).view.force
-      sender ! ExecutorSummary(
+      val processorTasks = tasks.keySet.groupBy(_.processorId).view.mapValues(_.toList).toMap
+      sender() ! ExecutorSummary(
         executorId,
         worker.workerId,
         address,
@@ -366,7 +366,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         jvmName = ManagementFactory.getRuntimeMXBean().getName())
 
     case _: QueryExecutorConfig =>
-      sender ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
+      sender() ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
     case HealthCheck =>
       context.system.scheduler.scheduleOnce(3.second)(HealthCheck)
       if (state != State.ACTIVE && (transitionEnd - transitionStart) > transitWarningThreshold) {
@@ -378,7 +378,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
   private def getSerializerPool(): SerializationFramework = {
     val system = context.system.asInstanceOf[ExtendedActorSystem]
     val clazz = Class.forName(systemConfig.getString(Constants.GEARPUMP_SERIALIZER_POOL))
-    val pool = clazz.newInstance().asInstanceOf[SerializationFramework]
+    val pool = clazz.getDeclaredConstructor().newInstance().asInstanceOf[SerializationFramework]
     pool.init(system, userConf)
     pool.asInstanceOf[SerializationFramework]
   }

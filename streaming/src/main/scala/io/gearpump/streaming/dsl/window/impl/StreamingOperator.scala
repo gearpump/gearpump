@@ -41,7 +41,7 @@ case class TimestampedValue[T](value: T, timestamp: Instant) {
 /**
  * Outputs triggered by [[StreamingOperator]]
  */
-case class TriggeredOutputs[T](outputs: TraversableOnce[TimestampedValue[T]],
+case class TriggeredOutputs[T](outputs: IterableOnce[TimestampedValue[T]],
     watermark: Instant)
 
 
@@ -52,7 +52,7 @@ trait StreamingOperator[IN, OUT] extends java.io.Serializable {
   def foreach(tv: TimestampedValue[IN]): Unit
 
   def flatMap(
-      tv: TimestampedValue[IN]): TraversableOnce[TimestampedValue[OUT]] = {
+      tv: TimestampedValue[IN]): IterableOnce[TimestampedValue[OUT]] = {
     foreach(tv)
     None
   }
@@ -76,17 +76,17 @@ case class AndThenOperator[IN, MIDDLE, OUT](left: StreamingOperator[IN, MIDDLE],
 
   override def foreach(
       tv: TimestampedValue[IN]): Unit = {
-    left.flatMap(tv).foreach(right.flatMap)
+    left.flatMap(tv).iterator.foreach(right.flatMap)
   }
 
   override def flatMap(
-      tv: TimestampedValue[IN]): TraversableOnce[TimestampedValue[OUT]] = {
-    left.flatMap(tv).flatMap(right.flatMap)
+      tv: TimestampedValue[IN]): IterableOnce[TimestampedValue[OUT]] = {
+    left.flatMap(tv).iterator.flatMap(right.flatMap)
   }
 
   override def trigger(time: Instant): TriggeredOutputs[OUT] = {
     val lOutputs = left.trigger(time)
-    lOutputs.outputs.foreach(right.foreach)
+    lOutputs.outputs.iterator.foreach(right.foreach)
     right.trigger(lOutputs.watermark)
   }
 
@@ -112,8 +112,9 @@ class FlatMapOperator[IN, OUT](runner: FunctionRunner[IN, OUT])
   }
 
   override def flatMap(
-      tv: TimestampedValue[IN]): TraversableOnce[TimestampedValue[OUT]] = {
+      tv: TimestampedValue[IN]): IterableOnce[TimestampedValue[OUT]] = {
     runner.process(tv.value)
+      .iterator
       .map(TimestampedValue(_, tv.timestamp))
   }
 
@@ -196,12 +197,12 @@ class WindowOperator[IN, OUT](
           }
           inputs.forEach(new Procedure[TimestampedValue[IN]] {
             override def value(tv: TimestampedValue[IN]): Unit = {
-              runner.process(tv.value).foreach {
+              runner.process(tv.value).iterator.foreach {
                 out: OUT => outputs += TimestampedValue(out, tv.timestamp)
               }
             }
           })
-          runner.finish().foreach {
+          runner.finish().iterator.foreach {
             out: OUT =>
               outputs += TimestampedValue(out, firstWin.endTime.minusMillis(1))
           }

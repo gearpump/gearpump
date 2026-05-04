@@ -24,8 +24,8 @@ class JarStoreServer(jarStoreRootPath: String) extends Actor with Stash {
   private val jarStore = JarStore.get(jarStoreRootPath)
   jarStore.init(context.system.settings.config)
   private val server = new FileServer(context.system, host, 0, jarStore)
-  implicit val timeout = Constants.FUTURE_TIMEOUT
-  implicit val executionContext = context.dispatcher
+  implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
+  implicit val executionContext: scala.concurrent.ExecutionContextExecutor = context.dispatcher
 
   server.start pipeTo self
 
@@ -39,7 +39,7 @@ class JarStoreServer(jarStoreRootPath: String) extends Actor with Stash {
 
   def listen(port: Int): Receive = {
     case GetJarStoreServer =>
-      sender ! JarStoreServerAddress(s"http://$host:$port/")
+      sender() ! JarStoreServerAddress(s"http://$host:$port/")
   }
 
   override def postStop(): Unit = {

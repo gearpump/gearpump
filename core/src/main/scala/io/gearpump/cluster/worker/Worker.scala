@@ -37,7 +37,6 @@ import io.gearpump.util.Constants._
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import java.io.File
 import java.lang.management.ManagementFactory
-import java.net.URL
 import java.util.concurrent.{Executors, TimeUnit}
 import org.slf4j.Logger
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -86,7 +85,7 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
     case query: QueryHistoryMetrics =>
       if (historyMetricsService.isEmpty) {
         // Returns empty metrics so that we don't hang the UI
-        sender ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
+        sender() ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
       } else {
         historyMetricsService.get forward query
       }
@@ -153,12 +152,12 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
         executorToStop.get.forward(shutdown)
       } else {
         LOG.error(s"Cannot find executor $actorName, ignore this message")
-        sender ! ShutdownExecutorFailed(s"Can not find executor $executorId for app $appId")
+        sender() ! ShutdownExecutorFailed(s"Can not find executor $executorId for app $appId")
       }
     case launch: LaunchExecutor =>
       LOG.info(s"$launch")
       if (resource < launch.resource) {
-        sender ! ExecutorLaunchRejected("There is no free resource on this machine")
+        sender() ! ExecutorLaunchRejected("There is no free resource on this machine")
       } else {
         val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
 
@@ -184,7 +183,7 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
         val aliveFor = System.currentTimeMillis() - createdTime
         val logDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
         val userDir = System.getProperty("user.dir")
-        sender ! WorkerData(WorkerSummary(
+        sender() ! WorkerData(WorkerSummary(
           id, "active",
           address,
           aliveFor,
@@ -231,9 +230,9 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
   def clientMessageHandler: Receive = {
     case QueryWorkerConfig(workerId) =>
       if (this.id == workerId) {
-        sender ! WorkerConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
+        sender() ! WorkerConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
       } else {
-        sender ! WorkerConfig(ConfigFactory.empty)
+        sender() ! WorkerConfig(ConfigFactory.empty)
       }
   }
 
@@ -293,7 +292,7 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
   }
 
   private def registerTimeoutTicker(seconds: Int): Cancellable = {
-    repeatActionUtil(seconds, () => Unit, () => {
+    repeatActionUtil(seconds, () => (), () => {
       LOG.error(s"Failed to register new worker to Master after waiting for $seconds seconds, " +
         s"abort and kill the worker...")
       self ! PoisonPill
@@ -302,8 +301,10 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
 
   private def repeatActionUtil(seconds: Int, action: () => Unit, onTimeout: () => Unit)
     : Cancellable = {
-    val cancelTimeout = context.system.scheduler.schedule(Duration.Zero,
-      Duration(2, TimeUnit.SECONDS))(action())
+    val cancelTimeout = context.system.scheduler.scheduleAtFixedRate(Duration.Zero,
+      Duration(2, TimeUnit.SECONDS))(new Runnable {
+      override def run(): Unit = action()
+    })
     val cancelSuicide = context.system.scheduler.scheduleOnce(seconds.seconds)(onTimeout())
     new Cancellable {
       def cancel(): Boolean = {
@@ -374,7 +375,7 @@ private[cluster] object Worker {
       ClusterConfig.filterOutDefaultConfig(updatedConf)
     }
 
-    implicit val executorService = ioPool
+    implicit val executorService: ExecutionContext = ioPool
 
     private val executorHandler = {
       val ctx = launch.executorJvmConfig
@@ -402,15 +403,13 @@ private[cluster] object Worker {
         val jarPath = ctx.jar.map { appJar =>
           val tempFile = File.createTempFile(appJar.name, ".jar")
           jarStoreClient.copyToLocalFile(tempFile, appJar.filePath)
-          val file = new URL("file:" + tempFile)
-          file.getFile
+          tempFile.getAbsolutePath
         }
 
         val configFile = {
           val configFile = File.createTempFile("gearpump", ".conf")
           ClusterConfig.saveConfig(executorConfig, configFile)
-          val file = new URL("file:" + configFile)
-          file.getFile
+          configFile.getAbsolutePath
         }
 
         val classPath = filterOutDaemonLib(Util.getCurrentClassPath) ++
@@ -522,7 +521,7 @@ private[cluster] object Worker {
     override def receive: Receive = {
       case ShutdownExecutor(appId, executorId, _) =>
         executorHandler.destroy()
-        sender ! ShutdownExecutorSucceed(appId, executorId)
+        sender() ! ShutdownExecutorSucceed(appId, executorId)
         context.stop(self)
       case ExecutorResult(executorResult) =>
         executorResult match {

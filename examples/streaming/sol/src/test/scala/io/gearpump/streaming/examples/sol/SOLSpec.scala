@@ -25,11 +25,11 @@ import scala.util.Success
 
 class SOLSpec
   extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
-  override def beforeAll {
+  override def beforeAll(): Unit = {
     startActorSystem()
   }
 
-  override def afterAll {
+  override def afterAll(): Unit = {
     shutdownActorSystem()
   }
 

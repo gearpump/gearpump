@@ -31,7 +31,7 @@ import io.gearpump.util.ActorSystemBooter._
 import io.gearpump.util.Constants._
 import java.util.concurrent.{TimeoutException, TimeUnit}
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
@@ -86,11 +86,11 @@ class AppMasterLauncher(
       context.become(waitForResourceAllocation)
     case RegisterActorSystem(systemPath) =>
       LOG.info(s"Received RegisterActorSystem $systemPath for AppMaster")
-      sender ! ActorSystemRegistered(worker)
+      sender() ! ActorSystemRegistered(worker)
 
       val masterAddress = systemConfig.getStringList(GEARPUMP_CLUSTER_MASTERS)
         .asScala.map(HostPort(_)).map(ActorUtil.getMasterActorPath)
-      sender ! CreateActor(AppMasterRuntimeEnvironment.props(masterAddress, app, appContext),
+      sender() ! CreateActor(AppMasterRuntimeEnvironment.props(masterAddress, app, appContext),
         s"appdaemon$appId")
 
       import context.dispatcher
@@ -102,7 +102,7 @@ class AppMasterLauncher(
   def waitForAppMasterToStart(worker: ActorRef, cancel: Cancellable): Receive = {
     case ActorCreated(appMaster, _) =>
       cancel.cancel()
-      sender ! BindLifeCycle(appMaster)
+      sender() ! BindLifeCycle(appMaster)
       LOG.info(s"AppMaster is created, mission complete...")
       replyToClient(SubmitApplicationResult(Success(appId)))
       context.stop(self)

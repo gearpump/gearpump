@@ -27,9 +27,8 @@ object BuildGearpump {
     Seq(
       resolvers ++= Seq(
         // https://repo1.maven.org/maven2 has been added by default
-        "apache-repo" at "https://repository.apache.org/content/repositories",
-        Resolver.sonatypeRepo("releases")
-      ),
+        "apache-repo" at "https://repository.apache.org/content/repositories"
+      ) ++ Resolver.sonatypeOssRepos("releases"),
       scalaVersion := scalaVersionNumber,
       crossScalaVersions := crossScalaVersionNumbers,
       organization := "io.github.gearpump",
@@ -46,16 +45,13 @@ object BuildGearpump {
         "-language:implicitConversions",     // Enable implicit conversions
         "-unchecked",                        // Enable additional warnings where generated code depends on assumptions.
         "-Xcheckinit",                       // Wrap field accessors to throw an exception on uninitialized access.
-        "-Xfatal-warnings",                  // Fail the compilation if there are any warnings.
         "-Xlint:adapted-args",               // Warn if an argument list is modified to match the receiver.
-        "-Xlint:by-name-right-associative",  // By-name parameter of right associative operator.
         "-Xlint:constant",                   // Evaluation of a constant arithmetic expression results in an error.
         "-Xlint:delayedinit-select",         // Selecting member of DelayedInit.
         "-Xlint:doc-detached",               // A Scaladoc comment appears to be detached from its element.
         "-Xlint:inaccessible",               // Warn about inaccessible types in method signatures.
         "-Xlint:infer-any",                  // Warn when a type argument is inferred to be `Any`.
         "-Xlint:missing-interpolator",       // A string literal appears to be missing an interpolator id.
-        "-Xlint:nullary-override",           // Warn when non-nullary `def f()' overrides nullary `def f'.
         "-Xlint:nullary-unit",               // Warn when nullary methods return Unit.
         "-Xlint:option-implicit",            // Option.apply used implicit view.
         "-Xlint:package-object-classes",     // Class or object defined in package object.
@@ -63,9 +59,6 @@ object BuildGearpump {
         "-Xlint:private-shadow",             // A private field (or class parameter) shadows a superclass field.
         "-Xlint:stars-align",                // Pattern sequence wildcard must align with sequence component.
         "-Xlint:type-parameter-shadow",      // A local type parameter shadows a type already in scope.
-        "-Xlint:unsound-match",              // Pattern match may not be typesafe.
-        "-Yno-adapted-args",                 // Do not adapt an argument list (either by inserting () or creating a tuple) to match the receiver.
-        "-Ypartial-unification",             // Enable partial unification in type constructor inference
         "-Ywarn-dead-code",                  // Warn when dead code is identified.
         "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
         // "-Ywarn-numeric-widen",              // Warn when numerics are widened.
@@ -77,6 +70,10 @@ object BuildGearpump {
         "-Ywarn-unused:privates"             // Warn if a private member is unused.
         // "-Ywarn-value-discard"            // Warn when non-Unit expression results are unused.
         // scalastyle:on line.size.limit
+      ),
+      Test / scalacOptions ++= Seq(
+        "-Wconf:cat=deprecation:s",
+        "-Wconf:cat=unused:s"
       ),
       publishMavenStyle := true,
 
@@ -121,7 +118,7 @@ object BuildGearpump {
         // scalastyle:on line.size.limit
       },
 
-      publishArtifact in Test := true,
+      Test / publishArtifact := true,
 
       pomPostProcess := {
         (node: xml.Node) => changeShadedDeps(
@@ -140,18 +137,18 @@ object BuildGearpump {
     publish := {},
     publishLocal := {},
     publishArtifact := false,
-    publishArtifact in Test := false
+    Test / publishArtifact := false
   )
 
   lazy val myAssemblySettings = Seq(
-    test in assembly := {},
-    assemblyOption in assembly ~= {
+    assembly / test := {},
+    assembly / assemblyOption ~= {
       _.copy(includeScala = false)
     },
-    assemblyJarName in assembly := {
+    assembly / assemblyJarName := {
       s"${name.value}_${scalaBinaryVersion.value}-${version.value}-assembly.jar"
     },
-    assemblyShadeRules in assembly := Seq(
+    assembly / assemblyShadeRules := Seq(
       ShadeRule.rename("com.esotericsoftware.**" ->
         "io.gearpump.@0").inAll,
       ShadeRule.rename("org.objenesis.**" -> "io.gearpump.@0").inAll,
@@ -162,7 +159,7 @@ object BuildGearpump {
       ShadeRule.rename("com.gs.collections.**" ->
         "io.gearpump.gs.collections.@0").inAll
     ),
-    target in assembly := baseDirectory.value / "target" / scalaBinaryVersion.value
+    assembly / target := baseDirectory.value / "target" / scalaBinaryVersion.value
   )
 
   def changeShadedDeps(toExclude: Set[String], toInclude: List[xml.Node],

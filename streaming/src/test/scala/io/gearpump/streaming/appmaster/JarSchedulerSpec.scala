@@ -52,7 +52,7 @@ class JarSchedulerSpec extends WordSpec with Matchers {
       val result = Await.result(manager.getResourceRequestDetails(), 15.seconds)
       assert(result.length == 1)
       assert(result.head.jar == mockJar1)
-      assert(result.head.requests.deep == requests.deep)
+      assert(result.head.requests.toSeq == requests.toSeq)
 
       val tasks = Await.result(manager.scheduleTask(mockJar1, WorkerId(0, 0L), 0,
         Resource(2)), 15.seconds)
@@ -68,7 +68,7 @@ class JarSchedulerSpec extends WordSpec with Matchers {
         map(_.sortBy(_.jar.name)), 15.seconds)
       assert(requestDetails.length == 2)
       assert(requestDetails.last.jar == mockJar2)
-      assert(requestDetails.last.requests.deep == requests.deep)
+      assert(requestDetails.last.requests.toSeq == requests.toSeq)
 
       system.terminate()
       Await.result(system.whenTerminated, Duration.Inf)

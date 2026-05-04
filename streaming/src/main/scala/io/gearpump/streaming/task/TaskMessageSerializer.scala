@@ -16,7 +16,7 @@ package io.gearpump.streaming.task
 import java.io.{DataInput, DataOutput}
 
 trait TaskMessageSerializer[T] {
-  def write(dataOutput: DataOutput, obj: T)
+  def write(dataOutput: DataOutput, obj: T): Unit
 
   def read(dataInput: DataInput): T
 

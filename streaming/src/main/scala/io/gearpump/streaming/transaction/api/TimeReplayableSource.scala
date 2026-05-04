@@ -27,6 +27,5 @@ trait TimeReplayableSource extends DataSource {
    * Sets store factory which creates a checkpoint store
    * at runtime to checkpoint (timestamp, source_offsets)
    */
-  def setCheckpointStore(factory: CheckpointStoreFactory)
+  def setCheckpointStore(factory: CheckpointStoreFactory): Unit
 }
-
