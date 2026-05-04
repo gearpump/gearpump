@@ -25,13 +25,13 @@ import java.io.File
 import java.net.{InetSocketAddress, Socket, SocketTimeoutException, UnknownHostException, URLClassLoader}
 import java.util.Properties
 import java.util.concurrent.{Executors, TimeUnit}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.Duration
 
 trait MasterHarness {
 
-  implicit val pool = MasterHarness.cachedPool
+  implicit val pool: ExecutionContext = MasterHarness.cachedPool
 
   private var system: ActorSystem = null
   private var systemAddress: Address = null

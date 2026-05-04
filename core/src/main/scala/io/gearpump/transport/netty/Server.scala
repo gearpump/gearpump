@@ -21,7 +21,7 @@ import java.util
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.IntMap
 import scala.concurrent.Future
 
@@ -86,18 +86,18 @@ object Server {
   class ServerHandler(server: ActorRef) extends SimpleChannelUpstreamHandler {
     private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = server.path.name)
 
-    override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent) {
+    override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {
       server ! AddChannel(e.getChannel)
     }
 
-    override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent) {
+    override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
       val msgs: util.List[TaskMessage] = e.getMessage.asInstanceOf[util.List[TaskMessage]]
       if (msgs != null) {
         server ! MsgBatch(msgs)
       }
     }
 
-    override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent) {
+    override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = {
       LOG.error("server errors in handling the request", e.getCause)
       server ! CloseChannel(e.getChannel)
     }

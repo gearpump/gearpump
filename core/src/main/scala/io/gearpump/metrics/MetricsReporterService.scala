@@ -33,11 +33,11 @@ import scala.concurrent.duration._
 class MetricsReporterService(metrics: Metrics) extends Actor {
 
   private val LOG = LogUtil.getLogger(getClass)
-  private implicit val system = context.system
+  private implicit val system: org.apache.pekko.actor.ActorSystem = context.system
 
   private val reportInterval = system.settings.config.getInt(GEARPUMP_METRIC_REPORT_INTERVAL)
   private val reporter = getReporter
-  implicit val dispatcher = context.dispatcher
+  implicit val dispatcher: scala.concurrent.ExecutionContextExecutor = context.dispatcher
 
   def receive: Receive = {
     // The subscriber is demanding more messages.

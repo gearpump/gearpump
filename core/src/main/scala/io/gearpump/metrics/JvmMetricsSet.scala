@@ -17,7 +17,7 @@ package io.gearpump.metrics
 import com.codahale.metrics.{Metric, MetricSet}
 import com.codahale.metrics.jvm.{MemoryUsageGaugeSet, ThreadStatesGaugeSet}
 import java.util
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class JvmMetricsSet(name: String) extends MetricSet {
 

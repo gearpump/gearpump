@@ -31,7 +31,7 @@ import java.time.Instant
 import java.util
 import java.util.concurrent.TimeUnit
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
 
 
@@ -283,7 +283,7 @@ class TaskActor(
     stashQueue.clear()
 
     taskContextData.appMaster ! GetUpstreamMinClock(taskId)
-    context.become(handleMessages(sender))
+    context.become(handleMessages(sender()))
   }
 
   private def receiveMessage(msg: Message, sender: ActorRef): Unit = {

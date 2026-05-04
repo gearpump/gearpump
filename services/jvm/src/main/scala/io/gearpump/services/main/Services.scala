@@ -14,10 +14,9 @@
 
 package io.gearpump.services.main
 
+import java.util.Base64
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.Http
-import org.apache.pekko.http.scaladsl.server.Route
-import org.apache.pekko.stream.Materializer
 import com.typesafe.config.ConfigValueFactory
 import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, Gear}
@@ -27,10 +26,9 @@ import io.gearpump.util.{PekkoApp, Constants, LogUtil, Util}
 import io.gearpump.util.LogUtil.ProcessType
 import java.util.Random
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.Future
-import sun.misc.BASE64Encoder
 
 /** Command line to start UI server */
 object Services extends PekkoApp with ArgumentsParser {
@@ -86,8 +84,7 @@ object Services extends PekkoApp with ArgumentsParser {
     val masterCluster = pekkoConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
       .flatMap(Util.parseHostList)
 
-    implicit val system = ActorSystem("services", pekkoConf)
-    implicit val executionContext = system.dispatcher
+    implicit val system: ActorSystem = ActorSystem("services", pekkoConf)
 
     import scala.concurrent.duration._
     val master = system.actorOf(MasterProxy.props(masterCluster, 1.day),
@@ -96,7 +93,6 @@ object Services extends PekkoApp with ArgumentsParser {
 
     val services = new RestServices(master, system)
 
-    implicit val mat: Materializer = Materializer(system)
     val bindFuture: Future[Http.ServerBinding] = Http().newServerAt(host, port).bind(services.route)
     Await.result(bindFuture, 15.seconds)
 
@@ -120,8 +116,7 @@ object Services extends PekkoApp with ArgumentsParser {
     val length = 64 // Required
     val bytes = new Array[Byte](length)
     random.nextBytes(bytes)
-    val encoder = new BASE64Encoder()
-    encoder.encode(bytes)
+    Base64.getEncoder.encodeToString(bytes)
   }
 
   private def parseHostPort(config: Config): (String, Int) = {

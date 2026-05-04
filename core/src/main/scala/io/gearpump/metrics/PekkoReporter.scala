@@ -19,7 +19,7 @@ import com.codahale.metrics.{Gauge => CodaGauge, MetricRegistry}
 import io.gearpump.metrics.Metrics.{Counter => CounterData, Gauge => GaugeData, Histogram => HistogramData, Meter => MeterData}
 import io.gearpump.metrics.MetricsReporterService.ReportTo
 import io.gearpump.util.LogUtil
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * A reporter class for logging metrics values to a remote actor periodically

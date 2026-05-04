@@ -15,37 +15,37 @@
 package io.gearpump.metrics
 
 import org.apache.pekko.actor._
-import com.codahale.metrics._
+import com.codahale.metrics.{MetricRegistry, MetricSet}
 import io.gearpump
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /** Metric objects registry */
 class Metrics(sampleRate: Int) extends Extension {
 
   val registry = new MetricRegistry()
 
-  def meter(name: String): Meter = {
-    new Meter(name, registry.meter(name), sampleRate)
+  def meter(name: String): io.gearpump.metrics.Meter = {
+    new io.gearpump.metrics.Meter(name, registry.meter(name), sampleRate)
   }
 
-  def histogram(name: String): Histogram = {
-    new Histogram(name, registry.histogram(name), sampleRate)
+  def histogram(name: String): io.gearpump.metrics.Histogram = {
+    new io.gearpump.metrics.Histogram(name, registry.histogram(name), sampleRate)
   }
 
-  def histogram(name: String, sampleRate: Int): Histogram = {
-    new Histogram(name, registry.histogram(name), sampleRate)
+  def histogram(name: String, sampleRate: Int): io.gearpump.metrics.Histogram = {
+    new io.gearpump.metrics.Histogram(name, registry.histogram(name), sampleRate)
   }
 
-  def counter(name: String): Counter = {
-    new Counter(name, registry.counter(name), sampleRate)
+  def counter(name: String): io.gearpump.metrics.Counter = {
+    new io.gearpump.metrics.Counter(name, registry.counter(name), sampleRate)
   }
 
   def register(set: MetricSet): Unit = {
     val names = registry.getNames
-    val metrics = set.getMetrics.asScala.filterKeys { key => !names.contains(key) }
+    val metrics = set.getMetrics.asScala.filter { case (key, _) => !names.contains(key) }
     metrics.foreach { kv =>
       registry.register(kv._1, kv._2)
     }
@@ -128,23 +128,23 @@ object Metrics extends ExtensionId[Metrics] with ExtensionIdProvider {
   }
 
   class DummyMetrics extends Metrics(1) {
-    override def register(set: MetricSet): Unit = Unit
+    override def register(set: MetricSet): Unit = ()
 
     private val meter = new gearpump.metrics.Meter("", null) {
-      override def mark(): Unit = Unit
-      override def mark(n: Long): Unit = Unit
+      override def mark(): Unit = ()
+      override def mark(n: Long): Unit = ()
       override def getOneMinuteRate(): Double = 0
     }
 
     private val histogram = new gearpump.metrics.Histogram("", null) {
-      override def update(value: Long): Unit = Unit
+      override def update(value: Long): Unit = ()
       override def getMean(): Double = 0
       override def getStdDev(): Double = 0
     }
 
     private val counter = new gearpump.metrics.Counter("", null) {
-      override def inc(): Unit = Unit
-      override def inc(n: Long): Unit = Unit
+      override def inc(): Unit = ()
+      override def inc(n: Long): Unit = ()
     }
 
     override def meter(name: String): gearpump.metrics.Meter = meter

@@ -32,7 +32,7 @@ class RestServices(master: ActorRef, system: ActorSystem)
 
   private val LOG = LogUtil.getLogger(getClass)
 
-  implicit val timeout = Constants.FUTURE_TIMEOUT
+  implicit val timeout: Timeout = Constants.FUTURE_TIMEOUT
 
   private val config = system.settings.config
 

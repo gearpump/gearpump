@@ -115,7 +115,7 @@ object FileDirective {
       entity(as[Multipart.FormData]) { (formdata: Multipart.FormData) =>
         val fileNameMap = formdata.parts.mapAsync(1) { p =>
           if (p.filename.isDefined) {
-            val path = Instant.now().toEpochMilli + p.filename.get
+            val path = s"${Instant.now().toEpochMilli}${p.filename.get}"
             val sink = StreamConverters.fromOutputStream(() => jarStore.createFile(path),
               autoFlush = true)
             p.entity.dataBytes.runWith(sink).map(written =>

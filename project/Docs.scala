@@ -20,23 +20,20 @@ import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
 import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 
 object Docs {
-  lazy val javadocSettings = Seq(
-    scalacOptions += s"-P:genjavadoc:out=${target.value}/java",
-    scalacOptions -= "-Xfatal-warnings"
-  )
+  lazy val javadocSettings = Seq.empty
 
   def gearpumpUnidocSetting(projects: ProjectReference*) = Seq(
-    unidocProjectFilter in(ScalaUnidoc, unidoc) := inProjects(projects: _*),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(projects: _*),
 
-    unidocProjectFilter in(JavaUnidoc, unidoc) := inProjects(projects: _*),
+    JavaUnidoc / unidoc / unidocProjectFilter := inProjects(projects: _*),
 
-    unidocAllSources in(ScalaUnidoc, unidoc) := {
-     ignoreUndocumentedPackages((unidocAllSources in(ScalaUnidoc, unidoc)).value)
+    ScalaUnidoc / unidoc / unidocAllSources := {
+      ignoreUndocumentedPackages((ScalaUnidoc / unidoc / unidocAllSources).value)
     },
 
     // Skip class names containing $ and some internal packages in Javadocs
-    unidocAllSources in(JavaUnidoc, unidoc) := {
-     ignoreUndocumentedPackages((unidocAllSources in(JavaUnidoc, unidoc)).value)
+    JavaUnidoc / unidoc / unidocAllSources := {
+      ignoreUndocumentedPackages((JavaUnidoc / unidoc / unidocAllSources).value)
     },
 
     libraryDependencies ++= compilerDependencies

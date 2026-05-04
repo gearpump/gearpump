@@ -131,7 +131,7 @@ object Util {
    *
    * filterOutOrigin(config, "reference.conf")
    */
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
   def filterOutOrigin(config: Config, originFile: String): Config = {
     config.entrySet().asScala.foldLeft(ConfigFactory.empty()) { (config, entry) =>
       val key = entry.getKey

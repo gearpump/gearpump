@@ -38,8 +38,8 @@ class ExecutorSystemScheduler(appId: Int, masterProxy: ActorRef,
     executorSystemLauncher: (Int, Session) => Props) extends Actor {
 
   private val LOG = LogUtil.getLogger(getClass, app = appId)
-  implicit val timeout = Constants.FUTURE_TIMEOUT
-  implicit val actorSystem = context.system
+  implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
+  implicit val actorSystem: ActorSystem = context.system
   var currentSystemId = 0
 
   var resourceAgents = Map.empty[Session, ActorRef]
@@ -64,7 +64,7 @@ class ExecutorSystemScheduler(appId: Int, masterProxy: ActorRef,
       }
 
     case StopExecutorSystem(executorSystem) =>
-      executorSystem.shutdown
+      executorSystem.shutdown()
   }
 
   def resourceAllocationMessageHandler: Receive = {
@@ -95,7 +95,7 @@ class ExecutorSystemScheduler(appId: Int, masterProxy: ActorRef,
       } else {
         LOG.error("We get a ExecutorSystem back, but resource requestor is no longer valid. " +
           "Will shutdown the allocated system")
-        system.shutdown
+        system.shutdown()
       }
     case LaunchExecutorSystemTimeout(session) =>
       if (isSessionAlive(session)) {
@@ -159,10 +159,10 @@ object ExecutorSystemScheduler {
     def receive: Receive = {
       case request: RequestResource =>
         unallocatedResource += request.request.resource.slots
-        Option(timeOutClock).map(_.cancel)
+        Option(timeOutClock).foreach(_.cancel())
         timeOutClock = context.system.scheduler.scheduleOnce(
           timeout.seconds, self, ResourceAllocationTimeOut(session))
-        resourceRequestor = sender
+        resourceRequestor = sender()
         master ! request
       case ResourceAllocated(allocations) =>
         unallocatedResource -= allocations.map(_.resource.slots).sum

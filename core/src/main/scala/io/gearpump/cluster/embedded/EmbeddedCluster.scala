@@ -21,7 +21,7 @@ import io.gearpump.cluster.master.Master
 import io.gearpump.cluster.worker.{Worker => WorkerActor}
 import io.gearpump.util.{LogUtil, Util}
 import io.gearpump.util.Constants.{GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS, GEARPUMP_CLUSTER_MASTERS, GEARPUMP_METRIC_ENABLED, MASTER}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * Create a in-process cluster with single worker
@@ -33,7 +33,7 @@ class EmbeddedCluster(inputConfig: Config) {
 
   val config: Config = getConfig(inputConfig, port)
   val system: ActorSystem = ActorSystem(MASTER, config)
-  val master: ActorRef = system.actorOf(Props[Master], MASTER)
+  val master: ActorRef = system.actorOf(Props[Master](), MASTER)
 
   0.until(workerCount).foreach { id =>
     system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)

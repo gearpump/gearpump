@@ -133,7 +133,7 @@ class PriorityScheduler extends Scheduler {
         // Can not safisfy the user's requirements
         totalAvailable = Resource.empty
       } else {
-        flattenResource.take(toRequest.slots).groupBy(actor => actor).mapValues(_.length).
+        flattenResource.take(toRequest.slots).groupBy(actor => actor).view.mapValues(_.length).
           toArray.foreach { params =>
           val ((workerId, worker), slots) = params
           resources.update(workerId, (worker, resources.get(workerId).get._2 - Resource(slots)))

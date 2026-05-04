@@ -14,7 +14,6 @@
 
 package io.gearpump.streaming.metrics
 
-import com.github.ghik.silencer.silent
 import io.gearpump.cluster.ClientToMaster.ReadOption
 import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
 import io.gearpump.metrics.Metrics.{Gauge, Histogram, Meter}
@@ -22,7 +21,7 @@ import io.gearpump.streaming.metrics.ProcessorAggregator.{AggregatorFactory, His
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import org.scalatest.{FlatSpec, Matchers}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.Random
 
 class ProcessorAggregatorSpec extends FlatSpec with Matchers {
@@ -151,7 +150,7 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
     }
 
     def check(list: List[HistoryMetricsItem], countMap: Map[String, Int]): Boolean = {
-      val nameCount = list.map(_.value.name).groupBy(key => key).mapValues(_.size).toList.toMap
+      val nameCount = list.map(_.value.name).groupBy(key => key).view.mapValues(_.size).toMap
       nameCount sameElements countMap
     }
 
@@ -202,7 +201,6 @@ class ProcessorAggregatorSpec extends FlatSpec with Matchers {
     )))
   }
 
-  @silent // https://github.com/scala/bug/issues/7707
   private def histogram(
       taskId: TaskId, metricName: String = "latency", timeRange: Long = Long.MaxValue,
       repeat: Int = 1): List[HistoryMetricsItem] = {

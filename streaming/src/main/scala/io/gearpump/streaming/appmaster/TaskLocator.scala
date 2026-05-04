@@ -17,7 +17,7 @@ import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions, ConfigVa
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.streaming.appmaster.TaskLocator.{Localities, Locality, NonLocality, WorkerLocality}
 import io.gearpump.streaming.task.TaskId
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.Try
 
 /**

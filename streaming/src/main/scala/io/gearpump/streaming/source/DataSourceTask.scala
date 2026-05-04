@@ -78,6 +78,7 @@ class DataSourceTask[IN, OUT] private[source](
 
   private def process(msg: Message): Unit = {
     operator.flatMap(new TimestampedValue(msg))
+      .iterator
       .foreach { tv => context.output(tv.toMessage) }
   }
 

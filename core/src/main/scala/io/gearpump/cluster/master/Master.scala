@@ -38,6 +38,7 @@ import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import java.lang.management.ManagementFactory
 import org.apache.commons.lang.exception.ExceptionUtils
 import org.slf4j.Logger
+import scala.annotation.nowarn
 import scala.collection.immutable
 
 /**
@@ -138,7 +139,7 @@ private[cluster] class Master extends Actor with Stash {
 
     case RegisterWorker(id) =>
       context.watch(sender())
-      sender ! WorkerRegistered(id, MasterInfo(self, birth))
+      sender() ! WorkerRegistered(id, MasterInfo(self, birth))
       scheduler forward WorkerRegistered(id, MasterInfo(self, birth))
       workers += (sender() -> id)
       val workerHostname = ActorUtil.getHostname(sender())
@@ -164,7 +165,7 @@ private[cluster] class Master extends Actor with Stash {
     case query: QueryHistoryMetrics =>
       if (historyMetricsService.isEmpty) {
         // Returns empty metrics so that we don't hang the UI
-        sender ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
+        sender() ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
       } else {
         historyMetricsService.get forward query
       }
@@ -180,7 +181,7 @@ private[cluster] class Master extends Actor with Stash {
     case get: GetAppData =>
       appManager forward get
     case GetAllWorkers =>
-      sender ! WorkerList(workers.values.toList)
+      sender() ! WorkerList(workers.values.toList)
     case GetMasterData =>
       val aliveFor = System.currentTimeMillis() - birth
       val logFileDir = LogUtil.daemonLogDir(systemConfig).getAbsolutePath
@@ -200,7 +201,7 @@ private[cluster] class Master extends Actor with Stash {
           historyMetricsConfig = getHistoryMetricsConfig
         )
 
-      sender ! MasterData(masterDescription)
+      sender() ! MasterData(masterDescription)
 
     case invalidAppMaster: InvalidAppMaster =>
       appManager forward invalidAppMaster
@@ -233,8 +234,8 @@ private[cluster] class Master extends Actor with Stash {
       LOG.debug(s"Receive from client, resolving workerId ${resolve.workerId}")
       val worker = workers.find(_._2 == resolve.workerId)
       worker match {
-        case Some(w) => sender ! ResolveWorkerIdResult(Success(w._1))
-        case None => sender ! ResolveWorkerIdResult(Failure(
+        case Some(w) => sender() ! ResolveWorkerIdResult(Success(w._1))
+        case None => sender() ! ResolveWorkerIdResult(Failure(
           new Exception(s"cannot find worker ${resolve.workerId}")))
       }
     case AppMastersDataRequest =>
@@ -247,11 +248,12 @@ private[cluster] class Master extends Actor with Stash {
       LOG.debug("Master received QueryAppMasterConfig")
       appManager forward query
     case QueryMasterConfig =>
-      sender ! MasterConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
+      sender() ! MasterConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
     case register: RegisterAppResultListener =>
       appManager forward register
   }
 
+  @nowarn("cat=deprecation")
   def disassociated: Receive = {
     case disassociated: DisassociatedEvent =>
       LOG.info(s" disassociated ${disassociated.remoteAddress}")
@@ -271,6 +273,7 @@ private[cluster] class Master extends Actor with Stash {
       }
   }
 
+  @nowarn("cat=deprecation")
   override def preStart(): Unit = {
     val path = ActorUtil.getFullPath(context.system, self.path)
     LOG.info(s"master path is $path")

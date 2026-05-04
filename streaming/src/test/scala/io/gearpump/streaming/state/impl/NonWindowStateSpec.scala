@@ -14,7 +14,6 @@
 
 package io.gearpump.streaming.state.impl
 
-import com.github.ghik.silencer.silent
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.streaming.state.api.{Monoid, Serializer}
 import org.mockito.Mockito._
@@ -24,7 +23,6 @@ import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import scala.util.Success
 
-@silent // dead code following this construct
 class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   val longGen = Gen.chooseNum[Long](100L, System.currentTimeMillis())
@@ -38,8 +36,8 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
         val checkpoint = mock[AnyRef]
         val zero = mock[AnyRef]
         when(monoid.zero).thenReturn(zero, zero)
-        when(monoid.plus(zero, zero)).thenReturn(zero, Nil: _*)
-        when(monoid.plus(checkpoint, zero)).thenReturn(checkpoint, Nil: _*)
+        when(monoid.plus(zero, zero)).thenReturn(zero)
+        when(monoid.plus(checkpoint, zero)).thenReturn(checkpoint)
 
         val state = new NonWindowState[AnyRef](monoid, serializer)
         state.left shouldBe zero
@@ -67,7 +65,7 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
         val plus = mock[AnyRef]
 
         when(monoid.zero).thenReturn(zero, zero)
-        when(monoid.plus(zero, zero)).thenReturn(zero, Nil: _*)
+        when(monoid.plus(zero, zero)).thenReturn(zero)
 
         val state = new NonWindowState[AnyRef](monoid, serializer)
         state.left shouldBe zero
@@ -77,9 +75,9 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
         state.left = left
         state.right = right
 
-        when(monoid.zero).thenReturn(zero, Nil: _*)
-        when(monoid.plus(left, right)).thenReturn(plus, Nil: _*)
-        when(monoid.plus(plus, zero)).thenReturn(plus, Nil: _*)
+        when(monoid.zero).thenReturn(zero)
+        when(monoid.plus(left, right)).thenReturn(plus)
+        when(monoid.plus(plus, zero)).thenReturn(plus)
         state.checkpoint()
 
         verify(serializer).serialize(left)
@@ -101,23 +99,23 @@ class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with
         val plus = mock[AnyRef]
 
         when(monoid.zero).thenReturn(zero, zero)
-        when(monoid.plus(zero, zero)).thenReturn(zero, Nil: _*)
+        when(monoid.plus(zero, zero)).thenReturn(zero)
 
         val state = new NonWindowState[AnyRef](monoid, serializer)
         state.left shouldBe zero
         state.right shouldBe zero
         state.get shouldBe Some(zero)
 
-        when(monoid.plus(zero, left)).thenReturn(left, Nil: _*)
-        when(monoid.plus(left, zero)).thenReturn(left, Nil: _*)
+        when(monoid.plus(zero, left)).thenReturn(left)
+        when(monoid.plus(left, zero)).thenReturn(left)
         state.setNextCheckpointTime(checkpointTime)
         state.update(checkpointTime - 1, left)
         state.left shouldBe left
         state.right shouldBe zero
         state.get shouldBe Some(left)
 
-        when(monoid.plus(zero, right)).thenReturn(right, Nil: _*)
-        when(monoid.plus(left, right)).thenReturn(plus, Nil: _*)
+        when(monoid.plus(zero, right)).thenReturn(right)
+        when(monoid.plus(left, right)).thenReturn(plus)
         state.setNextCheckpointTime(checkpointTime)
         state.update(checkpointTime + 1, right)
         state.left shouldBe left

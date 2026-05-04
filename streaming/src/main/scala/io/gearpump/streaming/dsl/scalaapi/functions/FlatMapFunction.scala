@@ -15,7 +15,7 @@ package io.gearpump.streaming.dsl.scalaapi.functions
 
 import io.gearpump.streaming.dsl.api.functions.{FilterFunction, MapFunction, SerializableFunction}
 import io.gearpump.streaming.dsl.javaapi.functions
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object FlatMapFunction {
 
@@ -26,7 +26,7 @@ object FlatMapFunction {
         fn.setup()
       }
 
-      override def flatMap(t: T): TraversableOnce[R] = {
+      override def flatMap(t: T): IterableOnce[R] = {
         fn.flatMap(t).asScala
       }
 
@@ -37,7 +37,7 @@ object FlatMapFunction {
     }
   }
 
-  def apply[T, R](fn: T => TraversableOnce[R]): FlatMapFunction[T, R] = {
+  def apply[T, R](fn: T => IterableOnce[R]): FlatMapFunction[T, R] = {
     fn(_)
   }
 
@@ -48,7 +48,7 @@ object FlatMapFunction {
         fn.setup()
       }
 
-      override def flatMap(t: T): TraversableOnce[R] = {
+      override def flatMap(t: T): IterableOnce[R] = {
         Option(fn.map(t))
       }
 
@@ -65,7 +65,7 @@ object FlatMapFunction {
         fn.setup()
       }
 
-      override def flatMap(t: T): TraversableOnce[T] = {
+      override def flatMap(t: T): IterableOnce[T] = {
         Option(t).filter(fn.filter)
       }
 
@@ -78,13 +78,13 @@ object FlatMapFunction {
 
 /**
  * Transforms one input into zero or more outputs of possibly different types.
- * This Scala version of FlatMapFunction returns a TraversableOnce.
+ * This Scala version of FlatMapFunction returns a IterableOnce.
  *
  * @tparam T Input value type
  * @tparam R Output value type
  */
 abstract class FlatMapFunction[T, R] extends SerializableFunction {
 
-  def flatMap(t: T): TraversableOnce[R]
+  def flatMap(t: T): IterableOnce[R]
 
 }

@@ -29,11 +29,11 @@ object WordCount extends PekkoApp with ArgumentsParser {
     val context: ClientContext = ClientContext(pekkoConf)
     val app = StreamApp("dsl", context)
     val data = "This is a good start, bingo!! bingo!!"
-    app.source(data.lines.toList, 1, "source").
+    app.source(data.linesIterator.toList, 1, "source").
       // word => (word, count)
       flatMap(line => line.split("[\\s]+")).map((_, 1)).
       // (word, count1), (word, count2) => (word, count1 + count2)
-      groupByKey().sum.map(print)
+      groupByKey().sum.map(println)
 
     context.submit(app).waitUntilFinish()
     context.close()

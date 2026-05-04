@@ -14,7 +14,7 @@
 
 package io.gearpump.streaming.task
 
-import com.esotericsoftware.kryo.util.{IntMap, ObjectMap}
+import com.esotericsoftware.kryo.kryo5.util.{IntMap, ObjectMap}
 import io.gearpump.streaming.task.SerializerResolver.Registration
 
 private[task] class SerializerResolver {

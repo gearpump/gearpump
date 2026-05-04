@@ -23,7 +23,7 @@ import java.io.Closeable
 import java.util.concurrent._
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object Context {
   private final val LOG: Logger = LogUtil.getLogger(getClass)
@@ -33,7 +33,7 @@ object Context {
 class Context(system: ActorSystem, conf: NettyConfig) extends IContext {
   import io.gearpump.transport.netty.Context._
 
-  def this(system: ActorSystem, conf: Config) {
+  def this(system: ActorSystem, conf: Config) = {
     this(system, new NettyConfig(conf))
   }
 
@@ -98,4 +98,3 @@ class Context(system: ActorSystem, conf: NettyConfig) extends IContext {
     closeHandler.iterator().asScala.toList.reverse.foreach(_.close())
   }
 }
-

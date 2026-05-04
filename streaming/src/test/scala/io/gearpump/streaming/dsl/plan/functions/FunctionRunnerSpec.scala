@@ -86,14 +86,14 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
 
     "chain multiple single input function" in {
       val split = new FlatMapper[String, String](FlatMapFunction(
-        (_.split("\\s")): String => TraversableOnce[String]), "split")
+        (_.split("\\s")): String => IterableOnce[String]), "split")
 
       val filter = new FlatMapper[String, String](
         FlatMapFunction((word =>
-          if (word.isEmpty) None else Some(word)): String => TraversableOnce[String]), "filter")
+          if (word.isEmpty) None else Some(word)): String => IterableOnce[String]), "filter")
 
       val map = new FlatMapper[String, Int](FlatMapFunction(
-        (_ => Some(1)): String => TraversableOnce[Int]), "map")
+        (_ => Some(1)): String => IterableOnce[Int]), "map")
 
       val sum = new FoldRunner[Int, Option[Int]](
         ReduceFunction({(left, right) => left + right}), "sum")
@@ -237,7 +237,7 @@ class FunctionRunnerSpec extends WordSpec with Matchers with MockitoSugar {
       // Source with transformer
       val anotherTaskContext = MockUtil.mockTaskContext
       val double = new FlatMapper[String, String](FlatMapFunction(
-        (word => List(word, word)): String => TraversableOnce[String]), "double")
+        (word => List(word, word)): String => IterableOnce[String]), "double")
       val runner2 = new WindowOperator[String, String](
         GlobalWindows(), double)
       val another = new DataSourceTask(anotherTaskContext,

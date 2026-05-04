@@ -22,7 +22,7 @@ import scala.collection.mutable
 
 class Sink(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, conf) {
 
-  var list = mutable.MutableList[String]()
+  var list = mutable.ListBuffer[String]()
 
   override def onStart(startTime: Instant): Unit = {
     list += getClass.getCanonicalName
@@ -32,9 +32,9 @@ class Sink(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext,
     val l = msg.value.asInstanceOf[Vector[String]]
     list.size match {
       case 1 =>
-        l.foreach(f => {
-          list += f
-        })
+        l.foreach { value =>
+          list += value
+        }
       case _ =>
     }
   }

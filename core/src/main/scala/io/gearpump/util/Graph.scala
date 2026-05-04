@@ -14,9 +14,7 @@
 
 package io.gearpump.util
 
-import scala.collection.immutable.Stack
 import scala.collection.mutable
-import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -65,8 +63,12 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
     val result = edges.add(edge)
     if (result) {
       indexs += edge -> nextId
-      outEdges += edge._1 -> (outgoingEdgesOf(edge._1) + edge)
-      inEdges += edge._3 -> (incomingEdgesOf(edge._3) + edge)
+      val outgoing = outgoingEdgesOf(edge._1)
+      outgoing += edge
+      outEdges += edge._1 -> outgoing
+      val incoming = incomingEdgesOf(edge._3)
+      incoming += edge
+      inEdges += edge._3 -> incoming
     }
   }
 
@@ -134,8 +136,8 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
   private def removeEdge(edge: (N, E, N)): Unit = {
     indexs -= edge
     edges.remove(edge)
-    inEdges.update(edge._3, inEdges(edge._3) - edge)
-    outEdges.update(edge._1, outEdges(edge._1) - edge)
+    inEdges(edge._3) -= edge
+    outEdges(edge._1) -= edge
   }
 
   /**
@@ -297,7 +299,7 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
    */
   private def findCycles: Map[N, List[N]] = {
     var visited = Set.empty[N]
-    var stack = Stack[N]()
+    var stack = List.empty[N]
     var indexMap = Map.empty[N, Int]
     var cycleRoot = Map.empty[N, Int]
     var index = 0
@@ -309,7 +311,7 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
       cycleRoot += node -> index
       index += 1
       visited += node
-      stack = stack.push(node)
+      stack = node :: stack
 
       outgoingEdgesOf(node).foreach {
         case (_, _, successor) => {
@@ -325,12 +327,12 @@ class Graph[N, E](vertexList: List[N], edgeList: List[(N, E, N)]) extends Serial
       }
 
       if (stack.nonEmpty) {
-        val hr = cycleRoot(stack.head)
-        val cycle = mutable.MutableList.empty[N]
+        val rootIndex = cycleRoot(stack.head)
+        val cycle = mutable.ListBuffer.empty[N]
         do {
           cycle += stack.head
-          stack = stack.pop
-        } while (stack.nonEmpty && hr <= indexMap(stack.head))
+          stack = stack.tail
+        } while (stack.nonEmpty && rootIndex <= indexMap(stack.head))
         cycle.foreach { node =>
           nodeToCycles += node -> cycle.toList
         }

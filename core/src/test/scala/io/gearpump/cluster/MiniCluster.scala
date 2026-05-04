@@ -28,7 +28,7 @@ import scala.concurrent.duration.Duration
 class MiniCluster {
   private val mockMasterIP = "127.0.0.1"
 
-  implicit val system = ActorSystem("system", TestUtil.MASTER_CONFIG.
+  implicit val system: ActorSystem = ActorSystem("system", TestUtil.MASTER_CONFIG.
     withValue(Constants.NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(mockMasterIP)))
 
   val (mockMaster, worker) = {

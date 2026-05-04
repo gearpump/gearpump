@@ -23,9 +23,9 @@ object BuildExamples {
 
   def exampleSettings(className: String): Seq[Def.Setting[_]] = {
     commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
-      mainClass in(Compile, packageBin) :=
+      Compile / packageBin / mainClass :=
         Some(className),
-      target in assembly := {
+      assembly / target := {
         @tailrec
         def getExamplesPath(file: File): File = {
           if (file.getName.equals("examples")) {
@@ -38,13 +38,13 @@ object BuildExamples {
         getExamplesPath(baseDirectory.value) / "target" /
           CrossVersion.binaryScalaVersion(scalaVersion.value)
       },
-      assemblyMergeStrategy in assembly := {
+      assembly / assemblyMergeStrategy := {
         x =>
           // core and streaming dependencies are not marked as provided
           // such that the examples can be run with sbt or Intellij
           // so they have to be excluded manually here
           if (x.contains("examples")) {
-            val oldStrategy = (assemblyMergeStrategy in assembly).value
+            val oldStrategy = (assembly / assemblyMergeStrategy).value
             oldStrategy(x)
           } else {
             MergeStrategy.discard

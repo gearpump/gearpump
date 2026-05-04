@@ -31,7 +31,7 @@ class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
 
   import appContext._
   import context.dispatcher
-  implicit val timeout = Constants.FUTURE_TIMEOUT
+  implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   protected var currentExecutorId = 0
   private var workerNum: Option[Int] = None
@@ -64,7 +64,7 @@ class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
         (aggregator, response) => {
           aggregator.aggregate(response.asInstanceOf[ShellCommandResult])
         }
-      }.map(_.toString()) pipeTo sender
+      }.map(_.toString()) pipeTo sender()
   }
 
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
@@ -86,7 +86,7 @@ object DistShellAppMaster {
 
     def aggregate(response: ShellCommandResult): ShellCommandResultAggregator = {
       result.append(s"Execute results from executor ${response.executorId} : \n")
-      result.append(response.msg + "\n")
+      result.append(s"${response.msg}\n")
       this
     }
 

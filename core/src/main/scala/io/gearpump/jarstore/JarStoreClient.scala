@@ -22,13 +22,13 @@ import io.gearpump.util.{Constants, LogUtil, Util}
 import java.io.File
 import java.util.concurrent.TimeUnit
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
 class JarStoreClient(config: Config, system: ActorSystem) {
   private def LOG: Logger = LogUtil.getLogger(getClass)
-  private implicit val timeout = Constants.FUTURE_TIMEOUT
+  private implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
   private implicit def dispatcher: ExecutionContext = system.dispatcher
 
   private val master: ActorRef = {

@@ -15,7 +15,6 @@
 package io.gearpump.cluster.master
 
 import org.apache.pekko.actor._
-import org.apache.pekko.cluster.Cluster
 import org.apache.pekko.cluster.ddata.{DistributedData, LWWMap, LWWMapKey}
 import org.apache.pekko.cluster.ddata.Replicator._
 import io.gearpump.util.LogUtil
@@ -33,8 +32,8 @@ class InMemoryKVService extends Actor with Stash {
   private val KV_SERVICE = "gearpump_kvservice"
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
-  private val replicator = DistributedData(context.system).replicator
-  private implicit val cluster: Cluster = Cluster(context.system)
+  private val distributedData = DistributedData(context.system)
+  private val replicator = distributedData.replicator
 
   // Optimize write path, we can tolerate one master down for recovery.
   private val timeout = Duration(15, TimeUnit.SECONDS)
@@ -68,7 +67,7 @@ class InMemoryKVService extends Actor with Stash {
     case PutKV(group: String, key: String, value: Any) =>
       val request = Request(sender(), key)
       val update = Update(groupKey(group), LWWMap(), writeMajority, Some(request)) { map =>
-        map + (key -> value)
+        map.put(distributedData.selfUniqueAddress, key, value)
       }
       replicator ! update
     case UpdateSuccess(_, Some(request: Request)) =>

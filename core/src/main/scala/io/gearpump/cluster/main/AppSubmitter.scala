@@ -16,7 +16,7 @@ package io.gearpump.cluster.main
 
 import io.gearpump.util.{Constants, LogUtil, MasterClientCommand, Util}
 import java.io.File
-import java.net.{URL, URLClassLoader}
+import java.net.URLClassLoader
 import java.util.jar.JarFile
 import scala.util.{Failure, Success, Try}
 
@@ -74,8 +74,9 @@ object AppSubmitter extends MasterClientCommand with ArgumentsParser {
         throw new Exception(s"jar $jar does not exist")
       }
 
-      val classLoader: URLClassLoader = new URLClassLoader(Array(new URL("file:" +
-        jarFile.getAbsolutePath)), Thread.currentThread().getContextClassLoader)
+      val classLoader: URLClassLoader = new URLClassLoader(
+        Array(jarFile.toURI.toURL),
+        Thread.currentThread().getContextClassLoader)
       val (main, arguments) = parseMain(jarFile, config.remainArgs, classLoader)
 
       // Set to context classLoader. ActorSystem pick context classLoader in preference

@@ -21,11 +21,11 @@ class Meter(val name: String, meter: CodaHaleMeter, sampleRate: Int = 1) {
   private var sampleCount = 0L
   private var toBeMarked = 0L
 
-  def mark() {
+  def mark(): Unit = {
     meter.mark(1)
   }
 
-  def mark(n: Long) {
+  def mark(n: Long): Unit = {
     toBeMarked += n
     sampleCount += 1
     if (null != meter && sampleCount % sampleRate == 0) {

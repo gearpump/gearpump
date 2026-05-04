@@ -32,5 +32,5 @@ trait IContext {
   /**
    * Close resource for this context
    */
-  def close()
+  def close(): Unit
 }

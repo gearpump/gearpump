@@ -23,7 +23,7 @@ import io.gearpump.util.{Constants, LogUtil, MasterClientCommand, Util}
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -67,11 +67,11 @@ object Local extends MasterClientCommand with ArgumentsParser {
     } else {
 
       val hostPort = masters.head
-      implicit val system = ActorSystem(MASTER, pekkoConf.
+      implicit val system: ActorSystem = ActorSystem(MASTER, pekkoConf.
         withValue("pekko.remote.classic.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port))
       )
 
-      val master = system.actorOf(Props[MasterActor], MASTER)
+      val master = system.actorOf(Props[MasterActor](), MASTER)
 
       0.until(workerCount).foreach { id =>
         system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)

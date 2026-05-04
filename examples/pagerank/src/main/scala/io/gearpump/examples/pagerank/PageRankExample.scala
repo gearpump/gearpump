@@ -25,7 +25,7 @@ object PageRankExample extends PekkoApp {
   val c = "c"
   val d = "d"
 
-  def help(): Unit = Unit
+  def help(): Unit = ()
 
   def main(pekkoConf: Config, args: Array[String]): Unit = {
     val pageRankGraph = Graph(a ~> b, a ~> c, a ~> d, b ~> a, b ~> d, d ~> b, d ~> c, c ~> b)

@@ -29,7 +29,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter {
-  implicit val system = ActorSystem("AppMasterSpec", TestUtil.DEFAULT_CONFIG)
+  implicit val system: ActorSystem = ActorSystem("AppMasterSpec", TestUtil.DEFAULT_CONFIG)
   val mockMaster = TestProbe()(system)
   val masterProxy = mockMaster.ref
   val appId = 0

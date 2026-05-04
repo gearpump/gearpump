@@ -45,7 +45,7 @@ object ActorSystemBooter {
 
   def apply(config: Config): ActorSystemBooter = new ActorSystemBooter(config)
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     val name = args(0)
     val reportBack = args(1)
     val config = ClusterConfig.default()
@@ -99,7 +99,7 @@ object ActorSystemBooter {
     val reportBackActor = context.actorSelection(reportBack)
     reportBackActor ! RegisterActorSystem(ActorUtil.getSystemAddress(context.system).toString)
 
-    implicit val executionContext = context.dispatcher
+    implicit val executionContext: scala.concurrent.ExecutionContextExecutor = context.dispatcher
     val timeout = context.system.scheduler.scheduleOnce(Duration(25, TimeUnit.SECONDS),
       self, RegisterActorSystemFailed(new TimeoutException))
 
@@ -127,9 +127,9 @@ object ActorSystemBooter {
         val actor = Try(context.actorOf(props, name))
         actor match {
           case Success(actor) =>
-            sender ! ActorCreated(actor, name)
+            sender() ! ActorCreated(actor, name)
           case Failure(e) =>
-            sender ! CreateActorFailed(props.clazz.getName, e)
+            sender() ! CreateActorFailed(props.clazz.getName, e)
         }
       case PoisonPill =>
         context.stop(self)

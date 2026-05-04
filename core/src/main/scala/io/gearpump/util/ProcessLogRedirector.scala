@@ -43,6 +43,6 @@ class ProcessLogRedirector extends ProcessLogger with Closeable with Flushable w
     LOG.error(s)
   }
   def buffer[T](f: => T): T = f
-  def close(): Unit = Unit
-  def flush(): Unit = Unit
+  def close(): Unit = ()
+  def flush(): Unit = ()
 }

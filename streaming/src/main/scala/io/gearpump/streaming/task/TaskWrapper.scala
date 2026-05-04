@@ -113,7 +113,9 @@ class TaskWrapper(
 
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(f: => Unit): Cancellable = {
     val dispatcher = actor.context.system.dispatcher
-    actor.context.system.scheduler.schedule(initialDelay, interval)(f)(dispatcher)
+    actor.context.system.scheduler.scheduleAtFixedRate(initialDelay, interval)(new Runnable {
+      override def run(): Unit = f
+    })(dispatcher)
   }
 
   def scheduleOnce(initialDelay: FiniteDuration)(f: => Unit): Cancellable = {

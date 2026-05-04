@@ -18,7 +18,6 @@ import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.apache.pekko.http.scaladsl.model.{FormData, Multipart}
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.Route
-import org.apache.pekko.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import org.apache.pekko.stream.Materializer
 import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
@@ -51,7 +50,7 @@ class AppMasterService(val master: ActorRef,
   protected override def doRoute(implicit mat: Materializer) = pathPrefix("appmaster" / IntNumber) {
     appId => {
       path("dynamicdag") {
-        parameters(ParamMagnet("args")) { args: String =>
+        parameter("args") { args: String =>
           def replaceProcessor(dagOperation: DAGOperation): Route = {
             onComplete(askAppMaster[DAGOperationResult](master, appId, dagOperation)) {
               case Success(value) =>

@@ -25,7 +25,7 @@ class Split extends DataSource {
 
   private val result = ArrayBuffer[String]()
   private var item = -1
-  Split.TEXT_TO_SPLIT.lines.foreach { line =>
+  Split.TEXT_TO_SPLIT.linesIterator.foreach { line =>
     line.split("[\\s]+").filter(_.nonEmpty).foreach { msg =>
       result.append(msg)
     }
@@ -71,4 +71,3 @@ object Split {
       |   limitations under the License.
     """.stripMargin
 }
-
