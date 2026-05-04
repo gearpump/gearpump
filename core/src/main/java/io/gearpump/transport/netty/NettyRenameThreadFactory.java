@@ -32,9 +32,7 @@ public class NettyRenameThreadFactory implements ThreadFactory {
   final String name;
 
   NettyRenameThreadFactory(String name) {
-    SecurityManager s = System.getSecurityManager();
-    group = (s != null) ? s.getThreadGroup() :
-      Thread.currentThread().getThreadGroup();
+    group = Thread.currentThread().getThreadGroup();
     this.name = name;
   }
 

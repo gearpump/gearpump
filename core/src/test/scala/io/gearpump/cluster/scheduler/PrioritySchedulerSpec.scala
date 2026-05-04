@@ -38,7 +38,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
   val mockWorker1 = TestProbe()
   val mockWorker2 = TestProbe()
 
-  override def afterAll {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 
@@ -84,19 +84,19 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       var expect = ResourceAllocated(
         Array(ResourceAllocation(Resource(30), mockWorker1.ref, workerId1)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
 
       expect = ResourceAllocated(
         Array(ResourceAllocation(Resource(20), mockWorker1.ref, workerId1)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
 
       expect = ResourceAllocated(
         Array(ResourceAllocation(Resource(40), mockWorker1.ref, workerId1)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
 
       scheduler.tell(WorkerRegistered(workerId2, MasterInfo.empty), mockWorker2.ref)
@@ -106,7 +106,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       expect = ResourceAllocated(
         Array(ResourceAllocation(Resource(40), mockWorker2.ref, workerId2)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
     }
   }
@@ -124,12 +124,12 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       var expect = ResourceAllocated(
         Array(ResourceAllocation(Resource(40), mockWorker1.ref, workerId1)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
       expect = ResourceAllocated(
         Array(ResourceAllocation(Resource(20), mockWorker1.ref, workerId1)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
     }
   }
@@ -148,7 +148,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       var expect = ResourceAllocated(
         Array(ResourceAllocation(Resource(20), mockWorker1.ref, workerId1)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
 
       scheduler.tell(WorkerRegistered(workerId2, MasterInfo.empty), mockWorker2.ref)
@@ -157,7 +157,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       expect = ResourceAllocated(
         Array(ResourceAllocation(Resource(40), mockWorker2.ref, workerId2)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
 
       val request3 = ResourceRequest(
@@ -168,7 +168,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
         ResourceAllocation(Resource(15), mockWorker1.ref, workerId1),
         ResourceAllocation(Resource(15), mockWorker2.ref, workerId2)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
 
       // We have to manually update the resource on each worker
@@ -180,7 +180,7 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
       expect = ResourceAllocated(
         Array(ResourceAllocation(Resource(60), mockWorker1.ref, workerId1)))
       mockAppMaster.expectMsgPF(5.seconds) {
-        case request: ResourceAllocated if sameElement(request, expect) => Unit
+        case request: ResourceAllocated if sameElement(request, expect) => ()
       }
     }
   }

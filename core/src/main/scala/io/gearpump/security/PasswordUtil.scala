@@ -15,8 +15,8 @@
 package io.gearpump.security
 
 import java.security.MessageDigest
+import java.util.Base64
 import scala.util.Try
-import sun.misc.{BASE64Decoder, BASE64Encoder}
 
 /**
  * Util to verify whether user input password is valid or not.
@@ -67,13 +67,11 @@ object PasswordUtil {
   }
 
   private def base64Encode(data: Array[Byte]): String = {
-    val endecoder = new BASE64Encoder()
-    endecoder.encode(data)
+    Base64.getEncoder.encodeToString(data)
   }
 
   private def base64Decode(data: String): Array[Byte] = {
-    val decoder = new BASE64Decoder()
-    decoder.decodeBuffer(data)
+    Base64.getDecoder.decode(data)
   }
 
   // scalastyle:off println

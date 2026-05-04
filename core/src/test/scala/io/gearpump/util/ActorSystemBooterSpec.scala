@@ -16,7 +16,6 @@ package io.gearpump.util
 
 import org.apache.pekko.actor.{Actor, ActorSystem, Props}
 import org.apache.pekko.testkit.TestProbe
-import com.github.ghik.silencer.silent
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.ActorSystemBooter.{ActorCreated, RegisterActorSystem, _}
 import io.gearpump.util.ActorSystemBooterSpec._
@@ -105,8 +104,9 @@ object ActorSystemBooterSpec {
     }
   }
 
-  @silent
   class AcceptThreeArguments(a: Int, b: Int, c: Int) extends Actor {
+    private val arguments = (a, b, c)
+
     def receive: Receive = {
       case _ =>
     }

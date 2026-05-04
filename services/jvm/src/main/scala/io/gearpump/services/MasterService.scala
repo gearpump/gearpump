@@ -17,7 +17,6 @@ package io.gearpump.services
 import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.Route
-import org.apache.pekko.http.scaladsl.server.directives.ParameterDirectives.ParamMagnet
 import org.apache.pekko.http.scaladsl.unmarshalling.Unmarshaller._
 import org.apache.pekko.stream.Materializer
 import com.typesafe.config.Config
@@ -40,7 +39,7 @@ import java.io.{File, IOException}
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption.{APPEND, WRITE}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -97,7 +96,7 @@ class MasterService(val master: ActorRef,
       }
     } ~
     path("metrics" / RemainingPath) { path =>
-      parameters(ParamMagnet(ReadOption.Key ? ReadOption.ReadLatest)) { readOption: String =>
+      parameter(ReadOption.Key ? ReadOption.ReadLatest.toString) { readOption: String =>
         val query = QueryHistoryMetrics(path.head.toString, readOption)
         onComplete(askActor[HistoryMetrics](master, query)) {
           case Success(value) =>
@@ -226,7 +225,7 @@ object MasterService {
     submitAndDeleteTempFiles(
       "io.gearpump.cluster.main.AppSubmitter",
       argsArray = Array("-executors", executorNum.toString) ++ spaceSeparatedArgumentsToArray(args),
-      fileMap = Map("jar" -> jar).filter(_._2.isDefined).mapValues(_.get),
+      fileMap = Map("jar" -> jar).collect { case (key, Some(file)) => key -> file },
       classPath = getUserApplicationClassPath,
       systemConfig,
       userConfigFile
@@ -241,7 +240,9 @@ object MasterService {
     submitAndDeleteTempFiles(
       "io.gearpump.experiments.storm.main.GearpumpStormClient",
       argsArray = spaceSeparatedArgumentsToArray(args),
-      fileMap = Map("jar" -> jar, "config" -> stormConf).filter(_._2.isDefined).mapValues(_.get),
+      fileMap = Map("jar" -> jar, "config" -> stormConf).collect {
+        case (key, Some(file)) => key -> file
+      },
       classPath = getStormApplicationClassPath,
       systemConfig
     )

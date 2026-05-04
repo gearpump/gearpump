@@ -29,7 +29,7 @@ trait ExpressTransport {
   this: TaskActor =>
 
   final val express = Express(context.system)
-  implicit val system = context.system.asInstanceOf[ExtendedActorSystem]
+  implicit val system: ExtendedActorSystem = context.system.asInstanceOf[ExtendedActorSystem]
 
   final def local: HostPort = express.localHost
   lazy val sourceId = TaskId.toLong(taskId)

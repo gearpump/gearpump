@@ -60,7 +60,7 @@ class StreamSpec extends FlatSpec with Matchers with BeforeAndAfterAll with Mock
         five  four
         five
       """
-    val stream = dsl.source(data.lines.toList, 1, "").
+    val stream = dsl.source(data.linesIterator.toList, 1, "").
       flatMap(line => line.split("[\\s]+")).filter(_.nonEmpty).
       map(word => (word, 1)).
       groupBy(_._1, parallelism = 2).

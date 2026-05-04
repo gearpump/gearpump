@@ -25,7 +25,7 @@ import scala.concurrent.duration.Duration
 
 /** Client to DistributedShell to input "shell command" */
 object DistributedShellClient extends PekkoApp with ArgumentsParser {
-  implicit val timeout = Constants.FUTURE_TIMEOUT
+  implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
   private val LOG: Logger = LoggerFactory.getLogger(getClass)
 
   override val options: Array[(String, CLIOption[Any])] = Array(

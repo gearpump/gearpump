@@ -19,7 +19,7 @@ import io.gearpump.util.Util
 import java.io.{InputStream, OutputStream}
 import java.net.URI
 import java.util.ServiceLoader
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 case class FilePath(path: String)
 
@@ -38,7 +38,7 @@ trait JarStore {
   /**
    * Init the Jar Store.
    */
-  def init(config: Config)
+  def init(config: Config): Unit
 
   /**
    * Creates the file on JarStore.

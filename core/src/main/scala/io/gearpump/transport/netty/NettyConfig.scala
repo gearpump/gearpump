@@ -27,8 +27,10 @@ class NettyConfig(conf: Config) {
   val flushCheckInterval = conf.getInt(Constants.NETTY_FLUSH_CHECK_INTERVAL)
 
   def newTransportSerializer: ITransportMessageSerializer = {
-    Class.forName(
-      conf.getString(Constants.GEARPUMP_TRANSPORT_SERIALIZER))
-      .newInstance().asInstanceOf[ITransportMessageSerializer]
+    Class
+      .forName(conf.getString(Constants.GEARPUMP_TRANSPORT_SERIALIZER))
+      .getDeclaredConstructor()
+      .newInstance()
+      .asInstanceOf[ITransportMessageSerializer]
   }
 }

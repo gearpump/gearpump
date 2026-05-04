@@ -172,12 +172,13 @@ class ClockService(
       import context.dispatcher
 
       // Period report current clock
-      healthCheckScheduler = context.system.scheduler.schedule(
+      healthCheckScheduler = context.system.scheduler.scheduleAtFixedRate(
         new FiniteDuration(5, TimeUnit.SECONDS),
         new FiniteDuration(60, TimeUnit.SECONDS), self, HealthCheck)
 
       // Period snpashot latest min startclock to external storage
-      snapshotScheduler = context.system.scheduler.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
+      snapshotScheduler = context.system.scheduler.scheduleAtFixedRate(
+        new FiniteDuration(5, TimeUnit.SECONDS),
         new FiniteDuration(5, TimeUnit.SECONDS), self, SnapshotStartClock)
 
       unstashAll()
@@ -211,7 +212,7 @@ class ClockService(
 
   def clockService: Receive = {
     case GetUpstreamMinClock(task) =>
-      sendBackUpstreamMinClock(sender, task)
+      sendBackUpstreamMinClock(sender(), task)
 
     case UpdateClock(task, clock) =>
       if (Instant.ofEpochMilli(minClock).isBefore(Watermark.MAX)) {
@@ -219,15 +220,15 @@ class ClockService(
         if (Instant.ofEpochMilli(minClock).equals(Watermark.MAX)) {
           appMaster ! EndingClock
         } else {
-          sendBackUpstreamMinClock(sender, task)
+          sendBackUpstreamMinClock(sender(), task)
         }
       }
 
     case GetLatestMinClock =>
-      sender ! LatestMinClock(minClock)
+      sender() ! LatestMinClock(minClock)
 
     case GetStartClock =>
-      sender ! StartClock(getStartClock)
+      sender() ! StartClock(getStartClock)
 
     case deathCheck: CheckProcessorDeath =>
       val processorId = deathCheck.processorId
@@ -253,10 +254,10 @@ class ClockService(
       updateCheckpointClocks(task, time)
 
     case GetCheckpointClock =>
-      sender ! CheckpointClock(minCheckpointClock)
+      sender() ! CheckpointClock(minCheckpointClock)
 
     case GetStallingTasks =>
-      sender ! StallingTasks(healthChecker.getReport.stallingTasks)
+      sender() ! StallingTasks(healthChecker.getReport.stallingTasks)
 
     case ChangeToNewDAG(newDag) =>
       if (newDag.version > this.dag.version) {
@@ -268,7 +269,7 @@ class ClockService(
         recoverDag(newDag, getStartClock)
       }
       LOG.info(s"Change to new DAG(dag = ${newDag.version}), send back ChangeToNewDAGSuccess")
-      sender ! ChangeToNewDAGSuccess(clocks.map { pair =>
+      sender() ! ChangeToNewDAGSuccess(clocks.map { pair =>
         val (id, clock) = pair
         (id, clock.min)
       })
@@ -327,7 +328,7 @@ class ClockService(
       minCheckpointClock = Some(time)
       LOG.info(s"minCheckpointTime $minCheckpointClock")
 
-      checkpointClocks = checkpointClocks.mapValues(_.dropWhile(_ <= time))
+      checkpointClocks = checkpointClocks.view.mapValues(_.dropWhile(_ <= time)).toMap
     }
   }
 }

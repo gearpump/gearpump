@@ -31,7 +31,7 @@ class MockOAuth2Server(
 
   implicit val system: ActorSystem = actorSystem
   implicit val materializer: Materializer = Materializer(system)
-  implicit val ec = system.dispatcher
+  implicit val ec: scala.concurrent.ExecutionContextExecutor = system.dispatcher
 
   private var _port: Int = 0
   private var bindingFuture: Future[ServerBinding] = null

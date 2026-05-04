@@ -25,7 +25,6 @@ import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.{Task, TaskContext}
 import io.gearpump.util.Graph
 import org.slf4j.{Logger, LoggerFactory}
-import scala.language.implicitConversions
 
 class Stream[T](
     private val graph: Graph[Op, OpEdge], private val thisNode: Op,
@@ -40,7 +39,7 @@ class Stream[T](
    * @param description The description message for this operation
    * @return A new stream with type [R]
    */
-  def flatMap[R](fn: T => TraversableOnce[R], description: String = "flatMap"): Stream[R] = {
+  def flatMap[R](fn: T => IterableOnce[R], description: String = "flatMap"): Stream[R] = {
     this.flatMap(FlatMapFunction(fn), description)
   }
 
@@ -289,5 +288,5 @@ class LoggerSink[T] extends DataSink {
     logger.info("logging message " + message.value)
   }
 
-  override def close(): Unit = Unit
+  override def close(): Unit = ()
 }

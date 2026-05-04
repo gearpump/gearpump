@@ -23,7 +23,7 @@ import io.gearpump.util.{PekkoApp, LogUtil}
 import io.gearpump.util.Constants._
 import io.gearpump.util.LogUtil.ProcessType
 import org.slf4j.Logger
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

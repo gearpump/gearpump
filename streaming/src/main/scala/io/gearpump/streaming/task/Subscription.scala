@@ -82,7 +82,7 @@ class Subscription(
 
   def start(): Unit = {
     val ackRequest = InitialAckRequest(taskId, sessionId)
-    publisher.transport(ackRequest, allTasks: _*)
+    publisher.transport(ackRequest, allTasks.toIndexedSeq: _*)
   }
 
   def sendMessage(msg: Message): Int = {
@@ -183,7 +183,7 @@ class Subscription(
     outputWatermark.indices.foreach { i =>
       if (outputWatermark(i) == stallingTime &&
         pendingMessageCount(i) > 0 &&
-        allowSendingMoreMessages) {
+        allowSendingMoreMessages()) {
         sendAckRequest(i)
         sendLatencyProbe(i)
       } else if (publisher.getProcessingWatermark == Watermark.MAX &&

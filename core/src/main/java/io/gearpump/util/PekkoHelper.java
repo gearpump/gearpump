@@ -16,11 +16,12 @@ package io.gearpump.util;
 
 import org.apache.pekko.actor.ActorRef;
 import org.apache.pekko.actor.ActorSystem;
+import org.apache.pekko.actor.ExtendedActorSystem;
 
 public class PekkoHelper {
 
   /**
-   * Helper util to access the deprecated actorFor method.
+   * Helper util to resolve a synthetic actor ref from a relative or absolute path.
    *
    * This is used for performance optimization, we encode the session Id
    * in the ActorRef path. Session Id is used to identity sender Task.
@@ -29,8 +30,7 @@ public class PekkoHelper {
    * @param path Relative or absolute path of this Actor System.
    * @return Full qualified ActorRef.
    */
-  @SuppressWarnings("deprecation")
   public static ActorRef actorFor(ActorSystem system, String path) {
-    return system.actorFor(path);
+    return ((ExtendedActorSystem) system).provider().resolveActorRef(path);
   }
 }

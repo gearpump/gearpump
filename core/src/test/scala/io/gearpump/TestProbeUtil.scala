@@ -16,7 +16,6 @@ package io.gearpump
 
 import org.apache.pekko.actor.{Actor, Props, Terminated}
 import org.apache.pekko.testkit.TestProbe
-import scala.language.implicitConversions
 
 object TestProbeUtil {
   implicit def toProps(probe: TestProbe): Props = {

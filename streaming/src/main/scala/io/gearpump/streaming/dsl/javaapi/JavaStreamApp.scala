@@ -19,7 +19,7 @@ import io.gearpump.cluster.client.{ClientContext, RunningApplication}
 import io.gearpump.streaming.dsl.scalaapi.{CollectionDataSource, StreamApp}
 import io.gearpump.streaming.source.DataSource
 import java.util.Collection
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class JavaStreamApp(name: String, context: ClientContext, userConfig: UserConfig) {
 

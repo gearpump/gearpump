@@ -15,14 +15,14 @@
 package io.gearpump.serializer
 
 import org.apache.pekko.actor.{ActorSystem, ExtendedActorSystem}
-import com.esotericsoftware.kryo.{Kryo, Serializer => KryoSerializer}
-import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.kryo5.{Kryo, Serializer => KryoSerializer}
+import com.esotericsoftware.kryo.kryo5.io.{Input, Output}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.serializer.SerializerSpec._
 import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.mockito.MockitoSugar
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -68,7 +68,7 @@ object SerializerSpec {
       output.writeString(classOf[ClassA].getName)
     }
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[ClassA]): ClassA = {
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: ClassA]): ClassA = {
       val className = input.readString()
       Class.forName(className).newInstance().asInstanceOf[ClassA]
     }
@@ -79,7 +79,7 @@ object SerializerSpec {
   class ClassBSerializer extends KryoSerializer[ClassA] {
     override def write(kryo: Kryo, output: Output, `object`: ClassA): Unit = {}
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[ClassA]): ClassA = {
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: ClassA]): ClassA = {
       null
     }
   }

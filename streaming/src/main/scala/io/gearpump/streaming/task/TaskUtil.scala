@@ -35,7 +35,7 @@ object TaskUtil {
       context: TaskContext): Unit = {
     val triggeredOutputs = runner.trigger(watermark)
     context.updateWatermark(triggeredOutputs.watermark)
-    triggeredOutputs.outputs.foreach { case TimestampedValue(v, t) =>
+    triggeredOutputs.outputs.iterator.foreach { case TimestampedValue(v, t) =>
       context.output(Message(v, t))
     }
   }

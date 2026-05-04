@@ -38,8 +38,8 @@ import scala.concurrent.Future
  */
 class JarScheduler(appName: String, config: Config, factory: ActorRefFactory) {
   private val actor: ActorRef = factory.actorOf(Props(new JarSchedulerImpl(appName, config)))
-  private implicit val dispatcher = factory.dispatcher
-  private implicit val timeout = Constants.FUTURE_TIMEOUT
+  private implicit val dispatcher: scala.concurrent.ExecutionContextExecutor = factory.dispatcher
+  private implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
 
   /** Set the current DAG version active */
   def setDag(dag: DAG, startClock: Future[MilliSeconds]): Unit = {
@@ -150,21 +150,21 @@ object JarScheduler {
           ResourceRequestDetail(jar, scheduler.getResourceRequests())
         }.toArray
         LOG.info(s"GetRequestDetails " + result.mkString(";"))
-        sender ! result
+        sender() ! result
 
       case ScheduleTask(appJar, workerId, executorId, resource) =>
         val result: List[TaskId] = taskSchedulers.get(appJar).map { scheduler =>
           scheduler.schedule(workerId, executorId, resource)
         }.getOrElse(List.empty)
         LOG.info(s"ScheduleTask " + result.mkString(";"))
-        sender ! result
+        sender() ! result
       case ExecutorFailed(executorId) =>
         val result: Option[ResourceRequestDetail] = taskSchedulers.
           find(_._2.scheduledTasks(executorId).nonEmpty).map { jarAndScheduler =>
           ResourceRequestDetail(jarAndScheduler._1, jarAndScheduler._2.executorFailed(executorId))
         }
         LOG.info(s"ExecutorFailed " + result.mkString(";"))
-        sender ! result
+        sender() ! result
     }
   }
 }

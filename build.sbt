@@ -18,7 +18,6 @@ import BuildGearpump._
 import Dependencies._
 import Docs._
 import Pack.packSettings
-import sbtunidoc.GenJavadocPlugin
 import sbtunidoc.JavaUnidocPlugin
 import sbtunidoc.ScalaUnidocPlugin
 
@@ -56,14 +55,14 @@ lazy val core = Project(
   id = "gearpump-core",
   base = file("core"))
   .settings(commonSettings ++ myAssemblySettings ++ javadocSettings ++ coreDependencies ++
-    addArtifact(artifact in (Compile, assembly), assembly) ++
+    addArtifact(Compile / assembly / artifact, assembly) ++
     Seq(
-      assemblyOption in assembly ~= {
+      assembly / assemblyOption ~= {
         _.copy(includeScala = true)
       },
 
-      artifact in (Compile, assembly) := {
-        val art = (artifact in (Compile, assembly)).value
+      Compile / assembly / artifact := {
+        val art = (Compile / assembly / artifact).value
         art.withClassifier(Some("assembly"))
       },
 
@@ -77,24 +76,22 @@ lazy val core = Project(
           ), List.empty[xml.Node], node)
       }
     ))
-  .enablePlugins(GenJavadocPlugin)
-
 lazy val streaming = Project(
   id = "gearpump-streaming",
   base = file("streaming"))
   .settings(commonSettings ++ myAssemblySettings ++ javadocSettings ++
-    addArtifact(artifact in (Compile, assembly), assembly) ++
+    addArtifact(Compile / assembly / artifact, assembly) ++
     Seq(
-      assemblyMergeStrategy in assembly := {
+      assembly / assemblyMergeStrategy := {
         case "geardefault.conf" =>
           MergeStrategy.last
         case x =>
-          val oldStrategy = (assemblyMergeStrategy in assembly).value
+          val oldStrategy = (assembly / assemblyMergeStrategy).value
           oldStrategy(x)
       },
 
-      artifact in (Compile, assembly) := {
-        val art = (artifact in (Compile, assembly)).value
+      Compile / assembly / artifact := {
+        val art = (Compile / assembly / artifact).value
         art.withClassifier(Some("assembly"))
       },
 
@@ -116,7 +113,6 @@ lazy val streaming = Project(
       }
     ))
   .dependsOn(core % "test->test;provided")
-  .enablePlugins(GenJavadocPlugin)
 
 lazy val gearpumpHadoop = Project(
   id = "gearpump-hadoop",
@@ -141,7 +137,6 @@ lazy val services: Project = Project(
     )
   )
   .dependsOn(core % "provided", streaming % "test->test; provided")
-  .enablePlugins(GenJavadocPlugin)
 
 /**
  * The follow examples can be run in IDE or with `sbt run`
@@ -184,4 +179,3 @@ lazy val distributedshell = Project(
   base = file("examples/distributedshell"))
   .settings(exampleSettings("io.gearpump.examples.distributedshell.DistributedShell"))
   .dependsOn(core % "compile; test->test")
-

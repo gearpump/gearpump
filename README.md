@@ -3,8 +3,7 @@
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.github.gearpump/gearpump-core_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.github.gearpump/gearpump-core_2.12)
 [![GitHub license](https://img.shields.io/badge/license-Apache%20V2-green.svg)](LICENSE)
-[![Build Status](https://travis-ci.org/gearpump/gearpump.svg?branch=master)](https://travis-ci.org/gearpump/gearpump?branch=master)
-[![codecov.io](https://codecov.io/github/gearpump/gearpump/coverage.svg?branch=master)](https://codecov.io/github/gearpump/gearpump?branch=master)
+[![CI](https://github.com/gearpump/gearpump/actions/workflows/ci.yml/badge.svg)](https://github.com/gearpump/gearpump/actions/workflows/ci.yml)
 [![Join the chat at https://gitter.im/gearpump/gearpump](https://badges.gitter.im/gearpump/gearpump.svg)](https://gitter.im/gearpump/gearpump)
 
 Gearpump is a lightweight real-time big data streaming engine. It is inspired by recent advances in the [Apache Pekko](https://pekko.apache.org/) framework and a desire to improve on existing streaming frameworks.

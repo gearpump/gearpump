@@ -85,7 +85,11 @@ class PartitionerByClassName(partitionerClass: String)
 
   override def name: String = partitionerClass
   override def partitioner: Partitioner = {
-    Class.forName(partitionerClass).newInstance().asInstanceOf[Partitioner]
+    Class
+      .forName(partitionerClass)
+      .getDeclaredConstructor()
+      .newInstance()
+      .asInstanceOf[Partitioner]
   }
 }
 

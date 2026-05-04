@@ -17,7 +17,7 @@ import sbt.Keys._
 
 object Dependencies {
 
-  val crossScalaVersionNumbers = Seq("2.12.7")
+  val crossScalaVersionNumbers = Seq("2.13.18")
   val scalaVersionNumber = crossScalaVersionNumbers.last
   val pekkoVersion = "1.4.0"
   val pekkoHttpVersion = "1.3.0"
@@ -28,7 +28,7 @@ object Dependencies {
   val commonsLangVersion = "2.6"
   val commonsIOVersion = "2.4"
   val dataReplicationVersion = "0.7"
-  val upickleVersion = "0.7.1"
+  val upickleVersion = "0.7.5"
   val junitVersion = "4.12"
   val jsonSimpleVersion = "1.1"
   val slf4jVersion = "1.7.16"
@@ -38,7 +38,7 @@ object Dependencies {
   val gsCollectionsVersion = "6.2.0"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
-  val scalaTestVersion = "3.0.5"
+  val scalaTestVersion = "3.0.9"
   val scalaCheckVersion = "1.14.0"
   val mockitoVersion = "1.10.17"
   val bijectionVersion = "0.8.0"
@@ -48,8 +48,6 @@ object Dependencies {
   val jedisVersion = "2.9.0"
   val rabbitmqVersion = "3.5.3"
   val calciteVersion = "1.12.0"
-  val silencerVersion = "1.3.1"
-
   val annotationDependencies = Seq(
     // work around for compiler warnings like
     // "Class javax.annotation.CheckReturnValue not found - continuing with a stub"
@@ -58,10 +56,7 @@ object Dependencies {
     "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided"
   )
 
-  val compilerDependencies = Seq(
-    compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
-    "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided
-  )
+  val compilerDependencies = Seq.empty
 
   val coreDependencies = Seq(
     libraryDependencies ++= Seq(

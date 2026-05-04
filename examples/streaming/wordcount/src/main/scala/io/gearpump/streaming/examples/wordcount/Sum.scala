@@ -34,7 +34,7 @@ class Sum(taskContext: TaskContext, conf: UserConfig) extends Task(taskContext, 
 
   override def onStart(startTime: Instant): Unit = {
     scheduler = taskContext.schedule(new FiniteDuration(5, TimeUnit.SECONDS),
-      new FiniteDuration(30, TimeUnit.SECONDS))(reportWordCount)
+      new FiniteDuration(30, TimeUnit.SECONDS))(reportWordCount())
   }
 
   override def onNext(msg: Message): Unit = {

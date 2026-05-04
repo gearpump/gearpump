@@ -55,11 +55,11 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
   import app.userConfig
   import appContext.{appId, masterProxy, username}
 
-  private implicit val actorSystem = context.system
-  private implicit val timeOut = FUTURE_TIMEOUT
+  private implicit val actorSystem: ActorSystem = context.system
+  private implicit val timeOut: org.apache.pekko.util.Timeout = FUTURE_TIMEOUT
 
   import org.apache.pekko.pattern.ask
-  private implicit val dispatcher = context.dispatcher
+  private implicit val dispatcher: scala.concurrent.ExecutionContextExecutor = context.dispatcher
 
   private val startTime: MilliSeconds = System.currentTimeMillis()
 
@@ -194,9 +194,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
         } yield {
           val graph = dag.graph
 
-          val executorToTasks = tasks.tasks.groupBy(_._2).mapValues {
-            _.keys.toList
-          }
+          val executorToTasks = tasks.tasks.groupBy(_._2).view.mapValues(_.keys.toList).toMap
 
           val processors = dag.processors.map { kv =>
             val processor = kv._2
@@ -244,7 +242,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
     case query: QueryHistoryMetrics =>
       if (historyMetricsService.isEmpty) {
         // Returns empty metrics so that we don't hang the UI
-        sender ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
+        sender() ! HistoryMetrics(query.path, List.empty[HistoryMetricsItem])
       } else {
         historyMetricsService.get forward query
       }
@@ -254,7 +252,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       dagManager forward replaceDAG
     case GetLastFailure(id) =>
       if (id == appId) {
-        sender ! lastFailure._1
+        sender() ! lastFailure._1
       } else {
         LOG.error(s"GetLastFailure for invalid appId $id")
       }
@@ -274,7 +272,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       val client = sender()
       if (executorId == -1) {
         val systemConfig = context.system.settings.config
-        sender ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
+        sender() ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
       } else {
         ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo)
           .map { map =>

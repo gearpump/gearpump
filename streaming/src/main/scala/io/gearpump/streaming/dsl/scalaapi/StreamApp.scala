@@ -24,7 +24,6 @@ import io.gearpump.streaming.source.{DataSource, Watermark}
 import io.gearpump.streaming.task.TaskContext
 import io.gearpump.util.Graph
 import java.time.Instant
-import scala.language.implicitConversions
 
 /**
  * Example:
@@ -51,7 +50,7 @@ class StreamApp(
   }
 
   def plan(): StreamApplication = {
-    implicit val actorSystem = system
+    implicit val actorSystem: ActorSystem = system
     val planner = new Planner
     val dag = planner.plan(graph)
     StreamApplication(name, dag, userConfig)

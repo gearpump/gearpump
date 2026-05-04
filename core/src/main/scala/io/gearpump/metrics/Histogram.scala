@@ -22,7 +22,7 @@ import com.codahale.metrics.{Histogram => CodaHaleHistogram}
 class Histogram(val name: String, histogram: CodaHaleHistogram, sampleRate: Int = 1) {
   private var sampleCount = 0L
 
-  def update(value: Long) {
+  def update(value: Long): Unit = {
     sampleCount += 1
     if (null != histogram && sampleCount % sampleRate == 0) {
       histogram.update(value)

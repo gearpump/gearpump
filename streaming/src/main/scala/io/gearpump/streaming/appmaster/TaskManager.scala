@@ -72,7 +72,7 @@ private[appmaster] class TaskManager(
   private val appTotalRetries: Int = systemConfig.getInt(Constants.APPLICATION_TOTAL_RETRIES)
   private val appRestartPolicy = new RestartPolicy(appTotalRetries)
 
-  private implicit val timeout = Constants.FUTURE_TIMEOUT
+  private implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
 
   import context.dispatcher
 
@@ -89,7 +89,7 @@ private[appmaster] class TaskManager(
 
   private def onClientQuery(taskRegistry: TaskRegistry): Receive = {
     case GetTaskList =>
-      sender ! TaskList(taskRegistry.getTaskExecutorMap)
+      sender() ! TaskList(taskRegistry.getTaskExecutorMap)
     case LookupTaskActorRef(taskId) =>
       val executorId = taskRegistry.getExecutorId(taskId)
       val requestor = sender()
@@ -183,7 +183,7 @@ private[appmaster] class TaskManager(
       case unRegister: UnRegisterTask =>
 
         LOG.info(s"Received $unRegister, stop task ${unRegister.taskId}")
-        sender ! StopTask(unRegister.taskId)
+        sender() ! StopTask(unRegister.taskId)
 
         val taskId = unRegister.taskId
         val registry = state.taskRegistry
@@ -276,7 +276,7 @@ private[appmaster] class TaskManager(
           broadcastLocations(state)
         }
       } else {
-        sender ! TaskRejected(taskId)
+        sender() ! TaskRejected(taskId)
       }
 
     case TaskChanged(taskId, _) =>

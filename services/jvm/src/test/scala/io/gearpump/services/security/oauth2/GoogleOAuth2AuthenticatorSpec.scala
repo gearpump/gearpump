@@ -25,7 +25,7 @@ import io.gearpump.security.Authenticator
 import io.gearpump.services.security.oauth2.GoogleOAuth2AuthenticatorSpec.MockGoogleAuthenticator
 import io.gearpump.services.security.oauth2.impl.GoogleOAuth2Authenticator
 import org.scalatest.FlatSpec
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

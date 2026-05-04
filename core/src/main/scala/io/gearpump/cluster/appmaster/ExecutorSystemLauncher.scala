@@ -39,7 +39,7 @@ class ExecutorSystemLauncher(appId: Int, session: Session) extends Actor {
   private val LOG: Logger = LogUtil.getLogger(getClass)
 
   val scheduler = context.system.scheduler
-  implicit val executionContext = context.dispatcher
+  implicit val executionContext: scala.concurrent.ExecutionContextExecutor = context.dispatcher
 
   private val systemConfig = context.system.settings.config
   val timeoutSetting = systemConfig.getInt(Constants.GEARPUMP_START_EXECUTOR_SYSTEM_TIMEOUT_MS)
@@ -60,7 +60,7 @@ class ExecutorSystemLauncher(appId: Int, session: Session) extends Actor {
         s"slots: ${resource.slots} on worker $worker")
 
       worker.ref ! launch
-      context.become(waitForActorSystemToStart(sender, launch, worker, executorSystemId))
+      context.become(waitForActorSystemToStart(sender(), launch, worker, executorSystemId))
   }
 
   def waitForActorSystemToStart(
@@ -70,9 +70,9 @@ class ExecutorSystemLauncher(appId: Int, session: Session) extends Actor {
       import launch._
       timeout.cancel()
       LOG.info(s"Received RegisterActorSystem $systemPath for session ${session.requestor}")
-      sender ! ActorSystemRegistered(worker.ref)
+      sender() ! ActorSystemRegistered(worker.ref)
       val system =
-        ExecutorSystem(executorId, AddressFromURIString(systemPath), sender, resource, worker)
+        ExecutorSystem(executorId, AddressFromURIString(systemPath), sender(), resource, worker)
       replyTo ! LaunchExecutorSystemSuccess(system, session)
       context.stop(self)
     case ExecutorLaunchRejected(reason, ex) =>

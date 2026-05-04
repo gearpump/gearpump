@@ -16,7 +16,6 @@ package io.gearpump.util
 
 import org.apache.pekko.actor._
 import org.apache.pekko.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
-import com.github.ghik.silencer.silent
 import io.gearpump.cluster.TestUtil
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import scala.concurrent.duration._
@@ -27,15 +26,14 @@ class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with I
   def this() = this(ActorSystem("WorkerSpec", TestUtil.DEFAULT_CONFIG))
   val mockActor = TestProbe()
 
-  override def afterAll {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 
   "The TimeOutScheduler" should {
     "handle the time out event" in {
-      val testActorRef = TestActorRef(Props(classOf[TestActor], mockActor.ref))
-      @silent
-      val testActor = testActorRef.underlyingActor.asInstanceOf[TestActor]
+      val testActorRef = TestActorRef[TestActor](Props(classOf[TestActor], mockActor.ref))
+      val testActor = testActorRef.underlyingActor
       testActor.sendMsgToIgnore()
       mockActor.expectMsg(30.seconds, MessageTimeOut)
     }

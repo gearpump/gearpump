@@ -16,16 +16,14 @@ package io.gearpump.services
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.model.{RemoteAddress, StatusCodes, Uri}
-import org.apache.pekko.http.scaladsl.model.headers.{HttpChallenge, HttpCookie, HttpCookiePair}
+import org.apache.pekko.http.scaladsl.model.headers.{HttpChallenge, HttpCookiePair}
 import org.apache.pekko.http.scaladsl.server._
 import org.apache.pekko.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import org.apache.pekko.http.scaladsl.server.Directives._
-import org.apache.pekko.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet
 import org.apache.pekko.stream.Materializer
-import com.github.ghik.silencer.silent
-import com.softwaremill.session.{MultiValueSessionSerializer, SessionConfig, SessionManager}
-import com.softwaremill.session.SessionDirectives._
-import com.softwaremill.session.SessionOptions._
+import com.softwaremill.pekkohttpsession.{MultiValueSessionSerializer, SessionConfig, SessionManager}
+import com.softwaremill.pekkohttpsession.SessionDirectives._
+import com.softwaremill.pekkohttpsession.SessionOptions._
 import com.typesafe.config.Config
 import io.gearpump.security.Authenticator
 import io.gearpump.services.SecurityService.{User, UserSession}
@@ -72,7 +70,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
   }
 
   private def configToMap(config: Config, path: String) = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     config.getConfig(path).root.unwrapped.asScala.toMap map { case (k, v) => k -> v.toString }
   }
 
@@ -121,8 +119,9 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
       val user = session.user
       // Default: 1 day
       val maxAgeMs = 1000 * sessionConfig.sessionMaxAgeSeconds.getOrElse(24 * 3600L)
-      setCookie(HttpCookie.fromPair(HttpCookiePair("username", user), path = Some("/"),
-        maxAge = Some(maxAgeMs))) {
+      setCookie(HttpCookiePair("username", user).toCookie
+        .withPath("/")
+        .withMaxAge(maxAgeMs)) {
         LOG.info(s"user $user login from $ip")
         if (redirectToRoot) {
           redirect(Uri("/"), StatusCodes.TemporaryRedirect)
@@ -163,11 +162,10 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     }
   }
 
-  @silent // parameter value mat in value $anonfun is never used
   override val route: Route = {
 
     extractExecutionContext { implicit ec: ExecutionContext =>
-      extractMaterializer { implicit mat: Materializer =>
+      extractMaterializer { _: Materializer =>
         (extractClientIP | unknownIp) { ip =>
           pathPrefix("login") {
             pathEndOrSingleSlash {
@@ -176,8 +174,8 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
           } ~
           post {
             // Guest account don't have permission to submit new application in UI
-            formField(FieldMagnet('username.as[String])) {user: String =>
-              formFields(FieldMagnet('password.as[String])) {pass: String =>
+            formField("username") { user: String =>
+              formField("password") { pass: String =>
                 val result = authenticate(user, pass)
                 onSuccess(result) {
                   case Some(session) =>
@@ -221,7 +219,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
             path ("accesstoken") {
               post {
                 // Guest account don't have permission to submit new application in UI
-                formField(FieldMagnet('accesstoken.as[String])) {accesstoken: String =>
+                formField("accesstoken") { accesstoken: String =>
                   loginWithOAuth2Parameters(Map("accesstoken" -> accesstoken))
                 }
               }
