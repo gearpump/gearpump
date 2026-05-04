@@ -1,23 +1,18 @@
-name: CI
+name: Dependency Graph
 
 on:
-  pull_request:
   push:
     branches:
       - master
-  merge_group:
   workflow_dispatch:
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: write
 
 jobs:
-  build:
+  submit:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      contents: read
+    timeout-minutes: 30
     env:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
     steps:
@@ -34,5 +29,5 @@ jobs:
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
 
-      - name: Build
-        run: sbt -Dsbt.log.noformat=true clean compile test:compile
+      - name: Submit sbt dependency graph
+        uses: scalacenter/sbt-dependency-submission@v3
