@@ -25,6 +25,7 @@ lazy val aggregated: Seq[ProjectReference] = Seq[ProjectReference](
   core,
   streaming,
   services,
+  beamRunner,
   gearpumpHadoop,
   packProject,
   complexdag,
@@ -137,6 +138,13 @@ lazy val services: Project = Project(
     )
   )
   .dependsOn(core % "provided", streaming % "test->test; provided")
+
+lazy val beamRunner = Project(
+  id = "gearpump-beam-runner",
+  base = file("experiments/beam"))
+  .settings(commonSettings ++ javadocSettings ++ beamRunnerDependencies: _*)
+  .dependsOn(core % "provided", streaming % "provided")
+  .enablePlugins(GenJavadocPlugin)
 
 /**
  * The follow examples can be run in IDE or with `sbt run`

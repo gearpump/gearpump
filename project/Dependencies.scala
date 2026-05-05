@@ -41,6 +41,7 @@ object Dependencies {
   val scalaTestVersion = "3.0.9"
   val scalaCheckVersion = "1.14.0"
   val mockitoVersion = "1.10.17"
+  val beamVersion = "2.14.0"
   val bijectionVersion = "0.8.0"
   val scalazVersion = "7.1.1"
   val algebirdVersion = "0.13.5"
@@ -104,5 +105,14 @@ object Dependencies {
       "org.mockito" % "mockito-core" % mockitoVersion % "test",
       "junit" % "junit" % junitVersion % "test"
     ) ++ annotationDependencies ++ compilerDependencies
+  )
+
+  val beamRunnerDependencies = Seq(
+    libraryDependencies ++= Seq(
+      "org.apache.beam" % "beam-sdks-java-core" % beamVersion,
+      "org.apache.beam" % "beam-runners-core-java" % beamVersion,
+      "org.apache.beam" % "beam-runners-core-construction-java" % beamVersion,
+      "junit" % "junit" % junitVersion % "test"
+    ) ++ annotationDependencies
   )
 }

@@ -1,0 +1,44 @@
+name: Beam Runner
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/beam-runner.yml"
+      - "build.sbt"
+      - "project/**"
+      - "experiments/beam/**"
+      - "core/**"
+      - "streaming/**"
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/beam-runner.yml"
+      - "build.sbt"
+      - "project/**"
+      - "experiments/beam/**"
+      - "core/**"
+      - "streaming/**"
+  workflow_dispatch:
+
+jobs:
+  beam-runner-test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Temurin JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: sbt
+
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
+
+      - name: Run Beam runner tests
+        run: sbt -jvm-opts project/github-actions.jvmopts -Dsbt.log.noformat=true gearpump-beam-runner/test
