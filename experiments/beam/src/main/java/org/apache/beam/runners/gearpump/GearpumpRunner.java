@@ -18,6 +18,7 @@
 package org.apache.beam.runners.gearpump;
 
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 import io.gearpump.cluster.ClusterConfig;
 import io.gearpump.cluster.UserConfig;
@@ -123,8 +124,19 @@ public class GearpumpRunner extends PipelineRunner<GearpumpPipelineResult> {
       serializers.putAll(userSerializers);
     }
 
+    Config serializerConfig =
+        config.hasPath(GEARPUMP_SERIALIZERS)
+            ? config.getConfig(GEARPUMP_SERIALIZERS)
+            : ConfigFactory.empty();
+    for (Map.Entry<String, String> serializer : serializers.entrySet()) {
+      serializerConfig =
+          serializerConfig.withValue(
+              "\"" + serializer.getKey() + "\"",
+              ConfigValueFactory.fromAnyRef(serializer.getValue()));
+    }
+
     return config
         .withValue(PEKKO_ALLOW_JAVA_SERIALIZATION, ConfigValueFactory.fromAnyRef(true))
-        .withValue(GEARPUMP_SERIALIZERS, ConfigValueFactory.fromMap(serializers));
+        .withValue(GEARPUMP_SERIALIZERS, serializerConfig.root());
   }
 }
