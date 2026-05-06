@@ -35,6 +35,7 @@ public class BeamParDoFnSpec<InputT, OutputT> implements Serializable {
 
   private final SerializablePipelineOptions options;
   private final DoFn<InputT, OutputT> doFn;
+  private final Coder<InputT> inputCoder;
   private final TupleTag<OutputT> mainOutputTag;
   private final List<TupleTag<?>> sideOutputTags;
   private final Map<TupleTag<?>, Coder<?>> outputCoders;
@@ -44,6 +45,7 @@ public class BeamParDoFnSpec<InputT, OutputT> implements Serializable {
   public BeamParDoFnSpec(
       PipelineOptions options,
       DoFn<InputT, OutputT> doFn,
+      Coder<InputT> inputCoder,
       TupleTag<OutputT> mainOutputTag,
       List<TupleTag<?>> sideOutputTags,
       Map<TupleTag<?>, Coder<?>> outputCoders,
@@ -51,6 +53,7 @@ public class BeamParDoFnSpec<InputT, OutputT> implements Serializable {
       DoFnSchemaInformation doFnSchemaInformation) {
     this.options = new SerializablePipelineOptions(options);
     this.doFn = doFn;
+    this.inputCoder = inputCoder;
     this.mainOutputTag = mainOutputTag;
     this.sideOutputTags = new ArrayList<>(sideOutputTags);
     this.outputCoders = new HashMap<>(outputCoders);
@@ -64,6 +67,10 @@ public class BeamParDoFnSpec<InputT, OutputT> implements Serializable {
 
   public DoFn<InputT, OutputT> getDoFn() {
     return doFn;
+  }
+
+  public Coder<InputT> getInputCoder() {
+    return inputCoder;
   }
 
   public TupleTag<OutputT> getMainOutputTag() {

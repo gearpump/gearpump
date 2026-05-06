@@ -15,25 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.runners.gearpump.translators.utils;
+package org.apache.beam.runners.gearpump.translators;
 
-import java.time.Instant;
-import org.apache.beam.sdk.values.WindowedValue;
+import io.gearpump.cluster.UserConfig;
+import io.gearpump.streaming.javaapi.Processor;
+import org.apache.beam.runners.gearpump.runtime.BeamImpulseTask;
+import org.apache.beam.sdk.transforms.Impulse;
 
-/** Utility methods used by the low-level Gearpump Beam runner. */
-public final class TranslatorUtils {
+/** Translates Beam {@link Impulse} into a low-level task that emits one empty byte array. */
+public class ImpulseTranslator implements TransformTranslator<Impulse> {
 
-  private TranslatorUtils() {}
-
-  public static Instant jodaTimeToJava8Time(org.joda.time.Instant time) {
-    return Instant.ofEpochMilli(time.getMillis());
-  }
-
-  public static org.joda.time.Instant java8TimeToJodaTime(Instant time) {
-    return new org.joda.time.Instant(time.toEpochMilli());
-  }
-
-  public static Instant windowedValueTimestamp(WindowedValue<?> value) {
-    return jodaTimeToJava8Time(value.getTimestamp());
+  @Override
+  public void translate(Impulse transform, TranslationContext context) {
+    Processor<BeamImpulseTask> source =
+        context.addProcessor(BeamImpulseTask.class, UserConfig.empty(), transform.getName());
+    context.setOutputProcessor(context.getOutput(), source);
   }
 }

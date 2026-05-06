@@ -21,8 +21,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.runners.TransformHierarchy;
+import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.GroupByKey;
+import org.apache.beam.sdk.transforms.Impulse;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.io.Read;
@@ -37,6 +39,8 @@ public class GearpumpPipelineTranslator extends Pipeline.PipelineVisitor.Default
   private final TranslationContext translationContext;
 
   static {
+    registerTransformTranslator(Create.Values.class, new CreateValuesTranslator());
+    registerTransformTranslator(Impulse.class, new ImpulseTranslator());
     registerTransformTranslator(Read.Bounded.class, new ReadBoundedTranslator());
     registerTransformTranslator(Flatten.PCollections.class, new FlattenPCollectionsTranslator());
     registerTransformTranslator(GroupByKey.class, new GroupByKeyTranslator());
@@ -53,6 +57,17 @@ public class GearpumpPipelineTranslator extends Pipeline.PipelineVisitor.Default
 
   @Override
   public CompositeBehavior enterCompositeTransform(TransformHierarchy.Node node) {
+    PTransform transform = node.getTransform();
+    if (transform instanceof Create.Values || transform instanceof Read.Bounded) {
+      TransformTranslator translator = getTransformTranslator(transform.getClass());
+      if (translator == null) {
+        throw new UnsupportedOperationException(
+            "Unsupported Beam transform " + transform.getClass().getName());
+      }
+      translationContext.setCurrentTransform(node, getPipeline());
+      translator.translate(transform, translationContext);
+      return CompositeBehavior.DO_NOT_ENTER_TRANSFORM;
+    }
     return CompositeBehavior.ENTER_TRANSFORM;
   }
 

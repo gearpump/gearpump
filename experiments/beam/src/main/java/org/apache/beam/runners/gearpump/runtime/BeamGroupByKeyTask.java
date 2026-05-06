@@ -32,8 +32,9 @@ import java.util.Map;
 import org.apache.beam.runners.gearpump.translators.utils.TranslatorUtils;
 import org.apache.beam.sdk.transforms.windowing.GlobalWindow;
 import org.apache.beam.sdk.util.CoderUtils;
-import org.apache.beam.sdk.util.WindowedValue;
 import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.WindowedValue;
+import org.apache.beam.sdk.values.WindowedValues;
 
 /**
  * Minimal in-memory Beam GroupByKey task.
@@ -93,7 +94,7 @@ public class BeamGroupByKeyTask<K, V> extends Task {
     for (GroupedValues<K, V> grouped : groups.values()) {
       KV<K, Iterable<V>> output = KV.of(grouped.key, (Iterable<V>) new ArrayList<>(grouped.values));
       WindowedValue<KV<K, Iterable<V>>> windowedValue =
-          WindowedValue.timestampedValueInGlobalWindow(output, outputTimestamp);
+          WindowedValues.timestampedValueInGlobalWindow(output, outputTimestamp);
       taskContext.output(new DefaultMessage(windowedValue, javaTimestamp));
     }
   }

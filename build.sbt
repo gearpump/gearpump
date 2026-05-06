@@ -142,9 +142,10 @@ lazy val services: Project = Project(
 lazy val beamRunner = Project(
   id = "gearpump-beam-runner",
   base = file("experiments/beam"))
-  .settings(commonSettings ++ javadocSettings ++ beamRunnerDependencies: _*)
+  .settings(commonSettings ++ javadocSettings ++ beamRunnerDependencies ++ Seq(
+    testFrameworks += new TestFramework("com.novocode.junit.JUnitFramework")
+  ): _*)
   .dependsOn(core % "provided", streaming % "provided")
-  .enablePlugins(GenJavadocPlugin)
 
 /**
  * The follow examples can be run in IDE or with `sbt run`

@@ -18,7 +18,7 @@
 package org.apache.beam.runners.gearpump.runtime;
 
 import java.io.Serializable;
-import org.apache.beam.sdk.util.WindowedValue;
+import org.apache.beam.sdk.values.WindowedValue;
 
 /** Tagged value emitted by a low-level Beam ParDo task. */
 public class TaggedOutputValue implements Serializable {

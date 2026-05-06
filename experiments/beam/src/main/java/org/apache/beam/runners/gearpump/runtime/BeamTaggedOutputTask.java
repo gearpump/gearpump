@@ -22,7 +22,7 @@ import io.gearpump.Message;
 import io.gearpump.cluster.UserConfig;
 import io.gearpump.streaming.task.Task;
 import io.gearpump.streaming.task.TaskContext;
-import org.apache.beam.sdk.util.WindowedValue;
+import org.apache.beam.sdk.values.WindowedValue;
 
 /** Filters ParDo output by Beam output tag and unwraps the contained value. */
 public class BeamTaggedOutputTask extends Task {

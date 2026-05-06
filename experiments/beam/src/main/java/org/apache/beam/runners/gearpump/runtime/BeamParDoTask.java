@@ -36,8 +36,9 @@ import org.apache.beam.runners.gearpump.translators.utils.TranslatorUtils;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.reflect.DoFnInvoker;
 import org.apache.beam.sdk.transforms.reflect.DoFnInvokers;
-import org.apache.beam.sdk.util.WindowedValue;
+import org.apache.beam.sdk.util.WindowedValueMultiReceiver;
 import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.values.WindowedValue;
 
 /** Executes a Beam {@link DoFn} inside a low-level Gearpump task. */
 @SuppressWarnings("unchecked")
@@ -66,8 +67,9 @@ public class BeamParDoTask<InputT, OutputT> extends Task {
     SideInputHandler sideInputReader =
         new SideInputHandler(
             Collections.emptyList(), InMemoryStateInternals.<Void>forKey(null));
-    invoker = DoFnInvokers.invokerFor((DoFn<InputT, OutputT>) spec.getDoFn());
-    invoker.invokeSetup();
+    invoker =
+        DoFnInvokers.tryInvokeSetupFor(
+            (DoFn<InputT, OutputT>) spec.getDoFn(), spec.getPipelineOptions());
     runner =
         DoFnRunners.simpleRunner(
             spec.getPipelineOptions(),
@@ -77,10 +79,11 @@ public class BeamParDoTask<InputT, OutputT> extends Task {
             spec.getMainOutputTag(),
             spec.getSideOutputTags(),
             new NoOpStepContext(),
-            null,
+            spec.getInputCoder(),
             spec.getOutputCoders(),
             spec.getWindowingStrategy(),
-            spec.getDoFnSchemaInformation());
+            spec.getDoFnSchemaInformation(),
+            Collections.emptyMap());
     runner.startBundle();
   }
 
@@ -118,26 +121,29 @@ public class BeamParDoTask<InputT, OutputT> extends Task {
     }
   }
 
-  private static final class TaskOutputManager implements DoFnRunners.OutputManager {
+  private static final class TaskOutputManager implements WindowedValueMultiReceiver {
 
     private final TaskContext taskContext;
-    private final Set<TupleTag<?>> outputTags = new HashSet<>();
+    private final Set<String> outputTagIds = new HashSet<>();
+    private final String mainOutputTagId;
 
     private TaskOutputManager(
         TaskContext taskContext, TupleTag<?> mainOutputTag, Iterable<TupleTag<?>> sideOutputTags) {
       this.taskContext = taskContext;
-      outputTags.add(mainOutputTag);
+      this.mainOutputTagId = mainOutputTag.getId();
+      outputTagIds.add(mainOutputTagId);
       for (TupleTag<?> sideOutputTag : sideOutputTags) {
-        outputTags.add(sideOutputTag);
+        outputTagIds.add(sideOutputTag.getId());
       }
     }
 
     @Override
     public <T> void output(TupleTag<T> outputTag, WindowedValue<T> output) {
-      if (outputTags.contains(outputTag)) {
+      String outputTagId = outputTag == null ? mainOutputTagId : outputTag.getId();
+      if (outputTagIds.contains(outputTagId)) {
         taskContext.output(
             new DefaultMessage(
-                new TaggedOutputValue(outputTag.getId(), output),
+                new TaggedOutputValue(outputTagId, output),
                 TranslatorUtils.windowedValueTimestamp(output)));
       }
     }

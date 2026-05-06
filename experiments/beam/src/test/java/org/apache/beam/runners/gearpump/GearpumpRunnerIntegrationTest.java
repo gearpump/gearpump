@@ -16,10 +16,12 @@
  */
 package org.apache.beam.runners.gearpump;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Create;
@@ -32,6 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /** Embedded-runner integration tests for the low-level Gearpump Beam runner. */
 public class GearpumpRunnerIntegrationTest {
@@ -44,7 +47,7 @@ public class GearpumpRunnerIntegrationTest {
   public void setUp() {
     CAPTURED.clear();
     options = PipelineOptionsFactory.create().as(GearpumpPipelineOptions.class);
-    options.setRunner(TestGearpumpRunner.class);
+    options.setRunner(GearpumpRunner.class);
     options.setApplicationName("beamGearpumpIntegrationTest");
     options.setParallelism(1);
   }
@@ -62,11 +65,7 @@ public class GearpumpRunnerIntegrationTest {
         .apply("upper", ParDo.of(new UpperCaseFn()))
         .apply("capture", ParDo.of(new CaptureStringFn()));
 
-    pipeline.run();
-
-    List<String> actual = new ArrayList<>(CAPTURED);
-    Collections.sort(actual);
-    assertEquals(asSortedList("ALPHA", "BETA"), actual);
+    assertPipelineOutputs(pipeline, "ALPHA", "BETA");
   }
 
   @Test
@@ -77,11 +76,7 @@ public class GearpumpRunnerIntegrationTest {
         .apply(GroupByKey.create())
         .apply("captureSums", ParDo.of(new CaptureGroupedSumsFn()));
 
-    pipeline.run();
-
-    List<String> actual = new ArrayList<>(CAPTURED);
-    Collections.sort(actual);
-    assertEquals(asSortedList("a=3", "b=5"), actual);
+    assertPipelineOutputs(pipeline, "a=3", "b=5");
   }
 
   private static List<String> asSortedList(String... values) {
@@ -89,6 +84,44 @@ public class GearpumpRunnerIntegrationTest {
     Collections.addAll(list, values);
     Collections.sort(list);
     return list;
+  }
+
+  private static void assertPipelineOutputs(Pipeline pipeline, String... expectedOutputs) {
+    GearpumpPipelineResult result = (GearpumpPipelineResult) pipeline.run();
+    try {
+      waitForOutputs(expectedOutputs.length);
+      List<String> actual = new ArrayList<>(CAPTURED);
+      Collections.sort(actual);
+      assertEquals(asSortedList(expectedOutputs), actual);
+    } finally {
+      shutdown(result);
+    }
+  }
+
+  private static void waitForOutputs(int expectedCount) {
+    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+    while (System.nanoTime() < deadline) {
+      if (CAPTURED.size() >= expectedCount) {
+        return;
+      }
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        fail("Interrupted while waiting for Beam pipeline output");
+      }
+    }
+    fail("Timed out waiting for Beam pipeline output. Captured: " + CAPTURED);
+  }
+
+  private static void shutdown(GearpumpPipelineResult result) {
+    try {
+      result.cancel();
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to cancel Beam test application", e);
+    } finally {
+      result.getClientContext().close();
+    }
   }
 
   private static final class UpperCaseFn extends DoFn<String, String> {

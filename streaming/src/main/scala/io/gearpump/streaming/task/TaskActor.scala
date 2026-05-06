@@ -26,7 +26,7 @@ import io.gearpump.streaming.ExecutorToAppMaster._
 import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.TaskActor._
-import io.gearpump.util.{LogUtil, TimeOutScheduler}
+import io.gearpump.util.{LogUtil, PekkoHelper, TimeOutScheduler}
 import java.time.Instant
 import java.util
 import java.util.concurrent.TimeUnit
@@ -420,12 +420,10 @@ object TaskActor {
     }
 
     // Tricky performance optimization to save memory.
-    // We store the session Id in the uid of ActorPath
-    // ActorPath.hashCode is same as uid.
+    // We store the session Id in the uid of ActorPath.
+    // Pekko no longer guarantees ActorRef.hashCode matches that uid, so read it explicitly.
     private def getSessionId(actor: ActorRef): Int = {
-      // TODO: As method uid is protected in the Pekko package, we
-      // are using hashCode instead of uid.
-      actor.hashCode()
+      PekkoHelper.getActorPathUid(actor)
     }
   }
 

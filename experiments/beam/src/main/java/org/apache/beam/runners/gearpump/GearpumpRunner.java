@@ -46,6 +46,8 @@ import org.apache.pekko.actor.ActorSystem;
 public class GearpumpRunner extends PipelineRunner<GearpumpPipelineResult> {
 
   private static final String GEARPUMP_SERIALIZERS = "gearpump.serializers";
+  private static final String PEKKO_ALLOW_JAVA_SERIALIZATION =
+      "pekko.actor.allow-java-serialization";
   private static final String DEFAULT_APPNAME = "beam_gearpump_app";
 
   private final GearpumpPipelineOptions options;
@@ -67,7 +69,8 @@ public class GearpumpRunner extends PipelineRunner<GearpumpPipelineResult> {
       appName = DEFAULT_APPNAME;
     }
 
-    Config config = registerSerializers(ClusterConfig.defaultConfig(), options.getSerializers());
+    Config config =
+        configureRunnerConfig(ClusterConfig.defaultConfig(), options.getSerializers());
     if (!options.getRemote()) {
       config =
           config.withValue(Constants.APPLICATION_TOTAL_RETRIES(), ConfigValueFactory.fromAnyRef(0));
@@ -93,13 +96,21 @@ public class GearpumpRunner extends PipelineRunner<GearpumpPipelineResult> {
     }
   }
 
-  /** Register Beam runtime classes with the default Gearpump serializers. */
-  private Config registerSerializers(Config config, Map<String, String> userSerializers) {
+  /**
+   * Beam tasks currently store opaque Beam objects in UserConfig, which still uses
+   * Pekko's JavaSerializer internally. Keep that enabled for Beam until those values
+   * are migrated to dedicated serializers.
+   */
+  public static Config configureRunnerConfig(Config config, Map<String, String> userSerializers) {
     Map<String, String> serializers = new HashMap<>();
-    serializers.put("org.apache.beam.sdk.util.WindowedValue$ValueInGlobalWindow", "");
-    serializers.put("org.apache.beam.sdk.util.WindowedValue$TimestampedValueInSingleWindow", "");
-    serializers.put("org.apache.beam.sdk.util.WindowedValue$TimestampedValueInGlobalWindow", "");
-    serializers.put("org.apache.beam.sdk.util.WindowedValue$TimestampedValueInMultipleWindows", "");
+    serializers.put("org.apache.beam.sdk.values.WindowedValues$ValueInGlobalWindow", "");
+    serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedValueInSingleWindow", "");
+    serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedValueInGlobalWindow", "");
+    serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedValueInMultipleWindows", "");
+    serializers.put("org.apache.beam.sdk.values.WindowedValues$SingleWindowedValue", "");
+    serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedWindowedValue", "");
+    serializers.put("org.apache.beam.sdk.values.WindowedValues$SimpleWindowedValue", "");
+    serializers.put("org.apache.beam.sdk.values.WindowedValues$MinTimestampWindowedValue", "");
     serializers.put("org.apache.beam.sdk.transforms.windowing.PaneInfo", "");
     serializers.put("org.apache.beam.sdk.transforms.windowing.PaneInfo$Timing", "");
     serializers.put("org.apache.beam.sdk.transforms.windowing.IntervalWindow", "");
@@ -112,6 +123,8 @@ public class GearpumpRunner extends PipelineRunner<GearpumpPipelineResult> {
       serializers.putAll(userSerializers);
     }
 
-    return config.withValue(GEARPUMP_SERIALIZERS, ConfigValueFactory.fromMap(serializers));
+    return config
+        .withValue(PEKKO_ALLOW_JAVA_SERIALIZATION, ConfigValueFactory.fromAnyRef(true))
+        .withValue(GEARPUMP_SERIALIZERS, ConfigValueFactory.fromMap(serializers));
   }
 }

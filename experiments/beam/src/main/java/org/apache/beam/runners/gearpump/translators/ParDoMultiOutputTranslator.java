@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.beam.runners.core.construction.ParDoTranslation;
 import org.apache.beam.runners.gearpump.runtime.BeamParDoFnSpec;
 import org.apache.beam.runners.gearpump.runtime.BeamParDoTask;
 import org.apache.beam.runners.gearpump.runtime.BeamTaggedOutputTask;
@@ -32,6 +31,7 @@ import org.apache.beam.runners.gearpump.runtime.BeamUserConfig;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.transforms.DoFnSchemaInformation;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.util.construction.ParDoTranslation;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PValue;
 import org.apache.beam.sdk.values.TupleTag;
@@ -71,6 +71,7 @@ public class ParDoMultiOutputTranslator<InputT, OutputT>
         new BeamParDoFnSpec<>(
             context.getPipelineOptions(),
             transform.getFn(),
+            input.getCoder(),
             mainOutputTag,
             sideOutputTags,
             outputCoders,

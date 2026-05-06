@@ -30,15 +30,15 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Temurin JDK 8
+      - name: Set up Temurin JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "8"
+          java-version: "17"
           cache: sbt
 
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
 
       - name: Run Beam runner tests
-        run: sbt -jvm-opts project/github-actions.jvmopts -Dsbt.log.noformat=true gearpump-beam-runner/test
+        run: sbt -Dsbt.log.noformat=true gearpump-beam-runner/test

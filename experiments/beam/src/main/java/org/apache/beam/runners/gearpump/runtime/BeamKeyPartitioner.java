@@ -22,12 +22,12 @@ import io.gearpump.streaming.partitioner.UnicastPartitioner;
 import java.util.Arrays;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.util.CoderUtils;
-import org.apache.beam.sdk.util.WindowedValue;
 import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.WindowedValue;
 
 /** Partitions GroupByKey input by encoded Beam key bytes. */
 @SuppressWarnings("unchecked")
-public class BeamKeyPartitioner<K, V> extends UnicastPartitioner {
+public class BeamKeyPartitioner<K, V> implements UnicastPartitioner {
 
   private final Coder<K> keyCoder;
 

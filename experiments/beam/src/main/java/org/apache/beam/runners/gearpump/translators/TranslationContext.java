@@ -17,23 +17,22 @@
  */
 package org.apache.beam.runners.gearpump.translators;
 
-import static org.apache.beam.vendor.guava.v20_0.com.google.common.base.Preconditions.checkArgument;
-
 import io.gearpump.cluster.UserConfig;
 import io.gearpump.streaming.javaapi.Graph;
 import io.gearpump.streaming.javaapi.Processor;
 import io.gearpump.streaming.partitioner.Partitioner;
 import io.gearpump.streaming.task.Task;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import org.apache.beam.runners.core.construction.TransformInputs;
 import org.apache.beam.runners.gearpump.GearpumpPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.runners.AppliedPTransform;
 import org.apache.beam.sdk.runners.TransformHierarchy;
+import org.apache.beam.sdk.util.construction.TransformInputs;
 import org.apache.beam.sdk.values.PValue;
 import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.vendor.guava.v20_0.com.google.common.collect.Iterables;
 import org.apache.pekko.actor.ActorSystem;
 
 /** Maintains context data for the low-level Gearpump Beam translators. */
@@ -103,24 +102,40 @@ public class TranslationContext {
     return (Processor<T>) processors.get(input);
   }
 
+  @SuppressWarnings("unchecked")
   public Map<TupleTag<?>, PValue> getInputs() {
-    return getCurrentTransform().getInputs();
+    return (Map<TupleTag<?>, PValue>) (Map<?, ?>) getCurrentTransform().getInputs();
   }
 
   public PValue getInput() {
-    return Iterables.getOnlyElement(TransformInputs.nonAdditionalInputs(getCurrentTransform()));
+    return getOnlyElement(TransformInputs.nonAdditionalInputs(getCurrentTransform()));
   }
 
+  @SuppressWarnings("unchecked")
   public Map<TupleTag<?>, PValue> getOutputs() {
-    return getCurrentTransform().getOutputs();
+    return (Map<TupleTag<?>, PValue>) (Map<?, ?>) getCurrentTransform().getOutputs();
   }
 
   public PValue getOutput() {
-    return Iterables.getOnlyElement(getOutputs().values());
+    return getOnlyElement(getOutputs().values());
   }
 
   public AppliedPTransform<?, ?, ?> getCurrentTransform() {
-    checkArgument(currentTransform != null, "current transform not set");
+    if (currentTransform == null) {
+      throw new IllegalStateException("current transform not set");
+    }
     return currentTransform;
+  }
+
+  private static <T> T getOnlyElement(Collection<T> values) {
+    Iterator<T> iterator = values.iterator();
+    if (!iterator.hasNext()) {
+      throw new IllegalStateException("expected one element but collection was empty");
+    }
+    T value = iterator.next();
+    if (iterator.hasNext()) {
+      throw new IllegalStateException("expected exactly one element");
+    }
+    return value;
   }
 }

@@ -1,8 +1,0 @@
--Dfile.encoding=UTF8
--Xms2048M
--Xmx2048M
--Xss6M
--XX:MaxMetaspaceSize=1024m
--XX:ReservedCodeCacheSize=256M
--XX:+CMSClassUnloadingEnabled
--XX:+UseConcMarkSweepGC

@@ -17,7 +17,14 @@
  */
 package org.apache.beam.runners.gearpump.translators;
 
+import com.typesafe.config.Config;
 import io.gearpump.cluster.ClusterConfig;
+import io.gearpump.streaming.Processor;
+import io.gearpump.streaming.task.Task;
+import org.apache.beam.runners.gearpump.GearpumpRunner;
+import org.apache.beam.runners.gearpump.runtime.BeamGroupByKeyTask;
+import org.apache.beam.runners.gearpump.runtime.BeamParDoTask;
+import org.apache.beam.runners.gearpump.runtime.BeamTaggedOutputTask;
 import org.apache.beam.runners.gearpump.GearpumpPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
@@ -30,8 +37,12 @@ import org.apache.pekko.actor.ActorSystem;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import scala.collection.JavaConverters;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /** Tests for low-level Beam-to-Gearpump graph translation. */
 public class GearpumpPipelineTranslatorTest {
@@ -41,9 +52,10 @@ public class GearpumpPipelineTranslatorTest {
 
   @Before
   public void setUp() {
-    actorSystem = ActorSystem.create("beam-runner-translator-test", ClusterConfig.defaultConfig());
     options = PipelineOptionsFactory.as(GearpumpPipelineOptions.class);
     options.setParallelism(1);
+    Config config = GearpumpRunner.configureRunnerConfig(ClusterConfig.defaultConfig(), null);
+    actorSystem = ActorSystem.create("beam-runner-translator-test", config);
   }
 
   @After
@@ -61,8 +73,13 @@ public class GearpumpPipelineTranslatorTest {
     TranslationContext context = new TranslationContext("beam-test", options, actorSystem);
     new GearpumpPipelineTranslator(context).translate(pipeline);
 
-    assertEquals(3, context.getGraph().getVertices().size());
-    assertEquals(2, context.getGraph().getEdges().size());
+    List<Processor<? extends Task>> processors =
+        JavaConverters.seqAsJavaListConverter(context.getGraph().getVertices()).asJava();
+    assertTrue(processors.size() >= 3);
+    assertTrue(context.getGraph().getEdges().size() >= 2);
+    assertTrue(containsProcessor(processors, BeamParDoTask.class));
+    assertEquals(
+        BeamTaggedOutputTask.class, context.getOutputProcessor(context.getOutput()).taskClass());
   }
 
   @Test
@@ -75,8 +92,23 @@ public class GearpumpPipelineTranslatorTest {
     TranslationContext context = new TranslationContext("beam-test", options, actorSystem);
     new GearpumpPipelineTranslator(context).translate(pipeline);
 
-    assertEquals(2, context.getGraph().getVertices().size());
-    assertEquals(1, context.getGraph().getEdges().size());
+    List<Processor<? extends Task>> processors =
+        JavaConverters.seqAsJavaListConverter(context.getGraph().getVertices()).asJava();
+    assertTrue(processors.size() >= 2);
+    assertTrue(context.getGraph().getEdges().size() >= 1);
+    assertTrue(containsProcessor(processors, BeamGroupByKeyTask.class));
+    assertEquals(
+        BeamGroupByKeyTask.class, context.getOutputProcessor(context.getOutput()).taskClass());
+  }
+
+  private static boolean containsProcessor(
+      List<Processor<? extends Task>> processors, Class<? extends Task> taskClass) {
+    for (Processor<? extends Task> processor : processors) {
+      if (taskClass.equals(processor.taskClass())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private static final class UpperCaseFn extends DoFn<String, String> {

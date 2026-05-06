@@ -17,11 +17,11 @@
  */
 package org.apache.beam.runners.gearpump;
 
+import java.util.Arrays;
 import org.apache.beam.sdk.PipelineRunner;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsRegistrar;
 import org.apache.beam.sdk.runners.PipelineRunnerRegistrar;
-import org.apache.beam.vendor.guava.v20_0.com.google.common.collect.ImmutableList;
 
 /** Service registration hooks for the Gearpump Beam runner. */
 public class GearpumpRunnerRegistrar {
@@ -32,7 +32,7 @@ public class GearpumpRunnerRegistrar {
 
     @Override
     public Iterable<Class<? extends PipelineRunner<?>>> getPipelineRunners() {
-      return ImmutableList.of(GearpumpRunner.class, TestGearpumpRunner.class);
+      return Arrays.asList(GearpumpRunner.class, TestGearpumpRunner.class);
     }
   }
 
@@ -41,7 +41,7 @@ public class GearpumpRunnerRegistrar {
 
     @Override
     public Iterable<Class<? extends PipelineOptions>> getPipelineOptions() {
-      return ImmutableList.of(GearpumpPipelineOptions.class);
+      return Arrays.asList(GearpumpPipelineOptions.class);
     }
   }
 }
