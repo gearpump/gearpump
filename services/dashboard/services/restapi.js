@@ -131,12 +131,6 @@ angular.module('dashboard')
             files, fileFieldNames, executorNum, args, onComplete);
         },
 
-        /** Submit a Storm application */
-        submitStormApp: function (files, formFormNames, executorNum, args, onComplete) {
-          return self._submitApp(restapiV1Root + 'master/submitstormapp',
-            files, formFormNames, executorNum, args, onComplete);
-        },
-
         _submitApp: function (url, files, fileFieldNames, executorNum, args, onComplete) {
           var upload = Upload.upload({
             url: url,

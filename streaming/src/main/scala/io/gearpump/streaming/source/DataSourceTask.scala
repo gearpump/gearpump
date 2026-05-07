@@ -17,8 +17,7 @@ package io.gearpump.streaming.source
 import io.gearpump._
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.Constants._
-import io.gearpump.streaming.dsl.window.impl.{StreamingOperator, TimestampedValue}
-import io.gearpump.streaming.task.{Task, TaskContext, TaskUtil}
+import io.gearpump.streaming.task.{Task, TaskContext}
 import java.time.Instant
 
 /**
@@ -35,7 +34,6 @@ import java.time.Instant
  */
 class DataSourceTask[IN, OUT] private[source](
     source: DataSource,
-    operator: StreamingOperator[IN, OUT],
     context: TaskContext,
     conf: UserConfig)
   extends Task(context, conf) {
@@ -43,7 +41,6 @@ class DataSourceTask[IN, OUT] private[source](
   def this(context: TaskContext, conf: UserConfig) = {
     this(
       conf.getValue[DataSource](GEARPUMP_STREAMING_SOURCE)(context.system).get,
-      conf.getValue[StreamingOperator[IN, OUT]](GEARPUMP_STREAMING_OPERATOR)(context.system).get,
       context, conf
     )
   }
@@ -53,7 +50,6 @@ class DataSourceTask[IN, OUT] private[source](
   override def onStart(startTime: Instant): Unit = {
     LOG.info(s"opening data source at ${startTime.toEpochMilli}")
     source.open(context, startTime)
-    operator.setup()
 
     self ! Watermark(source.getWatermark)
   }
@@ -67,19 +63,16 @@ class DataSourceTask[IN, OUT] private[source](
   }
 
   override def onWatermarkProgress(watermark: Instant): Unit = {
-    TaskUtil.trigger(watermark, operator, context)
+    context.updateWatermark(watermark)
   }
 
   override def onStop(): Unit = {
     LOG.info("closing data source...")
     source.close()
-    operator.teardown()
   }
 
   private def process(msg: Message): Unit = {
-    operator.flatMap(new TimestampedValue(msg))
-      .iterator
-      .foreach { tv => context.output(tv.toMessage) }
+    context.output(msg)
   }
 
 }

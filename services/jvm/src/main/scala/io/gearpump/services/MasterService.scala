@@ -129,24 +129,6 @@ class MasterService(val master: ActorRef,
         }
       }
     } ~
-    path("submitstormapp") {
-      post {
-        uploadFile { form =>
-          val jar = form.getFileInfo("jar").map(_.file)
-          val configFile = form.getFileInfo("configfile").map(_.file)
-          val args = form.getValue("args").getOrElse("")
-          onComplete(Future(
-            MasterService.submitStormApp(jar, configFile, args, systemConfig)
-          )) {
-            case Success(success) =>
-              val response = MasterService.AppSubmissionResult(success)
-              complete(write(response))
-            case Failure(ex) =>
-              failWith(ex)
-          }
-        }
-      }
-    } ~
     path("submitdag") {
       post {
         entity(as[String]) { request =>
@@ -232,26 +214,10 @@ object MasterService {
     )
   }
 
-  /**
-   * Submits Storm application.
-   */
-  def submitStormApp(
-      jar: Option[File], stormConf: Option[File], args: String, systemConfig: Config): Boolean = {
-    submitAndDeleteTempFiles(
-      "io.gearpump.experiments.storm.main.GearpumpStormClient",
-      argsArray = spaceSeparatedArgumentsToArray(args),
-      fileMap = Map("jar" -> jar, "config" -> stormConf).collect {
-        case (key, Some(file)) => key -> file
-      },
-      classPath = getStormApplicationClassPath,
-      systemConfig
-    )
-  }
-
   private def submitAndDeleteTempFiles(
       mainClass: String, argsArray: Array[String], fileMap: Map[String, File],
       classPath: Array[String], systemConfig: Config,
-      userConfigFile: Option[File] = None): Boolean = {
+      userConfigFile: Option[File]): Boolean = {
     try {
       val jar = fileMap.get("jar")
       if (jar.isEmpty) {
@@ -326,12 +292,6 @@ object MasterService {
     Array(
       homeDir + "conf",
       libHomeDir + "*"
-    )
-  }
-
-  private def getStormApplicationClassPath: Array[String] = {
-    getUserApplicationClassPath ++ Array(
-      libHomeDir + "storm/*"
     )
   }
 

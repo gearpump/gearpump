@@ -54,7 +54,6 @@ limitations under the License.
               ng-model="conf" accept-pattern="{{confFileSuffix}}"></form-control>
             <!-- input 3 -->
             <form-control
-              ng-hide="isStormApp"
               type="integer" min="1" label="Executors"
               help="The number of executor (JVM) processes to be spawned in the cluster."
               ng-model="executorNum" ng-init="executorNum = 1"></form-control>

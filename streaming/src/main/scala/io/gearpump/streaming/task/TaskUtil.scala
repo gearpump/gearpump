@@ -14,8 +14,6 @@
 
 package io.gearpump.streaming.task
 
-import io.gearpump.Message
-import io.gearpump.streaming.dsl.window.impl.{StreamingOperator, TimestampedValue}
 import java.time.Instant
 
 object TaskUtil {
@@ -29,15 +27,6 @@ object TaskUtil {
   def loadClass(className: String): Class[_ <: Task] = {
     val loader = Thread.currentThread().getContextClassLoader()
     loader.loadClass(className).asSubclass(classOf[Task])
-  }
-
-  def trigger[IN, OUT](watermark: Instant, runner: StreamingOperator[IN, OUT],
-      context: TaskContext): Unit = {
-    val triggeredOutputs = runner.trigger(watermark)
-    context.updateWatermark(triggeredOutputs.watermark)
-    triggeredOutputs.outputs.iterator.foreach { case TimestampedValue(v, t) =>
-      context.output(Message(v, t))
-    }
   }
 
   /**

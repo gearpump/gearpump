@@ -150,7 +150,7 @@ lazy val wordcountJava = Project(
 lazy val wordcount = Project(
   id = "gearpump-examples-wordcount",
   base = file("examples/streaming/wordcount"))
-  .settings(exampleSettings("io.gearpump.streaming.examples.wordcount.dsl.WordCount"))
+  .settings(exampleSettings("io.gearpump.streaming.examples.wordcount.WordCount"))
   .dependsOn(core, streaming % "compile; test->test")
 
 lazy val sol = Project(

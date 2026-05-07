@@ -333,45 +333,6 @@ Example html:
 	 
 	</form>
 
-### POST api/v1.0/master/submitstormapp
-Submit a storm jar to Gearpump cluster. It functions like command line
-
-	:::bash
-	storm app -jar xx.jar -conf yy.yaml <command line arguments>
-
-Required MIME type: "multipart/form-data"
-
-Required post form fields:
-
-1. field name "jar", job jar file.
-
-Optional post form fields:
-
-1. "configfile", .yaml configuration file, in UTF8 format.
-2. "args", command line arguments for this job jar.
-
-Example html:
-
-	:::html
-	<form id="submitstormapp" action="http://127.0.0.1:8090/api/v1.0/master/submitstormapp"
-	method="POST" enctype="multipart/form-data">
-	 
-	Job Jar (*.jar) [Required]:  <br/>
-	<input type="file" name="jar"/> <br/> <br/>
-	 
-	Config file (*.yaml) [Optional]:  <br/>
-	<input type="file" name="configfile"/> <br/>  <br/>
-	
-	Application arguments (String) [Optional]: <br/>
-	<input type="text" name="args" value=""/> <br/><br/>
-	 
-	<input type="submit" value="Submit"/>
-	 
-	</table>
-	 
-	</form>
-	
-
 ## Worker service
 
 ### GET api/v1.0/worker/&lt;workerId&gt;
@@ -1080,4 +1041,3 @@ Sample Response:
 	  ],
 	  "jvmName": "21304@lisa"
 	}
-

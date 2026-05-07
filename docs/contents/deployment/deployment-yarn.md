@@ -60,20 +60,13 @@ There are two ways to get an active configuration file:
     	gear app -jar examples/wordcount-{{SCALA_BINARY_VERSION}}-{{GEARPUMP_VERSION}}.jar -conf /tmp/mycluster.conf
     
   
-4. To run Storm application over Gearpump on YARN, please store the configuration file with `-output application.conf` 
-   and then launch Storm application with
-
-    	:::bash
-    	storm -jar examples/storm-{{SCALA_BINARY_VERSION}}-{{GEARPUMP_VERSION}}.jar storm.starter.ExclamationTopology exclamation
-    
-  
-5. Now the application is running. To check this:
+4. Now the application is running. To check this:
 
     	:::bash
     	gear info -conf /tmp/mycluster.conf
     
 
-6. To Start a UI server, please do:
+5. To Start a UI server, please do:
     
     	:::bash
     	services -conf /tmp/mycluster.conf

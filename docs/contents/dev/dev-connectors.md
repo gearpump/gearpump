@@ -67,27 +67,6 @@ This is a simple example to read from Kafka and write it back using `KafkaSource
 	val computation = sourceProcessor ~ partitioner ~> sinkProcessor
 	val app = StreamApplication(appName, Graph(computation), appConfig)
 
-#### High level API
-
-	:::scala
-	val props = new Properties
-	val appName = "KafkaDSL"
-	props.put(KafkaConfig.ZOOKEEPER_CONNECT_CONFIG, zookeeperConnect)
-	props.put(KafkaConfig.BOOTSTRAP_SERVERS_CONFIG, brokerList)
-	props.put(KafkaConfig.CHECKPOINT_STORE_NAME_PREFIX_CONFIG, appName)
-		
-	val app = StreamApp(appName, context)
-		
-	if (atLeastOnce) {
-	  val checkpointStoreFactory = new KafkaStoreFactory(props)
-	  KafkaDSL.createAtLeastOnceStream(app, sourceTopic, checkpointStoreFactory, props, sourceNum)
-	      .writeToKafka(sinkTopic, props, sinkNum)
-	} else {
-	  KafkaDSL.createAtMostOnceStream(app, sourceTopic, props, sourceNum)
-	      .writeToKafka(sinkTopic, props, sinkNum)
-	}
-		
-
 In the above example, configurations are set through Java properties and shared by `KafkaSource`, `KafkaSink` and `KafkaCheckpointStoreFactory`.
 Their configurations can be defined differently as below. 
 
@@ -153,12 +132,6 @@ Then, you can use `HBaseSink` in your application:
 	//create Gearpump Processor
 	val sinkProcessor = DataSinkProcessor(sink, parallelism)
 
-
-	:::scala
-	//assume stream is a normal `Stream` in DSL
-	stream.writeToHbase(UserConfig.empty, tableName, parallelism, "write to HBase")
-
-
 You can tune the connection to HBase via the HBase configuration passed in. If not passed, Gearpump will try to check local classpath to find a valid HBase configuration (`hbase-site.xml`).
 
 Attention, due to the issue discussed [here](http://stackoverflow.com/questions/24456484/hbase-managed-zookeeper-suddenly-trying-to-connect-to-localhost-instead-of-zooke) you may need to create additional configuration for your HBase sink:
@@ -178,27 +151,22 @@ Attention, due to the issue discussed [here](http://stackoverflow.com/questions/
 To implement your own `DataSource`, you need to implement two things:
 
 1. The data source itself
-2. a helper class to easy the usage in a DSL
+2. an optional helper that wraps it in `DataSourceProcessor`
 
 ### Implement your own `DataSource`
 You need to implement a class derived from `io.gearpump.streaming.transaction.api.TimeReplayableSource`.
 
-### Implement DSL helper (Optional)
-If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.
-You can refer `KafkaDSLUtil` as an example in Gearpump source.
-
-Below is some code snippet from `KafkaDSLUtil`:
+### Implement a helper (Optional)
+If you want a small convenience layer, add a helper that returns a `Processor` backed by your source:
 
 	:::scala
-	object KafkaDSLUtil {
+	object SourceUtil {
 	
-	  def createStream[T](
-	      app: StreamApp,
-	      topics: String,
+	  def processor(
+	      source: DataSource,
 	      parallelism: Int,
-	      description: String,
-	      properties: Properties): dsl.Stream[T] = {
-	    app.source[T](new KafkaSource(topics, properties), parallelism, description)
+	      description: String): Processor[DataSourceTask[Any, Any]] = {
+	    DataSourceProcessor(source, parallelism, description)
 	  }
 	}
 
@@ -207,31 +175,20 @@ Below is some code snippet from `KafkaDSLUtil`:
 To implement your own `DataSink`, you need to implement two things:
 
 1. The data sink itself
-2. a helper class to make it easy use in DSL
+2. an optional helper that wraps it in `DataSinkProcessor`
 
 ### Implement your own `DataSink`
 You need to implement a class derived from `io.gearpump.streaming.sink.DataSink`.
 
-### Implement DSL helper (Optional)
-If you would like to have a DSL at hand you may start with this customized stream; it is better if you can implement your own DSL helper.
-You can refer `HBaseDSLSink` as an example in Gearpump source.
-
-Below is some code snippet from `HBaseDSLSink`:
+### Implement a helper (Optional)
+If you want a small convenience layer, add a helper that returns a `Processor` backed by your sink:
 
 	:::scala
-	class HBaseDSLSink[T](stream: Stream[T]) {
-	  def writeToHbase(userConfig: UserConfig, table: String, parallism: Int, description: String): Stream[T] = {
-	    stream.sink(HBaseSink[T](userConfig, table), parallism, userConfig, description)
-	  }
-	  
-	  def writeToHbase(userConfig: UserConfig, configuration: Configuration, table: String, parallism: Int, description: String): Stream[T] = {
-	    stream.sink(HBaseSink[T](userConfig, table, configuration), parallism, userConfig, description)
-	  }  
-	}
-	
-	object HBaseDSLSink {
-	  implicit def streamToHBaseDSLSink[T](stream: Stream[T]): HBaseDSLSink[T] = {
-	    new HBaseDSLSink[T](stream)
+	object SinkUtil {
+	  def processor(
+	      sink: DataSink,
+	      parallelism: Int,
+	      userConfig: UserConfig = UserConfig.empty): Processor[DataSinkTask] = {
+	    DataSinkProcessor(sink, parallelism, userConfig)
 	  }
 	}
-
