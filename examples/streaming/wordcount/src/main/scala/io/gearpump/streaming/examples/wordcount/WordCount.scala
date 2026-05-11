@@ -55,4 +55,3 @@ object WordCount extends PekkoApp with ArgumentsParser {
     context.close()
   }
 }
-

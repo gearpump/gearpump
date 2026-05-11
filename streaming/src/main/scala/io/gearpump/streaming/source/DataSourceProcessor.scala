@@ -17,8 +17,6 @@ package io.gearpump.streaming.source
 import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.{Constants, Processor}
-import io.gearpump.streaming.dsl.plan.functions.DummyRunner
-import io.gearpump.streaming.dsl.window.impl.{FlatMapOperator, StreamingOperator}
 
 /**
  * Utility that helps user to create a DAG starting with [[DataSourceTask]]
@@ -41,11 +39,6 @@ object DataSourceProcessor {
       taskConf: UserConfig = UserConfig.empty)(implicit system: ActorSystem)
     : Processor[DataSourceTask[Any, Any]] = {
     Processor[DataSourceTask[Any, Any]](parallelism, description,
-      taskConf
-        .withValue[DataSource](Constants.GEARPUMP_STREAMING_SOURCE, dataSource)
-        .withValue[StreamingOperator[Any, Any]](Constants.GEARPUMP_STREAMING_OPERATOR,
-        new FlatMapOperator(new DummyRunner[Any])
-      )
-    )
+      taskConf.withValue[DataSource](Constants.GEARPUMP_STREAMING_SOURCE, dataSource))
   }
 }

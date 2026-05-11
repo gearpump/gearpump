@@ -16,70 +16,124 @@ package io.gearpump.streaming.source
 
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
-import io.gearpump.streaming.MockUtil
-import io.gearpump.streaming.dsl.window.impl.{StreamingOperator, TimestampedValue, TriggeredOutputs}
+import io.gearpump.streaming.task.{TaskContext, TaskId}
 import java.time.Instant
-import org.mockito.Mockito._
+import org.apache.pekko.actor.{Actor, ActorRef, ActorSystem, Cancellable, Props}
+import org.slf4j.{Logger, LoggerFactory}
 import org.scalacheck.Gen
 import org.scalatest.{Matchers, PropSpec}
-import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.duration.FiniteDuration
 
-class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
+class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers {
+
+  private val system = ActorSystem("DataSourceTaskSpec")
+  private val inbox = system.actorOf(Props(new Actor {
+    override def receive: Receive = {
+      case _ =>
+    }
+  }))
+
+  private final class RecordingTaskContext extends TaskContext {
+    val outputs = ArrayBuffer.empty[Message]
+    val watermarks = ArrayBuffer.empty[Instant]
+
+    override val taskId: TaskId = TaskId(0, 0)
+    override val executorId: Int = 0
+    override val appId: Int = 0
+    override val appName: String = "test"
+    override val system: ActorSystem = DataSourceTaskSpec.this.system
+    override val appMaster: ActorRef = inbox
+    override val parallelism: Int = 1
+    override val self: ActorRef = inbox
+    override val sender: ActorRef = inbox
+    override val upstreamMinClock: Long = 0L
+    override val logger: Logger = LoggerFactory.getLogger(getClass)
+
+    override def output(msg: Message): Unit = outputs += msg
+
+    override def actorOf(props: Props): ActorRef = inbox
+
+    override def actorOf(props: Props, name: String): ActorRef = inbox
+
+    override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration)(
+        f: => Unit): Cancellable = throw new UnsupportedOperationException
+
+    override def scheduleOnce(initialDelay: FiniteDuration)(f: => Unit): Cancellable =
+      throw new UnsupportedOperationException
+
+    override def updateWatermark(watermark: Instant): Unit = watermarks += watermark
+  }
+
+  private final class RecordingDataSource(messages: Seq[Message], initialWatermark: Instant)
+    extends DataSource {
+    private val remaining = scala.collection.mutable.Queue(messages: _*)
+
+    var openedWith: Option[(TaskContext, Instant)] = None
+    var closed = false
+
+    override def open(context: TaskContext, startTime: Instant): Unit = {
+      openedWith = Some((context, startTime))
+    }
+
+    override def read(): Message = {
+      if (remaining.nonEmpty) {
+        remaining.dequeue()
+      } else {
+        null
+      }
+    }
+
+    override def close(): Unit = {
+      closed = true
+    }
+
+    override def getWatermark: Instant = initialWatermark
+  }
 
   property("DataSourceTask should setup data source") {
     forAll(Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) {
       (startTime: Instant) =>
-      val taskContext = MockUtil.mockTaskContext
-      val dataSource = mock[DataSource]
+      val taskContext = new RecordingTaskContext
+      val dataSource = new RecordingDataSource(Nil, Watermark.MIN)
       val config = UserConfig.empty
         .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
-        val runner = mock[StreamingOperator[Any, Any]]
-      val sourceTask = new DataSourceTask[Any, Any](dataSource, runner, taskContext, config)
+      val sourceTask = new DataSourceTask[Any, Any](dataSource, taskContext, config)
 
       sourceTask.onStart(startTime)
 
-      verify(dataSource).open(taskContext, startTime)
+      dataSource.openedWith shouldBe Some(taskContext -> startTime)
     }
   }
 
   property("DataSourceTask should read from DataSource and transform inputs") {
     forAll(Gen.alphaStr, Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) {
       (str: String, timestamp: Instant) =>
-        val taskContext = MockUtil.mockTaskContext
-        val dataSource = mock[DataSource]
+        val taskContext = new RecordingTaskContext
+        val msg = Message(str, timestamp)
+        val dataSource = new RecordingDataSource(Seq(msg), Watermark.MAX)
         val config = UserConfig.empty
           .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
-        val processor = mock[StreamingOperator[String, String]]
-        val sourceTask = new DataSourceTask[String, String](dataSource, processor,
-          taskContext, config)
-        val msg = Message(str, timestamp)
-        when(dataSource.read()).thenReturn(msg)
-
-        when(processor.flatMap(new TimestampedValue[String](msg))).thenReturn(
-          Some(new TimestampedValue[String](msg))
-        )
-        when(processor.trigger(Watermark.MAX)).thenReturn(
-          TriggeredOutputs[String](None, Watermark.MAX))
+        val sourceTask = new DataSourceTask[String, String](dataSource, taskContext, config)
 
         sourceTask.onNext(Message("next"))
         sourceTask.onWatermarkProgress(Watermark.MAX)
 
-        verify(taskContext).output(msg)
-        verify(taskContext).updateWatermark(Watermark.MAX)
+        taskContext.outputs should contain only msg
+        taskContext.watermarks should contain only Watermark.MAX
     }
   }
 
   property("DataSourceTask should teardown DataSource") {
-    val taskContext = MockUtil.mockTaskContext
-    val dataSource = mock[DataSource]
+    val taskContext = new RecordingTaskContext
+    val dataSource = new RecordingDataSource(Nil, Watermark.MIN)
     val config = UserConfig.empty
       .withInt(DataSourceConfig.SOURCE_READ_BATCH_SIZE, 1)
-    val runner = mock[StreamingOperator[Any, Any]]
-    val sourceTask = new DataSourceTask[Any, Any](dataSource, runner, taskContext, config)
+    val sourceTask = new DataSourceTask[Any, Any](dataSource, taskContext, config)
 
     sourceTask.onStop()
 
-    verify(dataSource).close()
+    dataSource.closed shouldBe true
   }
 }

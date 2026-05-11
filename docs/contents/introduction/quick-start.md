@@ -1,4 +1,4 @@
-This quick start will walk you through executing your first Gearpump pipeline to run WordCount written in Stream DSL.
+This quick start will walk you through executing your first Gearpump pipeline with the low-level WordCount example.
 
 ### Set up development environment
 1. Download and install [Java Development Kit(JDK)](http://www.oracle.com/technetwork/java/javase/downloads/index.html) 1.8. Verify that [JAVA_HOME](https://docs.oracle.com/javase/8/docs/technotes/guides/troubleshoot/envvars001.html) is set and points to your JDK installation.
@@ -13,15 +13,13 @@ This quick start will walk you through executing your first Gearpump pipeline to
 		sbt "project gearpump-examples-wordcount" run
 
    
-2. Select the third main class in the sbt console
+2. Select the WordCount main class in the sbt console
 
 		:::bash
 		Multiple main classes detected, select one to run:
 		[1] io.gearpump.streaming.examples.wordcount.WordCount
-		[2] io.gearpump.streaming.examples.wordcount.dsl.WindowedWordCount
-		[3] io.gearpump.streaming.examples.wordcount.dsl.WordCount
 
-		Enter number: 3
+		Enter number: 1
 
      If everything goes fine, the following output is expected
 
@@ -31,4 +29,3 @@ This quick start will walk you through executing your first Gearpump pipeline to
 
 
    
-

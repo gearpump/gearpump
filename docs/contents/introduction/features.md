@@ -14,7 +14,7 @@ Exactly once is defined as: the effect of a message will be calculated only once
 
 ![Exact Once Semantics](../img/exact.png)
 
-#### Topology DAG DSL
+#### Topology DAG
 
 User can submit to Gearpump a computation DAG, which contains a list of nodes and edges, and each node can be parallelized to a set of tasks. Gearpump will then schedule and distribute different tasks in the DAG to different machines automatically. Each task will be started as an actor, which is long running micro-service.
 

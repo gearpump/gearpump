@@ -28,15 +28,6 @@ To kill an application:
 	gear kill -appid <application id>  [-conf <custom gearpump config file>]
 
 
-### Submit a storm application to Gearpump Cluster
-For example, to submit a storm application jar:
-
-	:::bash
-	storm -verbose -config storm.yaml -jar storm-starter-${STORM_VERSION}.jar storm.starter.ExclamationTopology exclamation
-	
-
-[Storm Compatibility Guide](../dev/dev-storm)
-
 ### Start Gearpump Cluster on YARN
 To start a Gearpump Cluster on YARN, you can:
 

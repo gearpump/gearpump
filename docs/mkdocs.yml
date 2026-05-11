@@ -35,7 +35,6 @@ nav:
     - 'Write Your 1st App': 'dev/dev-write-1st-app.md'
     - 'Customized Message Passing': 'dev/dev-custom-serializer.md'
     - 'Gearpump Connectors': 'dev/dev-connectors.md'
-    - 'Storm Compatibility': 'dev/dev-storm.md'
     - 'IDE Setup': 'dev/dev-ide-setup.md'
     - 'Non Streaming Examples': 'dev/dev-non-streaming-example.md'
     - 'REST API': 'dev/dev-rest-api.md'

@@ -134,4 +134,4 @@ basically, user need to define in gear.conf(or application.conf for single appli
 	gearpump.serialization-framework = "io.gearpump.serializer.CustomSerializationFramework"
 	
 
-Please find an example in gearpump storm module, search "StormSerializationFramework" in source code.
+Register your custom framework in `gear.conf` or `application.conf` and pair it with matching serializer bindings for the message types your application stores in `UserConfig`.

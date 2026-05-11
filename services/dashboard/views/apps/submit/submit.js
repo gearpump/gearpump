@@ -19,13 +19,7 @@ angular.module('dashboard')
 
       $scope.dialogTitle = 'Submit Gearpump Application';
       $scope.confFileSuffix = '.conf';
-
       var submitFn = restapi.submitUserApp;
-      if ($scope.isStormApp) {
-        $scope.dialogTitle = 'Submit Storm Application';
-        $scope.confFileSuffix = '.yaml';
-        submitFn = restapi.submitStormApp;
-      }
 
       $scope.canSubmit = function () {
         return $scope.jar && !$scope.uploading;
