@@ -15,10 +15,14 @@
 package io.gearpump.util;
 
 import org.apache.pekko.actor.ActorRef;
+import org.apache.pekko.actor.ActorPath;
 import org.apache.pekko.actor.ActorSystem;
+import org.apache.pekko.actor.EmptyLocalActorRef;
 import org.apache.pekko.actor.ExtendedActorSystem;
 
 public class PekkoHelper {
+
+  private static final String SESSION_PATH_PREFIX = "/session#";
 
   /**
    * Helper util to resolve a synthetic actor ref from a relative or absolute path.
@@ -31,6 +35,26 @@ public class PekkoHelper {
    * @return Full qualified ActorRef.
    */
   public static ActorRef actorFor(ActorSystem system, String path) {
-    return ((ExtendedActorSystem) system).provider().resolveActorRef(path);
+    ExtendedActorSystem extendedSystem = (ExtendedActorSystem) system;
+    if (path.startsWith(SESSION_PATH_PREFIX)) {
+      int sessionId = Integer.parseInt(path.substring(SESSION_PATH_PREFIX.length()));
+      ActorPath sessionPath = extendedSystem.provider().rootPath().child("session").withUid(sessionId);
+      return new EmptyLocalActorRef(
+          extendedSystem.provider(), sessionPath, extendedSystem.eventStream());
+    }
+    return extendedSystem.provider().resolveActorRef(path);
+  }
+
+  public static int getActorPathUid(ActorRef actorRef) {
+    String path = actorRef.path().toStringWithoutAddress();
+    int separator = path.lastIndexOf('#');
+    if (separator >= 0 && separator + 1 < path.length()) {
+      try {
+        return Integer.parseInt(path.substring(separator + 1));
+      } catch (NumberFormatException ignored) {
+        // Fall back to Pekko's uid if this is not one of Gearpump's synthetic session refs.
+      }
+    }
+    return actorRef.path().uid();
   }
 }

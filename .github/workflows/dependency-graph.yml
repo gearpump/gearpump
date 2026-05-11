@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   submit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       JAVA_OPTS: -Xms2G -Xmx2G -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8

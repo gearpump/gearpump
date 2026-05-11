@@ -30,17 +30,22 @@ object Dependencies {
   val dataReplicationVersion = "0.7"
   val upickleVersion = "0.7.5"
   val junitVersion = "4.12"
+  val junitInterfaceVersion = "0.13.3"
   val jsonSimpleVersion = "1.1"
   val slf4jVersion = "1.7.16"
+  val slf4jSimpleVersion = "2.0.17"
   val guavaVersion = "16.0.1"
   val codahaleVersion = "3.0.2"
   val pekkoKryoVersion = "1.4.0"
+  val pekkoNettyVersion = "4.2.7.Final"
   val gsCollectionsVersion = "6.2.0"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
   val scalaTestVersion = "3.0.9"
   val scalaCheckVersion = "1.14.0"
   val mockitoVersion = "1.10.17"
+  val beamVersion = "2.73.0"
+  val snappyJavaVersion = "1.1.10.7"
   val bijectionVersion = "0.8.0"
   val scalazVersion = "7.1.1"
   val algebirdVersion = "0.13.5"
@@ -65,19 +70,16 @@ object Dependencies {
       "commons-lang" % "commons-lang" % commonsLangVersion,
 
       /**
-       * Overrides Netty version 3.10.3.Final used by the original Akka 2.4.2 stack to
-       * work around a Netty hang issue
-       * (https://github.com/gearpump/gearpump/issues/2020)
-       *
-       * Akka 2.4.2 used Netty 3.10.3.Final by default, which has a serious issue that can hang
-       * the network. The same issue also happens in version range (3.10.0.Final, 3.10.5.Final)
-       * Netty 3.10.6.Final have this issue fixed, however, we find there is a 20% performance
-       * drop. So we decided to downgrade netty to 3.8.0.Final (the same version used in
-       * Akka 2.3.12).
-       *
-       * @see https://github.com/gearpump/gearpump/pull/2017 for more discussions.
+       * Gearpump's internal transport still uses the legacy Netty 3 API
+       * (`org.jboss.netty.*`), so keep the original Netty 3 line on the classpath.
        */
       "io.netty" % "netty" % "3.8.0.Final",
+      /**
+       * Pekko classic remoting now expects Netty 4 (`io.netty.channel.Channel`) and publishes
+       * those modules as optional dependencies, so add them explicitly for runtime/test startup.
+       */
+      "io.netty" % "netty-handler" % pekkoNettyVersion,
+      "io.netty" % "netty-transport" % pekkoNettyVersion,
       "org.apache.pekko" %% "pekko-remote" % pekkoVersion
         exclude("io.netty", "netty"),
 
@@ -104,5 +106,17 @@ object Dependencies {
       "org.mockito" % "mockito-core" % mockitoVersion % "test",
       "junit" % "junit" % junitVersion % "test"
     ) ++ annotationDependencies ++ compilerDependencies
+  )
+
+  val beamRunnerDependencies = Seq(
+    libraryDependencies ++= Seq(
+      "org.apache.beam" % "beam-sdks-java-core" % beamVersion,
+      "org.apache.beam" % "beam-runners-core-java" % beamVersion,
+      // Override Beam's transitive snappy-java so Java 17 tests work on macOS/aarch64.
+      "org.xerial.snappy" % "snappy-java" % snappyJavaVersion,
+      "org.slf4j" % "slf4j-simple" % slf4jSimpleVersion % "test",
+      "junit" % "junit" % junitVersion % "test",
+      "com.github.sbt" % "junit-interface" % junitInterfaceVersion % "test"
+    ) ++ annotationDependencies
   )
 }
