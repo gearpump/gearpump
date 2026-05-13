@@ -18,8 +18,9 @@ import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.streaming.appmaster.TaskRegistry.{Accept, Reject, TaskLocation, TaskLocations}
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.transport.HostPort
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
-class TaskRegistrySpec extends FlatSpec with Matchers with BeforeAndAfterEach {
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
+class TaskRegistrySpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterEach {
 
   it should "maintain registered tasks" in {
     val task0 = TaskId(0, 0)

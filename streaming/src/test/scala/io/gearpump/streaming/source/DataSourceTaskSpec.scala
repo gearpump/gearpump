@@ -21,12 +21,12 @@ import java.time.Instant
 import org.apache.pekko.actor.{Actor, ActorRef, ActorSystem, Cancellable, Props}
 import org.slf4j.{Logger, LoggerFactory}
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.FiniteDuration
+import org.scalatest.propspec.AnyPropSpec
 
-class DataSourceTaskSpec extends PropSpec with PropertyChecks with Matchers {
+class DataSourceTaskSpec extends AnyPropSpec with PropertyChecks with org.scalatest.matchers.should.Matchers {
 
   private val system = ActorSystem("DataSourceTaskSpec")
   private val inbox = system.actorOf(Props(new Actor {

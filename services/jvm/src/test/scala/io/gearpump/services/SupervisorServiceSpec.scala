@@ -25,13 +25,14 @@ import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToClient.ResolveWorkerIdResult
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Ignore, Matchers}
+import org.scalatest.{BeforeAndAfterAll, Ignore}
 import scala.concurrent.duration._
 import scala.util.Success
+import org.scalatest.flatspec.AnyFlatSpec
 
 @Ignore
 class SupervisorServiceSpec
-  extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
+  extends AnyFlatSpec with ScalatestRouteTest with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
 
   override def testConfig: Config = TestUtil.DEFAULT_CONFIG
 

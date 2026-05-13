@@ -30,8 +30,10 @@ import java.util.Properties
 import org.scalatest._
 import scala.concurrent.Future
 import scala.util.Success
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+class MainSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
   private val LOG = LogUtil.getLogger(getClass)
 

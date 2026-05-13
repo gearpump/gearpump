@@ -16,10 +16,10 @@ package io.gearpump.util
 
 import io.gearpump.transport.HostPort
 import io.gearpump.util.Util._
-import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.mockito.MockitoSugar
+import org.scalatest.flatspec.AnyFlatSpec
 
-class UtilSpec extends FlatSpec with Matchers with MockitoSugar {
+class UtilSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with MockitoSugar {
   it should "work" in {
 
     assert(findFreePort().isSuccess)

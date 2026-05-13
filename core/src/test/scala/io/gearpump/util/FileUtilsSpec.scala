@@ -17,9 +17,9 @@ package io.gearpump.util
 import com.google.common.io.Files
 import java.io.File
 import java.util
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 
-class FileUtilsSpec extends FlatSpec {
+class FileUtilsSpec extends AnyFlatSpec {
   val TXT =
     """
       |This is a multiple line

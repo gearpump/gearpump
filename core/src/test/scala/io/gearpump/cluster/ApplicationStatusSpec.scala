@@ -13,9 +13,10 @@
  */
 package io.gearpump.cluster
 
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ApplicationStatusSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
+class ApplicationStatusSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterEach {
 
   "ApplicationStatus" should "check status transition properly" in {
     val pending = ApplicationStatus.PENDING

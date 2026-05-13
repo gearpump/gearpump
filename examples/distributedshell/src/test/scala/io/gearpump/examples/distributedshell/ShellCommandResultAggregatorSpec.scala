@@ -14,9 +14,10 @@
 package io.gearpump.examples.distributedshell
 
 import io.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommandResult, ShellCommandResultAggregator}
-import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfter
+import org.scalatest.wordspec.AnyWordSpec
 
-class ShellCommandResultAggregatorSpec extends WordSpec with Matchers with BeforeAndAfter {
+class ShellCommandResultAggregatorSpec extends AnyWordSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfter {
   "ShellCommandResultAggregator" should {
     "aggregate ShellCommandResult" in {
       val executorId1 = 1

@@ -19,12 +19,13 @@ import io.gearpump.cluster.ClientToMaster.ResolveAppId
 import io.gearpump.cluster.MasterToClient.ResolveAppIdResult
 import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
 import io.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
+import org.scalatest.BeforeAndAfter
 import scala.concurrent.Future
 import scala.util.{Success, Try}
+import org.scalatest.propspec.AnyPropSpec
 
 class DistributedShellClientSpec
-  extends PropSpec with Matchers with BeforeAndAfter with MasterHarness {
+  extends AnyPropSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfter with MasterHarness {
 
   private val LOG = LogUtil.getLogger(getClass)
 

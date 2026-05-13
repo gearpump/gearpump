@@ -26,11 +26,12 @@ import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorSystemBooter.{ActorSystemRegistered, RegisterActorSystem}
 import io.gearpump.util.Constants
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ExecutorSystemLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class ExecutorSystemLauncherSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
   val workerId: WorkerId = WorkerId(0, 0L)
   val appId = 0

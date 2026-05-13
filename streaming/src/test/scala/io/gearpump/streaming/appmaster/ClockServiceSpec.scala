@@ -24,11 +24,12 @@ import io.gearpump.streaming.storage.AppDataStore
 import io.gearpump.streaming.task.{GetLatestMinClock, GetStartClock, UpstreamMinClock, _}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.{Future, Promise}
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-  with WordSpecLike with Matchers with BeforeAndAfterAll {
+  with AnyWordSpecLike with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
 
   def this() = this(ActorSystem("ClockServiceSpec", TestUtil.DEFAULT_CONFIG))
 

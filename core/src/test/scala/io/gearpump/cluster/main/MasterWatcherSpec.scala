@@ -17,11 +17,11 @@ import org.apache.pekko.actor.{ActorSystem, Props}
 import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
-import org.scalatest.{FlatSpec, Matchers}
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class MasterWatcherSpec extends FlatSpec with Matchers {
+class MasterWatcherSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers {
   def config: Config = TestUtil.MASTER_CONFIG
 
   "MasterWatcher" should "kill itself when can not get a quorum" in {

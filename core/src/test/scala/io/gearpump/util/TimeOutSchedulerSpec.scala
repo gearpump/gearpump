@@ -17,11 +17,12 @@ package io.gearpump.util
 import org.apache.pekko.actor._
 import org.apache.pekko.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import io.gearpump.cluster.TestUtil
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.duration._
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class TimeOutSchedulerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-  with WordSpecLike with Matchers with BeforeAndAfterAll {
+  with AnyWordSpecLike with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
 
   def this() = this(ActorSystem("WorkerSpec", TestUtil.DEFAULT_CONFIG))
   val mockActor = TestProbe()

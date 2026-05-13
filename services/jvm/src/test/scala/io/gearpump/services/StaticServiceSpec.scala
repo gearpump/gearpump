@@ -19,11 +19,12 @@ import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteT
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.Constants
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.duration._
+import org.scalatest.flatspec.AnyFlatSpec
 
 class StaticServiceSpec
-  extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
+  extends AnyFlatSpec with ScalatestRouteTest with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
 
   override def testConfig: Config = TestUtil.UI_CONFIG
   private val supervisorPath = system.settings.config.getString(

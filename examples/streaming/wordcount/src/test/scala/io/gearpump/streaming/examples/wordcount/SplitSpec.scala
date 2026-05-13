@@ -20,11 +20,11 @@ import io.gearpump.cluster.TestUtil
 import io.gearpump.streaming.MockUtil
 import java.time.Instant
 import org.mockito.Mockito._
-import org.scalatest.{Matchers, WordSpec}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import org.scalatest.wordspec.AnyWordSpec
 
-class SplitSpec extends WordSpec with Matchers {
+class SplitSpec extends AnyWordSpec with org.scalatest.matchers.should.Matchers {
 
   "Split" should {
     "split the text and deliver to next task" in {

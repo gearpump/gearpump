@@ -16,11 +16,12 @@ package io.gearpump.streaming.storage
 import io.gearpump.cluster.{MasterHarness, MiniCluster}
 import io.gearpump.streaming.StreamingTestUtil
 import io.gearpump.util.Constants
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.wordspec.AnyWordSpec
 
-class InMemoryAppStoreOnMasterSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class InMemoryAppStoreOnMasterSpec extends AnyWordSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
   implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
   implicit val dispatcher: scala.concurrent.ExecutionContext = MasterHarness.cachedPool
 

@@ -23,11 +23,12 @@ import io.gearpump.jarstore.local.LocalJarStore
 import io.gearpump.util.{FileUtils, LogUtil}
 import java.io.File
 import java.util.concurrent.TimeUnit
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class FileServerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
+class FileServerSpec extends AnyWordSpecLike with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
 
   implicit val timeout: org.apache.pekko.util.Timeout =
     org.apache.pekko.util.Timeout(25, TimeUnit.SECONDS)

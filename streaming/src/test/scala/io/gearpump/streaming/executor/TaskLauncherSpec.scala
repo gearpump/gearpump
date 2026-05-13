@@ -24,8 +24,10 @@ import io.gearpump.streaming.task.{Task, TaskContext, TaskContextData, TaskId, T
 import org.scalatest._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TaskLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class TaskLauncherSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   val appId = 0
   val executorId = 0
   var appMaster: TestProbe = null

@@ -23,12 +23,12 @@ import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
 import com.typesafe.config.ConfigFactory
 import io.gearpump.security.Authenticator
 import io.gearpump.services.security.oauth2.impl.CloudFoundryUAAOAuth2Authenticator
-import org.scalatest.FlatSpec
 import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class CloudFoundryUAAOAuth2AuthenticatorSpec extends FlatSpec with ScalatestRouteTest {
+class CloudFoundryUAAOAuth2AuthenticatorSpec extends AnyFlatSpec with ScalatestRouteTest {
 
   implicit val actorSystem: ActorSystem = system
   private val server = new MockOAuth2Server(system, null)

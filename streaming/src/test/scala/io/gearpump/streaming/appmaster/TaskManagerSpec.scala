@@ -39,11 +39,12 @@ import io.gearpump.transport.HostPort
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
 import org.mockito.Mockito._
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
+import org.scalatest.flatspec.AnyFlatSpec
 
-class TaskManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
+class TaskManagerSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterEach {
 
   implicit var system: ActorSystem = null
 

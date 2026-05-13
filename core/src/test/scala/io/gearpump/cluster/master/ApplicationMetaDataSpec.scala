@@ -16,9 +16,10 @@ package io.gearpump.cluster.master
 
 import io.gearpump.cluster.AppDescription
 import io.gearpump.cluster.appmaster.ApplicationMetaData
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ApplicationMetaDataSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
+class ApplicationMetaDataSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterEach {
 
   "ApplicationMetaData" should "check equal with respect to only appId and attemptId" in {
     val appDescription = AppDescription("app", "AppMaster", null)

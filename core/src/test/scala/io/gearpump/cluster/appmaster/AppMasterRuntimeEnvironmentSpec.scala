@@ -23,11 +23,12 @@ import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironment._
 import io.gearpump.cluster.appmaster.AppMasterRuntimeEnvironmentSpec.TestAppMasterEnv
 import io.gearpump.cluster.appmaster.ExecutorSystemScheduler.StartExecutorSystems
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.MasterConnectionStatus.{MasterConnected, MasterStopped}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import org.scalatest.flatspec.AnyFlatSpec
 
-class AppMasterRuntimeEnvironmentSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class AppMasterRuntimeEnvironmentSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
 
   override def beforeAll(): Unit = {

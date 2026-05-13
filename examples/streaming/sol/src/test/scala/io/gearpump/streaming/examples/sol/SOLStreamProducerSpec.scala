@@ -19,9 +19,9 @@ import io.gearpump.streaming.MockUtil
 import java.time.Instant
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
 
-class SOLStreamProducerSpec extends WordSpec with Matchers {
+class SOLStreamProducerSpec extends AnyWordSpec with org.scalatest.matchers.should.Matchers {
 
   "SOLStreamProducer" should {
     "producer message continuously" in {

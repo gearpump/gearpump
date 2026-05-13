@@ -26,10 +26,11 @@ import io.gearpump.cluster.WorkerToAppMaster.ExecutorLaunchRejected
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorSystemBooter._
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
 import scala.util.Success
+import org.scalatest.flatspec.AnyFlatSpec
 
-class AppMasterLauncherSpec extends FlatSpec with Matchers
+class AppMasterLauncherSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers
   with BeforeAndAfterEach with MasterHarness {
 
   override def config: Config = TestUtil.DEFAULT_CONFIG

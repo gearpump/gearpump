@@ -28,13 +28,14 @@ import io.gearpump.cluster.MasterToClient._
 import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
 import upickle.default.read
+import org.scalatest.flatspec.AnyFlatSpec
 
-class AppMasterServiceSpec extends FlatSpec with ScalatestRouteTest
-  with Matchers with BeforeAndAfterAll {
+class AppMasterServiceSpec extends AnyFlatSpec with ScalatestRouteTest
+  with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
 
   override def testConfig: Config = TestUtil.UI_CONFIG
 

@@ -19,13 +19,13 @@ import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.state.api.{Group, Serializer}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import scala.collection.immutable.TreeMap
 import scala.util.Success
+import org.scalatest.propspec.AnyPropSpec
 
-class WindowStateSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
+class WindowStateSpec extends AnyPropSpec with PropertyChecks with org.scalatest.matchers.should.Matchers with MockitoSugar {
 
   val longGen = Gen.chooseNum[Long](100L, 10000L)
 

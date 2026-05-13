@@ -25,11 +25,12 @@ import io.gearpump.cluster.appmaster.ExecutorSystemSchedulerSpec.{ExecutorSystem
 import io.gearpump.cluster.scheduler.{Resource, ResourceAllocation, ResourceRequest}
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.jarstore.FilePath
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ExecutorSystemSchedulerSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
+class ExecutorSystemSchedulerSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterEach {
   val appId = 0
   val workerId = WorkerId(0, 0L)
   val resource = Resource(1)

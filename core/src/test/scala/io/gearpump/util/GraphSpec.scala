@@ -16,10 +16,10 @@ package io.gearpump.util
 
 import io.gearpump.util.Graph.{Node, Path}
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.propspec.AnyPropSpec
 
-class GraphSpec extends PropSpec with PropertyChecks with Matchers {
+class GraphSpec extends AnyPropSpec with PropertyChecks with org.scalatest.matchers.should.Matchers {
 
   case class Vertex(id: Int)
   case class Edge(from: Int, to: Int)

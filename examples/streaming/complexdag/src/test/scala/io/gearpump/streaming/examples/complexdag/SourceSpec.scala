@@ -19,9 +19,9 @@ import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.MockUtil._
 import org.mockito.Mockito._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
 
-class SourceSpec extends WordSpec with Matchers {
+class SourceSpec extends AnyWordSpec with org.scalatest.matchers.should.Matchers {
 
   "Source" should {
     "Source should send a msg of Vector[String](classOf[Source].getCanonicalName)" in {

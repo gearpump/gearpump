@@ -15,10 +15,10 @@
 package io.gearpump.streaming.state.impl
 
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, PropSpec}
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.propspec.AnyPropSpec
 
-class InMemoryCheckpointStoreSpec extends PropSpec with PropertyChecks with Matchers {
+class InMemoryCheckpointStoreSpec extends AnyPropSpec with PropertyChecks with org.scalatest.matchers.should.Matchers {
 
   property("InMemoryCheckpointStore should provide read / write checkpoint") {
     val timestampGen = Gen.chooseNum[Long](1, 1000)

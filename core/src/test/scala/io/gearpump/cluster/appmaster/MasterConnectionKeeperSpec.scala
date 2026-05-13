@@ -22,11 +22,12 @@ import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.appmaster.MasterConnectionKeeper.MasterConnectionStatus.{MasterConnected, _}
 import io.gearpump.cluster.appmaster.MasterConnectionKeeperSpec.ConnectionKeeperTestEnv
 import io.gearpump.cluster.master.MasterProxy.WatchMaster
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class MasterConnectionKeeperSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class MasterConnectionKeeperSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
 
   implicit var system: ActorSystem = null
   val appId = 0

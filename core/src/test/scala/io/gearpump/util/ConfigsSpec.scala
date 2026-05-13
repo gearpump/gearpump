@@ -17,12 +17,12 @@ package io.gearpump.util
 import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.{ClusterConfig, ClusterConfigSource, UserConfig}
 import java.io.File
-import org.scalatest.{FlatSpec, Matchers}
 import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ConfigsSpec extends FlatSpec with Matchers with MockitoSugar {
+class ConfigsSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with MockitoSugar {
   "Typesafe Cluster Configs" should "follow the override rules" in {
 
     val conf =

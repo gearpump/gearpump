@@ -17,9 +17,9 @@ import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.{Ack, AckRequest, InitialAckRequest, SerializedMessage, SerializedMessageSerializer, TaskId, TaskMessageSerializer}
 import io.gearpump.transport.netty.WrappedChannelBuffer
 import org.jboss.netty.buffer.{ChannelBufferOutputStream, ChannelBuffers}
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.wordspec.AnyWordSpec
 
-class MessageSerializerSpec extends WordSpec with Matchers {
+class MessageSerializerSpec extends AnyWordSpec with org.scalatest.matchers.should.Matchers {
 
   def testSerializer[T](obj: T, taskMessageSerializer: TaskMessageSerializer[T]): T = {
     val length = taskMessageSerializer.getLength(obj)

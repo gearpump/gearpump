@@ -21,8 +21,10 @@ import org.scalatest._
 import org.scalatest.prop.PropertyChecks
 import scala.concurrent.Future
 import scala.util.Success
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 
-class DagSpec extends PropSpec with PropertyChecks
+class DagSpec extends AnyPropSpec with PropertyChecks
   with Matchers with BeforeAndAfterAll with MasterHarness {
 
   override def beforeAll(): Unit = {

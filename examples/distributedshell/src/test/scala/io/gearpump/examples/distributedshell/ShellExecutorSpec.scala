@@ -20,13 +20,13 @@ import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.examples.distributedshell.DistShellAppMaster.{ShellCommand, ShellCommandResult}
-import org.scalatest.{Matchers, WordSpec}
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import scala.sys.process._
 import scala.util.{Failure, Success, Try}
+import org.scalatest.wordspec.AnyWordSpec
 
-class ShellExecutorSpec extends WordSpec with Matchers {
+class ShellExecutorSpec extends AnyWordSpec with org.scalatest.matchers.should.Matchers {
 
   "ShellExecutor" should {
     "execute the shell command and return the result" in {

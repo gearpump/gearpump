@@ -30,11 +30,12 @@ import io.gearpump.streaming.task.{Subscriber, TaskId}
 import io.gearpump.transport.HostPort
 import org.mockito.Matchers._
 import org.mockito.Mockito.{times, _}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ExecutorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class ExecutorSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
   val appId = 0
   val executorId = 0
   val workerId = WorkerId(0, 0L)

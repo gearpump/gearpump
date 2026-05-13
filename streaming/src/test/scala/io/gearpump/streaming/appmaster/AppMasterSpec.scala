@@ -38,8 +38,10 @@ import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import io.gearpump.util.Graph._
 import org.scalatest._
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+class AppMasterSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   protected override def config = TestUtil.DEFAULT_CONFIG
 
   var appMaster: ActorRef = null

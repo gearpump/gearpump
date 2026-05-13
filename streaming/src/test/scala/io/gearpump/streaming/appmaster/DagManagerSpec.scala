@@ -23,11 +23,12 @@ import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.streaming.task.{Subscriber, TaskActor}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class DagManagerSpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
+class DagManagerSpec extends AnyWordSpecLike with org.scalatest.matchers.should.Matchers with BeforeAndAfterAll {
 
   val hash = Partitioner[HashPartitioner]
   val task1 = ProcessorDescription(id = 1, taskClass = classOf[TaskActor].getName, parallelism = 1)

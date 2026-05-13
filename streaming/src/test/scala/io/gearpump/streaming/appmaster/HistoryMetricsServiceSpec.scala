@@ -22,10 +22,11 @@ import io.gearpump.cluster.TestUtil
 import io.gearpump.metrics.Metrics.{Counter, Histogram, Meter}
 import io.gearpump.util.HistoryMetricsService
 import io.gearpump.util.HistoryMetricsService._
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.Await
+import org.scalatest.flatspec.AnyFlatSpec
 
-class HistoryMetricsServiceSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
+class HistoryMetricsServiceSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers with BeforeAndAfterEach {
 
   val count = 2
   val intervalMs = 10

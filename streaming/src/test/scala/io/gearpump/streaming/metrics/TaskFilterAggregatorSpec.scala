@@ -18,10 +18,10 @@ import io.gearpump.cluster.MasterToClient.HistoryMetricsItem
 import io.gearpump.metrics.Metrics.{Histogram, Meter}
 import io.gearpump.streaming.metrics.TaskFilterAggregator.Options
 import io.gearpump.streaming.task.TaskId
-import org.scalatest.{FlatSpec, Matchers}
 import scala.util.Random
+import org.scalatest.flatspec.AnyFlatSpec
 
-class TaskFilterAggregatorSpec extends FlatSpec with Matchers {
+class TaskFilterAggregatorSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers {
 
   def metric(taskId: TaskId): HistoryMetricsItem = {
     val random = new Random()

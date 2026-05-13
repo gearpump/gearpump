@@ -18,9 +18,9 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
 import java.time.Instant
 import org.mockito.Mockito._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
 
-class SOLStreamProcessorSpec extends FlatSpec with Matchers {
+class SOLStreamProcessorSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers {
 
   it should "pass the message downstream" in {
     val context = MockUtil.mockTaskContext

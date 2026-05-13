@@ -14,9 +14,9 @@
 
 package io.gearpump.security
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
 
-class PasswordUtilSpec extends FlatSpec with Matchers {
+class PasswordUtilSpec extends AnyFlatSpec with org.scalatest.matchers.should.Matchers {
 
   it should "verify the credential correctly" in {
     val password = "password"
