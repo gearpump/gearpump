@@ -13,15 +13,8 @@ jobs:
   update-dependencies:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    env:
-      SCALA_STEWARD_GITHUB_TOKEN: ${{ secrets.SCALA_STEWARD_GITHUB_TOKEN }}
     steps:
-      - name: Skip when Scala Steward token is not configured
-        if: ${{ env.SCALA_STEWARD_GITHUB_TOKEN == '' }}
-        run: echo "SCALA_STEWARD_GITHUB_TOKEN is not configured; skipping dependency updates."
-
       - name: Run Scala Steward
-        if: ${{ env.SCALA_STEWARD_GITHUB_TOKEN != '' }}
         uses: scala-steward-org/scala-steward-action@v2
         with:
-          github-token: ${{ env.SCALA_STEWARD_GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
