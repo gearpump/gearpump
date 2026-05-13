@@ -28,7 +28,7 @@ object Dependencies {
   val commonsLangVersion = "2.6"
   val commonsIOVersion = "2.4"
   val dataReplicationVersion = "0.7"
-  val upickleVersion = "0.7.5"
+  val upickleVersion = "0.9.9"
   val junitVersion = "4.12"
   val junitInterfaceVersion = "0.13.3"
   val jsonSimpleVersion = "1.1"
