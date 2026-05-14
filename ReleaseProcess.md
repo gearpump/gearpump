@@ -11,38 +11,34 @@ Step0: Function verification Checklist
 
 Step1: Pre-release
 ===================
-1. Review release notes in JIRA
+1. Review release notes in the issue tracker
 2. Update version in docs/version.yml
 3. Bump the gearpump version in version.sbt 
    ```scala
    version in ThisBuild := "RELEASE_VERSION"
    ```
-4. Run dev-tools/dependencies.sh
-   This will generate a LICENSE.dependencies file that lists all dependencies including Apache.
-   Make sure this agrees with the LICENSE and license/* files.
-   Eventually we'll have something like a verify option so the inspection isn't manual.
-5. Run dev-tools/create_apache_source_release.sh $GPG_KEY $GPG_PASSPHRASE
-   This will provide the source artifacts that need to be uploaded in step 6. below
-6. Upload to svn 
-   Run 'svn checkout https://dist.apache.org/repos/dist/dev/incubator/gearpump'
-   Run 'svn mkdir RELEASE_VERSION-incubating'
-   Run 'svn mkdir RELEASE_VERSION-incubating/RC[0-9]'
-   cp the gearpump* files generated from 5. to RELEASE_VERSION-incubating/RC[0-9]
-   Run 'svn add RELEASE_VERSION-incubating/RC[0-9]/gearpump*'
-   Run 'svn commit'
-7. Run dev-tools/create_apache_bin_release.sh $GPG_KEY $GPG_PASSPHRASE
-   This will provide the binary artifacts that need to be uploaded in step 8. below
-8. svn add gearpump-* to https://dist.apache.org/repos/dist/dev/incubator/gearpump/RELEASE_VERSION-incubating/RC[0-9]
-9. svn add KEYS to https://dist.apache.org/repos/dist/dev/incubator/gearpump/
-   This only needs to be done if we are adding new committers for this release
-10.Create a tag for the RC release by ```git tag RELEASE_VERION-RC[0-9]```
-11.Push this tag upstream and merge
+4. Run the license report tasks:
+   ```bash
+   sbt dumpLicenseReport dependencyLicenseInfo
+   ```
+   Make sure the generated dependency/license reports agree with the LICENSE and license/* files.
+5. Build the release artifacts:
+   ```bash
+   sbt clean +assembly +packArchiveZip
+   ```
+6. Sign the release artifacts and generate checksums for the files you plan to publish.
+7. Upload the signed source/binary artifacts to the project's current release channel.
+   Do not upload release artifacts to Apache dist SVN.
+8. Update KEYS if new signing keys are being used for the release, and publish it alongside the signed artifacts.
+9. Create a tag for the RC release by ```git tag RELEASE_VERSION-RC[0-9]```
+10. Push this tag upstream and announce the release candidate for validation.
 
 Step2: Release
 ==================
 1. Create a tag by ```git tag RELEASE_VERSION```
-2. ```git remote add upstream https://github.com/apache/incubator-gearpump```
+2. ```git remote add upstream https://github.com/gearpump/gearpump.git```
 3. ```git push upstream RELEASE_VERSION```
+4. Publish the final release artifacts in the project's current release channel.
 
 Step3: Post-Release
 ==================
@@ -52,6 +48,5 @@ Step3: Post-Release
    version in ThisBuild := "NEXT_SNAPSHOT_VERSION"
    ```
    where NEXT_SNAPSHOT_VERSION must end with "-SNAPSHOT". For example, 0.2.3-SNAPSHOT is a good snapshot version, 0.2.3 is NOT
-2. Create JIRA for new release
+2. Create a tracking issue for the next release
 3. Make PR with new release
-

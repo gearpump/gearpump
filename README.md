@@ -30,7 +30,6 @@ For steps to reproduce the performance test, please check [Performance benchmark
 * How to [Submit your first application](http://gearpump.apache.org/releases/latest/introduction/submit-your-1st-application/index.html)
 * Explore the [Maven dependencies](http://gearpump.apache.org/downloads.html#maven-dependencies)
 * Explore the [Document site](http://gearpump.apache.org)
-* Explore the [User Mailing List](http://mail-archives.apache.org/mod_mbox/incubator-gearpump-user/)
 * Report an [issue](https://github.com/gearpump/gearpump/issues)
 
 ## How to Build
