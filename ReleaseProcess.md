@@ -24,16 +24,16 @@ Step1: Pre-release
 5. Run dev-tools/create_apache_source_release.sh $GPG_KEY $GPG_PASSPHRASE
    This will provide the source artifacts that need to be uploaded in step 6. below
 6. Upload to svn 
-   Run 'svn checkout https://dist.apache.org/repos/dist/dev/incubator/gearpump'
-   Run 'svn mkdir RELEASE_VERSION-incubating'
-   Run 'svn mkdir RELEASE_VERSION-incubating/RC[0-9]'
-   cp the gearpump* files generated from 5. to RELEASE_VERSION-incubating/RC[0-9]
-   Run 'svn add RELEASE_VERSION-incubating/RC[0-9]/gearpump*'
+   Run 'svn checkout https://dist.apache.org/repos/dist/dev/gearpump'
+   Run 'svn mkdir RELEASE_VERSION'
+   Run 'svn mkdir RELEASE_VERSION/RC[0-9]'
+   cp the gearpump* files generated from 5. to RELEASE_VERSION/RC[0-9]
+   Run 'svn add RELEASE_VERSION/RC[0-9]/gearpump*'
    Run 'svn commit'
 7. Run dev-tools/create_apache_bin_release.sh $GPG_KEY $GPG_PASSPHRASE
    This will provide the binary artifacts that need to be uploaded in step 8. below
-8. svn add gearpump-* to https://dist.apache.org/repos/dist/dev/incubator/gearpump/RELEASE_VERSION-incubating/RC[0-9]
-9. svn add KEYS to https://dist.apache.org/repos/dist/dev/incubator/gearpump/
+8. svn add gearpump-* to https://dist.apache.org/repos/dist/dev/gearpump/RELEASE_VERSION/RC[0-9]
+9. svn add KEYS to https://dist.apache.org/repos/dist/dev/gearpump/
    This only needs to be done if we are adding new committers for this release
 10.Create a tag for the RC release by ```git tag RELEASE_VERION-RC[0-9]```
 11.Push this tag upstream and merge
@@ -41,7 +41,7 @@ Step1: Pre-release
 Step2: Release
 ==================
 1. Create a tag by ```git tag RELEASE_VERSION```
-2. ```git remote add upstream https://github.com/apache/incubator-gearpump```
+2. ```git remote add upstream https://github.com/gearpump/gearpump.git```
 3. ```git push upstream RELEASE_VERSION```
 
 Step3: Post-Release
@@ -54,4 +54,3 @@ Step3: Post-Release
    where NEXT_SNAPSHOT_VERSION must end with "-SNAPSHOT". For example, 0.2.3-SNAPSHOT is a good snapshot version, 0.2.3 is NOT
 2. Create JIRA for new release
 3. Make PR with new release
-

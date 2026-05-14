@@ -47,9 +47,8 @@ This section explains how to make a contribution.
 
 ## Report a bug
 
-To report a bug you should [open an issue](https://issues.apache.org/jira/browse/GEARPUMP) in our issue tracker that
-summarizes the bug.  Set the form field "Issue type" to "Bug".  If you have not used the issue tracker before you will
-need to register an account (free), log in, and then click on the red "Create Issue" button in the top navigation bar.
+To report a bug you should [open an issue](https://github.com/gearpump/gearpump/issues) in our issue tracker that
+summarizes the bug.
 
 In order to help us understand and fix the bug it would be great if you could provide us with:
 
@@ -70,10 +69,8 @@ with.
 
 ## Request a new feature
 
-To request a new feature you should [open an issue](https://issues.apache.org/jira/browse/GEARPUMP) in our issue tracker
-and summarize the desired functionality.  Set the form field "Issue type" to "New feature".  If you have not used the
-issue tracker before you will need to register an account (free), log in, and then click on the red "Create Issue"
-button in the top navigation bar.
+To request a new feature you should [open an issue](https://github.com/gearpump/gearpump/issues) in our issue tracker
+and summarize the desired functionality.
 
 
 <a name="contribute-code"></a>
@@ -83,7 +80,7 @@ Before you set out to contribute code we recommend that you familiarize yourself
 
 _If you are interested in contributing code to Gearpump but do not know where to begin:_
 In this case you should
-[browse our issue tracker for open issues and tasks](https://issues.apache.org/jira/browse/GEARPUMP/?selectedTab=com.atlassian.jira.jira-projects-plugin:issues-panel).
+[browse our issue tracker for open issues and tasks](https://github.com/gearpump/gearpump/issues).
 
 Contributions to the Gearpump codebase should be sent as GitHub pull requests.  See section [Create a pull request](#create-pr) below
 for details.  If there is any problem with the pull request we can iterate on it using the commenting features of
@@ -93,7 +90,7 @@ GitHub.
 * For _larger code contributions_, please use the following process. The idea behind this process is to prevent any
   wasted work and catch design issues early on.
 
-    1. [Open an issue](https://issues.apache.org/jira/browse/GEARPUMP) on our issue tracker if a similar issue does not
+    1. [Open an issue](https://github.com/gearpump/gearpump/issues) on our issue tracker if a similar issue does not
        exist already.  If a similar issue does exist, then you may consider participating in the work on the existing
        issue.
     2. Comment on the issue with your plan for implementing the issue.  Explain what pieces of the codebase you are
@@ -313,23 +310,13 @@ _This section applies to committers only._
 It's committer's duty to review pull requests from contributors. 
 
 Any PR ready to merge shall have at least one +1(s) and no -1(s) from other than the one who authored this PR. And any merge shall wait another 24 hours after the first +1 received to wait for potential comments.
-Only committer has the right to perform PR merge to Apache upstream.
+Only maintainers have the right to merge pull requests into the upstream repository.
 
 
 <a name="merge-pull-request"></a>
 ## Merge pull request
 
-All merges should be done using the `dev-tools/merge_gearpump_pr.py` script. To use this script, you will need to add a git remote called "apache" at `https://git-wip-us.apache.org/repos/asf/incubator-gearpump.git`, as well as one called "apache-github" at `git://github.com/apache/incubator-gearpump`. For the "apache" repo, you can authenticate using your ASF username and password. 
-
-The script is fairly self explanatory and walks you through following steps and options interactively.
-
-1. squashes the pull request's changes into one commit and merge into master
-2. push to "apache" repo (automitically close GitHub pull request)
-3. optionally cherry-pick the commit on to another branch
-5. clean up and resolve the related JIRA issue
-
-If you want to amend a commit before merging – which should be used for trivial touch-ups – then simply let the script wait at the point where it asks you if you want to push to Apache. Then, in a separate window, modify the code and push a commit. Run "git rebase -i HEAD~2" and "squash" your new commit. Edit the commit message just after to remove your commit message. You can verify the result is one change with "git log". Then resume the script in the other window.
-Also, please remember to set Assignee on JIRAs where applicable when they are resolved. The script can't do this automatically.
+Use the normal GitHub pull request merge flow for this repository. Prefer squash or rebase merges so the history stays clean, and make sure any linked GitHub issue is updated or closed when the pull request lands.
 
 <a name="release"></a>
 ## How to make a release

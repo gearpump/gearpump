@@ -1,6 +1,6 @@
-site_name: Apache Gearpump(incubating)
+site_name: Gearpump
 
-repo_url: 'https://github.com/apache/incubator-gearpump'
+repo_url: 'https://github.com/gearpump/gearpump'
 
 edit_uri: 'edit/master/docs/contents'
 
