@@ -1,10 +1,10 @@
-We'll use [Distributed Shell](https://github.com/apache/incubator-gearpump/blob/master/examples/distributedshell) as an example to illustrate how to do that.
+We'll use [Distributed Shell](https://github.com/gearpump/gearpump/tree/master/examples/distributedshell) as an example to illustrate how to do that.
 
 What Distributed Shell do is that user send a shell command to the cluster and the command will the executed on each node, then the result will be return to user.
 
 ### Maven/Sbt Settings
 
-Repository and library dependencies can be found at [Maven Setting](http://gearpump.incubator.apache.org/downloads.html#maven-dependencies)
+Repository and library dependencies can be found at [Maven Setting](http://gearpump.apache.org/downloads.html#maven-dependencies)
 
 ### Define Executor Class
 

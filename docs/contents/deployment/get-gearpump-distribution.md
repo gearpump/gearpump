@@ -5,7 +5,7 @@ You can either download pre-build release package or choose to build from source
 
 If you choose to use pre-build package, then you don't need to build from source code. The release package can be downloaded from:
 
-##### [Download page](http://gearpump.incubator.apache.org/downloads.html)
+##### [Download page](http://gearpump.apache.org/downloads.html)
 
 #### Build from Source code
 
@@ -14,7 +14,7 @@ If you choose to build the package from source code yourself, you can follow the
 1). Clone the Gearpump repository
 
 	:::bash
-  	git clone https://github.com/apache/incubator-gearpump.git
+  git clone https://github.com/gearpump/gearpump.git
   cd gearpump
 
 

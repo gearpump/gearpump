@@ -1,6 +1,6 @@
 ## Write your first Gearpump Application
 
-We'll use the classical [wordcount](https://github.com/apache/incubator-gearpump/tree/master/examples/streaming/wordcount/src/main/scala/org/apache/gearpump/streaming/examples/wordcount) example to illustrate how to write Gearpump applications.
+We'll use the classical [wordcount](https://github.com/gearpump/gearpump/tree/master/examples/streaming/wordcount/src/main/scala/io/gearpump/streaming/examples/wordcount) example to illustrate how to write Gearpump applications.
 
 	:::scala     
 	/** WordCount with the low-level Processor graph API */
@@ -36,6 +36,5 @@ You can get your preferred IDE ready for Gearpump by following [this guide](dev-
 ### Submit application
 
 Finally, you need to package everything into a uber jar with [proper dependencies](http://gearpump.apache.org/downloads.html#maven-dependencies) and submit it to a Gearpump cluster. Please check out the [application submission tool](../introduction/commandline).
-
 
 
