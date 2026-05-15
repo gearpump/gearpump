@@ -18,25 +18,27 @@
 package org.apache.beam.runners.gearpump.runtime;
 
 import java.io.Serializable;
-import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
+import org.apache.beam.sdk.transforms.windowing.WindowFn;
+import org.apache.beam.sdk.values.WindowingStrategy;
 
-/** Serializable runtime specification for the low-level GroupByKey task. */
-public class BeamGroupByKeySpec<K> implements Serializable {
+/** Serializable runtime specification for Beam window assignment. */
+public class BeamAssignWindowsSpec<T> implements Serializable {
 
-  private final Coder<K> keyCoder;
-  private final Coder<? extends BoundedWindow> windowCoder;
+  private final WindowFn<T, ? extends BoundedWindow> windowFn;
+  private final WindowingStrategy<?, ?> windowingStrategy;
 
-  public BeamGroupByKeySpec(Coder<K> keyCoder, Coder<? extends BoundedWindow> windowCoder) {
-    this.keyCoder = keyCoder;
-    this.windowCoder = windowCoder;
+  public BeamAssignWindowsSpec(
+      WindowFn<T, ? extends BoundedWindow> windowFn, WindowingStrategy<?, ?> windowingStrategy) {
+    this.windowFn = windowFn;
+    this.windowingStrategy = windowingStrategy;
   }
 
-  public Coder<K> getKeyCoder() {
-    return keyCoder;
+  public WindowFn<T, ? extends BoundedWindow> getWindowFn() {
+    return windowFn;
   }
 
-  public Coder<? extends BoundedWindow> getWindowCoder() {
-    return windowCoder;
+  public WindowingStrategy<?, ?> getWindowingStrategy() {
+    return windowingStrategy;
   }
 }

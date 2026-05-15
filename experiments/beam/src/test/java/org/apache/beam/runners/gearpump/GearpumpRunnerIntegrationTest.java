@@ -28,10 +28,16 @@ import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.Sum;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.TimestampedValue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -75,6 +81,33 @@ public class GearpumpRunnerIntegrationTest {
         .apply(Create.of(KV.of("a", 1), KV.of("a", 2), KV.of("b", 5)))
         .apply(GroupByKey.create())
         .apply("captureSums", ParDo.of(new CaptureGroupedSumsFn()));
+
+    assertPipelineOutputs(pipeline, "a=3", "b=5");
+  }
+
+  @Test
+  public void runsWindowedGroupByKeyPipelineInEmbeddedCluster() {
+    Pipeline pipeline = Pipeline.create(options);
+    pipeline
+        .apply(
+            Create.timestamped(
+                TimestampedValue.of(KV.of("a", 1), new Instant(0L)),
+                TimestampedValue.of(KV.of("a", 2), new Instant(5_000L)),
+                TimestampedValue.of(KV.of("a", 5), new Instant(15_000L))))
+        .apply(Window.into(FixedWindows.of(Duration.standardSeconds(10))))
+        .apply(GroupByKey.create())
+        .apply("captureWindowedSums", ParDo.of(new CaptureGroupedSumsFn()));
+
+    assertPipelineOutputs(pipeline, "a=3", "a=5");
+  }
+
+  @Test
+  public void runsKeyedCombinePipelineInEmbeddedCluster() {
+    Pipeline pipeline = Pipeline.create(options);
+    pipeline
+        .apply(Create.of(KV.of("a", 1), KV.of("a", 2), KV.of("b", 5)))
+        .apply(Sum.integersPerKey())
+        .apply("captureCombinedSums", ParDo.of(new CaptureCombinedSumsFn()));
 
     assertPipelineOutputs(pipeline, "a=3", "b=5");
   }
@@ -150,6 +183,16 @@ public class GearpumpRunnerIntegrationTest {
         sum += value;
       }
       String output = element.getKey() + "=" + sum;
+      CAPTURED.add(output);
+      context.output(output);
+    }
+  }
+
+  private static final class CaptureCombinedSumsFn extends DoFn<KV<String, Integer>, String> {
+    @ProcessElement
+    public void processElement(ProcessContext context) {
+      KV<String, Integer> element = context.element();
+      String output = element.getKey() + "=" + element.getValue();
       CAPTURED.add(output);
       context.output(output);
     }

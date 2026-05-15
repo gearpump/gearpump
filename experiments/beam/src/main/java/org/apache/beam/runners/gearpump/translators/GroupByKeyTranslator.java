@@ -26,7 +26,7 @@ import org.apache.beam.runners.gearpump.runtime.BeamUserConfig;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.transforms.GroupByKey;
-import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
+import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 
@@ -37,13 +37,16 @@ public class GroupByKeyTranslator<K, V> implements TransformTranslator<GroupByKe
   @Override
   public void translate(GroupByKey<K, V> transform, TranslationContext context) {
     PCollection<KV<K, V>> input = (PCollection<KV<K, V>>) context.getInput();
-    if (!(input.getWindowingStrategy().getWindowFn() instanceof GlobalWindows)) {
+    if (!input.getWindowingStrategy().getWindowFn().isNonMerging()) {
       throw new UnsupportedOperationException(
-          "The low-level Gearpump Beam runner currently supports GroupByKey only in the global window.");
+          "The low-level Gearpump Beam runner currently supports GroupByKey only for "
+              + "non-merging windows.");
     }
 
     Coder<K> keyCoder = ((KvCoder<K, V>) input.getCoder()).getKeyCoder();
-    BeamGroupByKeySpec<K> spec = new BeamGroupByKeySpec<>(keyCoder);
+    Coder<? extends BoundedWindow> windowCoder =
+        input.getWindowingStrategy().getWindowFn().windowCoder();
+    BeamGroupByKeySpec<K> spec = new BeamGroupByKeySpec<>(keyCoder, windowCoder);
     UserConfig userConfig =
         BeamUserConfig.withValue(
             UserConfig.empty(),
