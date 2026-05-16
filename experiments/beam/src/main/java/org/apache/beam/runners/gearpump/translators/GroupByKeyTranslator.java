@@ -27,6 +27,7 @@ import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
+import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 
@@ -46,7 +47,9 @@ public class GroupByKeyTranslator<K, V> implements TransformTranslator<GroupByKe
     Coder<K> keyCoder = ((KvCoder<K, V>) input.getCoder()).getKeyCoder();
     Coder<? extends BoundedWindow> windowCoder =
         input.getWindowingStrategy().getWindowFn().windowCoder();
-    BeamGroupByKeySpec<K> spec = new BeamGroupByKeySpec<>(keyCoder, windowCoder);
+    TimestampCombiner timestampCombiner = input.getWindowingStrategy().getTimestampCombiner();
+    BeamGroupByKeySpec<K> spec =
+        new BeamGroupByKeySpec<>(keyCoder, windowCoder, timestampCombiner);
     UserConfig userConfig =
         BeamUserConfig.withValue(
             UserConfig.empty(),

@@ -20,16 +20,22 @@ package org.apache.beam.runners.gearpump.runtime;
 import java.io.Serializable;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
+import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
 
 /** Serializable runtime specification for the low-level GroupByKey task. */
 public class BeamGroupByKeySpec<K> implements Serializable {
 
   private final Coder<K> keyCoder;
   private final Coder<? extends BoundedWindow> windowCoder;
+  private final TimestampCombiner timestampCombiner;
 
-  public BeamGroupByKeySpec(Coder<K> keyCoder, Coder<? extends BoundedWindow> windowCoder) {
+  public BeamGroupByKeySpec(
+      Coder<K> keyCoder,
+      Coder<? extends BoundedWindow> windowCoder,
+      TimestampCombiner timestampCombiner) {
     this.keyCoder = keyCoder;
     this.windowCoder = windowCoder;
+    this.timestampCombiner = timestampCombiner;
   }
 
   public Coder<K> getKeyCoder() {
@@ -38,5 +44,9 @@ public class BeamGroupByKeySpec<K> implements Serializable {
 
   public Coder<? extends BoundedWindow> getWindowCoder() {
     return windowCoder;
+  }
+
+  public TimestampCombiner getTimestampCombiner() {
+    return timestampCombiner;
   }
 }

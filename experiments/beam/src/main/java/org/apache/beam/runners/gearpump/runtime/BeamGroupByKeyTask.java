@@ -79,6 +79,7 @@ public class BeamGroupByKeyTask<K, V> extends Task {
           groups.put(key, grouped);
         }
         grouped.values.add(value.getValue());
+        grouped.timestamps.add(explodedWindow.getTimestamp());
       }
     } catch (Exception e) {
       throw new RuntimeException("Failed to group Beam values by key", e);
@@ -99,9 +100,7 @@ public class BeamGroupByKeyTask<K, V> extends Task {
     for (GroupedValues<K, V> grouped : groups.values()) {
       KV<K, Iterable<V>> output = KV.of(grouped.key, (Iterable<V>) new ArrayList<>(grouped.values));
       org.joda.time.Instant outputTimestamp =
-          grouped.window instanceof GlobalWindow
-              ? GlobalWindow.INSTANCE.maxTimestamp()
-              : grouped.window.maxTimestamp();
+          spec.getTimestampCombiner().merge(grouped.window, grouped.timestamps);
       Instant javaTimestamp = TranslatorUtils.jodaTimeToJava8Time(outputTimestamp);
       WindowedValue<KV<K, Iterable<V>>> windowedValue =
           WindowedValues.of(
@@ -124,6 +123,7 @@ public class BeamGroupByKeyTask<K, V> extends Task {
     private final K key;
     private final BoundedWindow window;
     private final List<V> values = new ArrayList<>();
+    private final List<org.joda.time.Instant> timestamps = new ArrayList<>();
 
     private GroupedValues(K key, BoundedWindow window) {
       this.key = key;
