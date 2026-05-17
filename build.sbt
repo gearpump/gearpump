@@ -27,6 +27,7 @@ lazy val aggregated: Seq[ProjectReference] = Seq[ProjectReference](
   services,
   beamRunner,
   gearpumpHadoop,
+  gearpumpIceberg,
   packProject,
   complexdag,
   distributedshell,
@@ -127,6 +128,14 @@ lazy val gearpumpHadoop = Project(
         .map(_.exclude("org.slf4j", "slf4j-log4j12"))
     ))
   .dependsOn(core % "provided")
+
+lazy val gearpumpIceberg = Project(
+  id = "gearpump-external-iceberg",
+  base = file("gearpump-external-iceberg"))
+  .settings(commonSettings ++ javadocSettings ++ icebergDependencies ++ Seq(
+    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
+  ): _*)
+  .dependsOn(core % "provided", streaming % "provided")
 
 lazy val services: Project = Project(
   id = "gearpump-services",

@@ -16,6 +16,7 @@ Currently, we have following `DataSource` supported.
 Name | Description
 -----| ----------
 `CollectionDataSource` | Convert a collection to a recursive data source. E.g. `seq(1, 2, 3)` will output `1,2,3,1,2,3...`.
+`IcebergSource` | Read the current snapshot of an Iceberg Hadoop table as a bounded source.
 `KafkaSource` | Read from Kafka.
 
 ### `DataSink` implemented
@@ -24,6 +25,7 @@ Currently, we have following `DataSink` supported.
 Name | Description
 -----| ----------
 `HBaseSink` | Write the message to HBase. The message to write must be HBase `Put` or a tuple of `(rowKey, family, column, value)`.
+`IcebergSink` | Append Iceberg `Record` messages to an unpartitioned Iceberg Hadoop table.
 `KafkaSink` | Write to Kafka.
 
 ## Use of Connectors
@@ -144,6 +146,58 @@ Attention, due to the issue discussed [here](http://stackoverflow.com/questions/
 	 conf
 	}
 	val sink = HBaseSink(UserConfig.empty, tableName, hadoopConfig)
+
+### Use of Iceberg connectors
+
+To use Iceberg connectors in your application, add the `gearpump-external-iceberg` dependency:
+
+#### SBT
+
+	:::sbt
+	"io.github.gearpump" %% "gearpump-external-iceberg" % {{GEARPUMP_VERSION}}
+
+#### XML
+
+	:::xml
+	<dependency>
+	  <groupId>io.github.gearpump</groupId>
+	  <artifactId>gearpump-external-iceberg</artifactId>
+	  <version>{{GEARPUMP_VERSION}}</version>
+	</dependency>
+
+Current scope:
+
+- `IcebergSource` reads the current snapshot of an Iceberg Hadoop table once and then finishes.
+- `IcebergSink` accepts `org.apache.iceberg.data.Record` messages and appends them as a new
+  snapshot when the sink task stops.
+- Only Hadoop directory tables are supported right now.
+- `IcebergSink` currently supports unpartitioned tables only.
+
+Example:
+
+	:::scala
+	import io.gearpump.cluster.UserConfig
+	import io.gearpump.external.iceberg._
+	import io.gearpump.streaming.sink.DataSinkProcessor
+	import io.gearpump.streaming.source.DataSourceProcessor
+	import org.apache.iceberg.Schema
+	import org.apache.iceberg.types.Types
+
+	val schema = new Schema(
+	  Types.NestedField.required(1, "id", Types.LongType.get()),
+	  Types.NestedField.required(2, "data", Types.StringType.get()),
+	  Types.NestedField.optional(3, "event_millis", Types.LongType.get())
+	)
+
+	val table = IcebergTableConfig.forNewTable("/tmp/gearpump-iceberg", schema)
+	val source = new IcebergSource(
+	  IcebergTableConfig.forTable("/tmp/gearpump-iceberg"),
+	  timestampExtractor = IcebergTimestampExtractor.field("event_millis")
+	)
+	val sink = new IcebergSink(table)
+
+	val sourceProcessor = DataSourceProcessor(source, parallelism = 1, description = "IcebergSource")
+	val sinkProcessor = DataSinkProcessor(sink, parallelism = 1, description = "IcebergSink")
 
 
 ## How to implement your own `DataSource`
