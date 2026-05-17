@@ -30,6 +30,7 @@ import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.Sum;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.SlidingWindows;
 import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
@@ -100,6 +101,24 @@ public class GearpumpRunnerIntegrationTest {
         .apply("captureWindowedSums", ParDo.of(new CaptureGroupedSumsFn()));
 
     assertPipelineOutputs(pipeline, "a=3", "a=5");
+  }
+
+  @Test
+  public void rewindowingShouldNotDuplicateElementsAcrossExistingWindows() {
+    Pipeline pipeline = Pipeline.create(options);
+    pipeline
+        .apply(
+            Create.timestamped(
+                TimestampedValue.of(KV.of("a", 1), new Instant(5_000L))))
+        .apply(
+            Window.into(
+                SlidingWindows.of(Duration.standardSeconds(10))
+                    .every(Duration.standardSeconds(5))))
+        .apply(Window.into(FixedWindows.of(Duration.standardSeconds(10))))
+        .apply(GroupByKey.create())
+        .apply("captureRewindowedSums", ParDo.of(new CaptureGroupedSumsFn()));
+
+    assertPipelineOutputs(pipeline, "a=1");
   }
 
   @Test

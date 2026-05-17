@@ -24,6 +24,7 @@ import io.gearpump.streaming.task.Task;
 import io.gearpump.streaming.task.TaskContext;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import org.apache.beam.runners.gearpump.translators.utils.TranslatorUtils;
 import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
 import org.apache.beam.sdk.transforms.windowing.WindowFn;
@@ -50,9 +51,7 @@ public class BeamAssignWindowsTask<T> extends Task {
   @Override
   public void onNext(Message message) {
     WindowedValue<T> windowedValue = (WindowedValue<T>) message.value();
-    for (WindowedValue<T> explodedWindow : windowedValue.explodeWindows()) {
-      emitAssignedWindows(explodedWindow);
-    }
+    emitAssignedWindows(windowedValue);
   }
 
   @Override
@@ -62,25 +61,10 @@ public class BeamAssignWindowsTask<T> extends Task {
 
   private void emitAssignedWindows(WindowedValue<T> windowedValue) {
     try {
-      WindowFn<T, BoundedWindow> windowFn = (WindowFn<T, BoundedWindow>) spec.getWindowFn();
-      Collection<BoundedWindow> assignedWindows =
-          windowFn.assignWindows(
-              windowFn.new AssignContext() {
-                @Override
-                public T element() {
-                  return windowedValue.getValue();
-                }
-
-                @Override
-                public org.joda.time.Instant timestamp() {
-                  return windowedValue.getTimestamp();
-                }
-
-                @Override
-                public BoundedWindow window() {
-                  return (BoundedWindow) windowedValue.getWindows().iterator().next();
-                }
-              });
+      Collection<BoundedWindow> assignedWindows = new LinkedHashSet<>();
+      for (WindowedValue<T> explodedWindow : windowedValue.explodeWindows()) {
+        assignedWindows.addAll(assignWindowsFor(explodedWindow));
+      }
       WindowedValue<T> assignedValue =
           WindowedValues.of(
               windowedValue.getValue(),
@@ -97,5 +81,27 @@ public class BeamAssignWindowsTask<T> extends Task {
     } catch (Exception e) {
       throw new RuntimeException("Failed to assign Beam windows", e);
     }
+  }
+
+  private Collection<BoundedWindow> assignWindowsFor(WindowedValue<T> windowedValue)
+      throws Exception {
+    WindowFn<T, BoundedWindow> windowFn = (WindowFn<T, BoundedWindow>) spec.getWindowFn();
+    return windowFn.assignWindows(
+        windowFn.new AssignContext() {
+          @Override
+          public T element() {
+            return windowedValue.getValue();
+          }
+
+          @Override
+          public org.joda.time.Instant timestamp() {
+            return windowedValue.getTimestamp();
+          }
+
+          @Override
+          public BoundedWindow window() {
+            return (BoundedWindow) windowedValue.getWindows().iterator().next();
+          }
+        });
   }
 }
