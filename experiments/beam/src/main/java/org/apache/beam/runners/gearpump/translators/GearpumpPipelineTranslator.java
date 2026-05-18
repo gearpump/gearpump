@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.runners.TransformHierarchy;
+import org.apache.beam.sdk.transforms.Combine;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.GroupByKey;
@@ -28,6 +29,7 @@ import org.apache.beam.sdk.transforms.Impulse;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.io.Read;
+import org.apache.beam.sdk.transforms.windowing.Window;
 
 /** Translates supported Beam primitives into a low-level Gearpump graph. */
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -43,7 +45,9 @@ public class GearpumpPipelineTranslator extends Pipeline.PipelineVisitor.Default
     registerTransformTranslator(Impulse.class, new ImpulseTranslator());
     registerTransformTranslator(Read.Bounded.class, new ReadBoundedTranslator());
     registerTransformTranslator(Flatten.PCollections.class, new FlattenPCollectionsTranslator());
+    registerTransformTranslator(Window.Assign.class, new WindowAssignTranslator());
     registerTransformTranslator(GroupByKey.class, new GroupByKeyTranslator());
+    registerTransformTranslator(Combine.GroupedValues.class, new CombineGroupedValuesTranslator());
     registerTransformTranslator(ParDo.MultiOutput.class, new ParDoMultiOutputTranslator());
   }
 
@@ -80,7 +84,8 @@ public class GearpumpPipelineTranslator extends Pipeline.PipelineVisitor.Default
           "Unsupported Beam transform "
               + transform.getClass().getName()
               + ". The low-level Gearpump runner currently supports only "
-              + "Read.Bounded/Create, ParDo, Flatten, and GroupByKey in global windows.");
+              + "Read.Bounded/Create, Impulse, ParDo, Flatten, Window.Assign, "
+              + "GroupByKey in non-merging windows, and Combine.GroupedValues.");
     }
     translationContext.setCurrentTransform(node, getPipeline());
     translator.translate(transform, translationContext);

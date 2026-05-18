@@ -5,17 +5,20 @@ graph API.
 
 Current scope:
 
-- `Create` and other `Read.Bounded` sources
-- `ParDo`
+- `Create`, `Impulse`, and other `Read.Bounded` sources
+- `ParDo`, including multi-output `ParDo` without side inputs
 - `Flatten.pCollections()`
-- `GroupByKey` in the default global window
+- `Window.into(...)` for non-merging windows
+- `GroupByKey` in non-merging windows with a single final pane
+- `Combine.GroupedValues` and common keyed combines such as `Sum.integersPerKey()`
 
 Current limitations:
 
 - No side inputs
-- No custom window assignment or merging windows
+- No merging windows
 - No unbounded sources
 - No Beam state/timers support
+- No custom trigger/pane semantics beyond one final emission at watermark max
 
 The implementation intentionally keeps the first supported transform set small and routes Beam
 execution through Gearpump's low-level runtime instead of the older DSL-based runner design.
