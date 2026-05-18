@@ -34,15 +34,15 @@ import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.KV;
 import org.apache.pekko.actor.ActorSystem;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import scala.collection.JavaConverters;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests for low-level Beam-to-Gearpump graph translation. */
 public class GearpumpPipelineTranslatorTest {
@@ -50,7 +50,7 @@ public class GearpumpPipelineTranslatorTest {
   private ActorSystem actorSystem;
   private GearpumpPipelineOptions options;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     options = PipelineOptionsFactory.as(GearpumpPipelineOptions.class);
     options.setParallelism(1);
@@ -58,7 +58,7 @@ public class GearpumpPipelineTranslatorTest {
     actorSystem = ActorSystem.create("beam-runner-translator-test", config);
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     actorSystem.terminate();
   }

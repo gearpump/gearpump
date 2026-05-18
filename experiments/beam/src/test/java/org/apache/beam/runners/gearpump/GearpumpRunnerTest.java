@@ -27,10 +27,10 @@ import org.apache.beam.sdk.PipelineResult;
 import org.apache.pekko.actor.ActorRef;
 import org.apache.pekko.util.Timeout;
 import org.joda.time.Duration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GearpumpRunnerTest {
 
