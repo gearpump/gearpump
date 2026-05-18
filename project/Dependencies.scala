@@ -29,8 +29,8 @@ object Dependencies {
   val commonsIOVersion = "2.4"
   val dataReplicationVersion = "0.7"
   val upickleVersion = "0.9.9"
-  val junitVersion = "4.12"
-  val junitInterfaceVersion = "0.13.3"
+  val junitJupiterVersion = "5.14.4"
+  val jupiterInterfaceVersion = "0.16.0"
   val jsonSimpleVersion = "1.1"
   val slf4jVersion = "1.7.16"
   val slf4jSimpleVersion = "2.0.17"
@@ -104,7 +104,8 @@ object Dependencies {
       "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
       "org.mockito" % "mockito-core" % mockitoVersion % "test",
-      "junit" % "junit" % junitVersion % "test"
+      "org.junit.jupiter" % "junit-jupiter" % junitJupiterVersion % "test",
+      "com.github.sbt.junit" % "jupiter-interface" % jupiterInterfaceVersion % "test"
     ) ++ annotationDependencies ++ compilerDependencies
   )
 
@@ -115,8 +116,8 @@ object Dependencies {
       // Override Beam's transitive snappy-java so Java 17 tests work on macOS/aarch64.
       "org.xerial.snappy" % "snappy-java" % snappyJavaVersion,
       "org.slf4j" % "slf4j-simple" % slf4jSimpleVersion % "test",
-      "junit" % "junit" % junitVersion % "test",
-      "com.github.sbt" % "junit-interface" % junitInterfaceVersion % "test"
+      "org.junit.jupiter" % "junit-jupiter" % junitJupiterVersion % "test",
+      "com.github.sbt.junit" % "jupiter-interface" % jupiterInterfaceVersion % "test"
     ) ++ annotationDependencies
   )
 }

@@ -29,12 +29,12 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.KV;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** Embedded-runner integration tests for the low-level Gearpump Beam runner. */
 public class GearpumpRunnerIntegrationTest {
@@ -43,7 +43,7 @@ public class GearpumpRunnerIntegrationTest {
 
   private GearpumpPipelineOptions options;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     CAPTURED.clear();
     options = PipelineOptionsFactory.create().as(GearpumpPipelineOptions.class);
@@ -52,7 +52,7 @@ public class GearpumpRunnerIntegrationTest {
     options.setParallelism(1);
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     CAPTURED.clear();
   }
