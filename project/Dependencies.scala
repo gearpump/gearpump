@@ -22,7 +22,7 @@ object Dependencies {
   val pekkoVersion = "1.6.0"
   val pekkoHttpVersion = "1.3.0"
   val pekkoHttpSessionVersion = "0.7.1"
-  val hadoopVersion = "3.1.4"
+  val hadoopVersion = "3.5.0"
   val commonsHttpVersion = "3.1"
   val commonsLoggingVersion = "1.3.6"
   val commonsLangVersion = "2.6"
