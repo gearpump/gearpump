@@ -1,4 +1,5 @@
 version: 2
+enable-beta-ecosystems: true
 updates:
   - package-ecosystem: github-actions
     directory: "/"
@@ -14,3 +15,13 @@ updates:
       github-actions:
         patterns:
           - "*"
+  - package-ecosystem: sbt
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+    labels:
+      - dependencies
+      - sbt
+    open-pull-requests-limit: 5
