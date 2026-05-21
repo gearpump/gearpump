@@ -26,7 +26,9 @@ import io.gearpump.streaming.task.TaskActorSpec.TestTask
 import io.gearpump.util.{Graph, Util}
 import io.gearpump.util.Graph._
 import org.mockito.Mockito.{mock, times, verify, when}
-import org.scalatest.{BeforeAndAfterEach, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class TaskActorSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   protected override def config: Config = {

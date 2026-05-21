@@ -16,7 +16,9 @@ package io.gearpump.streaming.storage
 import io.gearpump.cluster.{MasterHarness, MiniCluster}
 import io.gearpump.streaming.StreamingTestUtil
 import io.gearpump.util.Constants
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
