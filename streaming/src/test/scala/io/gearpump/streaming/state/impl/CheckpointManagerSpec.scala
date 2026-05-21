@@ -19,11 +19,12 @@ import io.gearpump.streaming.transaction.api.CheckpointStore
 import org.mockito.{Matchers => MockitoMatchers}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
-class CheckpointManagerSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
+class CheckpointManagerSpec extends AnyPropSpec with PropertyChecks with Matchers with MockitoSugar {
 
   val timestampGen = Gen.chooseNum[Long](0L, 1000L)
   val checkpointIntervalGen = Gen.chooseNum[Long](100L, 10000L)

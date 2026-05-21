@@ -16,7 +16,9 @@ package io.gearpump.streaming.executor
 import io.gearpump.streaming.executor.Executor.TaskArgumentStore
 import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.task.TaskId
-import org.scalatest._
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class TaskArgumentStoreSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
   it should "retain all history of taskArgument" in {

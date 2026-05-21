@@ -17,12 +17,14 @@ package io.gearpump.streaming.examples.complexdag
 import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.ClientToMaster.SubmitApplication
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import org.scalatest._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.prop.PropertyChecks
 import scala.concurrent.Future
 import scala.util.Success
 
-class DagSpec extends PropSpec with PropertyChecks
+class DagSpec extends AnyPropSpec with PropertyChecks
   with Matchers with BeforeAndAfterAll with MasterHarness {
 
   override def beforeAll(): Unit = {

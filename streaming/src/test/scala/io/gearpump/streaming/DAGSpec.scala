@@ -18,10 +18,11 @@ import io.gearpump.streaming.partitioner.PartitionerDescription
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.Graph
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, PropSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.prop.PropertyChecks
 
-class DAGSpec extends PropSpec with PropertyChecks with Matchers {
+class DAGSpec extends AnyPropSpec with PropertyChecks with Matchers {
 
   val parallelismGen = Gen.chooseNum[Int](1, 100)
 

@@ -31,7 +31,9 @@ import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorStarted, _}
 import io.gearpump.streaming.appmaster.ExecutorManagerSpec.StartExecutorActorPlease
 import io.gearpump.util.ActorSystemBooter.BindLifeCycle
 import io.gearpump.util.LogUtil
-import org.scalatest._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
