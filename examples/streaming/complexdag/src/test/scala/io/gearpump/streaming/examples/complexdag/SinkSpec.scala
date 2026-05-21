@@ -16,10 +16,12 @@ package io.gearpump.streaming.examples.complexdag
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.BeforeAndAfter
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class SinkSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+class SinkSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with BeforeAndAfter {
 
   val context = MockUtil.mockTaskContext
 

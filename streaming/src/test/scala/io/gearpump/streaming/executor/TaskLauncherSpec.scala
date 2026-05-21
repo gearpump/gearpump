@@ -21,11 +21,13 @@ import io.gearpump.streaming.ProcessorDescription
 import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.executor.TaskLauncherSpec.{MockTask, MockTaskActor}
 import io.gearpump.streaming.task.{Task, TaskContext, TaskContextData, TaskId, TaskWrapper}
-import org.scalatest._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class TaskLauncherSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class TaskLauncherSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   val appId = 0
   val executorId = 0
   var appMaster: TestProbe = null

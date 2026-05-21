@@ -27,11 +27,13 @@ import io.gearpump.transport.HostPort
 import io.gearpump.util.{Constants, LogUtil, Util}
 import io.gearpump.util.Constants._
 import java.util.Properties
-import org.scalatest._
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Future
 import scala.util.Success
 
-class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+class MainSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
   private val LOG = LogUtil.getLogger(getClass)
 

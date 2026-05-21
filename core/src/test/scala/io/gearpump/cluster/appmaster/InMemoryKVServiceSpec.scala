@@ -20,11 +20,13 @@ import com.typesafe.config.Config
 import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.master.InMemoryKVService
 import io.gearpump.cluster.master.InMemoryKVService._
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.duration._
 
 class InMemoryKVServiceSpec
-  extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+  extends AnyFlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
   override def beforeEach(): Unit = {
     startActorSystem()

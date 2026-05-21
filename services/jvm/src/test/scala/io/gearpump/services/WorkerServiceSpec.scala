@@ -25,12 +25,14 @@ import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfi
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, HistoryMetricsItem, ResolveWorkerIdResult, WorkerConfig}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.worker.{WorkerId, WorkerSummary}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
 
 class WorkerServiceSpec
-  extends FlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
+  extends AnyFlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
 
   override def testConfig: Config = TestUtil.DEFAULT_CONFIG
 

@@ -12,23 +12,12 @@
  * limitations under the License.
  */
 
-package io.gearpump.util
+package io.gearpump.testkit
 
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import scala.reflect.ClassTag
 
-class RestartPolicySpec extends AnyFlatSpec with Matchers {
-
-  "RestartPolicy" should "forbid too many restarts" in {
-    val policy = new RestartPolicy(2)
-    assert(policy.allowRestart)
-    assert(policy.allowRestart)
-    assert(!policy.allowRestart)
-  }
-
-  "RestartPolicy" should "forbid too many restarts in a window duration" in {
-    val policy = new RestartPolicy(-1)
-    assert(policy.allowRestart)
-    assert(policy.allowRestart)
+trait MockitoSugar {
+  def mock[T <: AnyRef](implicit classTag: ClassTag[T]): T = {
+    org.mockito.Mockito.mock(classTag.runtimeClass.asInstanceOf[Class[T]])
   }
 }

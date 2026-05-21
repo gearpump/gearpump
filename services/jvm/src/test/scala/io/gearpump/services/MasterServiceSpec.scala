@@ -35,12 +35,14 @@ import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.ProcessorDescription
 import io.gearpump.util.Graph
 import java.io.File
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Success, Try}
 
-class MasterServiceSpec extends FlatSpec with ScalatestRouteTest
+class MasterServiceSpec extends AnyFlatSpec with ScalatestRouteTest
   with Matchers with BeforeAndAfterAll {
   import upickle.default.{read, write}
 

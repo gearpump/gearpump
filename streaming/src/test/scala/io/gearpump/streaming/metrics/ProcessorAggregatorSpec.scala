@@ -20,11 +20,12 @@ import io.gearpump.metrics.Metrics.{Gauge, Histogram, Meter}
 import io.gearpump.streaming.metrics.ProcessorAggregator.{AggregatorFactory, HistogramAggregator, MeterAggregator, MultiLayerMap}
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.jdk.CollectionConverters._
 import scala.util.Random
 
-class ProcessorAggregatorSpec extends FlatSpec with Matchers {
+class ProcessorAggregatorSpec extends AnyFlatSpec with Matchers {
 
   "MultiLayerMap" should "maintain multiple layers HashMap" in {
     val layers = 3

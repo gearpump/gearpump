@@ -17,9 +17,11 @@ package io.gearpump.streaming.appmaster
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.streaming.appmaster.TaskLocator.Localities
 import io.gearpump.streaming.task.TaskId
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TaskLocatorSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class TaskLocatorSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   it should "serialize/deserialize correctly" in {
     val localities = new Localities(Map(WorkerId(0, 0L) -> Array(TaskId(0, 1), TaskId(1, 2))))
     Localities.toJson(localities)

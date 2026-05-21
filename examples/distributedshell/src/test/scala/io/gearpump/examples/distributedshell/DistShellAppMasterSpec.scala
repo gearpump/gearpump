@@ -24,11 +24,13 @@ import io.gearpump.cluster.scheduler.{Relaxation, Resource, ResourceAllocation, 
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.ActorSystemBooter.RegisterActorSystem
 import io.gearpump.util.ActorUtil
-import org.scalatest.{BeforeAndAfter, Matchers, WordSpec}
+import org.scalatest.BeforeAndAfter
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class DistShellAppMasterSpec extends WordSpec with Matchers with BeforeAndAfter {
+class DistShellAppMasterSpec extends AnyWordSpec with Matchers with BeforeAndAfter {
   implicit val system: ActorSystem = ActorSystem("AppMasterSpec", TestUtil.DEFAULT_CONFIG)
   val mockMaster = TestProbe()(system)
   val masterProxy = mockMaster.ref

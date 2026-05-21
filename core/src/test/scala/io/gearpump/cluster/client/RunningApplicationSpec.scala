@@ -22,13 +22,15 @@ import io.gearpump.cluster.MasterToClient.{ResolveAppIdResult, ShutdownApplicati
 import io.gearpump.cluster.TestUtil
 import io.gearpump.cluster.client.RunningApplicationSpec.{MockAskAppMasterRequest, MockAskAppMasterResponse}
 import java.util.concurrent.TimeUnit
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
-class RunningApplicationSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class RunningApplicationSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = _
 
   override def beforeAll(): Unit = {

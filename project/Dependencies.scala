@@ -42,7 +42,8 @@ object Dependencies {
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
   val scalaTestVersion = "3.2.20"
-  val scalaCheckVersion = "1.14.0"
+  val scalaTestPlusScalaCheckVersion = "3.2.20.0"
+  val scalaCheckVersion = "1.19.0"
   val mockitoVersion = "1.10.17"
   val beamVersion = "2.73.0"
   val snappyJavaVersion = "1.1.10.7"
@@ -103,6 +104,7 @@ object Dependencies {
       "org.apache.pekko" %% "pekko-testkit" % pekkoVersion % "test",
       "org.scalatest" %% "scalatest" % scalaTestVersion % "test",
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
+      "org.scalatestplus" %% "scalacheck-1-19" % scalaTestPlusScalaCheckVersion % "test",
       "org.mockito" % "mockito-core" % mockitoVersion % "test",
       "org.junit.jupiter" % "junit-jupiter" % junitJupiterVersion % "test",
       "com.github.sbt.junit" % "jupiter-interface" % jupiterInterfaceVersion % "test"

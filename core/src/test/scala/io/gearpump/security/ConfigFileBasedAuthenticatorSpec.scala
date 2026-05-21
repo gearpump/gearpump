@@ -16,11 +16,12 @@ package io.gearpump.security
 
 import org.apache.pekko.actor.ActorSystem
 import io.gearpump.cluster.TestUtil
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class ConfigFileBasedAuthenticatorSpec extends FlatSpec with Matchers {
+class ConfigFileBasedAuthenticatorSpec extends AnyFlatSpec with Matchers {
   it should "authenticate correctly" in {
     val config = TestUtil.UI_CONFIG
     implicit val system = ActorSystem("ConfigFileBasedAuthenticatorSpec", config)

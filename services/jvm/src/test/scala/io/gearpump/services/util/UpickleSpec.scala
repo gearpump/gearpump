@@ -20,10 +20,12 @@ import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.ProcessorId
 import io.gearpump.streaming.appmaster.{ProcessorSummary, StreamAppMasterSummary}
 import io.gearpump.util.Graph
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import upickle.default.{read, write}
 
-class UpickleSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
+class UpickleSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
 
   "UserConfig" should "serialize and deserialize with upickle correctly" in {
     val conf = UserConfig.empty.withString("key", "value")

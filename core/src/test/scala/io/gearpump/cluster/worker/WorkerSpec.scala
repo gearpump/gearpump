@@ -24,11 +24,13 @@ import io.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, Re
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
 import io.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
-import org.scalatest._
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+class WorkerSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config: Config = TestUtil.DEFAULT_CONFIG
 
   val appId = 1
