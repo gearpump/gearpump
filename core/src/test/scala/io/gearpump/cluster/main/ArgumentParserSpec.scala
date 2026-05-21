@@ -14,9 +14,10 @@
 
 package io.gearpump.cluster.main
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ArgumentParserSpec extends FlatSpec with Matchers {
+class ArgumentParserSpec extends AnyFlatSpec with Matchers {
   it should "parse arguments correctly" in {
 
     val parser = new ArgumentsParser {

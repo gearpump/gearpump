@@ -24,7 +24,8 @@ import io.gearpump.streaming.storage.AppDataStore
 import io.gearpump.streaming.task.{GetLatestMinClock, GetStartClock, UpstreamMinClock, _}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.{Future, Promise}
 
 class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender

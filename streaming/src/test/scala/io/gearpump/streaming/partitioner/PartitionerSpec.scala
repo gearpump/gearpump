@@ -15,9 +15,10 @@
 package io.gearpump.streaming.partitioner
 
 import io.gearpump.Message
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class PartitionerSpec extends FlatSpec with Matchers {
+class PartitionerSpec extends AnyFlatSpec with Matchers {
   val NUM = 10
 
   "HashPartitioner" should "hash same key to same slots" in {

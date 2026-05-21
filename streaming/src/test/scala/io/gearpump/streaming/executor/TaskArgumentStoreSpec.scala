@@ -18,7 +18,7 @@ import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.task.TaskId
 import org.scalatest._
 
-class TaskArgumentStoreSpec extends FlatSpec with Matchers with BeforeAndAfterEach {
+class TaskArgumentStoreSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
   it should "retain all history of taskArgument" in {
     val version0 = TaskArgument(0, null, null)
     val version2 = version0.copy(dagVersion = 2)

@@ -20,7 +20,7 @@ import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class InMemoryAppStoreOnMasterSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class InMemoryAppStoreOnMasterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   implicit val timeout: org.apache.pekko.util.Timeout = Constants.FUTURE_TIMEOUT
   implicit val dispatcher: scala.concurrent.ExecutionContext = MasterHarness.cachedPool
 

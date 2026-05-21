@@ -19,12 +19,13 @@ import org.apache.pekko.testkit.TestProbe
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.ActorSystemBooter.{ActorCreated, RegisterActorSystem, _}
 import io.gearpump.util.ActorSystemBooterSpec._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class ActorSystemBooterSpec extends FlatSpec with Matchers with MockitoSugar {
+class ActorSystemBooterSpec extends AnyFlatSpec with Matchers with MockitoSugar {
 
   "ActorSystemBooter" should "report its address back" in {
     val boot = bootSystem()

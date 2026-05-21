@@ -23,10 +23,11 @@ import io.gearpump.streaming.task.SubscriptionSpec.NextTask
 import java.time.Instant
 import java.util.Random
 import org.mockito.Mockito._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.mockito.MockitoSugar
 
-class SubscriptionSpec extends FlatSpec with Matchers with MockitoSugar {
+class SubscriptionSpec extends AnyFlatSpec with Matchers with MockitoSugar {
 
   val appId = 0
   val executorId = 0

@@ -16,9 +16,11 @@ package io.gearpump.streaming.partitioner
 
 import io.gearpump.Message
 import io.gearpump.streaming.partitioner.GroupByPartitionerSpec.People
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class GroupByPartitionerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class GroupByPartitionerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
   it should "group by message payload and window" in {
     val mark = People("Mark", "male")

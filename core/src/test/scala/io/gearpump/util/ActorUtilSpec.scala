@@ -15,9 +15,9 @@
 package io.gearpump.util
 
 import io.gearpump.transport.HostPort
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 
-class ActorUtilSpec extends FlatSpec {
+class ActorUtilSpec extends AnyFlatSpec {
   "masterActorPath" should "construct the ActorPath from HostPort" in {
     import Constants.MASTER
 

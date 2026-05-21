@@ -28,7 +28,7 @@ import org.scalatest._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class WorkerSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+class WorkerSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   override def config: Config = TestUtil.DEFAULT_CONFIG
 
   val appId = 1

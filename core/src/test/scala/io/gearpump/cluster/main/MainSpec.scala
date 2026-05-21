@@ -31,7 +31,7 @@ import org.scalatest._
 import scala.concurrent.Future
 import scala.util.Success
 
-class MainSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+class MainSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
 
   private val LOG = LogUtil.getLogger(getClass)
 

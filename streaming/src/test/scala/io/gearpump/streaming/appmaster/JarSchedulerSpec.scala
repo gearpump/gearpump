@@ -24,10 +24,11 @@ import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.streaming.task.TaskId
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import scala.concurrent.{Await, Future}
 
-class JarSchedulerSpec extends WordSpec with Matchers {
+class JarSchedulerSpec extends AnyWordSpec with Matchers {
   val mockJar1 = AppJar("jar1", FilePath("path"))
   val mockJar2 = AppJar("jar2", FilePath("path"))
   val task1 = ProcessorDescription(id = 0, taskClass = classOf[TestTask1].getName, parallelism = 1,

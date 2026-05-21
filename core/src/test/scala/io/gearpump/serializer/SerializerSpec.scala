@@ -20,14 +20,15 @@ import com.esotericsoftware.kryo.kryo5.io.{Input, Output}
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import io.gearpump.cluster.TestUtil
 import io.gearpump.serializer.SerializerSpec._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.mockito.MockitoSugar
 import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 
-class SerializerSpec extends FlatSpec with Matchers with MockitoSugar {
+class SerializerSpec extends AnyFlatSpec with Matchers with MockitoSugar {
   val config = ConfigFactory.empty.withValue("gearpump.serializers",
     ConfigValueFactory.fromAnyRef(Map(classOf[ClassA].getName -> classOf[ClassASerializer].getName,
       classOf[ClassB].getName -> classOf[ClassBSerializer].getName).asJava))

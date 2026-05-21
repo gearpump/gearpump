@@ -35,7 +35,7 @@ import org.scalatest._
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class ExecutorManagerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class ExecutorManagerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
 
   private val LOG = LogUtil.getLogger(getClass)

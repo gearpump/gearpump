@@ -23,7 +23,8 @@ import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.streaming.task.{Subscriber, TaskActor}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

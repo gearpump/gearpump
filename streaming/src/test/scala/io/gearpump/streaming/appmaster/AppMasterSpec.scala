@@ -39,7 +39,7 @@ import io.gearpump.util.Graph._
 import org.scalatest._
 import scala.concurrent.duration._
 
-class AppMasterSpec extends WordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+class AppMasterSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   protected override def config = TestUtil.DEFAULT_CONFIG
 
   var appMaster: ActorRef = null

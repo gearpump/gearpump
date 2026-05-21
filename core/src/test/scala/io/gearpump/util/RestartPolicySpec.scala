@@ -14,9 +14,10 @@
 
 package io.gearpump.util
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class RestartPolicySpec extends FlatSpec with Matchers {
+class RestartPolicySpec extends AnyFlatSpec with Matchers {
 
   "RestartPolicy" should "forbid too many restarts" in {
     val policy = new RestartPolicy(2)
