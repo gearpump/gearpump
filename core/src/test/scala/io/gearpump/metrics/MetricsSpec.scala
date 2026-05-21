@@ -19,7 +19,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.mockito.MockitoSugar
+import io.gearpump.testkit.MockitoSugar
 
 
 class MetricsSpec extends AnyFlatSpec with Matchers with MockitoSugar {

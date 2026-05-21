@@ -21,7 +21,7 @@ import io.gearpump.util.ActorSystemBooter.{ActorCreated, RegisterActorSystem, _}
 import io.gearpump.util.ActorSystemBooterSpec._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.mockito.MockitoSugar
+import io.gearpump.testkit.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

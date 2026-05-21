@@ -21,9 +21,9 @@ import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class NodeSpec extends AnyPropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+class NodeSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with BeforeAndAfter {
 
   val context = MockUtil.mockTaskContext
 

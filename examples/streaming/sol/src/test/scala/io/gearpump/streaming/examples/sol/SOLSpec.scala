@@ -21,12 +21,12 @@ import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.concurrent.Future
 import scala.util.Success
 
 class SOLSpec
-  extends AnyPropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
+  extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
   override def beforeAll(): Unit = {
     startActorSystem()
   }

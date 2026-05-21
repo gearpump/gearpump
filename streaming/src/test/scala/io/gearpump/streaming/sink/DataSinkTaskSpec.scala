@@ -22,10 +22,10 @@ import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
+import io.gearpump.testkit.MockitoSugar
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class DataSinkTaskSpec extends AnyPropSpec with PropertyChecks with Matchers with MockitoSugar {
+class DataSinkTaskSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with MockitoSugar {
 
   property("DataSinkTask.onStart should call DataSink.open" ) {
     forAll(Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) { (startTime: Instant) =>

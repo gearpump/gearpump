@@ -20,12 +20,12 @@ import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.concurrent.Future
 import scala.util.Success
 
 class WordCountSpec
-  extends AnyPropSpec with PropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
+  extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with BeforeAndAfter with MasterHarness {
 
   before {
     startActorSystem()

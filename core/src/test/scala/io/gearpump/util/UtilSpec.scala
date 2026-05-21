@@ -18,7 +18,7 @@ import io.gearpump.transport.HostPort
 import io.gearpump.util.Util._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.mockito.MockitoSugar
+import io.gearpump.testkit.MockitoSugar
 
 class UtilSpec extends AnyFlatSpec with Matchers with MockitoSugar {
   it should "work" in {

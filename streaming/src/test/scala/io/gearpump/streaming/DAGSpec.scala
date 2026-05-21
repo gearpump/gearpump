@@ -20,9 +20,9 @@ import io.gearpump.util.Graph
 import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class DAGSpec extends AnyPropSpec with PropertyChecks with Matchers {
+class DAGSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers {
 
   val parallelismGen = Gen.chooseNum[Int](1, 100)
 

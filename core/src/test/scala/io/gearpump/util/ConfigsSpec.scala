@@ -19,7 +19,7 @@ import io.gearpump.cluster.{ClusterConfig, ClusterConfigSource, UserConfig}
 import java.io.File
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.mockito.MockitoSugar
+import io.gearpump.testkit.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 

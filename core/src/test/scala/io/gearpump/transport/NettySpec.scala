@@ -23,7 +23,7 @@ import io.gearpump.util.Util
 import java.util.concurrent.TimeUnit
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.mockito.MockitoSugar
+import io.gearpump.testkit.MockitoSugar
 import scala.concurrent.Await
 import scala.concurrent.duration._
 

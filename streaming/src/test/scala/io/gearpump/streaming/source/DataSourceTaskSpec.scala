@@ -23,11 +23,11 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.FiniteDuration
 
-class DataSourceTaskSpec extends AnyPropSpec with PropertyChecks with Matchers {
+class DataSourceTaskSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers {
 
   private val system = ActorSystem("DataSourceTaskSpec")
   private val inbox = system.actorOf(Props(new Actor {

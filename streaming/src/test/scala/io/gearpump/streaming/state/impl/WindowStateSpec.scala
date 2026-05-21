@@ -21,12 +21,12 @@ import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
+import io.gearpump.testkit.MockitoSugar
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.collection.immutable.TreeMap
 import scala.util.Success
 
-class WindowStateSpec extends AnyPropSpec with PropertyChecks with Matchers with MockitoSugar {
+class WindowStateSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with MockitoSugar {
 
   val longGen = Gen.chooseNum[Long](100L, 10000L)
 

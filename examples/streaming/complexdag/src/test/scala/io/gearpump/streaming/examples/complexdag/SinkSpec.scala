@@ -19,9 +19,9 @@ import io.gearpump.streaming.MockUtil
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.prop.PropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class SinkSpec extends AnyPropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+class SinkSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with BeforeAndAfter {
 
   val context = MockUtil.mockTaskContext
 

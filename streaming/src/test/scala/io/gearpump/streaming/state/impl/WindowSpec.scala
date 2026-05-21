@@ -18,10 +18,10 @@ import io.gearpump.Time.MilliSeconds
 import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
+import io.gearpump.testkit.MockitoSugar
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class WindowSpec extends AnyPropSpec with PropertyChecks with Matchers with MockitoSugar {
+class WindowSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with MockitoSugar {
 
   val windowSizeGen = Gen.chooseNum[Long](1L, 1000L)
   val windowStepGen = Gen.chooseNum[Long](1L, 1000L)
