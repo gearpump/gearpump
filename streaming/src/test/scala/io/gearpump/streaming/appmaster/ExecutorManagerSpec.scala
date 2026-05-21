@@ -31,11 +31,13 @@ import io.gearpump.streaming.appmaster.ExecutorManager.{ExecutorStarted, _}
 import io.gearpump.streaming.appmaster.ExecutorManagerSpec.StartExecutorActorPlease
 import io.gearpump.util.ActorSystemBooter.BindLifeCycle
 import io.gearpump.util.LogUtil
-import org.scalatest._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-class ExecutorManagerSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class ExecutorManagerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   implicit var system: ActorSystem = null
 
   private val LOG = LogUtil.getLogger(getClass)

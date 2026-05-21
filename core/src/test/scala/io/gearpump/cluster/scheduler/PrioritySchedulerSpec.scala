@@ -24,11 +24,13 @@ import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Priority.{HIGH, LOW, NORMAL}
 import io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished
 import io.gearpump.cluster.worker.WorkerId
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.duration._
 
 class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
-  with WordSpecLike with Matchers with BeforeAndAfterAll{
+  with AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 
   def this() = this(ActorSystem("PrioritySchedulerSpec", TestUtil.DEFAULT_CONFIG))
   val appId = 0

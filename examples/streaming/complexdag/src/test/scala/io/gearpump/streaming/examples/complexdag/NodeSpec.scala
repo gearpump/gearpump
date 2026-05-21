@@ -18,10 +18,12 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
 import io.gearpump.streaming.MockUtil._
 import org.mockito.Mockito._
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.BeforeAndAfter
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class NodeSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+class NodeSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with BeforeAndAfter {
 
   val context = MockUtil.mockTaskContext
 

@@ -18,10 +18,12 @@ import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
 import java.time.Instant
 import org.scalacheck.Gen
-import org.scalatest.{BeforeAndAfter, Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.BeforeAndAfter
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class SumSpec extends PropSpec with PropertyChecks with Matchers with BeforeAndAfter {
+class SumSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with BeforeAndAfter {
   val stringGenerator = Gen.alphaStr
 
   var wordcount = 0

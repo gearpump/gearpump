@@ -18,13 +18,15 @@ import com.typesafe.config.Config
 import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.ClientToMaster.SubmitApplication
 import io.gearpump.cluster.MasterToClient.SubmitApplicationResult
-import org.scalatest.{BeforeAndAfterAll, Matchers, PropSpec}
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.concurrent.Future
 import scala.util.Success
 
 class SOLSpec
-  extends PropSpec with PropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
+  extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with BeforeAndAfterAll with MasterHarness {
   override def beforeAll(): Unit = {
     startActorSystem()
   }

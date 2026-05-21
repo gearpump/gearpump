@@ -27,10 +27,12 @@ import io.gearpump.cluster.master.AppManager._
 import io.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVSuccess, PutKV, PutKVSuccess}
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.LogUtil
-import org.scalatest.{BeforeAndAfterEach, FlatSpec, Matchers}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import scala.util.Success
 
-class AppManagerSpec extends FlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
+class AppManagerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach with MasterHarness {
   var kvService: TestProbe = null
   var haService: TestProbe = null
   var appLauncher: TestProbe = null

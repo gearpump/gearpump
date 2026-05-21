@@ -18,9 +18,10 @@ import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.streaming.task.SubscriberSpec.TestTask
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class SubscriberSpec extends FlatSpec with Matchers {
+class SubscriberSpec extends AnyFlatSpec with Matchers {
   "Subscriber.of" should "return all subscriber for a processor" in {
 
     val sourceProcessorId = 0

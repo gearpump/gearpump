@@ -18,12 +18,13 @@ import io.gearpump.Time.MilliSeconds
 import io.gearpump.streaming.state.api.{Monoid, Serializer}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
-import org.scalatest.{Matchers, PropSpec}
-import org.scalatest.mockito.MockitoSugar
-import org.scalatest.prop.PropertyChecks
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.propspec.AnyPropSpec
+import io.gearpump.testkit.MockitoSugar
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.util.Success
 
-class NonWindowStateSpec extends PropSpec with PropertyChecks with Matchers with MockitoSugar {
+class NonWindowStateSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with MockitoSugar {
 
   val longGen = Gen.chooseNum[Long](100L, System.currentTimeMillis())
 
