@@ -37,7 +37,7 @@ object Dependencies {
   val guavaVersion = "33.6.0-jre"
   val codahaleVersion = "3.0.2"
   val pekkoKryoVersion = "1.5.1"
-  val pekkoNettyVersion = "4.2.7.Final"
+  val pekkoNettyVersion = "4.2.14.Final"
   val gsCollectionsVersion = "6.2.0"
   val sprayVersion = "1.3.2"
   val sprayJsonVersion = "1.3.1"
