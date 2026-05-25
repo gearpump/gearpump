@@ -4,7 +4,7 @@ libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionSch
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.15.0")
 
-addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.12")
+addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.23")
 
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.3")
 
