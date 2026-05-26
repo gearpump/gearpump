@@ -1,0 +1,7 @@
+Apache Log4j 2 is licensed under the Apache License, Version 2.0.
+
+Copyright 2026 The Apache Software Foundation.
+
+For details, see:
+https://logging.apache.org/log4j/2.x/
+https://www.apache.org/licenses/LICENSE-2.0
