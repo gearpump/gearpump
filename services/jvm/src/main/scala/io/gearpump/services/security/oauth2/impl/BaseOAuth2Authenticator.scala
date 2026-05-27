@@ -19,7 +19,7 @@ import com.github.scribejava.core.builder.api.DefaultApi20
 import com.github.scribejava.core.model._
 import com.github.scribejava.core.oauth.OAuth20Service
 import com.github.scribejava.core.utils.OAuthEncoder
-import com.ning.http.client.AsyncHttpClientConfig
+import org.asynchttpclient.AsyncHttpClientConfig
 import com.typesafe.config.Config
 import io.gearpump.security.Authenticator
 import io.gearpump.services.SecurityService.UserSession

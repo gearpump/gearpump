@@ -18,8 +18,8 @@ import java.util.Base64
 import com.github.scribejava.core.builder.api.DefaultApi20
 import com.github.scribejava.core.model._
 import com.github.scribejava.core.oauth.OAuth20Service
-import com.ning.http.client
-import com.ning.http.client.{AsyncCompletionHandler, AsyncHttpClient}
+import org.asynchttpclient
+import org.asynchttpclient.{AsyncCompletionHandler, AsyncHttpClient}
 import com.typesafe.config.Config
 import io.gearpump.services.SecurityService.UserSession
 import io.gearpump.services.security.oauth2.impl.BaseOAuth2Authenticator.BaseApi20

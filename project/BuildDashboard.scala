@@ -30,7 +30,7 @@ object BuildDashboard {
         "com.softwaremill.pekko-http-session" %% "core" % pekkoHttpSessionVersion,
         "org.apache.pekko" %% "pekko-http-spray-json" % pekkoHttpVersion,
         "com.github.scribejava" % "scribejava-apis" % "2.4.0",
-        "com.ning" % "async-http-client" % "1.9.40",
+        "org.asynchttpclient" % "async-http-client" % "3.0.10",
         "org.webjars" % "angularjs" % "1.4.9",
 
         // angular 1.5 breaks ui-select, but we need ng-touch 1.5
