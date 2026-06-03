@@ -32,4 +32,4 @@ jobs:
         uses: sbt/setup-sbt@v1
 
       - name: Submit sbt dependency graph
-        uses: scalacenter/sbt-dependency-submission@v3.2.2
+        uses: scalacenter/sbt-dependency-submission@v3.2.3
