@@ -1,5 +1,4 @@
 version: 2
-enable-beta-ecosystems: true
 updates:
   - package-ecosystem: github-actions
     directory: "/"
@@ -19,8 +18,39 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    open-pull-requests-limit: 15
     commit-message:
       prefix: build
     labels:
       - dependencies
       - sbt
+    groups:
+      apache-beam:
+        patterns:
+          - "org.apache.beam:*"
+      apache-hadoop:
+        patterns:
+          - "org.apache.hadoop:*"
+      apache-log4j:
+        patterns:
+          - "org.apache.logging.log4j:*"
+      netty-four:
+        patterns:
+          - "io.netty:netty-handler"
+          - "io.netty:netty-transport"
+      apache-pekko:
+        patterns:
+          - "org.apache.pekko:*"
+      sbt-plugins:
+        patterns:
+          - "com.eed3si9n:*"
+          - "com.github.gseitz:*"
+          - "com.github.sbt.junit:sbt-jupiter-interface"
+          - "com.jsuereth:*"
+          - "org.scalastyle:*"
+          - "org.scoverage:*"
+          - "org.xerial.sbt:*"
+    ignore:
+      - dependency-name: "org.webjars:*"
+      - dependency-name: "org.webjars.bower:*"
+      - dependency-name: "org.webjars.npm:*"
