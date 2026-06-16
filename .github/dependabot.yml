@@ -51,6 +51,9 @@ updates:
           - "org.scoverage:*"
           - "org.xerial.sbt:*"
     ignore:
+      - dependency-name: "org.scala-sbt:sbt"
+        update-types:
+          - "version-update:semver-major"
       - dependency-name: "org.webjars:*"
       - dependency-name: "org.webjars.bower:*"
       - dependency-name: "org.webjars.npm:*"
