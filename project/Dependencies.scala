@@ -30,7 +30,7 @@ object Dependencies {
   val dataReplicationVersion = "0.7"
   val upickleVersion = "0.9.9"
   val junitJupiterVersion = "5.14.4"
-  val jupiterInterfaceVersion = "0.16.0"
+  val jupiterInterfaceVersion = "0.19.0"
   val jsonSimpleVersion = "1.1"
   val slf4jVersion = "1.7.16"
   val slf4jSimpleVersion = "2.0.18"
