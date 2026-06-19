@@ -32,7 +32,7 @@ object Dependencies {
   val junitJupiterVersion = "5.14.4"
   val jupiterInterfaceVersion = "0.16.0"
   val jsonSimpleVersion = "1.1"
-  val slf4jVersion = "2.0.17"
+  val slf4jVersion = "2.0.18"
   val slf4jSimpleVersion = "2.0.18"
   val log4jVersion = "2.25.2"
   val guavaVersion = "33.6.0-jre"
