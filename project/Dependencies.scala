@@ -32,7 +32,7 @@ object Dependencies {
   val junitJupiterVersion = "5.14.4"
   val jupiterInterfaceVersion = "0.16.0"
   val jsonSimpleVersion = "1.1"
-  val slf4jVersion = "1.7.16"
+  val slf4jVersion = "2.0.17"
   val slf4jSimpleVersion = "2.0.18"
   val log4jVersion = "2.25.2"
   val guavaVersion = "33.6.0-jre"
@@ -70,7 +70,7 @@ object Dependencies {
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.apache.logging.log4j" % "log4j-api" % log4jVersion,
       "org.apache.logging.log4j" % "log4j-core" % log4jVersion,
-      "org.apache.logging.log4j" % "log4j-slf4j-impl" % log4jVersion,
+      "org.apache.logging.log4j" % "log4j-slf4j2-impl" % log4jVersion,
       "org.apache.logging.log4j" % "log4j-1.2-api" % log4jVersion,
       "commons-lang" % "commons-lang" % commonsLangVersion,
 
@@ -98,7 +98,8 @@ object Dependencies {
       "org.apache.pekko" %% "pekko-http" % pekkoHttpVersion,
       "org.apache.pekko" %% "pekko-http-spray-json" % pekkoHttpVersion,
       "org.scala-lang" % "scala-reflect" % scalaVersionNumber,
-      "io.altoo" %% "pekko-kryo-serialization" % pekkoKryoVersion,
+      "io.altoo" %% "pekko-kryo-serialization" % pekkoKryoVersion
+        exclude("org.slf4j", "log4j-over-slf4j"),
       "com.google.guava" % "guava" % guavaVersion,
       "com.codahale.metrics" % "metrics-graphite" % codahaleVersion
         exclude("org.slf4j", "slf4j-api"),
