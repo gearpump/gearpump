@@ -78,7 +78,7 @@ object Dependencies {
        * Gearpump's internal transport still uses the legacy Netty 3 API
        * (`org.jboss.netty.*`), so keep the original Netty 3 line on the classpath.
        */
-      "io.netty" % "netty" % "3.8.0.Final",
+      "io.netty" % "netty" % "3.10.6.Final",
       /**
        * Pekko classic remoting now expects Netty 4 (`io.netty.channel.Channel`) and publishes
        * those modules as optional dependencies, so add them explicitly for runtime/test startup.
