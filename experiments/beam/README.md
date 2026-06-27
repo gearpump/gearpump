@@ -5,7 +5,7 @@ graph API.
 
 Current scope:
 
-- `Create`, `Impulse`, and other `Read.Bounded` sources
+- `Create`, `Impulse`, `Read.Bounded`, and basic `Read.Unbounded` sources
 - `ParDo`, including multi-output `ParDo` without side inputs
 - `Flatten.pCollections()`
 - `Window.into(...)` for non-merging windows
@@ -16,9 +16,12 @@ Current limitations:
 
 - No side inputs
 - No merging windows
-- No unbounded sources
+- No checkpoint restoration for unbounded sources
 - No Beam state/timers support
 - No custom trigger/pane semantics beyond one final emission at watermark max
 
 The implementation intentionally keeps the first supported transform set small and routes Beam
 execution through Gearpump's low-level runtime instead of the older DSL-based runner design.
+
+See `examples/beam/quickstart` for a runnable Beam quick start that submits to a Gearpump local
+cluster.

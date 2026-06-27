@@ -44,6 +44,7 @@ public class GearpumpPipelineTranslator extends Pipeline.PipelineVisitor.Default
     registerTransformTranslator(Create.Values.class, new CreateValuesTranslator());
     registerTransformTranslator(Impulse.class, new ImpulseTranslator());
     registerTransformTranslator(Read.Bounded.class, new ReadBoundedTranslator());
+    registerTransformTranslator(Read.Unbounded.class, new ReadUnboundedTranslator());
     registerTransformTranslator(Flatten.PCollections.class, new FlattenPCollectionsTranslator());
     registerTransformTranslator(Window.Assign.class, new WindowAssignTranslator());
     registerTransformTranslator(GroupByKey.class, new GroupByKeyTranslator());
@@ -62,7 +63,9 @@ public class GearpumpPipelineTranslator extends Pipeline.PipelineVisitor.Default
   @Override
   public CompositeBehavior enterCompositeTransform(TransformHierarchy.Node node) {
     PTransform transform = node.getTransform();
-    if (transform instanceof Create.Values || transform instanceof Read.Bounded) {
+    if (transform instanceof Create.Values
+        || transform instanceof Read.Bounded
+        || transform instanceof Read.Unbounded) {
       TransformTranslator translator = getTransformTranslator(transform.getClass());
       if (translator == null) {
         throw new UnsupportedOperationException(
@@ -84,7 +87,7 @@ public class GearpumpPipelineTranslator extends Pipeline.PipelineVisitor.Default
           "Unsupported Beam transform "
               + transform.getClass().getName()
               + ". The low-level Gearpump runner currently supports only "
-              + "Read.Bounded/Create, Impulse, ParDo, Flatten, Window.Assign, "
+              + "Read.Bounded/Read.Unbounded/Create, Impulse, ParDo, Flatten, Window.Assign, "
               + "GroupByKey in non-merging windows, and Combine.GroupedValues.");
     }
     translationContext.setCurrentTransform(node, getPipeline());
