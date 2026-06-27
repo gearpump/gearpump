@@ -18,6 +18,7 @@ import BuildGearpump._
 import Dependencies._
 import Docs._
 import Pack.packSettings
+import sbtassembly.AssemblyPlugin.autoImport._
 import sbtunidoc.JavaUnidocPlugin
 import sbtunidoc.ScalaUnidocPlugin
 
@@ -26,6 +27,7 @@ lazy val aggregated: Seq[ProjectReference] = Seq[ProjectReference](
   streaming,
   services,
   beamRunner,
+  beamQuickStart,
   gearpumpHadoop,
   packProject,
   complexdag,
@@ -144,6 +146,29 @@ lazy val beamRunner = Project(
   base = file("experiments/beam"))
   .settings(commonSettings ++ javadocSettings ++ beamRunnerDependencies: _*)
   .dependsOn(core % "provided", streaming % "provided")
+
+lazy val beamQuickStart = Project(
+  id = "gearpump-examples-beam-quickstart",
+  base = file("examples/beam/quickstart"))
+  .settings(commonSettings ++ noPublish ++ myAssemblySettings ++ Seq(
+    Compile / mainClass :=
+      Some("io.gearpump.examples.beam.quickstart.BeamQuickStart"),
+    assembly / mainClass :=
+      Some("io.gearpump.examples.beam.quickstart.BeamQuickStart"),
+    assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", "services", _*) =>
+        MergeStrategy.concat
+      case PathList("META-INF", _*) | "module-info.class" =>
+        MergeStrategy.discard
+      case "geardefault.conf" =>
+        MergeStrategy.last
+      case "reference.conf" =>
+        MergeStrategy.concat
+      case _ =>
+        MergeStrategy.first
+    }
+  ))
+  .dependsOn(core, streaming, beamRunner)
 
 /**
  * The follow examples can be run in IDE or with `sbt run`
