@@ -14,10 +14,10 @@
 
 package io.gearpump.services.security.oauth2.impl
 
-import java.util.Base64
 import com.github.scribejava.core.builder.api.DefaultApi20
-import com.github.scribejava.core.model._
-import com.github.scribejava.core.oauth.OAuth20Service
+import com.github.scribejava.core.model.OAuth2AccessToken
+import com.github.scribejava.core.oauth.AccessTokenRequestParams
+import com.github.scribejava.core.oauth2.clientauthentication.HttpBasicAuthenticationScheme
 import com.ning.http.client
 import com.ning.http.client.{AsyncCompletionHandler, AsyncHttpClient}
 import com.typesafe.config.Config
@@ -93,7 +93,7 @@ class CloudFoundryUAAOAuth2Authenticator extends BaseOAuth2Authenticator {
   private var host: String = null
 
   protected override def authorizeUrl: String =
-    s"$host/oauth/authorize?response_type=%s&client_id=%s&redirect_uri=%s&scope=%s"
+    s"$host/oauth/authorize"
 
   protected override def accessTokenEndpoint: String = s"$host/oauth/token"
 
@@ -126,7 +126,11 @@ class CloudFoundryUAAOAuth2Authenticator extends BaseOAuth2Authenticator {
   }
 
   protected override def oauth2Api(): DefaultApi20 = {
-    new CloudFoundryUAAService(authorizeUrl, accessTokenEndpoint)
+    new BaseApi20(authorizeUrl, accessTokenEndpoint, HttpBasicAuthenticationScheme.instance())
+  }
+
+  protected override def accessTokenRequestParams(code: String): AccessTokenRequestParams = {
+    super.accessTokenRequestParams(code).addExtraParameter(RESPONSE_TYPE, "token")
   }
 
   protected override def authenticateWithAccessToken(accessToken: OAuth2AccessToken)
@@ -136,7 +140,7 @@ class CloudFoundryUAAOAuth2Authenticator extends BaseOAuth2Authenticator {
 
     if (additionalAuthenticator.isDefined) {
       super.authenticateWithAccessToken(accessToken).flatMap { user =>
-        additionalAuthenticator.get.authenticate(oauthService.getAsyncHttpClient, accessToken, user)
+        additionalAuthenticator.get.authenticate(asyncHttpClient, accessToken, user)
       }
     } else {
       super.authenticateWithAccessToken(accessToken)
@@ -149,37 +153,6 @@ object CloudFoundryUAAOAuth2Authenticator {
 
   val ADDITIONAL_AUTHENTICATOR_ENABLED = "additional-authenticator-enabled"
   val ADDITIONAL_AUTHENTICATOR = "additional-authenticator"
-
-  private class CloudFoundryUAAService(authorizeUrl: String, accessTokenEndpoint: String)
-    extends BaseApi20(authorizeUrl, accessTokenEndpoint) {
-
-    private def base64(in: String): String = {
-      Base64.getEncoder.encodeToString(in.getBytes("UTF-8"))
-    }
-
-    override def createService(config: OAuthConfig): OAuth20Service = {
-      new OAuth20Service(this, config) {
-
-        protected override def createAccessTokenRequest[T <: AbstractRequest](
-            code: String, request: T): T = {
-          val config: OAuthConfig = getConfig()
-
-          request.addParameter(OAuthConstants.GRANT_TYPE, OAuthConstants.AUTHORIZATION_CODE)
-          request.addParameter(OAuthConstants.CODE, code)
-          request.addParameter(RESPONSE_TYPE, "token")
-          request.addParameter(OAuthConstants.REDIRECT_URI, config.getCallback)
-
-          // Work around issue https://github.com/scribejava/scribejava/issues/641
-          request.addHeader("Content-Type", "application/x-www-form-urlencoded")
-
-          // CloudFoundry requires a Authorization header encoded with client Id and secret.
-          val authorizationHeader = "Basic " + base64(config.getApiKey + ":" + config.getApiSecret)
-          request.addHeader("Authorization", authorizationHeader)
-          request
-        }
-      }
-    }
-  }
 
   /**
    * Additional authenticator to check more credential attributes of user before logging in.
