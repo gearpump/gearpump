@@ -143,7 +143,7 @@ object BuildGearpump {
   lazy val myAssemblySettings = Seq(
     assembly / test := {},
     assembly / assemblyOption ~= {
-      _.copy(includeScala = false)
+      _.withIncludeScala(false)
     },
     assembly / assemblyJarName := {
       s"${name.value}_${scalaBinaryVersion.value}-${version.value}-assembly.jar"
