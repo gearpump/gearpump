@@ -61,7 +61,7 @@ lazy val core = Project(
     addArtifact(Compile / assembly / artifact, assembly) ++
     Seq(
       assembly / assemblyOption ~= {
-        _.copy(includeScala = true)
+        _.withIncludeScala(true)
       },
 
       Compile / assembly / artifact := {
