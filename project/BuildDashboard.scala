@@ -30,6 +30,7 @@ object BuildDashboard {
         "com.softwaremill.pekko-http-session" %% "core" % pekkoHttpSessionVersion,
         "org.apache.pekko" %% "pekko-http-spray-json" % pekkoHttpVersion,
         "com.github.scribejava" % "scribejava-apis" % "8.3.3",
+        "com.github.scribejava" % "scribejava-httpclient-ning" % "8.3.3",
         "com.ning" % "async-http-client" % "1.9.40",
         "org.webjars" % "angularjs" % "1.4.9",
 

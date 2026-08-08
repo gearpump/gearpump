@@ -14,12 +14,17 @@
 
 package io.gearpump.services.security.oauth2.impl
 
-import com.github.scribejava.core.builder.ServiceBuilderAsync
+import com.github.scribejava.core.builder.ServiceBuilder
 import com.github.scribejava.core.builder.api.DefaultApi20
+import com.github.scribejava.core.oauth.AccessTokenRequestParams
 import com.github.scribejava.core.model._
 import com.github.scribejava.core.oauth.OAuth20Service
-import com.github.scribejava.core.utils.OAuthEncoder
-import com.ning.http.client.AsyncHttpClientConfig
+import com.github.scribejava.core.oauth2.bearersignature.{BearerSignature,
+  BearerSignatureURIQueryParameter}
+import com.github.scribejava.core.oauth2.clientauthentication.{ClientAuthentication,
+  RequestBodyAuthenticationScheme}
+import com.github.scribejava.httpclient.ning.NingHttpClient
+import com.ning.http.client.{AsyncHttpClient, AsyncHttpClientConfig}
 import com.typesafe.config.Config
 import io.gearpump.security.Authenticator
 import io.gearpump.services.SecurityService.UserSession
@@ -28,7 +33,6 @@ import io.gearpump.services.security.oauth2.impl.BaseOAuth2Authenticator.BaseApi
 import io.gearpump.util.Constants._
 import io.gearpump.util.Util
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.collection.mutable.StringBuilder
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
@@ -62,7 +66,11 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
   protected var oauthService: OAuth20Service = null
 
+  protected var asyncHttpClient: AsyncHttpClient = null
+
   protected var executionContext: ExecutionContext = null
+
+  private var oauthState: String = null
 
   private var defaultPermissionLevel = Authenticator.Guest.permissionLevel
 
@@ -90,21 +98,21 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
   override def close(): Unit = {
     if (isClosed.compareAndSet(false, true)) {
-      if (null != oauthService && null != oauthService.getAsyncHttpClient()) {
-        oauthService.getAsyncHttpClient().close()
+      if (null != oauthService) {
+        oauthService.close()
       }
     }
   }
 
   override def getAuthorizationUrl: String = {
-    oauthService.getAuthorizationUrl
+    oauthService.getAuthorizationUrl(oauthState)
   }
 
   protected def authenticateWithAccessToken(accessToken: OAuth2AccessToken): Future[UserSession] = {
     val promise = Promise[UserSession]()
-    val request = new OAuthRequestAsync(Verb.GET, protectedResourceUrl, oauthService)
+    val request = new OAuthRequest(Verb.GET, protectedResourceUrl)
     oauthService.signRequest(accessToken, request)
-    request.sendAsync {
+    oauthService.execute(request,
       new OAuthAsyncRequestCallback[Response] {
         override def onCompleted(response: Response): Unit = {
           try {
@@ -119,9 +127,12 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
         override def onThrowable(throwable: Throwable): Unit = {
           promise.failure(throwable)
         }
-      }
-    }
+      })
     promise.future
+  }
+
+  protected def accessTokenRequestParams(code: String): AccessTokenRequestParams = {
+    AccessTokenRequestParams.create(code)
   }
 
   protected def authenticateWithAuthorizationCode(code: String): Future[UserSession] = {
@@ -129,8 +140,7 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
     implicit val ec: ExecutionContext = executionContext
 
     val promise = Promise[UserSession]()
-    oauthService.getAccessTokenAsync(code,
-
+    oauthService.getAccessToken(accessTokenRequestParams(code),
       new OAuthAsyncRequestCallback[OAuth2AccessToken] {
         override def onCompleted(accessToken: OAuth2AccessToken): Unit = {
           authenticateWithAccessToken(accessToken).onComplete {
@@ -163,9 +173,7 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
   private def buildOAuth2Service(clientId: String, clientSecret: String, callback: String)
     : OAuth20Service = {
-    val state: String = "state" + Util.randInt()
-    ScribeJavaConfig.setForceTypeOfHttpRequests(
-      ForceTypeOfHttpRequest.FORCE_ASYNC_ONLY_HTTP_REQUESTS)
+    oauthState = "state" + Util.randInt()
     val clientConfig: AsyncHttpClientConfig = new AsyncHttpClientConfig.Builder()
       .setMaxConnections(5)
       .setUseProxyProperties(true)
@@ -174,13 +182,13 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
       .setPooledConnectionIdleTimeout(60000)
       .setReadTimeout(60000).build
 
-    val service: OAuth20Service = new ServiceBuilderAsync()
-      .apiKey(clientId)
+    asyncHttpClient = new AsyncHttpClient(clientConfig)
+
+    val service: OAuth20Service = new ServiceBuilder(clientId)
       .apiSecret(clientSecret)
-      .scope(scope)
-      .state(state)
+      .defaultScope(scope)
       .callback(callback)
-      .asyncHttpClientConfig(clientConfig)
+      .httpClient(new NingHttpClient(asyncHttpClient))
       .build(oauth2Api())
 
     service
@@ -189,38 +197,24 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
 object BaseOAuth2Authenticator {
 
-  class BaseApi20(authorizeUrl: String, accessTokenEndpoint: String) extends DefaultApi20 {
-    def getAccessTokenEndpoint: String = {
+  class BaseApi20(authorizeUrl: String, accessTokenEndpoint: String,
+      clientAuthentication: ClientAuthentication = RequestBodyAuthenticationScheme.instance())
+    extends DefaultApi20 {
+
+    override def getAccessTokenEndpoint: String = {
       accessTokenEndpoint
     }
 
-    def getAuthorizationUrl(config: OAuthConfig): String = {
-      val sb: StringBuilder = new StringBuilder(String.format(authorizeUrl,
-        config.getResponseType, config.getApiKey, OAuthEncoder.encode(config.getCallback),
-        OAuthEncoder.encode(config.getScope)))
-      val state: String = config.getState
-      if (state != null) {
-        sb.append('&').append(OAuthConstants.STATE).append('=').append(OAuthEncoder.encode(state))
-      }
-      sb.toString
+    protected override def getAuthorizationBaseUrl: String = {
+      authorizeUrl
     }
 
-    override def createService(config: OAuthConfig): OAuth20Service = {
-      new OAuth20Service(this, config) {
+    override def getClientAuthentication: ClientAuthentication = {
+      clientAuthentication
+    }
 
-        protected override def createAccessTokenRequest[T <: AbstractRequest](
-            code: String, request: T): T = {
-          super.createAccessTokenRequest(code, request)
-
-          if (!getConfig.hasGrantType) {
-            request.addParameter(OAuthConstants.GRANT_TYPE, OAuthConstants.AUTHORIZATION_CODE)
-          }
-
-          // Work-around for issue https://github.com/scribejava/scribejava/issues/641
-          request.addHeader("Content-Type", "application/x-www-form-urlencoded")
-          request
-        }
-      }
+    override def getBearerSignature: BearerSignature = {
+      BearerSignatureURIQueryParameter.instance()
     }
   }
 }

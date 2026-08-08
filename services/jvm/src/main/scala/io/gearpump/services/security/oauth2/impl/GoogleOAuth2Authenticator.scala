@@ -14,10 +14,8 @@
 
 package io.gearpump.services.security.oauth2.impl
 
-import com.github.scribejava.apis.google.GoogleJsonTokenExtractor
 import com.github.scribejava.core.builder.api.DefaultApi20
-import com.github.scribejava.core.extractors.TokenExtractor
-import com.github.scribejava.core.model._
+import io.gearpump.services.security.oauth2.impl.BaseOAuth2Authenticator.BaseApi20
 import spray.json._
 
 /**
@@ -80,25 +78,15 @@ class GoogleOAuth2Authenticator extends BaseOAuth2Authenticator {
     email
   }
 
-  override def oauth2Api(): DefaultApi20 = new AsyncGoogleApi20(authorizeUrl, accessTokenEndpoint)
+  override def oauth2Api(): DefaultApi20 = new BaseApi20(authorizeUrl, accessTokenEndpoint)
 }
 
 object GoogleOAuth2Authenticator {
 
-  import io.gearpump.services.security.oauth2.impl.BaseOAuth2Authenticator._
-
   // scalastyle:off line.size.limit
-  val AuthorizeUrl = "https://accounts.google.com/o/oauth2/auth?response_type=%s&client_id=%s&redirect_uri=%s&scope=%s"
+  val AuthorizeUrl = "https://accounts.google.com/o/oauth2/auth"
   // scalastyle:on line.size.limit
   val AccessEndpoint = "https://www.googleapis.com/oauth2/v4/token"
   val ResourceUrl = "https://www.googleapis.com/plus/v1/people/me"
   val Scope = "https://www.googleapis.com/auth/userinfo.email"
-
-  private class AsyncGoogleApi20(authorizeUrl: String, accessEndpoint: String)
-    extends BaseApi20(authorizeUrl, accessEndpoint) {
-
-    override def getAccessTokenExtractor: TokenExtractor[OAuth2AccessToken] = {
-      GoogleJsonTokenExtractor.instance
-    }
-  }
 }
