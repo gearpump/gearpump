@@ -18,7 +18,7 @@ import org.apache.pekko.actor.{Actor, ActorSystem}
 import org.apache.pekko.testkit.TestActorRef
 import io.gearpump.cluster.TestUtil
 import io.gearpump.streaming.task.{TaskContext, TaskId}
-import org.mockito.{ArgumentMatcher, Matchers, Mockito}
+import org.mockito.{ArgumentMatcher, ArgumentMatchers, Mockito}
 
 object MockUtil {
 
@@ -34,10 +34,9 @@ object MockUtil {
   }
 
   def argMatch[T](func: T => Boolean): T = {
-    Matchers.argThat(new ArgumentMatcher[T] {
-      override def matches(param: Any): Boolean = {
-        val mesage = param.asInstanceOf[T]
-        func(mesage)
+    ArgumentMatchers.argThat(new ArgumentMatcher[T] {
+      override def matches(param: T): Boolean = {
+        func(param)
       }
     })
   }
