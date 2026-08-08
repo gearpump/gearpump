@@ -28,7 +28,7 @@ import io.gearpump.streaming.executor.TaskLauncher.TaskArgument
 import io.gearpump.streaming.executor.TaskLauncherSpec.MockTask
 import io.gearpump.streaming.task.{Subscriber, TaskId}
 import io.gearpump.transport.HostPort
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.{times, _}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec

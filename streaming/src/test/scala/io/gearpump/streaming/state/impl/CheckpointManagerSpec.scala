@@ -16,7 +16,7 @@ package io.gearpump.streaming.state.impl
 
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.streaming.transaction.api.CheckpointStore
-import org.mockito.{Matchers => MockitoMatchers}
+import org.mockito.{ArgumentMatchers => MockitoMatchers}
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
@@ -78,7 +78,7 @@ class CheckpointManagerSpec extends AnyPropSpec with ScalaCheckPropertyChecks wi
 
         checkpointManager.checkpoint(checkpointTime, Array.empty[Byte])
         verify(checkpointStore).persist(MockitoMatchers.eq(checkpointTime),
-          MockitoMatchers.anyObject[Array[Byte]]())
+          MockitoMatchers.any[Array[Byte]]())
         checkpointManager.getCheckpointTime shouldBe empty
     }
   }
