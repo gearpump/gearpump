@@ -1,16 +1,23 @@
 ## What is At Least Once Message Delivery?
 
+!!! note "Current implementation boundary"
+    The delivery guarantees on this page are conditional on application-provided
+    replayable sources and durable checkpoint stores. Current `master` exposes
+    the required interfaces but does not ship the historical Kafka and Hadoop
+    implementations used by older examples. See [Streaming Runtime
+    Guarantees](../internals/runtime-guarantees.md) for the complete prerequisite
+    and limitation matrix.
+
 Messages could be lost on delivery due to network partitions. **At Least Once Message Delivery** (at least once) means the lost messages are delivered one or more times such that at least one is processed and acknowledged by the whole flow. 
 
-Gearpump guarantees at least once for any source that is able to replay message from a past timestamp. In Gearpump, each message is tagged with a timestamp, and the system tracks the minimum timestamp of all pending messages (the global minimum clock). On message loss, application will be restarted to the global minimum clock. Since the source is able to replay from the global minimum clock, all pending messages before the restart will be replayed. Gearpump calls that kind of source `TimeReplayableSource` and already provides a built in
-[KafkaSource](../internals/gearpump-internals#at-least-once-message-delivery-and-kafka). With the KafkaSource to ingest data into Gearpump, users are guaranteed at least once message delivery.
+Gearpump can provide at-least-once processing for a source that can replay messages from a past timestamp and durably maps application timestamps to source offsets. In Gearpump, each message is tagged with a timestamp, and the system tracks the minimum timestamp of all pending messages (the global minimum clock). On message loss, the application restarts from a recovery clock. A conforming `TimeReplayableSource` must replay every record that may not have completed after that clock. Replay can produce duplicates, so sinks and external effects still need idempotency or deduplication.
 
 ## What is Exactly Once Message Delivery?
 
 At least once delivery doesn't guarantee the correctness of the application result. For instance,  for a task keeping the count of received messages, there could be overcount with duplicated messages and the count is lost on task failure.
  In that case, **Exactly Once Message Delivery** (exactly once) is required, where state is updated by a message exactly once. This further requires that duplicated messages are filtered out and in-memory states are persisted.
 
-Users are guaranteed exactly once in Gearpump if they use both a `TimeReplayableSource` to ingest data and the Persistent API to manage their in memory states. With the Persistent API, user state is periodically checkpointed by the system to a persistent store (e.g HDFS) along with its checkpointed time. Gearpump tracks the global minimum checkpoint timestamp of all pending states (global minimum checkpoint clock), which is persisted as well. On application restart, the system restores states at the global minimum checkpoint clock and source replays messages from that clock. This ensures that a message updates all states exactly once.
+Gearpump's historical "exactly once" term applies to state managed by the Persistent API, not to arbitrary external side effects. It requires a `TimeReplayableSource`, checkpointing enabled on every participating stateful processor, and a durable application-provided `CheckpointStore`. Gearpump restores those states at a shared checkpoint clock and asks sources to replay from that clock. Database writes, HTTP calls, model calls, and other effects require a separate idempotency or transactional protocol.
 
 ### Persistent API
 Persistent API consists of `PersistentTask` and `PersistentState`.

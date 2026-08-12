@@ -41,6 +41,7 @@ nav:
     - 'Scala API': 'api/scala.md'
     - 'Java API': 'api/java.md'
 - Internals:
+    - 'Streaming Runtime Guarantees': 'internals/runtime-guarantees.md'
     - 'Gearpump Internals': 'internals/gearpump-internals.md'
 
 theme: readthedocs
