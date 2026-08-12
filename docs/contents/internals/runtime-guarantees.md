@@ -15,6 +15,8 @@ The short version is:
   application timestamp.
 * Checkpointed state is recovered only when every participating stateful task
   uses `PersistentTask` with a durable `CheckpointStore`.
+* `PersistentTask` does not currently propagate watermark progress, so a
+  downstream stateful task can stall before reaching later checkpoints.
 * These mechanisms do not make arbitrary calls to external systems exactly
   once.
 
@@ -25,11 +27,12 @@ The short version is:
 | Task execution | A `TaskActor` invokes one task's managed callbacks serially. | Task code must avoid unmanaged concurrent mutation. | There is no total order across multiple upstream tasks. |
 | Task-to-task flow control | Each downstream task connection tracks outstanding message counts and stops the publisher task from draining more managed work at the configured limit. | Acknowledgements must continue to make progress. | This is not a hard bound on all memory: actor mailboxes and internal queues are not durable and may be unbounded. |
 | Message-loss detection | Periodic count acknowledgements detect a sent/received count mismatch and report `MessageLoss`. | Messages must use the managed task transport. | Counts do not provide a durable per-event identity and cannot detect source omissions or duplicated external effects. |
-| Watermark progress | Each task reports a clock derived from upstream, processing, and acknowledged downstream watermarks; the `ClockService` computes application progress. | Sources must report conservative watermarks and attach meaningful timestamps. | The runtime does not correct a source that advances its watermark too early. |
+| Watermark progress | Each task reports a clock derived from upstream, processing, and acknowledged downstream watermarks; the `ClockService` computes application progress. | Sources must report conservative watermarks and attach meaningful timestamps. | The runtime does not correct a source that advances its watermark too early. `PersistentTask` also fails to propagate its processing watermark, so downstream progress can stall. |
 | Task or executor failure | A task exception is treated as message loss; an executor loss or message-loss report moves the application into recovery, subject to the restart budget. | The application must tolerate task recreation. | In-memory task state and messages are lost unless reconstructed from replay and checkpoints. |
-| AppMaster or master failure | The master can recreate an AppMaster from replicated application metadata, and a multi-master cluster uses majority reads and writes. | Master quorum and a highly available shared jar store are required. | Master metadata is replicated in memory, not written to a durable database; losing the quorum or all replicas is outside this guarantee. |
+| AppMaster failure | The `AppManager` that accepted an application can relaunch its AppMaster while its process-local restart policy permits. | Application metadata and the jar must remain available. | Exhaustion only logs an error and leaves the application nonterminal and unrecovered. After `AppManager` failover, restart policies are not reconstructed, so a later AppMaster failure can fail instead of relaunching. |
+| Master failure | A multi-master cluster replicates application-registry metadata and the recovery clock with majority reads and writes. | A master quorum and a highly available shared jar store are required. | Replicated metadata does not make AppMaster recovery complete. It is in memory, not in a durable database, and losing the quorum or all replicas is outside this boundary. |
 | At-least-once processing | The recovered graph can restart from its selected start clock and process replayed input again. | Every source must be time-replayable and persist timestamp-to-offset information durably. | Replay can duplicate messages and effects. |
-| Checkpointed-state processing | The recovery clock can be limited to a checkpoint shared by all checkpoint-enabled tasks, and `PersistentTask` restores state at that time. | All relevant tasks need checkpointing enabled, a compatible `PersistentState`, and a durable `CheckpointStore`; sources must replay from the same time. | This covers Gearpump-managed state only, not arbitrary sinks, RPCs, model calls, or tool calls. |
+| Checkpointed-state processing | The recovery clock can be limited to a checkpoint shared by all checkpoint-enabled tasks, and `PersistentTask` restores state at that time. | All relevant tasks need checkpointing enabled, a compatible `PersistentState`, and a durable `CheckpointStore`; sources must replay from the same time. | Consecutive `PersistentTask`s cannot currently advance the shared checkpoint clock after the initial value. This covers Gearpump-managed state only, not arbitrary external effects. |
 
 ## Processing and ordering
 
@@ -75,7 +78,7 @@ The relevant settings are:
 | --- | ---: | --- |
 | `gearpump.streaming.ack-once-every-message-count` | `100` | Send a count acknowledgement request after this many messages. |
 | `gearpump.streaming.max-pending-message-count-per-connection` | `1000` | Stop draining managed work when a task-to-task connection reaches this outstanding count. It must be greater than or equal to the acknowledgement interval and less than half of `Short.MaxValue`. |
-| `gearpump.application.total-retries` | `5` | Restart budget used by application and task recovery. Exhausting it fails the application. |
+| `gearpump.application.total-retries` | `5` | Initializes separate master-side AppMaster and in-AppMaster task/executor retry policies. Task or executor exhaustion reports `FailedToRecover`; AppMaster exhaustion only logs an error and leaves the application nonterminal and unrecovered. |
 
 Count acknowledgements detect a discrepancy between messages sent and accepted
 inside a live task session. They are not a durable event log. They do not prove
@@ -99,6 +102,14 @@ service:
 * the shared minimum checkpoint clock when checkpoint-enabled tasks exist; or
 * the application's current minimum clock otherwise.
 
+!!! warning "PersistentTask watermark propagation"
+    Unlike the base `Task` implementation, `PersistentTask.onWatermarkProgress`
+    does not call `TaskContext.updateWatermark`. Its `TaskActor` therefore keeps
+    reporting the initial processing watermark, and processors downstream of it
+    do not receive advancing upstream watermarks. In particular, a second
+    checkpoint-enabled `PersistentTask` in series cannot reach later checkpoint
+    boundaries, so the shared checkpoint clock remains at its initial value.
+
 Correctness therefore depends on timestamp and watermark discipline. A source
 must not report a watermark past records that it may still emit, and a replay
 implementation must map the recovery timestamp back to source offsets without
@@ -120,19 +131,29 @@ them from input replay or from the persistent-state API.
 
 If an executor stops, the AppMaster requests replacement resources, relaunches
 the affected executor tasks, and coordinates the same application recovery.
-Recovery is bounded by `gearpump.application.total-retries` and the configured
-resource-allocation timeouts.
+This in-AppMaster recovery is bounded by
+`gearpump.application.total-retries` and the configured resource-allocation
+timeouts. Exhausting the policy sends `FailedToRecover` to the AppMaster.
 
 ### AppMaster or master failure
 
-The master stores application metadata and the most recent recovery clock in a
-Pekko Distributed Data `LWWMap` using majority consistency. A surviving master
-quorum can relaunch an AppMaster. Application jars must also be reachable from
-the replacement master; use a highly available HDFS or shared filesystem jar
-store rather than a master-local path.
+The master stores application-registry metadata and the most recent recovery
+clock in Pekko Distributed Data `LWWMap`s using majority consistency. While the
+same `AppManager` remains alive, it can relaunch a failed AppMaster from stored
+application metadata while a separate process-local restart policy allows it.
+If that policy is exhausted, the current implementation only logs the failure;
+it does not assign a terminal application status or notify result listeners.
 
-This metadata store is in memory. A deployment must not treat it as disaster
-recovery after all master replicas or the quorum are lost.
+Master failover does not preserve that full behavior. A replacement
+`AppManager` restores the application registry but does not reconstruct its
+`appMasterRestartPolicies` map. If a restored application's AppMaster later
+dies, recovery directly indexes the missing policy and can fail instead of
+launching a replacement.
+
+Application jars must also be reachable from the replacement master; use a
+highly available HDFS or shared filesystem jar store rather than a master-local
+path. The replicated metadata itself is in memory, so a deployment must not
+treat it as disaster recovery after all master replicas or the quorum are lost.
 
 ## Delivery levels and prerequisites
 
@@ -178,6 +199,12 @@ boundary. The task reports each completed checkpoint to `ClockService`, which
 only advances the shared checkpoint clock after all checkpoint-enabled tasks
 report the same time. Recovery loads state at that clock and replays input from
 the same point.
+
+This path is not currently reliable for consecutive `PersistentTask`s. Because
+the upstream stateful task does not propagate its processing watermark, the
+downstream stateful task cannot report later checkpoint times and the shared
+checkpoint clock cannot advance. Do not rely on the checkpointed-state delivery
+level for serial stateful topologies until watermark propagation is fixed.
 
 ## External effects are not exactly once
 
@@ -225,5 +252,6 @@ transforms rather than assuming the guarantees on this page.
 * [`TimeReplayableSource`](https://github.com/gearpump/gearpump/blob/master/streaming/src/main/scala/io/gearpump/streaming/transaction/api/TimeReplayableSource.scala)
   and [`CheckpointStore`](https://github.com/gearpump/gearpump/blob/master/streaming/src/main/scala/io/gearpump/streaming/transaction/api/CheckpointStore.scala)
 * [`PersistentTask`](https://github.com/gearpump/gearpump/blob/master/streaming/src/main/scala/io/gearpump/streaming/state/api/PersistentTask.scala)
+* [`AppManager`](https://github.com/gearpump/gearpump/blob/master/core/src/main/scala/io/gearpump/cluster/master/AppManager.scala)
 * [Gearpump internals](gearpump-internals.md)
 * [Master high-availability deployment](../deployment/deployment-ha.md)
