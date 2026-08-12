@@ -44,9 +44,9 @@ For steps to reproduce the performance test, please check [Performance benchmark
 2). Build package
 
 ```bash
-  ## Please use scala 2.12
-  ## The target package path: output/target/gearpump-${version}.zip
-  sbt clean +assembly +packArchiveZip
+  ## Please use JDK 17; the build currently uses Scala 2.13.
+  ## The target package path is under output/target/.
+  sbt clean +assembly 'gearpump-pack / packArchiveZip'
 ```
 
   After the build, there will be a package file gearpump-${version}.zip generated under output/target/ folder.
@@ -83,12 +83,7 @@ Before submitting a PR, you should always run style check first:
 
 ## How to generate the license report to generate a list of all dependencies 
 ```
-  sbt dumpLicenseReport
-```
-
-## How to generate dependencies by declared license
-```
-  sbt dependencyLicenseInfo
+  sbt dumpLicenseReportAggregate
 ```
 
 ## Contributors (time order)

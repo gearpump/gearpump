@@ -13,28 +13,23 @@
  */
 
 import Dependencies._
-import com.typesafe.sbt.SbtPgp.autoImport._
+import com.jsuereth.sbtpgp.SbtPgp.autoImport._
 import sbt._
 import sbt.Keys._
 import sbtassembly.AssemblyPlugin.autoImport._
-import xerial.sbt.Sonatype._
 
 object BuildGearpump {
 
   val projectName = "gearpump"
 
-  val commonSettings = sonatypeSettings ++
-    Seq(
+  val commonSettings = Seq(
       resolvers ++= Seq(
         // https://repo1.maven.org/maven2 has been added by default
         "apache-repo" at "https://repository.apache.org/content/repositories"
-      ) ++ Resolver.sonatypeOssRepos("releases"),
+      ),
       scalaVersion := scalaVersionNumber,
       crossScalaVersions := crossScalaVersionNumbers,
       organization := "io.github.gearpump",
-      useGpg := false,
-      pgpSecretRing := file("./secring.asc"),
-      pgpPublicRing := file("./pubring.asc"),
       updateOptions := updateOptions.value.withGigahorse(false),
       scalacOptions ++= Seq(
         // scalastyle:off line.size.limit
@@ -77,21 +72,16 @@ object BuildGearpump {
       ),
       publishMavenStyle := true,
 
-      pgpPassphrase := Option(System.getenv().get("PASSPHRASE")).map(_.toArray),
-      credentials += Credentials(
-        "Sonatype Nexus Repository Manager",
-        "oss.sonatype.org",
-        System.getenv().get("SONATYPE_USERNAME"),
-        System.getenv().get("SONATYPE_PASSWORD")),
+      pgpPassphrase := sys.env.get("PGP_PASSPHRASE").map(_.toArray),
 
       pomIncludeRepository := { _ => false },
 
       publishTo := {
-        val nexus = "https://oss.sonatype.org/"
+        val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
         if (isSnapshot.value) {
-          Some("snapshots" at nexus + "content/repositories/snapshots")
+          Some("central-snapshots" at centralSnapshots)
         } else {
-          Some("releases" at nexus + "service/local/staging/deploy/maven2")
+          localStaging.value
         }
       },
 
@@ -144,6 +134,20 @@ object BuildGearpump {
     assembly / test := {},
     assembly / assemblyOption ~= {
       _.withIncludeScala(false)
+    },
+    assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", "versions", _*) => MergeStrategy.discard
+      case "module-info.class" => MergeStrategy.discard
+      case "META-INF/io.netty.versions.properties" => MergeStrategy.concat
+      case "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat" =>
+        MergeStrategy.first
+      case "mozilla/public-suffix-list.txt" => MergeStrategy.first
+      case "org/apache/hadoop/security/authentication/server/package-info.class" =>
+        MergeStrategy.first
+      case PathList("javax", "activation", _*) => MergeStrategy.first
+      case path =>
+        val oldStrategy = (assembly / assemblyMergeStrategy).value
+        oldStrategy(path)
     },
     assembly / assemblyJarName := {
       s"${name.value}_${scalaBinaryVersion.value}-${version.value}-assembly.jar"
