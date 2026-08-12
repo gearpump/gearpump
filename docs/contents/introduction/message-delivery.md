@@ -6,11 +6,24 @@
     the required interfaces but does not ship the historical Kafka and Hadoop
     implementations used by older examples. See [Streaming Runtime
     Guarantees](../internals/runtime-guarantees.md) for the complete prerequisite
-    and limitation matrix.
+    and limitation matrix. Gearpump also has no built-in at-most-once mode;
+    omitting replay only provides best-effort behavior unless the application
+    supplies a no-redelivery protocol.
 
 Messages could be lost on delivery due to network partitions. **At Least Once Message Delivery** (at least once) means the lost messages are delivered one or more times such that at least one is processed and acknowledged by the whole flow. 
 
-Gearpump can provide at-least-once processing for a source that can replay messages from a past timestamp and durably maps application timestamps to source offsets. In Gearpump, each message is tagged with a timestamp, and the system tracks the minimum timestamp of all pending messages (the global minimum clock). On message loss, the application restarts from a recovery clock. A conforming `TimeReplayableSource` must replay every record that may not have completed after that clock. Replay can produce duplicates, so sinks and external effects still need idempotency or deduplication.
+Gearpump can provide at-least-once processing for a source that can replay
+messages from a past timestamp and durably maps application timestamps to source
+offsets. Each message carries an event-time timestamp. Each task reports a
+progress clock derived from upstream watermarks, its processing watermark, and
+its processing-watermark values acknowledged by downstream subscriptions.
+`ClockService` takes the minimum across task instances as the application clock.
+This is a conservative event-time progress frontier, not an inventory of pending
+records or their exact minimum timestamp. On message loss, the application
+restarts from a recovery clock. A conforming
+`TimeReplayableSource` must replay every record that may not have completed after
+that clock. Replay can produce duplicates, so sinks and external effects still
+need idempotency or deduplication.
 
 ## What is Exactly Once Message Delivery?
 
