@@ -1,3 +1,11 @@
+!!! warning "Historical design document"
+    This page describes intended architecture and components from earlier
+    Gearpump versions. Some failover, `KafkaSource`, and exactly-once claims
+    below do not match the current `master` implementation. See [Streaming
+    Runtime Guarantees](runtime-guarantees.md) for source-verified current
+    behavior and prerequisites. Treat the examples below as historical unless
+    they are independently verified against the current source tree.
+
 ### Actor Hierarchy?
 
 ![Actor Hierarchy](../img/actor_hierarchy.png)

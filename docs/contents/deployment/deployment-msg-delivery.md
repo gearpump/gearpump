@@ -1,6 +1,19 @@
 ## How to deploy for At Least Once Message Delivery?
 
-As introduced in the [What is At Least Once Message Delivery](../introduction/message-delivery#what-is-at-least-once-message-delivery), Gearpump has a built in KafkaSource. To get at least once message delivery, users should deploy a Kafka cluster as the offset store along with the Gearpump cluster. 
+!!! warning "Historical connector example"
+    Current `master` defines the `TimeReplayableSource` and `CheckpointStore`
+    contracts but does not ship the `KafkaSource`, `KafkaStorageFactory`, or
+    `HadoopCheckpointStore` classes used below. Treat this page as a historical
+    architecture example. A current deployment must provide equivalent durable
+    source-offset and state-checkpoint implementations. See [Streaming Runtime
+    Guarantees](../internals/runtime-guarantees.md) before relying on a delivery
+    level.
+
+The historical deployment described below paired a Kafka-backed replayable
+source with a Kafka-backed offset store. A current implementation needs
+equivalent durable timestamp-to-offset checkpointing; see
+[What is At Least Once Message Delivery](../introduction/message-delivery.md#what-is-at-least-once-message-delivery)
+for the delivery model.
 
 Here's an example to deploy a local Kafka cluster. 
 
@@ -10,7 +23,7 @@ Here's an example to deploy a local Kafka cluster.
 
     	:::bash
     	$KAFKA_HOME/bin/zookeeper-server-start.sh $KAFKA_HOME/config/zookeeper.properties
-    
+
  
 3. Start a Kafka broker
 
@@ -27,7 +40,10 @@ Here's an example to deploy a local Kafka cluster.
 
 ## How to deploy for Exactly Once Message Delivery?
 
-Exactly Once Message Delivery requires both an offset store and a checkpoint store. For the offset store, a Kafka cluster should be deployed as in the previous section. As for the checkpoint store, Gearpump has built-in support for Hadoop file systems, like HDFS. Hence, users should deploy a HDFS cluster alongside the Gearpump cluster. 
+The historical exactly-once design additionally stored task checkpoints in
+HDFS. A current deployment needs both durable source-offset storage and a
+durable shared `CheckpointStore` implementation; the HDFS-specific classes in
+this example are not shipped on `master`.
 
 Here's an example to deploy a local HDFS cluster.
 
@@ -56,5 +72,3 @@ Here's an example to deploy a local HDFS cluster.
     	val hadoopConfig = new Configuration
     	hadoopConfig.set("fs.defaultFS", "hdfs://localhost:9000")
     	val checkpointStoreFactory = new HadoopCheckpointStoreFactory("MessageCount", hadoopConfig, new FileSizeRotation(1000))
-
-    
