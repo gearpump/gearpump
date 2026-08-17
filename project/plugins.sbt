@@ -8,7 +8,7 @@ addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.23")
 
 addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.1")
 
-addSbtPlugin("com.github.sbt" % "sbt-license-report" % "1.9.0")
+addSbtPlugin("com.github.sbt" % "sbt-license-report" % "1.10.0")
 
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "1.0.13")
 
