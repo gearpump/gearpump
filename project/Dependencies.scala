@@ -44,7 +44,7 @@ object Dependencies {
   val sprayJsonVersion = "1.3.1"
   val scalaTestVersion = "3.2.20"
   val scalaTestPlusScalaCheckVersion = "3.2.20.0"
-  val scalaCheckVersion = "1.19.0"
+  val scalaCheckVersion = "1.20.0"
   val mockitoVersion = "5.23.0"
   val beamVersion = "2.73.0"
   val snappyJavaVersion = "1.1.10.8"
