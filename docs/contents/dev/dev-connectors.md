@@ -16,6 +16,7 @@ Currently, we have following `DataSource` supported.
 Name | Description
 -----| ----------
 `CollectionDataSource` | Convert a collection to a recursive data source. E.g. `seq(1, 2, 3)` will output `1,2,3,1,2,3...`.
+`IcebergSource` | Read the current snapshot of an Iceberg format-version 3 table as a bounded source.
 `KafkaSource` | Read from Kafka.
 
 ### `DataSink` implemented
@@ -24,6 +25,7 @@ Currently, we have following `DataSink` supported.
 Name | Description
 -----| ----------
 `HBaseSink` | Write the message to HBase. The message to write must be HBase `Put` or a tuple of `(rowKey, family, column, value)`.
+`IcebergSink` | Continuously append messages to partitioned or unpartitioned Iceberg v3 tables.
 `KafkaSink` | Write to Kafka.
 
 ## Use of Connectors
@@ -144,6 +146,94 @@ Attention, due to the issue discussed [here](http://stackoverflow.com/questions/
 	 conf
 	}
 	val sink = HBaseSink(UserConfig.empty, tableName, hadoopConfig)
+
+### Use of Iceberg v3 connectors
+
+Add the `gearpump-external-iceberg` dependency to the application:
+
+#### SBT
+
+	:::sbt
+	"io.github.gearpump" %% "gearpump-external-iceberg" % {{GEARPUMP_VERSION}}
+
+#### XML
+
+	:::xml
+	<dependency>
+	  <groupId>io.github.gearpump</groupId>
+	  <artifactId>gearpump-external-iceberg</artifactId>
+	  <version>{{GEARPUMP_VERSION}}</version>
+	</dependency>
+
+The connector uses Iceberg Java 1.11.0 and requires table format version 3. Tables can be addressed
+directly by Hadoop location or through any Iceberg catalog implementation available on the
+application classpath. Source parallelism divides the current snapshot's planned scan tasks between
+Gearpump tasks.
+
+The sink supports partition fanout, target-sized file rolling, record/estimated-byte/time commit
+thresholds, field-name or custom record mapping, table metadata refresh between batches, commit
+metrics, and a table-local write-ahead log (WAL). Each atomic append has a unique snapshot summary
+identifier. On restart, the WAL distinguishes commits that became visible despite an uncertain
+client response from files belonging to an abandoned commit.
+
+The default WAL requires the table `FileIO` to implement Iceberg `SupportsPrefixOperations`.
+Set `walEnabled = false` only when the configured `FileIO` cannot list prefixes and the weaker
+recovery behavior is acceptable. Set an explicit, stable `walNamespace` when recovery must span
+application resubmission, and do not share it between unrelated applications. As with the Storm
+connector, operators must separately expire old snapshots, compact small files, and remove
+unrelated orphan files.
+
+Sink watermarks are advanced only after buffered records commit successfully. With a
+`TimeReplayableSource` that resumes from Gearpump's recovered application clock, this provides
+at-least-once delivery: records committed after the last recovered watermark can be replayed and
+duplicated. Sources that cannot replay do not provide that end-to-end guarantee. The connector does
+not provide exactly-once delivery or row-level deduplication.
+
+	:::scala
+	import io.gearpump.external.iceberg._
+	import io.gearpump.streaming.sink.DataSinkProcessor
+	import io.gearpump.streaming.source.DataSourceProcessor
+	import org.apache.iceberg.Schema
+	import org.apache.iceberg.types.Types
+
+	val schema = new Schema(
+	  Types.NestedField.required(1, "id", Types.LongType.get()),
+	  Types.NestedField.required(2, "data", Types.StringType.get()),
+	  Types.NestedField.optional(3, "event_millis", Types.LongType.get())
+	)
+
+	val table = IcebergTableConfig.forNewV3Table("/tmp/gearpump-iceberg", schema)
+	val source = new IcebergSource(
+	  IcebergTableConfig.forV3Table("/tmp/gearpump-iceberg"),
+	  timestampExtractor = IcebergTimestampExtractor.field("event_millis")
+	)
+	val sink = new IcebergSink(
+	  table,
+	  options = IcebergSinkOptions(
+	    maxRecordsPerBatch = 1000,
+	    maxBytesPerBatch = 64 * 1024 * 1024,
+	    commitIntervalMillis = 5000,
+	    recordMapper = IcebergRecordMapper.recordOnly
+	  )
+	)
+
+	val sourceProcessor = DataSourceProcessor(source, parallelism = 2,
+	  description = "IcebergSource")
+	val sinkProcessor = DataSinkProcessor(sink, parallelism = 2,
+	  description = "IcebergSink")
+
+For a catalog-backed table, supply standard Iceberg catalog properties. Catalog implementations
+not included by `iceberg-core`, such as Hive, must be added to the application dependencies.
+
+	:::scala
+	val catalogTable = IcebergTableConfig.forCatalogV3Table(
+	  catalogName = "production",
+	  tableIdentifier = "analytics.events",
+	  catalogProperties = Map(
+	    "type" -> "rest",
+	    "uri" -> "https://catalog.example.com"
+	  )
+	)
 
 
 ## How to implement your own `DataSource`

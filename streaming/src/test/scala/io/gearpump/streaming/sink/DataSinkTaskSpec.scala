@@ -17,15 +17,17 @@ package io.gearpump.streaming.sink
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
+import io.gearpump.testkit.MockitoSugar
 import java.time.Instant
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
-import io.gearpump.testkit.MockitoSugar
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import scala.concurrent.duration._
 
-class DataSinkTaskSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with MockitoSugar {
+class DataSinkTaskSpec
+  extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with MockitoSugar {
 
   property("DataSinkTask.onStart should call DataSink.open" ) {
     forAll(Gen.chooseNum[Long](0L, 1000L).map(Instant.ofEpochMilli)) { (startTime: Instant) =>
@@ -58,6 +60,22 @@ class DataSinkTaskSpec extends AnyPropSpec with ScalaCheckPropertyChecks with Ma
     val sinkTask = new DataSinkTask(taskContext, config, dataSink)
     sinkTask.onStop()
     verify(dataSink).close()
+  }
+
+  property("DataSinkTask should invoke flush on a tick and before advancing a watermark") {
+    val taskContext = MockUtil.mockTaskContext
+    val sink = mock[FlushableDataSink]
+    when(sink.flushInterval).thenReturn(5.seconds)
+    when(sink.flushOnWatermark).thenReturn(true)
+    val sinkTask = new DataSinkTask(taskContext, UserConfig.empty, sink)
+
+    sinkTask.onStart(Instant.EPOCH)
+    sinkTask.receiveUnManagedMessage(FlushDataSink)
+    sinkTask.onWatermarkProgress(Instant.ofEpochMilli(1000L))
+    sinkTask.onStop()
+
+    verify(sink, times(2)).flush()
+    verify(taskContext).updateWatermark(Instant.ofEpochMilli(1000L))
   }
 
 }

@@ -47,6 +47,7 @@ object Dependencies {
   val scalaCheckVersion = "1.20.0"
   val mockitoVersion = "5.23.0"
   val beamVersion = "2.73.0"
+  val icebergVersion = "1.11.0"
   val snappyJavaVersion = "1.1.10.8"
   val bijectionVersion = "0.8.0"
   val scalazVersion = "7.1.1"
@@ -126,5 +127,22 @@ object Dependencies {
       "org.junit.jupiter" % "junit-jupiter" % junitJupiterVersion % "test",
       "com.github.sbt.junit" % "jupiter-interface" % jupiterInterfaceVersion % "test"
     ) ++ annotationDependencies
+  )
+
+  val icebergDependencies = Seq(
+    libraryDependencies ++= Seq(
+      "org.apache.iceberg" % "iceberg-api" % icebergVersion,
+      "org.apache.iceberg" % "iceberg-core" % icebergVersion,
+      "org.apache.iceberg" % "iceberg-data" % icebergVersion,
+      "org.apache.iceberg" % "iceberg-orc" % icebergVersion,
+      "org.apache.iceberg" % "iceberg-parquet" % icebergVersion,
+      "org.apache.hadoop" % "hadoop-common" % hadoopVersion,
+      "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
+      "org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVersion
+    ).map(_.exclude("org.slf4j", "slf4j-api"))
+      .map(_.exclude("org.slf4j", "slf4j-log4j12")) ++
+      Seq(
+        "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+      ) ++ annotationDependencies
   )
 }
