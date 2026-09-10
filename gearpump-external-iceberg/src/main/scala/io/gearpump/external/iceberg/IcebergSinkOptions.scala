@@ -16,17 +16,11 @@ package io.gearpump.external.iceberg
 
 /** Streaming write and commit controls for [[IcebergSink]]. */
 final case class IcebergSinkOptions(
-    maxRecordsPerBatch: Long = 1000L,
-    maxBytesPerBatch: Long = Long.MaxValue,
-    commitIntervalMillis: Long = 5000L,
     targetFileSizeBytes: Option[Long] = None,
     walEnabled: Boolean = true,
     walNamespace: Option[String] = None,
     recordMapper: IcebergRecordMapper = IcebergRecordMapper.recordOnly) extends Serializable {
 
-  require(maxRecordsPerBatch > 0L, "maxRecordsPerBatch must be greater than zero")
-  require(maxBytesPerBatch > 0L, "maxBytesPerBatch must be greater than zero")
-  require(commitIntervalMillis > 0L, "commitIntervalMillis must be greater than zero")
   require(targetFileSizeBytes.forall(_ > 0L), "targetFileSizeBytes must be greater than zero")
   require(walNamespace.forall(_.nonEmpty), "walNamespace must not be empty")
   require(recordMapper != null, "recordMapper must not be null")

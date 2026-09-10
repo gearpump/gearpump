@@ -15,9 +15,10 @@
 package io.gearpump.external.iceberg
 
 import io.gearpump.Message
+import io.gearpump.streaming.source.Watermark
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDateTime}
 import java.util.concurrent.CountDownLatch
 import org.apache.hadoop.conf.Configuration
 import org.apache.iceberg.{FileFormat, HasTableOperations, PartitionSpec, Schema, TableProperties}
@@ -59,6 +60,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
       val sink = new IcebergSink(tableConfig, fileFormat = FileFormat.AVRO)
       sink.open(IcebergTestSupport.mockTaskContext())
       sink.write(Message(newRecord(1L, "avro", 1000L)))
+      sink.onWatermarkProgress(Watermark.MAX)
       sink.close()
 
       readAll(tableConfig).map(_.getField("data").toString) shouldBe Seq("avro")
@@ -92,6 +94,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
           val sink = new IcebergSink(tableConfig)
           sink.open(IcebergTestSupport.mockTaskContext(taskIndex, 4))
           sink.write(Message(newRecord(taskIndex, s"value-$taskIndex", taskIndex * 1000L)))
+          sink.onWatermarkProgress(Watermark.MAX)
           sink.close()
         }
       }
@@ -125,6 +128,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
       sink.open(IcebergTestSupport.mockTaskContext())
       sink.write(Message(newRecord(1L, "alpha", 1000L)))
       sink.write(Message(newRecord(2L, "beta", 2000L)))
+      sink.onWatermarkProgress(Watermark.MAX)
       sink.close()
 
       val table = tableConfig.loadTable()
@@ -134,38 +138,50 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     }
   }
 
-  property("IcebergSink should commit batches when the record threshold is reached") {
-    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-batches") { tableDirectory =>
+  property("IcebergSink should commit pending records only on watermark progress") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-progress") { tableDirectory =>
       val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
-      val options = IcebergSinkOptions(maxRecordsPerBatch = 2L, walEnabled = false)
+      val options = IcebergSinkOptions(walEnabled = false)
       val sink = new IcebergSink(tableConfig, options = options)
       sink.open(IcebergTestSupport.mockTaskContext())
 
-      (0L until 5L).foreach { id =>
+      (0L until 2L).foreach { id =>
         sink.write(Message(newRecord(id, s"value-$id", id * 1000L)))
       }
-      sink.close()
+      tableConfig.loadTable().currentSnapshot() shouldBe null
 
-      tableConfig.loadTable().snapshots().asScala.size shouldBe 3
-      readAll(tableConfig).size shouldBe 5
-    }
-  }
+      sink.onWatermarkProgress(Instant.ofEpochMilli(2000L))
+      tableConfig.loadTable().snapshots().asScala.size shouldBe 1
+      readAll(tableConfig).size shouldBe 2
 
-  property("IcebergSink should commit batches when the estimated byte threshold is reached") {
-    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-byte-batches") { tableDirectory =>
-      val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
-      val options = IcebergSinkOptions(
-        maxRecordsPerBatch = Long.MaxValue,
-        maxBytesPerBatch = 1L,
-        walEnabled = false)
-      val sink = new IcebergSink(tableConfig, options = options)
-      sink.open(IcebergTestSupport.mockTaskContext())
-
-      sink.write(Message(newRecord(1L, "alpha", 1000L)))
-      sink.write(Message(newRecord(2L, "beta", 2000L)))
+      sink.write(Message(newRecord(2L, "value-2", 2000L)))
+      tableConfig.loadTable().snapshots().asScala.size shouldBe 1
+      sink.onWatermarkProgress(Instant.ofEpochMilli(3000L))
       sink.close()
 
       tableConfig.loadTable().snapshots().asScala.size shouldBe 2
+      readAll(tableConfig).size shouldBe 3
+    }
+  }
+
+  property("IcebergSink should roll target-sized files without committing early") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-file-roll") { tableDirectory =>
+      val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
+      val options = IcebergSinkOptions(targetFileSizeBytes = Some(1L), walEnabled = false)
+      val sink = new IcebergSink(tableConfig, options = options)
+      sink.open(IcebergTestSupport.mockTaskContext())
+
+      (0L to 1000L).foreach { id =>
+        sink.write(Message(newRecord(id, s"value-$id", id * 1000L)))
+      }
+      tableConfig.loadTable().currentSnapshot() shouldBe null
+
+      sink.onWatermarkProgress(Watermark.MAX)
+      sink.close()
+
+      val table = tableConfig.loadTable()
+      table.snapshots().asScala.size shouldBe 1
+      table.currentSnapshot().addedDataFiles(table.io()).asScala.size shouldBe 2
     }
   }
 
@@ -173,13 +189,13 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-mapping") { tableDirectory =>
       val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
       val options = IcebergSinkOptions(
-        maxRecordsPerBatch = 1L,
         walEnabled = false,
         recordMapper = IcebergRecordMapper.fieldNames)
       val sink = new IcebergSink(tableConfig, options = options)
       sink.open(IcebergTestSupport.mockTaskContext())
       sink.write(Message(Map[String, Any](
         "id" -> 1L, "data" -> "alpha", "event_millis" -> 1000L)))
+      sink.onWatermarkProgress(Instant.ofEpochMilli(2000L))
 
       tableConfig.loadTable().updateSchema().addColumn("category", Types.StringType.get()).commit()
       sink.write(Message(Map[String, Any](
@@ -187,6 +203,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
         "data" -> "beta",
         "event_millis" -> 2000L,
         "category" -> "new")))
+      sink.onWatermarkProgress(Instant.ofEpochMilli(3000L))
       sink.close()
 
       val records = readAll(tableConfig).sortBy(_.getField("id").asInstanceOf[Long])
@@ -225,10 +242,24 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
       sink.open(IcebergTestSupport.mockTaskContext())
       an [Exception] should be thrownBy sink.write(Message(invalid))
       sink.write(Message(newRecord(2L, "valid", 2000L)))
+      sink.onWatermarkProgress(Watermark.MAX)
       sink.close()
 
       readAll(tableConfig).map(_.getField("id").asInstanceOf[Long]) shouldBe Seq(2L)
       countParquetDataFiles(tableDirectory) shouldBe 1L
+    }
+  }
+
+  property("IcebergSink should abort records that did not cross a watermark") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-abort") { tableDirectory =>
+      val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
+      val sink = new IcebergSink(tableConfig, options = IcebergSinkOptions(walEnabled = false))
+      sink.open(IcebergTestSupport.mockTaskContext())
+      sink.write(Message(newRecord(1L, "uncheckpointed", 1000L)))
+
+      sink.close()
+
+      tableConfig.loadTable().currentSnapshot() shouldBe null
     }
   }
 
@@ -326,6 +357,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     val sink = new IcebergSink(tableConfig)
     sink.open(IcebergTestSupport.mockTaskContext())
     sink.write(Message(record))
+    sink.onWatermarkProgress(Watermark.MAX)
     sink.close()
   }
 

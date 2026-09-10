@@ -168,11 +168,15 @@ The connector uses Iceberg Java 1.11.0 and requires table format version 3. Tabl
 directly by Hadoop location or through any Iceberg catalog implementation available on the
 application classpath.
 
-The sink supports partition fanout, target-sized file rolling, record/estimated-byte/time commit
-thresholds, field-name or custom record mapping, table metadata refresh between batches, commit
-metrics, and a table-local write-ahead log (WAL). Each atomic append has a unique snapshot summary
-identifier. On restart, the WAL distinguishes commits that became visible despite an uncertain
-client response from files belonging to an abandoned commit.
+The sink supports partition fanout, target-sized file rolling, field-name or custom record mapping,
+table metadata refresh between progress checkpoints, commit metrics, and a table-local write-ahead
+log (WAL). Like Iceberg's Flink Sink V2, reaching the target file size only rolls a data file; it
+does not trigger a table commit. The sink completes its open writer and atomically commits the files
+before advancing each Gearpump watermark. A bounded source advances to `Watermark.MAX` before the
+task stops, providing the final commit boundary. Closing or cancelling a task aborts records that
+have not crossed a watermark. Each atomic append has a unique snapshot summary identifier. On
+restart, the WAL distinguishes commits that became visible despite an uncertain client response
+from files belonging to an abandoned commit.
 
 The default WAL requires the table `FileIO` to implement Iceberg `SupportsPrefixOperations`.
 Set `walEnabled = false` only when the configured `FileIO` cannot list prefixes and the weaker
@@ -203,9 +207,7 @@ not provide exactly-once delivery or row-level deduplication.
 	val sink = new IcebergSink(
 	  table,
 	  options = IcebergSinkOptions(
-	    maxRecordsPerBatch = 1000,
-	    maxBytesPerBatch = 64 * 1024 * 1024,
-	    commitIntervalMillis = 5000,
+	    targetFileSizeBytes = Some(128 * 1024 * 1024),
 	    recordMapper = IcebergRecordMapper.recordOnly
 	  )
 	)

@@ -16,27 +16,29 @@ package io.gearpump.external.iceberg
 
 import io.gearpump.Message
 import io.gearpump.metrics.{Counter, Histogram, Meter, Metrics}
-import io.gearpump.streaming.sink.FlushableDataSink
+import io.gearpump.streaming.sink.DataSink
 import io.gearpump.streaming.task.TaskContext
 import java.nio.ByteBuffer
+import java.time.Instant
 import java.util.UUID
 import org.apache.iceberg.{DataFile, FileFormat, Table, TableProperties}
 import org.apache.iceberg.data.{GearpumpIcebergData, Record}
 import org.apache.iceberg.data.GearpumpIcebergData.RecordTaskWriter
-import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 import scala.jdk.CollectionConverters._
 
 /**
  * Streaming sink for unpartitioned or partitioned Iceberg format-version 3 tables.
  *
- * Records are rolled into target-sized data files and committed in atomic batches. A table-local
- * WAL and a snapshot commit identifier resolve commits whose client-side outcome is unknown.
+ * Records are rolled into target-sized data files. Open writers are completed and committed before
+ * the sink task advances a watermark, matching the checkpoint-driven writer lifecycle of Iceberg's
+ * Flink Sink V2. A table-local WAL and a snapshot commit identifier resolve commits whose
+ * client-side outcome is unknown.
  */
 class IcebergSink(
     tableConfig: IcebergTableConfig,
     fileFormat: FileFormat = FileFormat.PARQUET,
     options: IcebergSinkOptions = IcebergSinkOptions())
-  extends FlushableDataSink {
+  extends DataSink {
 
   private var table: Table = _
   private var taskContext: TaskContext = _
@@ -46,10 +48,6 @@ class IcebergSink(
   private var recordsInBatch = 0L
   private var estimatedBytesInBatch = 0L
   private var batchSequence = 0L
-
-  override def flushInterval: FiniteDuration = {
-    FiniteDuration(options.commitIntervalMillis, MILLISECONDS)
-  }
 
   override def open(context: TaskContext): Unit = synchronized {
     table = tableConfig.loadOrCreateTable()
@@ -74,11 +72,6 @@ class IcebergSink(
       recordsInBatch += 1L
       estimatedBytesInBatch += IcebergRecordSize.estimate(record)
       metrics.recordsWritten.mark()
-
-      if (recordsInBatch >= options.maxRecordsPerBatch ||
-        estimatedBytesInBatch >= options.maxBytesPerBatch) {
-        flush()
-      }
     } catch {
       case failure: Throwable =>
         abortCurrentBatch(failure)
@@ -86,7 +79,9 @@ class IcebergSink(
     }
   }
 
-  override def flush(): Unit = synchronized {
+  override def onWatermarkProgress(watermark: Instant): Unit = flush()
+
+  def flush(): Unit = synchronized {
     ensureOpen()
     if (writer != null && recordsInBatch > 0L) {
       val batchWriter = writer
@@ -117,14 +112,19 @@ class IcebergSink(
   }
 
   override def close(): Unit = synchronized {
-    if (table != null) {
-      flush()
-    }
+    val pendingWriter = writer
     writer = null
-    wal = null
-    metrics = null
-    taskContext = null
-    table = null
+    resetBatchCounters()
+    try {
+      if (pendingWriter != null) {
+        pendingWriter.abort()
+      }
+    } finally {
+      wal = null
+      metrics = null
+      taskContext = null
+      table = null
+    }
   }
 
   private def startBatch(): Unit = {

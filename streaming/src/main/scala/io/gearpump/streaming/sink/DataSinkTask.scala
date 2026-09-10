@@ -18,10 +18,6 @@ import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.task.{Task, TaskContext}
 import java.time.Instant
-import org.apache.pekko.actor.Actor.Receive
-import org.apache.pekko.actor.Cancellable
-
-private[sink] case object FlushDataSink
 
 object DataSinkTask {
   val DATA_SINK = "data_sink"
@@ -33,7 +29,6 @@ object DataSinkTask {
 class DataSinkTask private[sink](context: TaskContext, conf: UserConfig, sink: DataSink)
   extends Task(context, conf) {
 
-  private var flushSchedule: Cancellable = _
   def this(context: TaskContext, conf: UserConfig) = {
     this(context, conf, conf.getValue[DataSink](DataSinkTask.DATA_SINK)(context.system).get)
   }
@@ -41,14 +36,6 @@ class DataSinkTask private[sink](context: TaskContext, conf: UserConfig, sink: D
   override def onStart(startTime: Instant): Unit = {
     LOG.info("opening data sink...")
     sink.open(context)
-    sink match {
-      case flushable: FlushableDataSink =>
-        val interval = flushable.flushInterval
-        flushSchedule = context.schedule(interval, interval) {
-          context.self ! FlushDataSink
-        }
-      case _ =>
-    }
   }
 
   override def onNext(message: Message): Unit = {
@@ -57,25 +44,11 @@ class DataSinkTask private[sink](context: TaskContext, conf: UserConfig, sink: D
 
   override def onStop(): Unit = {
     LOG.info("closing data sink...")
-    if (flushSchedule != null) {
-      flushSchedule.cancel()
-      flushSchedule = null
-    }
     sink.close()
   }
 
-  override def receiveUnManagedMessage: Receive = {
-    case FlushDataSink =>
-      sink.asInstanceOf[FlushableDataSink].flush()
-    case message =>
-      LOG.error(s"Received unknown message in DataSinkTask: $message")
-  }
-
   override def onWatermarkProgress(watermark: Instant): Unit = {
-    sink match {
-      case flushable: FlushableDataSink if flushable.flushOnWatermark => flushable.flush()
-      case _ =>
-    }
+    sink.onWatermarkProgress(watermark)
     context.updateWatermark(watermark)
   }
 }

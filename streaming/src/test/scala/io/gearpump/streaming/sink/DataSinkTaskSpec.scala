@@ -24,7 +24,6 @@ import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-import scala.concurrent.duration._
 
 class DataSinkTaskSpec
   extends AnyPropSpec with ScalaCheckPropertyChecks with Matchers with MockitoSugar {
@@ -62,20 +61,32 @@ class DataSinkTaskSpec
     verify(dataSink).close()
   }
 
-  property("DataSinkTask should invoke flush on a tick and before advancing a watermark") {
+  property("DataSinkTask should notify the sink before advancing a watermark") {
     val taskContext = MockUtil.mockTaskContext
-    val sink = mock[FlushableDataSink]
-    when(sink.flushInterval).thenReturn(5.seconds)
-    when(sink.flushOnWatermark).thenReturn(true)
+    val sink = mock[DataSink]
     val sinkTask = new DataSinkTask(taskContext, UserConfig.empty, sink)
+    val watermark = Instant.ofEpochMilli(1000L)
 
     sinkTask.onStart(Instant.EPOCH)
-    sinkTask.receiveUnManagedMessage(FlushDataSink)
-    sinkTask.onWatermarkProgress(Instant.ofEpochMilli(1000L))
+    sinkTask.onWatermarkProgress(watermark)
     sinkTask.onStop()
 
-    verify(sink, times(2)).flush()
-    verify(taskContext).updateWatermark(Instant.ofEpochMilli(1000L))
+    val ordered = org.mockito.Mockito.inOrder(sink, taskContext)
+    ordered.verify(sink).onWatermarkProgress(watermark)
+    ordered.verify(taskContext).updateWatermark(watermark)
+  }
+
+  property("DataSinkTask should not advance a watermark when sink notification fails") {
+    val taskContext = MockUtil.mockTaskContext
+    val sink = mock[DataSink]
+    val sinkTask = new DataSinkTask(taskContext, UserConfig.empty, sink)
+    val watermark = Instant.ofEpochMilli(1000L)
+    doThrow(new RuntimeException("flush failed")).when(sink).onWatermarkProgress(watermark)
+
+    the [RuntimeException] thrownBy {
+      sinkTask.onWatermarkProgress(watermark)
+    }
+    verify(taskContext, never()).updateWatermark(watermark)
   }
 
 }
