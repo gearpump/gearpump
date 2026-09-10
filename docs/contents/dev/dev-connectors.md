@@ -16,6 +16,7 @@ Currently, we have following `DataSource` supported.
 Name | Description
 -----| ----------
 `CollectionDataSource` | Convert a collection to a recursive data source. E.g. `seq(1, 2, 3)` will output `1,2,3,1,2,3...`.
+`IcebergSource` | Read a pinned snapshot of an Iceberg format-version 3 table as a bounded source.
 `KafkaSource` | Read from Kafka.
 
 ### `DataSink` implemented
@@ -146,7 +147,7 @@ Attention, due to the issue discussed [here](http://stackoverflow.com/questions/
 	}
 	val sink = HBaseSink(UserConfig.empty, tableName, hadoopConfig)
 
-### Use of the Iceberg v3 sink connector
+### Use of Iceberg v3 connectors
 
 Add the `gearpump-external-iceberg` dependency to the application:
 
@@ -167,6 +168,10 @@ Add the `gearpump-external-iceberg` dependency to the application:
 The connector uses Iceberg Java 1.11.0 and requires table format version 3. Tables can be addressed
 directly by Hadoop location or through any Iceberg catalog implementation available on the
 application classpath.
+
+The source pins the table's current snapshot when it is constructed, before Gearpump serializes it
+to parallel tasks, and divides that snapshot's planned scan tasks between those tasks. An explicit
+snapshot ID can be supplied when repeatable reads must target an older snapshot.
 
 The sink supports partition fanout, target-sized file rolling, record/estimated-byte/time commit
 thresholds, field-name or custom record mapping, table metadata refresh between batches, commit
@@ -190,6 +195,7 @@ not provide exactly-once delivery or row-level deduplication.
 	:::scala
 	import io.gearpump.external.iceberg._
 	import io.gearpump.streaming.sink.DataSinkProcessor
+	import io.gearpump.streaming.source.DataSourceProcessor
 	import org.apache.iceberg.Schema
 	import org.apache.iceberg.types.Types
 
@@ -200,6 +206,10 @@ not provide exactly-once delivery or row-level deduplication.
 	)
 
 	val table = IcebergTableConfig.forNewV3Table("/tmp/gearpump-iceberg", schema)
+	val source = new IcebergSource(
+	  IcebergTableConfig.forV3Table("/tmp/gearpump-iceberg"),
+	  timestampExtractor = IcebergTimestampExtractor.field("event_millis")
+	)
 	val sink = new IcebergSink(
 	  table,
 	  options = IcebergSinkOptions(
@@ -210,6 +220,8 @@ not provide exactly-once delivery or row-level deduplication.
 	  )
 	)
 
+	val sourceProcessor = DataSourceProcessor(source, parallelism = 2,
+	  description = "IcebergSource")
 	val sinkProcessor = DataSinkProcessor(sink, parallelism = 2,
 	  description = "IcebergSink")
 
