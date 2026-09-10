@@ -76,9 +76,9 @@ object IcebergRecordMapper {
         case Type.TypeID.BOOLEAN if value.isInstanceOf[String] =>
           Boolean.box(value.toString.toBoolean)
         case Type.TypeID.INTEGER if value.isInstanceOf[Number] =>
-          Int.box(value.asInstanceOf[Number].intValue())
+          Int.box(toIntExact(value.asInstanceOf[Number], icebergType))
         case Type.TypeID.LONG if value.isInstanceOf[Number] =>
-          Long.box(value.asInstanceOf[Number].longValue())
+          Long.box(toLongExact(value.asInstanceOf[Number], icebergType))
         case Type.TypeID.FLOAT if value.isInstanceOf[Number] =>
           Float.box(value.asInstanceOf[Number].floatValue())
         case Type.TypeID.DOUBLE if value.isInstanceOf[Number] =>
@@ -100,6 +100,51 @@ object IcebergRecordMapper {
     case timestamp: Types.TimestampType => timestamp.shouldAdjustToUTC()
     case timestamp: Types.TimestampNanoType => timestamp.shouldAdjustToUTC()
     case _ => false
+  }
+
+  private def toBigDecimal(number: Number, icebergType: Type): java.math.BigDecimal = {
+    try {
+      number match {
+        case decimal: java.math.BigDecimal => decimal
+        case integer: java.math.BigInteger => new java.math.BigDecimal(integer)
+        case decimal: BigDecimal => decimal.bigDecimal
+        case integer: BigInt => new java.math.BigDecimal(integer.bigInteger)
+        case _: java.lang.Byte | _: java.lang.Short | _: java.lang.Integer | _: java.lang.Long =>
+          java.math.BigDecimal.valueOf(number.longValue())
+        case _ => java.math.BigDecimal.valueOf(number.doubleValue())
+      }
+    } catch {
+      case failure: ArithmeticException =>
+        throw invalidNumericValue(number, icebergType, failure)
+      case failure: NumberFormatException =>
+        throw invalidNumericValue(number, icebergType, failure)
+    }
+  }
+
+  private def toIntExact(number: Number, icebergType: Type): Int = {
+    try {
+      toBigDecimal(number, icebergType).intValueExact()
+    } catch {
+      case failure: ArithmeticException =>
+        throw invalidNumericValue(number, icebergType, failure)
+    }
+  }
+
+  private def toLongExact(number: Number, icebergType: Type): Long = {
+    try {
+      toBigDecimal(number, icebergType).longValueExact()
+    } catch {
+      case failure: ArithmeticException =>
+        throw invalidNumericValue(number, icebergType, failure)
+    }
+  }
+
+  private def invalidNumericValue(
+      number: Number,
+      icebergType: Type,
+      cause: Exception): IllegalArgumentException = {
+    new IllegalArgumentException(
+      s"Numeric value '$number' cannot be represented as Iceberg $icebergType", cause)
   }
 
   private def convertTimestamp(value: Any, adjustToUtc: Boolean): Any = value match {

@@ -15,6 +15,8 @@
 package io.gearpump.external.iceberg
 
 import io.gearpump.Message
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Path}
 import java.time.LocalDateTime
 import java.util.concurrent.CountDownLatch
 import org.apache.hadoop.conf.Configuration
@@ -48,6 +50,18 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
         .operations().current().formatVersion()
       formatVersion shouldBe IcebergTableConfig.FormatVersion
       readAll(tableConfig).map(_.getField("data").toString).sorted shouldBe Seq("alpha", "beta")
+    }
+  }
+
+  property("IcebergSink should write and read Avro data files") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-avro") { tableDirectory =>
+      val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
+      val sink = new IcebergSink(tableConfig, fileFormat = FileFormat.AVRO)
+      sink.open(IcebergTestSupport.mockTaskContext())
+      sink.write(Message(newRecord(1L, "avro", 1000L)))
+      sink.close()
+
+      readAll(tableConfig).map(_.getField("data").toString) shouldBe Seq("avro")
     }
   }
 
@@ -181,6 +195,43 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     }
   }
 
+  property("field-name mapping should reject overflowing and fractional integers") {
+    val intSchema = new Schema(
+      Types.NestedField.required(1, "id", Types.IntegerType.get()))
+
+    val overflow = the [IllegalArgumentException] thrownBy {
+      IcebergRecordMapper.fieldNames.map(Message(Map("id" -> 3000000000L)), intSchema)
+    }
+    overflow.getMessage should include ("cannot be represented")
+
+    val fractional = the [IllegalArgumentException] thrownBy {
+      IcebergRecordMapper.fieldNames.map(Message(Map("id" -> 1.5D)), intSchema)
+    }
+    fractional.getMessage should include ("cannot be represented")
+
+    IcebergRecordMapper.fieldNames.map(Message(Map("id" -> 42.0D)), intSchema)
+      .getField("id") shouldBe 42
+  }
+
+  property("IcebergSink should abort a writer after its first record fails") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-write-failure") { tableDirectory =>
+      val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
+      val sink = new IcebergSink(tableConfig)
+      val invalid = GenericRecord.create(schema)
+      invalid.setField("id", "not-a-long")
+      invalid.setField("data", "invalid")
+      invalid.setField("event_millis", 1000L)
+
+      sink.open(IcebergTestSupport.mockTaskContext())
+      an [Exception] should be thrownBy sink.write(Message(invalid))
+      sink.write(Message(newRecord(2L, "valid", 2000L)))
+      sink.close()
+
+      readAll(tableConfig).map(_.getField("id").asInstanceOf[Long]) shouldBe Seq(2L)
+      countParquetDataFiles(tableDirectory) shouldBe 1L
+    }
+  }
+
   property("IcebergTableConfig should create and load a v3 table through a catalog") {
     IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-catalog") { warehouse =>
       val tableConfig = IcebergTableConfig.forNewCatalogV3Table(
@@ -223,6 +274,54 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     }
   }
 
+  property("Iceberg commit WAL should preserve referenced files after snapshot expiration") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-expired-commit-wal") {
+      tableDirectory =>
+        val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
+        val table = tableConfig.loadOrCreateTable()
+        val committedFile = writeUncommittedFile(
+          table, newRecord(1L, "committed", 1000L), 1L)
+        val wal = new IcebergCommitWal(table, "test", "expired-snapshot")
+        val pending = wal.prepare(Seq(committedFile))
+        table.newAppend()
+          .appendFile(committedFile)
+          .set(IcebergCommitWal.CommitIdProperty, pending.commitId)
+          .commit()
+        val committedSnapshotId = table.currentSnapshot().snapshotId()
+
+        val newerFile = writeUncommittedFile(table, newRecord(2L, "newer", 2000L), 2L)
+        table.newAppend().appendFile(newerFile).commit()
+        table.expireSnapshots().expireSnapshotId(committedSnapshotId).commit()
+        table.refresh()
+        table.snapshots().asScala.map(_.snapshotId()) should not contain committedSnapshotId
+
+        wal.recover() shouldBe IcebergRecoveryResult(1L, 0L)
+        table.io().newInputFile(committedFile.location().toString).exists() shouldBe true
+        readAll(tableConfig).map(_.getField("id").asInstanceOf[Long]).sorted shouldBe Seq(1L, 2L)
+    }
+  }
+
+  property("Iceberg commit WAL should discard incomplete entries without deleting data") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-incomplete-wal") { tableDirectory =>
+      val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
+      val table = tableConfig.loadOrCreateTable()
+      val dataFile = writeUncommittedFile(table, newRecord(1L, "orphan", 1000L), 1L)
+      val wal = new IcebergCommitWal(table, "test", "incomplete")
+      val pending = wal.prepare(Seq(dataFile))
+      val output = table.io().newOutputFile(pending.walLocation).createOrOverwrite()
+      try {
+        output.write("{".getBytes(StandardCharsets.UTF_8))
+      } finally {
+        output.close()
+      }
+
+      wal.recover() shouldBe IcebergRecoveryResult(0L, 1L)
+      table.io().newInputFile(pending.walLocation).exists() shouldBe false
+      table.io().newInputFile(dataFile.location().toString).exists() shouldBe true
+      wal.recover() shouldBe IcebergRecoveryResult(0L, 0L)
+    }
+  }
+
   private def appendRecord(tableConfig: IcebergTableConfig, record: Record): Unit = {
     val sink = new IcebergSink(tableConfig)
     sink.open(IcebergTestSupport.mockTaskContext())
@@ -258,6 +357,22 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
       records.iterator().asScala.toVector
     } finally {
       records.close()
+    }
+  }
+
+  private def countParquetDataFiles(tableDirectory: Path): Long = {
+    val dataDirectory = tableDirectory.resolve("data")
+    if (!Files.exists(dataDirectory)) {
+      0L
+    } else {
+      val files = Files.walk(dataDirectory)
+      try {
+        files.iterator().asScala.count { path =>
+          Files.isRegularFile(path) && path.getFileName.toString.endsWith(".parquet")
+        }.toLong
+      } finally {
+        files.close()
+      }
     }
   }
 }

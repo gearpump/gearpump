@@ -68,15 +68,21 @@ class IcebergSink(
     if (writer == null) {
       startBatch()
     }
-    val record = options.recordMapper.map(message, table.schema())
-    writer.write(record)
-    recordsInBatch += 1L
-    estimatedBytesInBatch += IcebergRecordSize.estimate(record)
-    metrics.recordsWritten.mark()
+    try {
+      val record = options.recordMapper.map(message, table.schema())
+      writer.write(record)
+      recordsInBatch += 1L
+      estimatedBytesInBatch += IcebergRecordSize.estimate(record)
+      metrics.recordsWritten.mark()
 
-    if (recordsInBatch >= options.maxRecordsPerBatch ||
-      estimatedBytesInBatch >= options.maxBytesPerBatch) {
-      flush()
+      if (recordsInBatch >= options.maxRecordsPerBatch ||
+        estimatedBytesInBatch >= options.maxBytesPerBatch) {
+        flush()
+      }
+    } catch {
+      case failure: Throwable =>
+        abortCurrentBatch(failure)
+        throw failure
     }
   }
 
@@ -175,6 +181,15 @@ class IcebergSink(
       batchWriter.abort()
     } catch {
       case abortFailure: Throwable => originalFailure.addSuppressed(abortFailure)
+    }
+  }
+
+  private def abortCurrentBatch(originalFailure: Throwable): Unit = {
+    val batchWriter = writer
+    writer = null
+    resetBatchCounters()
+    if (batchWriter != null) {
+      abort(batchWriter, originalFailure)
     }
   }
 

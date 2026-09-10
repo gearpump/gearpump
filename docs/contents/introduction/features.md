@@ -64,4 +64,4 @@ Gearpump has a built-in dashboard UI to manage the cluster and visualize the app
 
 #### Data connectors for Kafka, HDFS, and Iceberg
 
-Gearpump has built-in data connectors for Kafka, HDFS, and Iceberg. For the Kafka connector, we support message replay from a specified timestamp. The Iceberg connector supports parallel bounded reads and batched, partition-aware appends to format-version 3 tables addressed by location or catalog.
+Gearpump has built-in data connectors for Kafka, HDFS, and Iceberg. For the Kafka connector, we support message replay from a specified timestamp. The Iceberg connector supports batched, partition-aware appends to format-version 3 tables addressed by location or catalog.

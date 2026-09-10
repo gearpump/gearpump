@@ -82,15 +82,23 @@ private[iceberg] final class IcebergCommitWal(
         Vector.empty
     }
     entries.foreach { info =>
-      val pending = read(info.location())
-      table.refresh()
-      if (isCommitted(pending.commitId)) {
-        visible += 1L
-      } else {
-        pending.dataFiles.foreach(file => table.io().deleteFile(file.location().toString))
-        abandoned += 1L
+      try {
+        val pending = read(info.location())
+        table.refresh()
+        if (isCommitted(pending.commitId) || referencesDataFiles(pending.dataFiles)) {
+          visible += 1L
+        } else {
+          pending.dataFiles.foreach(file => table.io().deleteFile(file.location().toString))
+          abandoned += 1L
+        }
+        table.io().deleteFile(pending.walLocation)
+      } catch {
+        case _: InvalidWalEntryException =>
+          // A process may have died while writing the final WAL file. Its data-file list cannot be
+          // trusted, so remove only the malformed marker and leave orphan cleanup to Iceberg.
+          table.io().deleteFile(info.location())
+          abandoned += 1L
       }
-      table.io().deleteFile(pending.walLocation)
     }
     IcebergRecoveryResult(visible, abandoned)
   }
@@ -98,6 +106,18 @@ private[iceberg] final class IcebergCommitWal(
   def isCommitted(commitId: String): Boolean = {
     table.snapshots().asScala.exists { snapshot =>
       commitId == snapshot.summary().get(IcebergCommitWal.CommitIdProperty)
+    }
+  }
+
+  private def referencesDataFiles(dataFiles: Seq[DataFile]): Boolean = {
+    val locations = dataFiles.iterator.map(_.location().toString).toSet
+    table.snapshots().asScala.exists { snapshot =>
+      val tasks = table.newScan().useSnapshot(snapshot.snapshotId()).planFiles()
+      try {
+        tasks.asScala.exists(task => locations.contains(task.file().location().toString))
+      } finally {
+        tasks.close()
+      }
     }
   }
 
@@ -124,16 +144,28 @@ private[iceberg] final class IcebergCommitWal(
       input.close()
     }
 
-    val root = JsonUtil.mapper().readTree(bytes.toByteArray)
-    val commitId = root.get("commit-id").asText()
-    val files = root.get("data-files").elements().asScala.map { node =>
-      ContentFileParser.fromJson(node, table.specs()).asInstanceOf[DataFile]
-    }.toVector
-    PendingIcebergCommit(commitId, location, files)
+    try {
+      val root = JsonUtil.mapper().readTree(bytes.toByteArray)
+      val commitIdNode = Option(root).map(_.get("commit-id")).orNull
+      val filesNode = Option(root).map(_.get("data-files")).orNull
+      if (commitIdNode == null || !commitIdNode.isTextual || commitIdNode.asText().isEmpty ||
+        filesNode == null || !filesNode.isArray) {
+        throw new IllegalArgumentException(s"Invalid Iceberg WAL entry at $location")
+      }
+      val files = filesNode.elements().asScala.map { node =>
+        ContentFileParser.fromJson(node, table.specs()).asInstanceOf[DataFile]
+      }.toVector
+      PendingIcebergCommit(commitIdNode.asText(), location, files)
+    } catch {
+      case failure: Exception => throw new InvalidWalEntryException(location, failure)
+    }
   }
 
   private def sanitize(value: String): String = value.replaceAll("[^A-Za-z0-9_.-]", "_")
 }
+
+private[iceberg] final class InvalidWalEntryException(location: String, cause: Exception)
+  extends RuntimeException(s"Invalid Iceberg WAL entry at $location", cause)
 
 private[iceberg] final case class IcebergRecoveryResult(
     visibleCommits: Long,

@@ -16,33 +16,21 @@ package org.apache.iceberg.data;
 
 import java.io.IOException;
 import java.util.UUID;
-import org.apache.iceberg.CombinedScanTask;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.FileFormat;
-import org.apache.iceberg.FileScanTask;
 import org.apache.iceberg.PartitionKey;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Table;
-import org.apache.iceberg.TableScan;
 import org.apache.iceberg.encryption.EncryptedOutputFile;
-import org.apache.iceberg.io.CloseableGroup;
-import org.apache.iceberg.io.CloseableIterable;
-import org.apache.iceberg.io.CloseableIterator;
 import org.apache.iceberg.io.DataWriter;
 import org.apache.iceberg.io.FanoutDataWriter;
 import org.apache.iceberg.io.FileWriterFactory;
 import org.apache.iceberg.io.OutputFileFactory;
 import org.apache.iceberg.io.TaskWriter;
-import org.apache.iceberg.relocated.com.google.common.collect.Iterables;
 
 /** Bridges Gearpump to Iceberg's generic record readers and writers. */
 public final class GearpumpIcebergData {
   private GearpumpIcebergData() {}
-
-  public static CloseableIterable<Record> read(
-      TableScan scan, int taskIndex, int parallelism) {
-    return new TaskPartitionedScan(scan, taskIndex, parallelism);
-  }
 
   public static DataWriter<Record> newDataWriter(
       Table table, FileFormat format, EncryptedOutputFile outputFile) {
@@ -156,60 +144,4 @@ public final class GearpumpIcebergData {
     }
   }
 
-  /** Reads one deterministic partition of the file tasks planned by an Iceberg table scan. */
-  private static final class TaskPartitionedScan extends CloseableGroup
-      implements CloseableIterable<Record> {
-    private final GenericReader reader;
-    private final CloseableIterable<CombinedScanTask> plannedTasks;
-    private final Iterable<FileScanTask> assignedFiles;
-    private boolean iterated = false;
-
-    private TaskPartitionedScan(TableScan scan, int taskIndex, int parallelism) {
-      if (parallelism <= 0) {
-        throw new IllegalArgumentException("Parallelism must be greater than zero");
-      }
-
-      if (taskIndex < 0 || taskIndex >= parallelism) {
-        throw new IllegalArgumentException(
-            String.format("Task index %s must be between 0 and %s", taskIndex, parallelism - 1));
-      }
-
-      this.reader = new GenericReader(scan, false);
-      this.plannedTasks = scan.planTasks();
-      Iterable<FileScanTask> files =
-          Iterables.concat(Iterables.transform(plannedTasks, CombinedScanTask::files));
-      this.assignedFiles =
-          Iterables.filter(files, file -> assignedTask(file, parallelism) == taskIndex);
-    }
-
-    @Override
-    public synchronized CloseableIterator<Record> iterator() {
-      if (iterated) {
-        throw new IllegalStateException("TaskPartitionedScan may only be iterated once");
-      }
-
-      iterated = true;
-      Iterable<CloseableIterable<Record>> readers =
-          Iterables.transform(assignedFiles, reader::open);
-      CloseableIterator<Record> iterator = CloseableIterable.concat(readers).iterator();
-      addCloseable(iterator);
-      return iterator;
-    }
-
-    private static int assignedTask(FileScanTask file, int parallelism) {
-      int hash = file.file().location().hashCode();
-      hash = 31 * hash + Long.hashCode(file.start());
-      hash = 31 * hash + Long.hashCode(file.length());
-      return Math.floorMod(hash, parallelism);
-    }
-
-    @Override
-    public void close() throws IOException {
-      try {
-        plannedTasks.close();
-      } finally {
-        super.close();
-      }
-    }
-  }
 }
