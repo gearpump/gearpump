@@ -169,31 +169,34 @@ directly by Hadoop location or through any Iceberg catalog implementation availa
 application classpath.
 
 The sink supports partition fanout, target-sized file rolling, field-name or custom record mapping,
-table metadata refresh between progress checkpoints, commit metrics, and a table-local write-ahead
-log (WAL). Like Iceberg's Flink Sink V2, reaching the target file size only rolls a data file; it
-does not trigger a table commit. The sink completes its open writer and atomically commits the files
-before advancing each Gearpump watermark. A bounded source advances to `Watermark.MAX` before the
-task stops, providing the final commit boundary. Closing or cancelling a task aborts records that
-have not crossed a watermark. Each atomic append has a unique snapshot summary identifier. On
-restart, the WAL distinguishes commits that became visible despite an uncertain client response
-from files belonging to an abandoned commit.
+table metadata refresh between checkpoints, and commit metrics. Like Iceberg's Flink Sink V2,
+reaching the target file size only rolls a data file; it does not trigger a table commit. At a
+Gearpump checkpoint, the writer completes only records older than that checkpoint and produces a
+serialized committable. `DataSinkTask` persists the committable through Gearpump's
+`CheckpointStore`, appends its files to the table, and reports the checkpoint clock only after the
+Iceberg commit succeeds. Records on or after the boundary remain in the next writer.
 
-The default WAL requires the table `FileIO` to implement Iceberg `SupportsPrefixOperations`.
-Set `walEnabled = false` only when the configured `FileIO` cannot list prefixes and the weaker
-recovery behavior is acceptable. Set an explicit, stable `walNamespace` when recovery must span
-application resubmission, and do not share it between unrelated applications. As with the Storm
-connector, operators must separately expire old snapshots, compact small files, and remove
-unrelated orphan files.
+Iceberg appends carry a stable identifier derived from the commit namespace, task, and checkpoint
+timestamp. This makes recovery of persisted committables and replay after an uncertain commit
+idempotent while the identifying snapshot remains in table metadata. The default namespace is the
+Gearpump application name and ID; configure a unique `commitNamespace` when independent Gearpump
+clusters can use the same application identity against one table. The connector no longer writes a
+table-local WAL and does not require `FileIO` prefix operations.
 
-Sink watermarks are advanced only after buffered records commit successfully. With a
-`TimeReplayableSource` that resumes from Gearpump's recovered application clock, this provides
-at-least-once delivery: records committed after the last recovered watermark can be replayed and
-duplicated. Sources that cannot replay do not provide that end-to-end guarantee. The connector does
-not provide exactly-once delivery or row-level deduplication.
+The sink processor must enable Gearpump checkpointing and provide a durable, shared
+`CheckpointStoreFactory`. Gearpump's `InMemoryCheckpointStoreFactory` is test-only and is not
+sufficient for recovery. The source must also be time-replayable from Gearpump's recovered clock.
+The runtime's documented checkpoint limitations still apply, and this protocol does not provide
+row-level deduplication for records intentionally sent through different checkpoint identities.
+Operators must retain identifying snapshots for the required recovery horizon and separately
+compact small files, expire older snapshots, and remove orphan files.
 
 	:::scala
 	import io.gearpump.external.iceberg._
+	import io.gearpump.cluster.UserConfig
 	import io.gearpump.streaming.sink.DataSinkProcessor
+	import io.gearpump.streaming.state.impl.PersistentStateConfig
+	import io.gearpump.streaming.transaction.api.CheckpointStoreFactory
 	import org.apache.iceberg.Schema
 	import org.apache.iceberg.types.Types
 
@@ -208,12 +211,21 @@ not provide exactly-once delivery or row-level deduplication.
 	  table,
 	  options = IcebergSinkOptions(
 	    targetFileSizeBytes = Some(128 * 1024 * 1024),
+	    commitNamespace = Some("production-events"),
 	    recordMapper = IcebergRecordMapper.recordOnly
 	  )
 	)
 
+	val checkpointStoreFactory: CheckpointStoreFactory = durableCheckpointStoreFactory
+	val checkpointConfig = UserConfig.empty
+	  .withBoolean(PersistentStateConfig.STATE_CHECKPOINT_ENABLE, value = true)
+	  .withLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS, 60 * 1000L)
+	  .withValue(
+	    PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY,
+	    checkpointStoreFactory)
+
 	val sinkProcessor = DataSinkProcessor(sink, parallelism = 2,
-	  description = "IcebergSink")
+	  description = "IcebergSink", taskConf = checkpointConfig)
 
 For a catalog-backed table, supply standard Iceberg catalog properties. Catalog implementations
 not included by `iceberg-core`, such as Hive, must be added to the application dependencies.

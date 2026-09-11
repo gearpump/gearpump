@@ -16,10 +16,10 @@ package io.gearpump.external.iceberg
 
 import io.gearpump.Message
 import io.gearpump.metrics.{Counter, Histogram, Meter, Metrics}
-import io.gearpump.streaming.sink.DataSink
+import io.gearpump.streaming.sink.CommittableDataSink
 import io.gearpump.streaming.task.TaskContext
 import java.nio.ByteBuffer
-import java.time.Instant
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 import org.apache.iceberg.{DataFile, FileFormat, Table, TableProperties}
 import org.apache.iceberg.data.{GearpumpIcebergData, Record}
@@ -29,152 +29,225 @@ import scala.jdk.CollectionConverters._
 /**
  * Streaming sink for unpartitioned or partitioned Iceberg format-version 3 tables.
  *
- * Records are rolled into target-sized data files. Open writers are completed and committed before
- * the sink task advances a watermark, matching the checkpoint-driven writer lifecycle of Iceberg's
- * Flink Sink V2. A table-local WAL and a snapshot commit identifier resolve commits whose
- * client-side outcome is unknown.
+ * Records are rolled into target-sized data files. At each Gearpump checkpoint, the writer emits a
+ * serialized committable that is persisted by the task before its files are atomically appended,
+ * matching the writer/committer lifecycle of Iceberg's Flink Sink V2.
  */
 class IcebergSink(
     tableConfig: IcebergTableConfig,
     fileFormat: FileFormat = FileFormat.PARQUET,
     options: IcebergSinkOptions = IcebergSinkOptions())
-  extends DataSink {
+  extends CommittableDataSink {
 
   private var table: Table = _
   private var taskContext: TaskContext = _
-  private var writer: RecordTaskWriter = _
-  private var wal: IcebergCommitWal = _
+  private var checkpointWriter: IcebergWriterBatch = _
+  private var laterWriter: IcebergWriterBatch = _
+  private var pendingCommit: IcebergCommittable = _
+  private var pendingCommitWasRestored = false
   private var metrics: IcebergSinkMetrics = _
-  private var recordsInBatch = 0L
-  private var estimatedBytesInBatch = 0L
+  private var nextCheckpointTime = Long.MaxValue
   private var batchSequence = 0L
 
   override def open(context: TaskContext): Unit = synchronized {
     table = tableConfig.loadOrCreateTable()
     taskContext = context
     metrics = new IcebergSinkMetrics(context)
-    if (options.walEnabled) {
-      wal = new IcebergCommitWal(table, walNamespace(context), taskName(context))
-      val recovered = wal.recover()
-      metrics.recoveredCommits.inc(recovered.visibleCommits)
-      metrics.abandonedCommits.inc(recovered.abandonedCommits)
-    }
   }
 
   override def write(message: Message): Unit = synchronized {
     ensureOpen()
-    if (writer == null) {
-      startBatch()
-    }
+    val batch = writerFor(message.timestamp.toEpochMilli)
     try {
       val record = options.recordMapper.map(message, table.schema())
-      writer.write(record)
-      recordsInBatch += 1L
-      estimatedBytesInBatch += IcebergRecordSize.estimate(record)
+      batch.writer.write(record)
+      batch.recordCount += 1L
+      batch.estimatedBytes += IcebergRecordSize.estimate(record)
       metrics.recordsWritten.mark()
     } catch {
       case failure: Throwable =>
-        abortCurrentBatch(failure)
+        abortBatch(batch, failure)
         throw failure
     }
   }
 
-  override def onWatermarkProgress(watermark: Instant): Unit = flush()
-
-  def flush(): Unit = synchronized {
+  override def setNextCheckpointTime(checkpointTime: Long): Unit = synchronized {
     ensureOpen()
-    if (writer != null && recordsInBatch > 0L) {
-      val batchWriter = writer
-      writer = null
-      val batchRecords = recordsInBatch
-      val batchBytes = estimatedBytesInBatch
-      resetBatchCounters()
+    require(
+      nextCheckpointTime == Long.MaxValue || checkpointTime >= nextCheckpointTime,
+      s"Checkpoint time cannot move backwards from $nextCheckpointTime to $checkpointTime")
+    nextCheckpointTime = checkpointTime
+  }
 
-      val dataFiles = try {
-        batchWriter.complete().toVector
-      } catch {
-        case failure: Throwable =>
-          abort(batchWriter, failure)
-          throw failure
-      }
-
-      val commitStarted = System.nanoTime()
-      try {
-        commit(dataFiles)
-      } finally {
-        metrics.commitLatencyMillis.update((System.nanoTime() - commitStarted) / 1000000L)
-      }
-      metrics.batchesCommitted.mark()
-      metrics.filesCommitted.mark(dataFiles.size.toLong)
-      metrics.recordsPerCommit.update(batchRecords)
-      metrics.bytesPerCommit.update(batchBytes)
+  override def restoreCommit(checkpointTime: Long, checkpoint: Array[Byte]): Unit = synchronized {
+    ensureOpen()
+    require(pendingCommit == null, "Cannot restore while another Iceberg commit is pending")
+    val restored = IcebergCommittable.deserialize(table, checkpoint)
+    require(
+      restored.checkpointTime == checkpointTime,
+      s"Recovered checkpoint $checkpointTime contains committable for " +
+        s"${restored.checkpointTime}")
+    pendingCommit = restored
+    pendingCommitWasRestored = true
+    if (restored.dataFiles.nonEmpty) {
+      metrics.restoredCommits.inc()
     }
+  }
+
+  override def prepareCommit(checkpointTime: Long): Array[Byte] = synchronized {
+    ensureOpen()
+    require(pendingCommit == null, "Cannot prepare while another Iceberg commit is pending")
+    require(
+      checkpointTime == nextCheckpointTime,
+      s"Expected checkpoint $nextCheckpointTime but got $checkpointTime")
+
+    val batch = checkpointWriter
+    val dataFiles = try {
+      complete(batch)
+    } catch {
+      case failure: Throwable =>
+        checkpointWriter = null
+        throw failure
+    }
+    checkpointWriter = laterWriter
+    laterWriter = null
+    val committable = IcebergCommittable(
+      checkpointTime,
+      commitId(checkpointTime),
+      dataFiles,
+      Option(batch).map(_.recordCount).getOrElse(0L),
+      Option(batch).map(_.estimatedBytes).getOrElse(0L))
+    try {
+      val checkpoint = IcebergCommittable.serialize(table, committable)
+      pendingCommit = committable
+      pendingCommitWasRestored = false
+      checkpoint
+    } catch {
+      case failure: Throwable =>
+        deleteFiles(dataFiles, failure)
+        throw failure
+    }
+  }
+
+  override def commit(checkpointTime: Long): Unit = synchronized {
+    ensureOpen()
+    require(pendingCommit != null, s"No Iceberg commit is prepared for $checkpointTime")
+    require(
+      pendingCommit.checkpointTime == checkpointTime,
+      s"Prepared checkpoint ${pendingCommit.checkpointTime} cannot be committed as $checkpointTime")
+
+    val committable = pendingCommit
+    val commitStarted = System.nanoTime()
+    try {
+      if (committable.dataFiles.nonEmpty) {
+        if (commit(committable, pendingCommitWasRestored)) {
+          metrics.batchesCommitted.mark()
+          metrics.filesCommitted.mark(committable.dataFiles.size.toLong)
+          metrics.recordsPerCommit.update(committable.recordCount)
+          metrics.bytesPerCommit.update(committable.estimatedBytes)
+        }
+      }
+    } finally {
+      metrics.commitLatencyMillis.update((System.nanoTime() - commitStarted) / 1000000L)
+    }
+    pendingCommit = null
+    pendingCommitWasRestored = false
   }
 
   override def close(): Unit = synchronized {
-    val pendingWriter = writer
-    writer = null
-    resetBatchCounters()
-    try {
-      if (pendingWriter != null) {
-        pendingWriter.abort()
+    val writers = Seq(checkpointWriter, laterWriter).filter(_ != null)
+    checkpointWriter = null
+    laterWriter = null
+    var abortFailure: Throwable = null
+    writers.foreach { batch =>
+      try {
+        batch.writer.abort()
+      } catch {
+        case failure: Throwable if abortFailure == null => abortFailure = failure
+        case failure: Throwable => abortFailure.addSuppressed(failure)
       }
-    } finally {
-      wal = null
-      metrics = null
-      taskContext = null
-      table = null
+    }
+    pendingCommit = null
+    pendingCommitWasRestored = false
+    metrics = null
+    taskContext = null
+    table = null
+    if (abortFailure != null) {
+      throw abortFailure
     }
   }
 
-  private def startBatch(): Unit = {
-    table.refresh()
-    batchSequence += 1L
-    writer = GearpumpIcebergData.newTaskWriter(
-      table,
-      fileFormat,
-      taskContext.taskId.processorId,
-      batchSequence,
-      targetFileSizeBytes)
+  private def writerFor(messageTime: Long): IcebergWriterBatch = {
+    if (messageTime < nextCheckpointTime) {
+      if (checkpointWriter == null) {
+        checkpointWriter = startBatch()
+      }
+      checkpointWriter
+    } else {
+      if (laterWriter == null) {
+        laterWriter = startBatch()
+      }
+      laterWriter
+    }
   }
 
-  private def commit(dataFiles: Seq[DataFile]): Unit = {
-    if (dataFiles.nonEmpty) {
-      val prepared = try {
-        Option(wal).map(_.prepare(dataFiles))
+  private def startBatch(): IcebergWriterBatch = {
+    table.refresh()
+    batchSequence += 1L
+    IcebergWriterBatch(
+      GearpumpIcebergData.newTaskWriter(
+        table,
+        fileFormat,
+        taskContext.taskId.processorId,
+        batchSequence,
+        targetFileSizeBytes))
+  }
+
+  private def complete(batch: IcebergWriterBatch): Seq[DataFile] = {
+    if (batch == null || batch.recordCount == 0L) {
+      Vector.empty
+    } else {
+      try {
+        batch.writer.complete().toVector
       } catch {
         case failure: Throwable =>
-          dataFiles.foreach(file => table.io().deleteFile(file.location().toString))
+          abort(batch.writer, failure)
           throw failure
       }
-      val commitId = prepared.map(_.commitId).getOrElse(UUID.randomUUID().toString)
-      var committed = false
+    }
+  }
+
+  private def commit(committable: IcebergCommittable, restored: Boolean): Boolean = {
+    table.refresh()
+    if (isCommitted(committable.commitId)) {
+      if (!restored) {
+        deleteFiles(committable.dataFiles)
+      }
+      false
+    } else {
       try {
-        val append = table.newAppend().set(IcebergCommitWal.CommitIdProperty, commitId)
-        dataFiles.foreach(append.appendFile)
+        val append = table.newAppend()
+          .set(IcebergCommittable.CommitIdProperty, committable.commitId)
+          .set(IcebergCommittable.CheckpointTimeProperty, committable.checkpointTime.toString)
+        committable.dataFiles.foreach(append.appendFile)
         append.commit()
-        committed = true
+        true
       } catch {
         case failure: Throwable =>
           metrics.commitFailures.inc()
           table.refresh()
-          committed = Option(wal).exists(_.isCommitted(commitId)) || isCommitted(commitId)
-          if (!committed) {
+          if (!isCommitted(committable.commitId)) {
             throw failure
           }
-      } finally {
-        if (committed) {
-          prepared.foreach(wal.complete)
-        }
+          true
       }
     }
   }
 
-  private def isCommitted(commitId: String): Boolean = {
+  private def isCommitted(commitId: String): Boolean =
     table.snapshots().asScala.exists { snapshot =>
-      commitId == snapshot.summary().get(IcebergCommitWal.CommitIdProperty)
+      commitId == snapshot.summary().get(IcebergCommittable.CommitIdProperty)
     }
-  }
 
   private def abort(batchWriter: RecordTaskWriter, originalFailure: Throwable): Unit = {
     try {
@@ -184,18 +257,27 @@ class IcebergSink(
     }
   }
 
-  private def abortCurrentBatch(originalFailure: Throwable): Unit = {
-    val batchWriter = writer
-    writer = null
-    resetBatchCounters()
-    if (batchWriter != null) {
-      abort(batchWriter, originalFailure)
+  private def abortBatch(batch: IcebergWriterBatch, originalFailure: Throwable): Unit = {
+    if (batch eq checkpointWriter) {
+      checkpointWriter = null
+    } else if (batch eq laterWriter) {
+      laterWriter = null
     }
+    abort(batch.writer, originalFailure)
   }
 
-  private def resetBatchCounters(): Unit = {
-    recordsInBatch = 0L
-    estimatedBytesInBatch = 0L
+  private def deleteFiles(dataFiles: Seq[DataFile], originalFailure: Throwable = null): Unit = {
+    dataFiles.foreach { file =>
+      try {
+        table.io().deleteFile(file.location().toString)
+      } catch {
+        case deleteFailure: Throwable if originalFailure != null =>
+          originalFailure.addSuppressed(deleteFailure)
+        case deleteFailure: Throwable =>
+          taskContext.logger.warn(s"Failed to delete uncommitted Iceberg file ${file.location()}",
+            deleteFailure)
+      }
+    }
   }
 
   private def targetFileSizeBytes: Long = options.targetFileSizeBytes.getOrElse {
@@ -205,12 +287,13 @@ class IcebergSink(
       .getOrElse(TableProperties.WRITE_TARGET_FILE_SIZE_BYTES_DEFAULT)
   }
 
-  private def walNamespace(context: TaskContext): String = {
-    options.walNamespace.getOrElse(s"${context.appName}-${context.appId}")
-  }
-
-  private def taskName(context: TaskContext): String = {
-    s"${context.taskId.processorId}-${context.taskId.index}"
+  private def commitId(checkpointTime: Long): String = {
+    val namespace = options.commitNamespace.getOrElse {
+      s"${taskContext.appName}-${taskContext.appId}"
+    }
+    val identity =
+      s"$namespace:${taskContext.taskId.processorId}:${taskContext.taskId.index}:$checkpointTime"
+    UUID.nameUUIDFromBytes(identity.getBytes(StandardCharsets.UTF_8)).toString
   }
 
   private def ensureOpen(): Unit = {
@@ -219,6 +302,11 @@ class IcebergSink(
     }
   }
 }
+
+private final case class IcebergWriterBatch(
+    writer: RecordTaskWriter,
+    var recordCount: Long = 0L,
+    var estimatedBytes: Long = 0L)
 
 private final class IcebergSinkMetrics(context: TaskContext) {
   private val prefix =
@@ -230,8 +318,7 @@ private final class IcebergSinkMetrics(context: TaskContext) {
   val batchesCommitted: Meter = registry.meter(s"$prefix.batches-committed")
   val filesCommitted: Meter = registry.meter(s"$prefix.files-committed")
   val commitFailures: Counter = registry.counter(s"$prefix.commit-failures")
-  val recoveredCommits: Counter = registry.counter(s"$prefix.recovered-commits")
-  val abandonedCommits: Counter = registry.counter(s"$prefix.abandoned-commits")
+  val restoredCommits: Counter = registry.counter(s"$prefix.restored-commits")
   val recordsPerCommit: Histogram = registry.histogram(s"$prefix.records-per-commit")
   val bytesPerCommit: Histogram = registry.histogram(s"$prefix.estimated-bytes-per-commit")
   val commitLatencyMillis: Histogram = registry.histogram(s"$prefix.commit-latency-ms")

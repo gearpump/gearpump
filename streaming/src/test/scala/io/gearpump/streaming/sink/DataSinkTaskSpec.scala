@@ -17,8 +17,11 @@ package io.gearpump.streaming.sink
 import io.gearpump.Message
 import io.gearpump.cluster.UserConfig
 import io.gearpump.streaming.MockUtil
+import io.gearpump.streaming.state.impl.{InMemoryCheckpointStoreFactory, PersistentStateConfig}
+import io.gearpump.streaming.transaction.api.{CheckpointStore, CheckpointStoreFactory}
 import io.gearpump.testkit.MockitoSugar
 import java.time.Instant
+import org.apache.pekko.actor.ActorRef
 import org.mockito.Mockito._
 import org.scalacheck.Gen
 import org.scalatest.matchers.should.Matchers
@@ -89,4 +92,130 @@ class DataSinkTaskSpec
     verify(taskContext, never()).updateWatermark(watermark)
   }
 
+  property("DataSinkTask should prepare and commit a sink through Gearpump checkpoints") {
+    val taskContext = MockUtil.mockTaskContext
+    when(taskContext.appMaster).thenReturn(mock[ActorRef])
+    val sink = mock[CommittableDataSink]
+    val checkpoint = Array[Byte](1, 2, 3)
+    when(sink.prepareCommit(2000L)).thenReturn(checkpoint)
+    val sinkTask = new DataSinkTask(
+      taskContext,
+      checkpointConfig(new InMemoryCheckpointStoreFactory),
+      sink)
+    val message = Message("value", 1000L)
+    val watermark = Instant.ofEpochMilli(2000L)
+
+    sinkTask.onStart(Instant.EPOCH)
+    sinkTask.onNext(message)
+    sinkTask.onWatermarkProgress(watermark)
+    sinkTask.onStop()
+
+    val ordered = org.mockito.Mockito.inOrder(sink, taskContext)
+    ordered.verify(sink).setNextCheckpointTime(2000L)
+    ordered.verify(sink).write(message)
+    ordered.verify(sink).prepareCommit(2000L)
+    ordered.verify(sink).commit(2000L)
+    ordered.verify(taskContext).updateWatermark(watermark)
+  }
+
+  property("DataSinkTask should restore and commit the recovered sink checkpoint") {
+    val taskContext = MockUtil.mockTaskContext
+    when(taskContext.appMaster).thenReturn(mock[ActorRef])
+    val sink = mock[CommittableDataSink]
+    val checkpoint = Array[Byte](1, 2, 3)
+    val sinkTask = new DataSinkTask(
+      taskContext,
+      checkpointConfig(new RecoveringCheckpointStoreFactory(1000L, checkpoint)),
+      sink)
+
+    sinkTask.onStart(Instant.ofEpochMilli(1000L))
+    sinkTask.onStop()
+
+    val ordered = org.mockito.Mockito.inOrder(sink)
+    ordered.verify(sink).open(taskContext)
+    ordered.verify(sink).restoreCommit(1000L, checkpoint)
+    ordered.verify(sink).commit(1000L)
+  }
+
+  property("DataSinkTask should not commit or advance when checkpoint persistence fails") {
+    val taskContext = MockUtil.mockTaskContext
+    when(taskContext.appMaster).thenReturn(mock[ActorRef])
+    val sink = mock[CommittableDataSink]
+    when(sink.prepareCommit(2000L)).thenReturn(Array[Byte](1))
+    val sinkTask = new DataSinkTask(
+      taskContext,
+      checkpointConfig(new FailingCheckpointStoreFactory),
+      sink)
+    val watermark = Instant.ofEpochMilli(2000L)
+
+    sinkTask.onStart(Instant.EPOCH)
+    sinkTask.onNext(Message("value", 1000L))
+    the [RuntimeException] thrownBy sinkTask.onWatermarkProgress(watermark)
+    sinkTask.onStop()
+
+    verify(sink, never()).commit(2000L)
+    verify(taskContext, never()).updateWatermark(watermark)
+  }
+
+  property("DataSinkTask should drain checkpoint boundaries at a bounded watermark") {
+    val taskContext = MockUtil.mockTaskContext
+    when(taskContext.appMaster).thenReturn(mock[ActorRef])
+    val sink = mock[CommittableDataSink]
+    when(sink.prepareCommit(2000L)).thenReturn(Array[Byte](1))
+    when(sink.prepareCommit(3000L)).thenReturn(Array[Byte](2))
+    val sinkTask = new DataSinkTask(
+      taskContext,
+      checkpointConfig(new InMemoryCheckpointStoreFactory),
+      sink)
+    val boundedWatermark = Instant.ofEpochMilli(Long.MaxValue)
+
+    sinkTask.onStart(Instant.EPOCH)
+    sinkTask.onNext(Message("before", 1000L))
+    sinkTask.onNext(Message("boundary", 2000L))
+    sinkTask.onWatermarkProgress(boundedWatermark)
+    sinkTask.onStop()
+
+    val ordered = org.mockito.Mockito.inOrder(sink, taskContext)
+    ordered.verify(sink).prepareCommit(2000L)
+    ordered.verify(sink).commit(2000L)
+    ordered.verify(sink).setNextCheckpointTime(3000L)
+    ordered.verify(sink).prepareCommit(3000L)
+    ordered.verify(sink).commit(3000L)
+    ordered.verify(taskContext).updateWatermark(boundedWatermark)
+  }
+
+  private def checkpointConfig(factory: CheckpointStoreFactory): UserConfig = {
+    implicit val system = MockUtil.system
+    UserConfig.empty
+      .withBoolean(PersistentStateConfig.STATE_CHECKPOINT_ENABLE, value = true)
+      .withLong(PersistentStateConfig.STATE_CHECKPOINT_INTERVAL_MS, 1000L)
+      .withValue(PersistentStateConfig.STATE_CHECKPOINT_STORE_FACTORY, factory)
+  }
+}
+
+private final class RecoveringCheckpointStoreFactory(
+    timestamp: Long,
+    checkpoint: Array[Byte]) extends CheckpointStoreFactory {
+
+  override def getCheckpointStore(name: String): CheckpointStore = new CheckpointStore {
+    override def persist(timeStamp: Long, bytes: Array[Byte]): Unit = {}
+
+    override def recover(recoveredTimestamp: Long): Option[Array[Byte]] = {
+      Option.when(recoveredTimestamp == timestamp)(checkpoint)
+    }
+
+    override def close(): Unit = {}
+  }
+}
+
+private final class FailingCheckpointStoreFactory extends CheckpointStoreFactory {
+  override def getCheckpointStore(name: String): CheckpointStore = new CheckpointStore {
+    override def persist(timeStamp: Long, checkpoint: Array[Byte]): Unit = {
+      throw new RuntimeException("checkpoint persistence failed")
+    }
+
+    override def recover(timestamp: Long): Option[Array[Byte]] = None
+
+    override def close(): Unit = {}
+  }
 }

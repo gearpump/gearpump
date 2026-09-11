@@ -15,14 +15,13 @@
 package io.gearpump.external.iceberg
 
 import io.gearpump.Message
-import io.gearpump.streaming.source.Watermark
-import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
-import java.time.{Instant, LocalDateTime}
+import java.time.LocalDateTime
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicLong
 import org.apache.hadoop.conf.Configuration
 import org.apache.iceberg.{FileFormat, HasTableOperations, PartitionSpec, Schema, TableProperties}
-import org.apache.iceberg.data.{GearpumpIcebergData, GenericRecord, IcebergGenerics, Record}
+import org.apache.iceberg.data.{GenericRecord, IcebergGenerics, Record}
 import org.apache.iceberg.hadoop.HadoopTables
 import org.apache.iceberg.types.Types
 import org.scalatest.matchers.should.Matchers
@@ -34,6 +33,7 @@ import scala.jdk.CollectionConverters._
 class IcebergSinkSpec extends AnyPropSpec with Matchers {
 
   private implicit val executionContext: ExecutionContext = ExecutionContext.global
+  private val checkpointSequence = new AtomicLong(0L)
 
   private val schema = new Schema(
     Types.NestedField.required(1, "id", Types.LongType.get()),
@@ -60,7 +60,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
       val sink = new IcebergSink(tableConfig, fileFormat = FileFormat.AVRO)
       sink.open(IcebergTestSupport.mockTaskContext())
       sink.write(Message(newRecord(1L, "avro", 1000L)))
-      sink.onWatermarkProgress(Watermark.MAX)
+      commitAt(sink)
       sink.close()
 
       readAll(tableConfig).map(_.getField("data").toString) shouldBe Seq("avro")
@@ -94,7 +94,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
           val sink = new IcebergSink(tableConfig)
           sink.open(IcebergTestSupport.mockTaskContext(taskIndex, 4))
           sink.write(Message(newRecord(taskIndex, s"value-$taskIndex", taskIndex * 1000L)))
-          sink.onWatermarkProgress(Watermark.MAX)
+          commitAt(sink)
           sink.close()
         }
       }
@@ -128,7 +128,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
       sink.open(IcebergTestSupport.mockTaskContext())
       sink.write(Message(newRecord(1L, "alpha", 1000L)))
       sink.write(Message(newRecord(2L, "beta", 2000L)))
-      sink.onWatermarkProgress(Watermark.MAX)
+      commitAt(sink)
       sink.close()
 
       val table = tableConfig.loadTable()
@@ -138,11 +138,10 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     }
   }
 
-  property("IcebergSink should commit pending records only on watermark progress") {
+  property("IcebergSink should commit pending records only at a checkpoint") {
     IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-progress") { tableDirectory =>
       val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
-      val options = IcebergSinkOptions(walEnabled = false)
-      val sink = new IcebergSink(tableConfig, options = options)
+      val sink = new IcebergSink(tableConfig)
       sink.open(IcebergTestSupport.mockTaskContext())
 
       (0L until 2L).foreach { id =>
@@ -150,13 +149,13 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
       }
       tableConfig.loadTable().currentSnapshot() shouldBe null
 
-      sink.onWatermarkProgress(Instant.ofEpochMilli(2000L))
+      commitAt(sink, 2000L)
       tableConfig.loadTable().snapshots().asScala.size shouldBe 1
       readAll(tableConfig).size shouldBe 2
 
       sink.write(Message(newRecord(2L, "value-2", 2000L)))
       tableConfig.loadTable().snapshots().asScala.size shouldBe 1
-      sink.onWatermarkProgress(Instant.ofEpochMilli(3000L))
+      commitAt(sink, 3000L)
       sink.close()
 
       tableConfig.loadTable().snapshots().asScala.size shouldBe 2
@@ -167,7 +166,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
   property("IcebergSink should roll target-sized files without committing early") {
     IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-file-roll") { tableDirectory =>
       val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
-      val options = IcebergSinkOptions(targetFileSizeBytes = Some(1L), walEnabled = false)
+      val options = IcebergSinkOptions(targetFileSizeBytes = Some(1L))
       val sink = new IcebergSink(tableConfig, options = options)
       sink.open(IcebergTestSupport.mockTaskContext())
 
@@ -176,7 +175,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
       }
       tableConfig.loadTable().currentSnapshot() shouldBe null
 
-      sink.onWatermarkProgress(Watermark.MAX)
+      commitAt(sink)
       sink.close()
 
       val table = tableConfig.loadTable()
@@ -189,13 +188,12 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-mapping") { tableDirectory =>
       val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
       val options = IcebergSinkOptions(
-        walEnabled = false,
         recordMapper = IcebergRecordMapper.fieldNames)
       val sink = new IcebergSink(tableConfig, options = options)
       sink.open(IcebergTestSupport.mockTaskContext())
       sink.write(Message(Map[String, Any](
         "id" -> 1L, "data" -> "alpha", "event_millis" -> 1000L)))
-      sink.onWatermarkProgress(Instant.ofEpochMilli(2000L))
+      commitAt(sink, 2000L)
 
       tableConfig.loadTable().updateSchema().addColumn("category", Types.StringType.get()).commit()
       sink.write(Message(Map[String, Any](
@@ -203,7 +201,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
         "data" -> "beta",
         "event_millis" -> 2000L,
         "category" -> "new")))
-      sink.onWatermarkProgress(Instant.ofEpochMilli(3000L))
+      commitAt(sink, 3000L)
       sink.close()
 
       val records = readAll(tableConfig).sortBy(_.getField("id").asInstanceOf[Long])
@@ -242,7 +240,7 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
       sink.open(IcebergTestSupport.mockTaskContext())
       an [Exception] should be thrownBy sink.write(Message(invalid))
       sink.write(Message(newRecord(2L, "valid", 2000L)))
-      sink.onWatermarkProgress(Watermark.MAX)
+      commitAt(sink)
       sink.close()
 
       readAll(tableConfig).map(_.getField("id").asInstanceOf[Long]) shouldBe Seq(2L)
@@ -250,10 +248,10 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     }
   }
 
-  property("IcebergSink should abort records that did not cross a watermark") {
+  property("IcebergSink should abort records that did not cross a checkpoint") {
     IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-abort") { tableDirectory =>
       val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
-      val sink = new IcebergSink(tableConfig, options = IcebergSinkOptions(walEnabled = false))
+      val sink = new IcebergSink(tableConfig)
       sink.open(IcebergTestSupport.mockTaskContext())
       sink.write(Message(newRecord(1L, "uncheckpointed", 1000L)))
 
@@ -278,78 +276,113 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     }
   }
 
-  property("Iceberg commit WAL should abandon uncommitted files and retain visible commits") {
-    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-wal") { tableDirectory =>
+  property("IcebergSink should restore and commit Gearpump checkpoint state") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-restore") { tableDirectory =>
       val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
-      val table = tableConfig.loadOrCreateTable()
-      val abandonedFile = writeUncommittedFile(table, newRecord(1L, "abandoned", 1000L), 1L)
-      val abandonedWal = new IcebergCommitWal(table, "test", "abandoned")
-      val abandoned = abandonedWal.prepare(Seq(abandonedFile))
-      table.io().newInputFile(abandoned.walLocation).exists() shouldBe true
+      val checkpointTime = 2000L
+      val first = new IcebergSink(tableConfig)
+      first.open(IcebergTestSupport.mockTaskContext())
+      first.setNextCheckpointTime(checkpointTime)
+      first.write(Message(newRecord(1L, "restored", 1000L), 1000L))
+      val checkpoint = first.prepareCommit(checkpointTime)
+      first.close()
 
-      withClue(abandoned.walLocation) {
-        abandonedWal.recover() shouldBe IcebergRecoveryResult(0L, 1L)
-      }
-      table.io().newInputFile(abandonedFile.location().toString).exists() shouldBe false
+      tableConfig.loadTable().currentSnapshot() shouldBe null
 
-      val committedFile = writeUncommittedFile(table, newRecord(2L, "committed", 2000L), 2L)
-      val committedWal = new IcebergCommitWal(table, "test", "committed")
-      val pending = committedWal.prepare(Seq(committedFile))
-      table.newAppend()
-        .appendFile(committedFile)
-        .set(IcebergCommitWal.CommitIdProperty, pending.commitId)
-        .commit()
+      val recovered = new IcebergSink(tableConfig)
+      recovered.open(IcebergTestSupport.mockTaskContext())
+      recovered.restoreCommit(checkpointTime, checkpoint)
+      recovered.commit(checkpointTime)
+      recovered.close()
 
-      committedWal.recover() shouldBe IcebergRecoveryResult(1L, 0L)
-      table.io().newInputFile(committedFile.location().toString).exists() shouldBe true
+      readAll(tableConfig).map(_.getField("data").toString) shouldBe Seq("restored")
     }
   }
 
-  property("Iceberg commit WAL should preserve referenced files after snapshot expiration") {
-    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-expired-commit-wal") {
+  property("IcebergSink should make a restored checkpoint commit idempotent") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-idempotent-restore") {
       tableDirectory =>
-        val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
-        val table = tableConfig.loadOrCreateTable()
-        val committedFile = writeUncommittedFile(
-          table, newRecord(1L, "committed", 1000L), 1L)
-        val wal = new IcebergCommitWal(table, "test", "expired-snapshot")
-        val pending = wal.prepare(Seq(committedFile))
-        table.newAppend()
-          .appendFile(committedFile)
-          .set(IcebergCommitWal.CommitIdProperty, pending.commitId)
-          .commit()
-        val committedSnapshotId = table.currentSnapshot().snapshotId()
+      val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
+      val checkpointTime = 2000L
+      val first = new IcebergSink(tableConfig)
+      first.open(IcebergTestSupport.mockTaskContext())
+      first.setNextCheckpointTime(checkpointTime)
+      first.write(Message(newRecord(1L, "once", 1000L), 1000L))
+      val checkpoint = first.prepareCommit(checkpointTime)
+      first.commit(checkpointTime)
+      first.close()
 
-        val newerFile = writeUncommittedFile(table, newRecord(2L, "newer", 2000L), 2L)
-        table.newAppend().appendFile(newerFile).commit()
-        table.expireSnapshots().expireSnapshotId(committedSnapshotId).commit()
-        table.refresh()
-        table.snapshots().asScala.map(_.snapshotId()) should not contain committedSnapshotId
+      val recovered = new IcebergSink(tableConfig)
+      recovered.open(IcebergTestSupport.mockTaskContext())
+      recovered.restoreCommit(checkpointTime, checkpoint)
+      recovered.commit(checkpointTime)
+      recovered.close()
 
-        wal.recover() shouldBe IcebergRecoveryResult(1L, 0L)
-        table.io().newInputFile(committedFile.location().toString).exists() shouldBe true
-        readAll(tableConfig).map(_.getField("id").asInstanceOf[Long]).sorted shouldBe Seq(1L, 2L)
+      tableConfig.loadTable().snapshots().asScala.size shouldBe 1
+      readAll(tableConfig).map(_.getField("data").toString) shouldBe Seq("once")
     }
   }
 
-  property("Iceberg commit WAL should discard incomplete entries without deleting data") {
-    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-incomplete-wal") { tableDirectory =>
+  property("IcebergSink should deduplicate replay of a committed checkpoint") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-idempotent-replay") {
+      tableDirectory =>
       val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
-      val table = tableConfig.loadOrCreateTable()
-      val dataFile = writeUncommittedFile(table, newRecord(1L, "orphan", 1000L), 1L)
-      val wal = new IcebergCommitWal(table, "test", "incomplete")
-      val pending = wal.prepare(Seq(dataFile))
-      val output = table.io().newOutputFile(pending.walLocation).createOrOverwrite()
-      try {
-        output.write("{".getBytes(StandardCharsets.UTF_8))
-      } finally {
-        output.close()
-      }
+      val checkpointTime = 2000L
+      val first = new IcebergSink(tableConfig)
+      first.open(IcebergTestSupport.mockTaskContext())
+      first.setNextCheckpointTime(checkpointTime)
+      first.write(Message(newRecord(1L, "once", 1000L), 1000L))
+      first.prepareCommit(checkpointTime)
+      first.commit(checkpointTime)
+      first.close()
 
-      wal.recover() shouldBe IcebergRecoveryResult(0L, 1L)
-      table.io().newInputFile(pending.walLocation).exists() shouldBe false
-      table.io().newInputFile(dataFile.location().toString).exists() shouldBe true
-      wal.recover() shouldBe IcebergRecoveryResult(0L, 0L)
+      val replay = new IcebergSink(tableConfig)
+      replay.open(IcebergTestSupport.mockTaskContext())
+      replay.setNextCheckpointTime(checkpointTime)
+      replay.write(Message(newRecord(1L, "once", 1000L), 1000L))
+      replay.prepareCommit(checkpointTime)
+      replay.commit(checkpointTime)
+      replay.close()
+
+      tableConfig.loadTable().snapshots().asScala.size shouldBe 1
+      readAll(tableConfig).size shouldBe 1
+      countParquetDataFiles(tableDirectory) shouldBe 1L
+    }
+  }
+
+  property("IcebergSink should keep post-checkpoint records for the next committable") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-checkpoint-boundary") {
+      tableDirectory =>
+      val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
+      val sink = new IcebergSink(tableConfig)
+      sink.open(IcebergTestSupport.mockTaskContext())
+      sink.setNextCheckpointTime(2000L)
+      sink.write(Message(newRecord(1L, "before", 1000L), 1000L))
+      sink.write(Message(newRecord(2L, "after", 3000L), 3000L))
+
+      sink.prepareCommit(2000L)
+      sink.commit(2000L)
+      readAll(tableConfig).map(_.getField("data").toString) shouldBe Seq("before")
+
+      sink.setNextCheckpointTime(4000L)
+      sink.prepareCommit(4000L)
+      sink.commit(4000L)
+      sink.close()
+      readAll(tableConfig).map(_.getField("data").toString).sorted shouldBe Seq("after", "before")
+    }
+  }
+
+  property("IcebergSink should reject malformed checkpoint state") {
+    IcebergTestSupport.withTempDirectory("gearpump-iceberg-v3-invalid-checkpoint") {
+      tableDirectory =>
+      val tableConfig = IcebergTableConfig.forNewV3Table(tableDirectory.toString, schema)
+      val sink = new IcebergSink(tableConfig)
+      sink.open(IcebergTestSupport.mockTaskContext())
+
+      an [IllegalArgumentException] should be thrownBy {
+        sink.restoreCommit(2000L, Array[Byte](1, 2, 3))
+      }
+      sink.close()
     }
   }
 
@@ -357,8 +390,20 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     val sink = new IcebergSink(tableConfig)
     sink.open(IcebergTestSupport.mockTaskContext())
     sink.write(Message(record))
-    sink.onWatermarkProgress(Watermark.MAX)
+    commitAt(sink)
     sink.close()
+  }
+
+  private def commitAt(sink: IcebergSink, checkpointTime: Long = -1L): Array[Byte] = {
+    val effectiveCheckpointTime = if (checkpointTime >= 0L) {
+      checkpointTime
+    } else {
+      checkpointSequence.incrementAndGet()
+    }
+    sink.setNextCheckpointTime(effectiveCheckpointTime)
+    val checkpoint = sink.prepareCommit(effectiveCheckpointTime)
+    sink.commit(effectiveCheckpointTime)
+    checkpoint
   }
 
   private def newRecord(id: Long, data: String, eventMillis: Long): Record = {
@@ -367,20 +412,6 @@ class IcebergSinkSpec extends AnyPropSpec with Matchers {
     record.setField("data", data)
     record.setField("event_millis", eventMillis)
     record
-  }
-
-  private def writeUncommittedFile(
-      table: org.apache.iceberg.Table,
-      record: Record,
-      attemptId: Long): org.apache.iceberg.DataFile = {
-    val writer = GearpumpIcebergData.newTaskWriter(
-      table,
-      FileFormat.PARQUET,
-      0,
-      attemptId,
-      TableProperties.WRITE_TARGET_FILE_SIZE_BYTES_DEFAULT)
-    writer.write(record)
-    writer.complete().head
   }
 
   private def readAll(tableConfig: IcebergTableConfig): Seq[Record] = {

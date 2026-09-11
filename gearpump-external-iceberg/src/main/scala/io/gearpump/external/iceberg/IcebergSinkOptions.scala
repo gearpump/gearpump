@@ -17,11 +17,10 @@ package io.gearpump.external.iceberg
 /** Streaming write and commit controls for [[IcebergSink]]. */
 final case class IcebergSinkOptions(
     targetFileSizeBytes: Option[Long] = None,
-    walEnabled: Boolean = true,
-    walNamespace: Option[String] = None,
+    commitNamespace: Option[String] = None,
     recordMapper: IcebergRecordMapper = IcebergRecordMapper.recordOnly) extends Serializable {
 
   require(targetFileSizeBytes.forall(_ > 0L), "targetFileSizeBytes must be greater than zero")
-  require(walNamespace.forall(_.nonEmpty), "walNamespace must not be empty")
+  require(commitNamespace.forall(_.nonEmpty), "commitNamespace must not be empty")
   require(recordMapper != null, "recordMapper must not be null")
 }
