@@ -16,6 +16,7 @@ package io.gearpump.streaming.sink
 
 import io.gearpump.Message
 import io.gearpump.streaming.task.TaskContext
+import java.time.Instant
 
 /**
  * Interface to implement custom data sink where result of a DAG is typically written
@@ -52,6 +53,14 @@ trait DataSink extends java.io.Serializable {
    * @param message wraps data to be written out
    */
   def write(message: Message): Unit
+
+  /**
+   * Invoked before the containing task advances its watermark. Sinks may override this callback to
+   * complete writes accepted before this progress notification.
+   *
+   * @param watermark task progress that will be published after this callback succeeds
+   */
+  def onWatermarkProgress(watermark: Instant): Unit = {}
 
   /**
    * Closes connection to data sink

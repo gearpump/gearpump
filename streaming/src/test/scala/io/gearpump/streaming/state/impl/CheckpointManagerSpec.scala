@@ -82,4 +82,13 @@ class CheckpointManagerSpec extends AnyPropSpec with ScalaCheckPropertyChecks wi
         checkpointManager.getCheckpointTime shouldBe empty
     }
   }
+
+  property("CheckpointManager should schedule a later checkpoint for a boundary timestamp") {
+    val checkpointStore = mock[CheckpointStore]
+    val checkpointManager = new CheckpointManager(1000L, checkpointStore)
+
+    checkpointManager.update(1000L) shouldBe Some(2000L)
+    checkpointManager.update(2000L) shouldBe Some(2000L)
+    checkpointManager.checkpoint(2000L, Array.emptyByteArray) shouldBe Some(3000L)
+  }
 }
