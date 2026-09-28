@@ -45,7 +45,7 @@ object Dependencies {
   val scalaTestVersion = "3.2.20"
   val scalaTestPlusScalaCheckVersion = "3.2.20.0"
   val scalaCheckVersion = "1.20.0"
-  val mockitoVersion = "5.23.0"
+  val mockitoVersion = "5.24.0"
   val beamVersion = "2.73.0"
   val snappyJavaVersion = "1.1.10.8"
   val bijectionVersion = "0.8.0"
