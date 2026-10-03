@@ -35,8 +35,11 @@ class EmbeddedCluster(inputConfig: Config) {
   val system: ActorSystem = ActorSystem(MASTER, config)
   val master: ActorRef = system.actorOf(Props[Master](), MASTER)
 
+  private val workerMasterProxy = system.actorOf(Props(new io.gearpump.cluster.master.MasterProxy(
+    Seq(master.path), scala.concurrent.duration.Duration(30, "seconds"))))
+
   0.until(workerCount).foreach { id =>
-    system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)
+    system.actorOf(Props(classOf[WorkerActor], workerMasterProxy), classOf[WorkerActor].getSimpleName + id)
   }
 
   LOG.info("=================================")

@@ -35,6 +35,8 @@ import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TimestampedValue;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +52,31 @@ public class GearpumpRunnerIntegrationTest {
   private static final CopyOnWriteArrayList<String> CAPTURED = new CopyOnWriteArrayList<>();
 
   private GearpumpPipelineOptions options;
+  private static String previousConfig;
+  private static java.nio.file.Path secureConfig;
+
+  @BeforeAll
+  public static void installTestSecurity() throws IOException {
+    // Public test-only material; production still requires operator-provided credentials.
+    previousConfig = System.getProperty(io.gearpump.util.Constants.GEARPUMP_CUSTOM_CONFIG_FILE());
+    secureConfig = java.nio.file.Files.createTempFile("beam-test-security-", ".conf");
+    java.nio.file.Files.writeString(secureConfig,
+        io.gearpump.security.TlsTestConfig$.MODULE$.config().root().render());
+    System.setProperty(io.gearpump.util.Constants.GEARPUMP_CUSTOM_CONFIG_FILE(), secureConfig.toString());
+    com.typesafe.config.ConfigFactory.invalidateCaches();
+  }
+
+  @AfterAll
+  public static void restoreConfig() throws IOException {
+    if (previousConfig == null) {
+      System.clearProperty(io.gearpump.util.Constants.GEARPUMP_CUSTOM_CONFIG_FILE());
+    } else {
+      System.setProperty(io.gearpump.util.Constants.GEARPUMP_CUSTOM_CONFIG_FILE(), previousConfig);
+    }
+    com.typesafe.config.ConfigFactory.invalidateCaches();
+    java.nio.file.Files.deleteIfExists(secureConfig);
+  }
+
 
   @BeforeEach
   public void setUp() {

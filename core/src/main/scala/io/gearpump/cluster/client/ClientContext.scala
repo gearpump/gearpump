@@ -53,7 +53,10 @@ class ClientContext protected(config: Config,
 
   private lazy val master: ActorRef = {
     masterOpt match {
-      case Some(m) => m
+      case Some(m) =>
+        // Embedded/direct clients must use the same authenticated control path as remote clients.
+        system.actorOf(org.apache.pekko.actor.Props(new MasterProxy(Seq(m.path),
+          masterClientTimeout.duration)))
       case None =>
         val masterList = config.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
           .flatMap(Util.parseHostList)
