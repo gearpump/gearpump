@@ -146,9 +146,13 @@ private[appmaster] class ExecutorManager(
         // Notifies the worker the actual resource used by this application.
         resource match {
           case Some(resource) =>
-            worker ! ChangeExecutorResource(appId, executorId, resource)
+            worker ! ChangeExecutorResource(appId, executorId, resource,
+              io.gearpump.security.ControlCapability.token(context.system.settings.config,
+                io.gearpump.security.ControlCapability.AppKey))
           case None =>
-            worker ! ChangeExecutorResource(appId, executorId, Resource(0))
+            worker ! ChangeExecutorResource(appId, executorId, Resource(0),
+              io.gearpump.security.ControlCapability.token(context.system.settings.config,
+                io.gearpump.security.ControlCapability.AppKey))
         }
       }
   }

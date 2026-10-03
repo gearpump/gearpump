@@ -39,6 +39,7 @@ import java.io.File
 import java.lang.management.ManagementFactory
 import java.util.concurrent.{Executors, TimeUnit}
 import org.slf4j.Logger
+import io.gearpump.security.{ControlCapability, InstallLaunchGrant, LaunchGrantInstalled, LaunchGrants}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
@@ -52,6 +53,12 @@ import scala.util.{Failure, Success, Try}
 private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutScheduler {
   private val systemConfig: Config = context.system.settings.config
 
+  private val launchGrants = new LaunchGrants()
+  private var applicationCapabilities = Map.empty[Int, String]
+  private val maxExecutors = systemConfig.getInt("gearpump.worker.max-executors")
+  require(maxExecutors > 0, "Worker process quota must be positive")
+  private def ownsApplication(appId: Int, token: String): Boolean =
+    applicationCapabilities.get(appId).exists(ControlCapability.matches(_, token))
   private val address = ActorUtil.getFullPath(context.system, self.path)
   private var resource = Resource.empty
   private var allocatedResources = Map[ActorRef, Resource]()
@@ -70,6 +77,20 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
 
   val metricsEnabled = systemConfig.getBoolean(GEARPUMP_METRIC_ENABLED)
   var historyMetricsService: Option[ActorRef] = None
+
+  override def aroundReceive(receive: Receive, message: Any): Unit = message match {
+    case request: io.gearpump.security.ControlRequest if request.appId.isEmpty &&
+        ControlCapability.matches(ControlCapability.token(systemConfig, ControlCapability.AdminKey),
+          request.capability) => request.message match {
+      case _: WorkerRegistered | UpdateResourceSucceed | _: UpdateResourceFailed =>
+        super.aroundReceive(receive, request.message)
+      case _ => sender() ! Status.Failure(new SecurityException("Worker response denied"))
+    }
+    case _: WorkerRegistered | UpdateResourceSucceed | _: UpdateResourceFailed |
+         _: io.gearpump.security.ControlRequest =>
+      sender() ! Status.Failure(new SecurityException("Authenticated worker response required"))
+    case _ => super.aroundReceive(receive, message)
+  }
 
   override def receive: Receive = null
   var LOG: Logger = LogUtil.getLogger(getClass)
@@ -144,7 +165,14 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
   }
 
   def appMasterMsgHandler: Receive = {
-    case shutdown@ShutdownExecutor(appId, executorId, reason: String) =>
+    case grant: InstallLaunchGrant if ControlCapability.matches(
+        ControlCapability.token(systemConfig, ControlCapability.AdminKey), grant.capability) &&
+        grant.slots <= totalSlots && launchGrants.install(grant.grant, grant.appId,
+          grant.slots, grant.applicationCapability) =>
+      sender() ! LaunchGrantInstalled(grant.grant)
+    case _: InstallLaunchGrant => sender() ! Status.Failure(new SecurityException("Allocation denied"))
+    case shutdown@ShutdownExecutor(appId, executorId, reason: String, capability)
+        if ownsApplication(appId, capability) =>
       val actorName = ActorUtil.actorNameForExecutor(appId, executorId)
       val executorToStop = executorNameToActor.get(actorName)
       if (executorToStop.isDefined) {
@@ -156,12 +184,22 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
         sender() ! ShutdownExecutorFailed(s"Can not find executor $executorId for app $appId")
       }
     case launch: LaunchExecutor =>
-      LOG.info(s"$launch")
-      if (resource < launch.resource) {
+      val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
+      val slots = Option(launch.resource).map(_.slots).getOrElse(0)
+      val jvm = Option(launch.executorJvmConfig)
+      val app = jvm.map(config => ControlCapability.token(config.executorPekkoConfig,
+        ControlCapability.AppKey)).getOrElse("")
+      LOG.info(s"Launch app=${launch.appId} executor=${launch.executorId} slots=$slots")
+      val executable = scala.util.Try(jvm.exists(config => config.mainClass == classOf[io.gearpump.util.ActorSystemBooter].getName &&
+        config.arguments.length == 2 && config.executorPekkoConfig.getInt(ControlCapability.AppId) == launch.appId)).getOrElse(false)
+      if (!executable || slots <= 0 || executorsInfo.size >= maxExecutors ||
+          executorNameToActor.contains(actorName) || !launchGrants.consume(
+            launch.allocationCapability, launch.appId, launch.resource.slots, app)) {
+        sender() ! ExecutorLaunchRejected("A live allocation and positive bounded resources are required")
+      } else if (resource < launch.resource) {
         sender() ! ExecutorLaunchRejected("There is no free resource on this machine")
       } else {
-        val actorName = ActorUtil.actorNameForExecutor(launch.appId, launch.executorId)
-
+        applicationCapabilities += launch.appId -> app
         val executor = context.actorOf(Props(classOf[ExecutorWatcher], launch, masterInfo, ioPool,
           jarStoreClient, executorProcLauncher))
         executorNameToActor += actorName -> executor
@@ -199,9 +237,10 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
           historyMetricsConfig = getHistoryMetricsConfig)
         )
       }
-    case ChangeExecutorResource(appId, executorId, usedResource) =>
+    case ChangeExecutorResource(appId, executorId, usedResource, capability)
+        if ownsApplication(appId, capability) && usedResource.slots >= 0 =>
       for (executor <- executorActorRef(appId, executorId);
-        allocatedResource <- allocatedResources.get(executor)) {
+        allocatedResource <- allocatedResources.get(executor) if usedResource <= allocatedResource) {
 
         allocatedResources += executor -> usedResource
         resource = resource + allocatedResource - usedResource
@@ -216,6 +255,8 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
             "Shutdown executor because the resource used is zero")
         }
       }
+    case _: ShutdownExecutor | _: ChangeExecutorResource =>
+      sender() ! Status.Failure(new SecurityException("Application worker control denied"))
   }
 
   private def reportResourceToMaster(): Unit = {
@@ -376,6 +417,8 @@ private[cluster] object Worker {
 
       // Excludes reference.conf, and JVM properties..
       ClusterConfig.filterOutDefaultConfig(updatedConf)
+        .withValue(ControlCapability.AdminKey, ConfigValueFactory.fromAnyRef(""))
+        .withValue("gearpump.security.worker-secret", ConfigValueFactory.fromAnyRef(""))
     }
 
     implicit val executorService: ExecutionContext = ioPool
@@ -522,7 +565,7 @@ private[cluster] object Worker {
     val daemonPathPattern = List("lib" + File.separator + "yarn")
 
     override def receive: Receive = {
-      case ShutdownExecutor(appId, executorId, _) =>
+      case ShutdownExecutor(appId, executorId, _, _) =>
         executorHandler.destroy()
         sender() ! ShutdownExecutorSucceed(appId, executorId)
         context.stop(self)

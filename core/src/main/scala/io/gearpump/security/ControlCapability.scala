@@ -47,14 +47,15 @@ object ControlCapability {
   def matches(expected: String, actual: String): Boolean = valid(expected) && valid(actual) &&
     MessageDigest.isEqual(expected.getBytes(UTF_8), actual.getBytes(UTF_8))
   def token(config: Config, key: String): String =
-    if (config.hasPath(key)) config.getString(key) else ""
+    scala.util.Try(if (config != null && config.hasPath(key)) config.getString(key) else "")
+      .getOrElse("")
   def wrap(config: Config, message: Any): ControlRequest = {
     val app = token(config, AppKey)
     if (valid(app)) ControlRequest(app, Some(config.getInt(AppId)), message)
     else ControlRequest(token(config, AdminKey), None, message)
   }
   def protectedMessage(message: Any): Boolean = message match {
-    case _: SubmitApplication | _: RestartApplication | _: ShutdownApplication |
+    case _: AllocateResource | _: SubmitApplication | _: RestartApplication | _: ShutdownApplication |
          _: RegisterAppMaster | _: ApplicationStatusChanged | _: SaveAppData | _: GetAppData |
          _: RequestResource | _: QueryAppMasterConfig | QueryMasterConfig | GetJarStoreServer |
          _: io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished |

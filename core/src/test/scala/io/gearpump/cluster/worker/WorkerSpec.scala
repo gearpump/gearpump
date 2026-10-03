@@ -23,6 +23,7 @@ import io.gearpump.cluster.WorkerToAppMaster.{ExecutorLaunchRejected, ShutdownEx
 import io.gearpump.cluster.WorkerToMaster.{RegisterNewWorker, RegisterWorker, ResourceUpdate}
 import io.gearpump.cluster.master.Master.MasterInfo
 import io.gearpump.cluster.scheduler.Resource
+import io.gearpump.security._
 import io.gearpump.util.{ActorSystemBooter, ActorUtil, Constants}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
@@ -70,11 +71,11 @@ class WorkerSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with 
       mockMaster watch worker
       mockMaster.expectMsg(RegisterNewWorker)
 
-      worker.tell(WorkerRegistered(workerId, MasterInfo(mockMaster.ref)), mockMaster.ref)
-      mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(workerSlots)))
+      worker.tell(ControlCapability.wrap(config, WorkerRegistered(workerId, MasterInfo(mockMaster.ref))), mockMaster.ref)
+      mockMaster.expectMsg(ControlCapability.wrap(config, ResourceUpdate(worker, workerId, Resource(workerSlots))))
 
       worker.tell(
-        UpdateResourceFailed("Test resource update failed", new Exception()), mockMaster.ref)
+        ControlCapability.wrap(config, UpdateResourceFailed("Test resource update failed", new Exception())), mockMaster.ref)
       mockMaster.expectTerminated(worker, 5.seconds)
       workerSystem.terminate()
       Await.result(workerSystem.whenTerminated, Duration.Inf)
@@ -86,35 +87,40 @@ class WorkerSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach with 
       val worker = getActorSystem.actorOf(Props(classOf[Worker], masterProxy.ref))
       masterProxy.expectMsg(RegisterNewWorker)
 
-      worker.tell(WorkerRegistered(workerId, MasterInfo(mockMaster.ref)), mockMaster.ref)
-      mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(100)))
+      worker.tell(ControlCapability.wrap(config, WorkerRegistered(workerId, MasterInfo(mockMaster.ref))), mockMaster.ref)
+      mockMaster.expectMsg(ControlCapability.wrap(config, ResourceUpdate(worker, workerId, Resource(100))))
 
       val executorName = ActorUtil.actorNameForExecutor(appId, executorId)
       // This is an actor path which the ActorSystemBooter will report back to,
       // not needed in this test
       val reportBack = "dummy"
+      val capability = ControlCapability.random()
+      val grant = ControlCapability.random()
+      mockMaster.send(worker, InstallLaunchGrant(ControlCapability.token(config, ControlCapability.AdminKey),
+        grant, appId, 5, capability))
+      mockMaster.expectMsg(LaunchGrantInstalled(grant))
       val executionContext = ExecutorJVMConfig(Array.empty[String],
         getActorSystem.settings.config.getString(Constants.GEARPUMP_APPMASTER_ARGS).split(" "),
         classOf[ActorSystemBooter].getName, Array(executorName, reportBack), None,
-        username = "user")
+        username = "user", executorPekkoConfig = ControlCapability.runtimeConfig(config, appId, capability))
 
       // Test LaunchExecutor
-      worker.tell(LaunchExecutor(appId, executorId, Resource(101), executionContext),
+      worker.tell(LaunchExecutor(appId, executorId, Resource(101), executionContext, grant),
         mockMaster.ref)
-      mockMaster.expectMsg(ExecutorLaunchRejected("There is no free resource on this machine"))
+      mockMaster.expectMsg(ExecutorLaunchRejected("A live allocation and positive bounded resources are required"))
 
-      worker.tell(LaunchExecutor(appId, executorId, Resource(5), executionContext), mockMaster.ref)
-      mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(95)))
+      worker.tell(LaunchExecutor(appId, executorId, Resource(5), executionContext, grant), mockMaster.ref)
+      mockMaster.expectMsg(ControlCapability.wrap(config, ResourceUpdate(worker, workerId, Resource(95))))
 
-      worker.tell(ChangeExecutorResource(appId, executorId, Resource(2)), client.ref)
-      mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(98)))
+      worker.tell(ChangeExecutorResource(appId, executorId, Resource(2), capability), client.ref)
+      mockMaster.expectMsg(ControlCapability.wrap(config, ResourceUpdate(worker, workerId, Resource(98))))
 
       // Test terminationWatch
-      worker.tell(ShutdownExecutor(appId, executorId, "Test shut down executor"), client.ref)
-      mockMaster.expectMsg(ResourceUpdate(worker, workerId, Resource(100)))
+      worker.tell(ShutdownExecutor(appId, executorId, "Test shut down executor", capability), client.ref)
+      mockMaster.expectMsg(ControlCapability.wrap(config, ResourceUpdate(worker, workerId, Resource(100))))
       client.expectMsg(ShutdownExecutorSucceed(1, 1))
 
-      worker.tell(ShutdownExecutor(appId, executorId + 1, "Test shut down executor"), client.ref)
+      worker.tell(ShutdownExecutor(appId, executorId + 1, "Test shut down executor", capability), client.ref)
       client.expectMsg(ShutdownExecutorFailed(
         s"Can not find executor ${executorId + 1} for app $appId"))
 

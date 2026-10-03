@@ -59,7 +59,7 @@ class AppMasterLauncher(
 
   def waitForResourceAllocation: Receive = {
     case ResourceAllocated(allocations) =>
-      val ResourceAllocation(resource, worker, workerId) = allocations(0)
+      val ResourceAllocation(resource, worker, workerId, grant) = allocations(0)
       LOG.info(s"Resource allocated for appMaster $appId on worker $workerId(${worker.path})")
 
       val workerInfo = WorkerInfo(workerId, worker)
@@ -74,7 +74,7 @@ class AppMasterLauncher(
         classOf[ActorSystemBooter].getName, Array(name, selfPath), jar,
         username, appMasterPekkoConfig)
 
-      worker ! LaunchExecutor(appId, executorId, resource, executorJVM)
+      worker ! LaunchExecutor(appId, executorId, resource, executorJVM, grant)
       context.become(waitForActorSystemToStart(worker, appMasterContext, resource))
   }
 
@@ -110,7 +110,9 @@ class AppMasterLauncher(
       context.stop(self)
     case CreateActorFailed(_, reason) =>
       cancel.cancel()
-      worker ! ShutdownExecutor(appId, executorId, reason.getMessage)
+      worker ! ShutdownExecutor(appId, executorId, reason.getMessage,
+        io.gearpump.security.ControlCapability.token(app.clusterConfig,
+          io.gearpump.security.ControlCapability.AppKey))
       replyToClient(SubmitApplicationResult(Failure(reason)))
       context.stop(self)
   }

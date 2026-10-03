@@ -50,12 +50,12 @@ class ExecutorSystemLauncher(appId: Int, session: Session) extends Actor {
   def receive: Receive = waitForLaunchCommand
 
   def waitForLaunchCommand: Receive = {
-    case LaunchExecutorSystem(worker, executorSystemId, resource) =>
+    case LaunchExecutorSystem(worker, executorSystemId, resource, grant) =>
       val launcherPath = ActorUtil.getFullPath(context.system, self.path)
       val jvmConfig = Option(session.executorSystemJvmConfig)
         .map(getExecutorJvmConfig(_, s"app${appId}system${executorSystemId}", launcherPath)).orNull
 
-      val launch = LaunchExecutor(appId, executorSystemId, resource, jvmConfig)
+      val launch = LaunchExecutor(appId, executorSystemId, resource, jvmConfig, grant)
       LOG.info(s"Launching Executor ...appId: $appId, executorSystemId: $executorSystemId, " +
         s"slots: ${resource.slots} on worker $worker")
 
@@ -89,7 +89,8 @@ class ExecutorSystemLauncher(appId: Int, session: Session) extends Actor {
 private[appmaster]
 object ExecutorSystemLauncher {
 
-  case class LaunchExecutorSystem(worker: WorkerInfo, systemId: Int, resource: Resource)
+  case class LaunchExecutorSystem(worker: WorkerInfo, systemId: Int, resource: Resource,
+      allocationCapability: String = "")
 
   case class LaunchExecutorSystemSuccess(system: ExecutorSystem, session: Session)
 
