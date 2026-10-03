@@ -136,3 +136,24 @@ Applications still execute under the configured service OS account. Capabilities
 protect network/application message boundaries; they do not isolate malicious
 code that can read that account's private files or another process. Use separate
 OS identities/containers for untrusted tenant code and restrict certificate access.
+
+## Worker launch grants
+
+Resource requests pass through an authorized allocation broker. It installs a
+random single-use grant on the allocated worker before returning resources to
+the launcher. A grant expires two minutes after worker receipt and binds the
+application, positive slot count and application capability. The worker rejects
+unallocated, reused, expired, cross-application, zero/negative, duplicate-ID and
+non-bootstrap launches before creating an executor. Pending grants are bounded
+and `gearpump.worker.max-executors` defaults to 256.
+
+Worker shutdown/resource-release requests also require the owning application
+capability; resources can only decrease from their live allocation. Administrative
+control credentials are masked in generated executor configurations. Runtime
+capabilities and grants must not be logged. This changes allocation/launch message
+formats and requires upgrading every cluster component together.
+
+Embedded executors may share the JVM, but each now has its own ActorSystem and
+application configuration. They do not inherit the worker's administrative key or
+share an Express application key across unrelated applications. Master discovery
+canonicalizes configured and discovered addresses before checking endpoint identity.

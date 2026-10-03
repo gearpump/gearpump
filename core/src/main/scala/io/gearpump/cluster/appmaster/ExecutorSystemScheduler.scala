@@ -71,10 +71,10 @@ class ExecutorSystemScheduler(appId: Int, masterProxy: ActorRef,
     case ResourceAllocatedForSession(allocations, session) =>
       if (isSessionAlive(session)) {
         allocations.foreach { resourceAllocation =>
-          val ResourceAllocation(resource, worker, workerId) = resourceAllocation
+          val ResourceAllocation(resource, worker, workerId, grant) = resourceAllocation
 
           val launcher = context.actorOf(executorSystemLauncher(appId, session))
-          launcher ! LaunchExecutorSystem(WorkerInfo(workerId, worker), currentSystemId, resource)
+          launcher ! LaunchExecutorSystem(WorkerInfo(workerId, worker), currentSystemId, resource, grant)
           currentSystemId = currentSystemId + 1
         }
       }

@@ -279,10 +279,12 @@ object MasterToAppMaster {
 
 object AppMasterToWorker {
   case class LaunchExecutor(
-      appId: Int, executorId: Int, resource: Resource, executorJvmConfig: ExecutorJVMConfig)
+      appId: Int, executorId: Int, resource: Resource, executorJvmConfig: ExecutorJVMConfig, allocationCapability: String = "")
 
-  case class ShutdownExecutor(appId: Int, executorId: Int, reason: String)
-  case class ChangeExecutorResource(appId: Int, executorId: Int, resource: Resource)
+  case class ShutdownExecutor(appId: Int, executorId: Int, reason: String,
+      capability: String = "")
+  case class ChangeExecutorResource(appId: Int, executorId: Int, resource: Resource,
+      capability: String = "")
 }
 
 object WorkerToAppMaster {

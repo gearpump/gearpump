@@ -45,11 +45,12 @@ abstract class Scheduler extends Actor {
         if (resourceReturned) {
           allocateResource()
         }
-        sender() ! UpdateResourceSucceed
+        sender() ! io.gearpump.security.ControlCapability.wrap(context.system.settings.config,
+          UpdateResourceSucceed)
       }
       else {
-        sender() ! UpdateResourceFailed(
-          s"ResourceUpdate failed! The worker $workerId has not been registered into master")
+        sender() ! io.gearpump.security.ControlCapability.wrap(context.system.settings.config,
+          UpdateResourceFailed(s"ResourceUpdate failed! The worker $workerId has not been registered into master"))
       }
     case WorkerTerminated(workerId) =>
       if (resources.contains(workerId)) {

@@ -139,7 +139,12 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
               case _ => rejectControl()
             }
           case message: RequestResource if message.request.resource.slots > 0 &&
-              message.request.executorNum > 0 => context.parent.tell(admin(message), sender())
+              message.request.executorNum > 0 =>
+            applicationRegistry.get(message.appId) match {
+              case Some(info) => context.parent.tell(admin(io.gearpump.security.AllocateResource(
+                message, ControlCapability.token(info.config, ControlCapability.AppKey))), sender())
+              case _ => rejectControl()
+            }
           case GetJarStoreServer => context.parent.tell(admin(GetJarStoreServer), sender())
           case _: GetApplicationControl | _: RequestResource => rejectControl()
           case SaveAppData(_, key, _) if key == APP_METADATA || key == MASTER_STATE => rejectControl()

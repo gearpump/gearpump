@@ -155,7 +155,13 @@ private[cluster] class Master extends Actor with Stash {
     case request: ControlRequest if request.appId.isEmpty &&
         ControlCapability.matches(adminSecret, request.capability) =>
       request.message match {
-        case _: GetApplicationControl => appManager.forward(request)
+        case _: GetApplicationControl | _: RequestResource => appManager.forward(request)
+        case allocation: io.gearpump.security.AllocateResource if
+            ControlCapability.valid(allocation.applicationCapability) &&
+            context.children.count(_.path.name.startsWith("allocation-")) < 1024 =>
+          val requestor = sender()
+          context.actorOf(Props(new AllocationBroker(allocation, scheduler, requestor)),
+            "allocation-" + java.util.UUID.randomUUID().toString)
         case message: io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished => scheduler ! message
         case message if ControlCapability.protectedMessage(message) =>
           message match {
@@ -185,7 +191,7 @@ private[cluster] class Master extends Actor with Stash {
 
     case RegisterWorker(id) =>
       context.watch(sender())
-      sender() ! WorkerRegistered(id, MasterInfo(self, birth))
+      sender() ! ControlRequest(adminSecret, None, WorkerRegistered(id, MasterInfo(self, birth)))
       scheduler forward WorkerRegistered(id, MasterInfo(self, birth))
       workers += (sender() -> id)
       val workerHostname = ActorUtil.getHostname(sender())

@@ -14,7 +14,45 @@
 
 package io.gearpump.cluster.master
 
-class MasterProxySpec {
+import org.apache.pekko.actor.{ActorIdentity, Cancellable, Props}
+import org.apache.pekko.testkit.TestProbe
+import com.typesafe.config.Config
+import io.gearpump.cluster.{MasterHarness, TestUtil}
+import io.gearpump.cluster.ClientToMaster.ShutdownApplication
+import io.gearpump.security.ControlRequest
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import scala.concurrent.duration._
 
-  // Master proxy retries multiple times to find the master
+class MasterProxySpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll with MasterHarness {
+  override def config: Config = TestUtil.DEFAULT_CONFIG
+  override def beforeAll(): Unit = startActorSystem()
+  override def afterAll(): Unit = shutdownActorSystem()
+  it should "recognize a configured global path when discovery returns its local reference" in {
+    val master = TestProbe()(getActorSystem)
+    val client = TestProbe()(getActorSystem)
+    val fullPath = org.apache.pekko.actor.ActorPath.fromString(
+      io.gearpump.util.ActorUtil.getFullPath(getActorSystem, master.ref.path))
+    val proxy = getActorSystem.actorOf(Props(new MasterProxy(Seq(fullPath), 10.seconds)))
+    client.send(proxy, ShutdownApplication(2))
+    master.expectMsgType[ControlRequest].message shouldBe ShutdownApplication(2)
+  }
+
+  it should "keep privileged messages queued until a configured master is discovered" in {
+    val master = TestProbe()(getActorSystem)
+    val attacker = TestProbe()(getActorSystem)
+    val client = TestProbe()(getActorSystem)
+    val proxy = getActorSystem.actorOf(Props(new MasterProxy(Seq(master.ref.path), 10.seconds) {
+      override def findMaster(): Cancellable = new Cancellable {
+        def cancel(): Boolean = true
+        def isCancelled: Boolean = false
+      }
+    }))
+    attacker.send(proxy, ActorIdentity(None, Some(attacker.ref)))
+    client.send(proxy, ShutdownApplication(1))
+    attacker.expectNoMessage(200.millis)
+    master.send(proxy, ActorIdentity(None, Some(master.ref)))
+    master.expectMsgType[ControlRequest].message shouldBe ShutdownApplication(1)
+  }
 }

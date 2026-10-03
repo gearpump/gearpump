@@ -48,8 +48,8 @@ class PrioritySchedulerSpec(_system: ActorSystem) extends TestKit(_system) with 
     "update resource only when the worker is registered" in {
       val scheduler = system.actorOf(Props(classOf[PriorityScheduler]))
       scheduler ! ResourceUpdate(mockWorker1.ref, workerId1, Resource(100))
-      expectMsg(UpdateResourceFailed(s"ResourceUpdate failed! The worker $workerId1 has not been " +
-        s"registered into master"))
+      expectMsg(io.gearpump.security.ControlCapability.wrap(system.settings.config, UpdateResourceFailed(s"ResourceUpdate failed! The worker $workerId1 has not been " +
+        s"registered into master")))
     }
 
     "drop application's resource requests when the application is removed" in {

@@ -66,7 +66,10 @@ case class ResourceRequest(
     resource: Resource, workerId: WorkerId, priority: Priority = NORMAL,
     relaxation: Relaxation = ANY, executorNum: Int = 1)
 
-case class ResourceAllocation(resource: Resource, worker: ActorRef, workerId: WorkerId)
+case class ResourceAllocation(resource: Resource, worker: ActorRef, workerId: WorkerId,
+    allocationCapability: String = "") {
+  override def toString: String = s"ResourceAllocation($resource,$worker,$workerId,<redacted>)"
+}
 
 object Resource {
   def empty: Resource = new Resource(0)
