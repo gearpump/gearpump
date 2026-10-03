@@ -71,6 +71,22 @@ class LocalJarStore extends JarStore {
     is
   }
 
+  override def listFiles(): Map[String, Long] = {
+    import scala.jdk.CollectionConverters._
+    val paths = Files.list(rootPath.toPath)
+    try paths.iterator().asScala.map { path =>
+      require(Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS),
+        "Artifact root must contain only regular files")
+      JarStore.validateFileName(path.getFileName.toString)
+      path.getFileName.toString -> Files.size(path)
+    }.toMap finally paths.close()
+  }
+
+  override def deleteFile(fileName: String): Unit = {
+    JarStore.validateFileName(fileName)
+    Files.deleteIfExists(rootPath.toPath.resolve(fileName))
+  }
+
   private def createDirIfNotExists(file: File): Unit = {
     if (!file.exists()) {
       FileUtils.forceMkdir(file)

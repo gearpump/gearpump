@@ -52,7 +52,7 @@ class JarStoreClient(config: Config, system: ActorSystem) {
   def copyToLocalFile(localFile: File, remotePath: FilePath): Unit = {
     LOG.info(s"Copying to local file: ${localFile.getAbsolutePath} from $remotePath")
     val future = client.flatMap(_.download(remotePath, localFile))
-    Await.ready(future, Duration(60, TimeUnit.SECONDS))
+    Await.result(future, Duration(60, TimeUnit.SECONDS)).status.get
   }
 
   /**

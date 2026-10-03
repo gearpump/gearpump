@@ -15,9 +15,9 @@
 package io.gearpump.cluster
 
 object TestUtil {
-  val DEFAULT_CONFIG = ClusterConfig.default("test.conf")
-  val MASTER_CONFIG = ClusterConfig.master("test.conf")
-  val UI_CONFIG = ClusterConfig.ui("test.conf")
+  val DEFAULT_CONFIG = io.gearpump.security.TlsTestConfig.config.withFallback(ClusterConfig.default("test.conf"))
+  val MASTER_CONFIG = io.gearpump.security.TlsTestConfig.config.withFallback(ClusterConfig.master("test.conf"))
+  val UI_CONFIG = io.gearpump.security.TlsTestConfig.config.withFallback(ClusterConfig.ui("test.conf"))
 
   class DummyAppMaster(context: AppMasterContext, app: AppDescription) extends ApplicationMaster {
     context.masterProxy ! app

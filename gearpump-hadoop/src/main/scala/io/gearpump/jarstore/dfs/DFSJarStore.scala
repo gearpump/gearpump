@@ -61,6 +61,25 @@ class DFSJarStore extends JarStore {
     fs.open(filePath)
   }
 
+  override def listFiles(): Map[String, Long] = {
+    val fs = rootPath.getFileSystem(new Configuration())
+    fs.listStatus(rootPath).map { status =>
+      require(status.isFile && !status.isSymlink, "Artifact root requires regular files")
+      val name = status.getPath.getName
+      JarStore.validateFileName(name)
+      name -> status.getLen
+    }.toMap
+  }
+
+  override def deleteFile(fileName: String): Unit = {
+    JarStore.validateFileName(fileName)
+    val fs = rootPath.getFileSystem(new Configuration())
+    val path = new Path(rootPath, fileName)
+    if (fs.exists(path) && !fs.delete(path, false)) {
+      throw new java.io.IOException("Cannot delete artifact")
+    }
+  }
+
   private def createDirIfNotExists(path: Path): Unit = {
     val fs = path.getFileSystem(new Configuration())
     if (!fs.exists(path)) {

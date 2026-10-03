@@ -78,3 +78,31 @@ Only authenticated users can submit the application to Gearpump's Master.
 
 ### Authorization
 Hopefully more on this soon
+
+## Authenticated artifact storage
+
+JAR transfers require mutual TLS with endpoint hostname verification. Configure
+`gearpump.security.tls.key-store`, `trust-store`, `store-type` and `password` using
+service-owned protected configuration. Only trusted submission clients and cluster
+runtimes should receive certificates. There is no HTTP fallback. Each certificate
+must identify the advertised hostname in its subject alternative names.
+
+Set `gearpump.jarstore.access-token` to a cryptographically random base64url secret
+of at least 43 characters and distribute it only to authorized submission clients
+and runtimes. Requests require both a trusted client certificate and this bearer
+credential. Credentials must not be placed in dashboard diagnostics or public files.
+The token represents the artifact-service principal, not separate tenant identities.
+
+Uploads reserve their maximum permitted size before writing. Defaults limit the
+persistent root to 1 GiB, 1024 artifacts and 64 MiB per artifact. Existing files are
+counted at startup; exceeding the quota denies new uploads. Failed/empty uploads
+are deleted. Operators can delete unused artifacts with authenticated DELETE
+`/artifact?file=<name>` (or `FileServer.Client.delete`). Do not delete artifacts
+needed by a running/recoverable application. There is no automatic age-based
+removal that could disrupt recovery. Custom storage providers must implement
+inventory and deletion; serving fails closed if these are unavailable.
+
+FilePath metadata now includes the uploader's immutable SHA-256 digest. Downloads
+require it, check HTTP and IO results, verify bytes before atomically publishing
+the local JAR, and delete partial files on failure. Older artifacts without digest
+metadata must be reuploaded. Restart the whole cluster for this protocol change.
