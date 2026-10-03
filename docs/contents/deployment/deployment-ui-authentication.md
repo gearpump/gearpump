@@ -297,3 +297,12 @@ invalidating sessions issued by the previous process.
 
 Session configuration uses `pekko.http.session.*`; replace any custom
 `akka.http.session.*` overrides when upgrading.
+
+## Administrative diagnostics and assets
+
+Only Admin sessions may terminate services, access supervisor operations, or read
+configuration diagnostics. Configuration responses use an explicit operational
+allowlist and omit application-supplied settings. Public dashboard serving uses
+`services/jvm/src/main/resources/dashboard-assets.txt`; add newly introduced dashboard
+assets to that manifest. Runtime configuration is never part of the public allowlist.
+HTTP errors expose a correlation ID, with detailed exceptions retained in server logs.

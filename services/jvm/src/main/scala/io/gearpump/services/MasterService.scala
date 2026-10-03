@@ -20,7 +20,7 @@ import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.http.scaladsl.unmarshalling.Unmarshaller._
 import org.apache.pekko.stream.Materializer
 import com.typesafe.config.Config
-import io.gearpump.cluster.{ClusterConfig, UserConfig}
+import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ReadOption}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
@@ -89,7 +89,7 @@ class MasterService(val master: ActorRef,
     path("config") {
       onComplete(askActor[MasterConfig](master, QueryMasterConfig)) {
         case Success(value: MasterConfig) =>
-          val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
+          val config = Option(value.config).map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
           complete(config)
         case Failure(ex) =>
           failWith(ex)

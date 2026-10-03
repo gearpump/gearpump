@@ -19,7 +19,6 @@ import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.stream.Materializer
 import io.gearpump.cluster.AppMasterToMaster.{GetWorkerData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryWorkerConfig, ReadOption}
-import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, WorkerConfig}
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.services.util.UpickleUtil._
@@ -50,7 +49,7 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
       val workerId = WorkerId.parse(workerIdString)
       onComplete(askWorker[WorkerConfig](master, workerId, QueryWorkerConfig(workerId))) {
         case Success(value: WorkerConfig) =>
-          val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
+          val config = Option(value.config).map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
           complete(config)
         case Failure(ex) =>
           failWith(ex)
