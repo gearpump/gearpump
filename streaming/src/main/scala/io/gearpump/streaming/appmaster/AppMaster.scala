@@ -248,8 +248,13 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       }
     case getStalling: GetStallingTasks.type =>
       clockService.foreach(_ forward getStalling)
-    case replaceDAG: ReplaceProcessor =>
-      dagManager forward replaceDAG
+    case request: io.gearpump.security.ControlRequest if
+        request.message.isInstanceOf[ReplaceProcessor] &&
+        io.gearpump.security.ControlCapability.owns(systemConfig, appId, request) =>
+      dagManager forward request
+    case _: ReplaceProcessor | _: io.gearpump.security.ControlRequest =>
+      sender() ! org.apache.pekko.actor.Status.Failure(
+        new SecurityException("Application capability required for DAG replacement"))
     case GetLastFailure(id) =>
       if (id == appId) {
         sender() ! lastFailure._1

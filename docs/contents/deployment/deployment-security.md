@@ -152,3 +152,13 @@ capability; resources can only decrease from their live allocation. Administrati
 control credentials are masked in generated executor configurations. Runtime
 capabilities and grants must not be logged. This changes allocation/launch message
 formats and requires upgrading every cluster component together.
+
+### Dynamic application changes
+
+`ReplaceProcessor` and `ShellCommand` require a `ControlRequest` with the target
+application ID and its live capability. The AppMaster and direct DAG/shell handlers
+check the envelope before mutating state or starting a process. `ClientContext`
+and HTTP services obtain this authority through the authenticated administrative
+master proxy; application principals cannot retrieve another application's key.
+Artifact downloads additionally require SHA-256 metadata from the authenticated
+artifact service. Recovered applications rotate their capability.

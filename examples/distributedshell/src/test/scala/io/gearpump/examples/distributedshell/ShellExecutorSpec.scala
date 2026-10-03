@@ -13,8 +13,9 @@
  */
 package io.gearpump.examples.distributedshell
 
-import org.apache.pekko.actor.{ActorSystem, Props}
+import org.apache.pekko.actor.{ActorSystem, Props, Status}
 import org.apache.pekko.testkit.TestProbe
+import io.gearpump.security._
 import io.gearpump.cluster.{ExecutorContext, TestUtil}
 import io.gearpump.cluster.appmaster.WorkerInfo
 import io.gearpump.cluster.scheduler.Resource
@@ -36,7 +37,8 @@ class ShellExecutorSpec extends AnyWordSpec with Matchers {
       val appId = 0
       val appName = "app"
       val resource = Resource(1)
-      implicit val system = ActorSystem("ShellExecutor", TestUtil.DEFAULT_CONFIG)
+      val capability = ControlCapability.random()
+      implicit val system = ActorSystem("ShellExecutor", ControlCapability.runtimeConfig(TestUtil.DEFAULT_CONFIG, appId, capability))
       val mockMaster = TestProbe()(system)
       val worker = TestProbe()
       val workerInfo = WorkerInfo(workerId, worker.ref)
@@ -49,7 +51,16 @@ class ShellExecutorSpec extends AnyWordSpec with Matchers {
         case Success(msg) => msg
         case Failure(ex) => ex.getMessage
       }
-      executor.tell(ShellCommand("ls /"), mockMaster.ref)
+      val marker = java.nio.file.Files.createTempDirectory("denied-shell-").resolve("must-not-exist")
+      val command = ShellCommand("touch " + marker.toString)
+      Seq[Any](command, ControlRequest(ControlCapability.random(), Some(appId), command),
+        ControlRequest(capability, Some(appId + 1), command)).foreach { unauthorized =>
+        mockMaster.send(executor, unauthorized)
+        mockMaster.expectMsgType[Status.Failure]
+        java.nio.file.Files.exists(marker) shouldBe false
+      }
+      java.nio.file.Files.delete(marker.getParent)
+      executor.tell(ControlRequest(capability, Some(appId), ShellCommand("ls /")), mockMaster.ref)
       assert(mockMaster.receiveN(1).head.asInstanceOf[ShellCommandResult].equals(
         ShellCommandResult(executorId, result)))
 

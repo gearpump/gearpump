@@ -13,7 +13,6 @@
  */
 package io.gearpump.examples.distributedshell
 
-import org.apache.pekko.pattern.ask
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption}
 import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
@@ -40,12 +39,10 @@ object DistributedShellClient extends PekkoApp with ArgumentsParser {
     implicit val dispatcher = system.dispatcher
     val appid = config.getInt("appid")
     val command = config.getString("command")
-    val appMaster = context.resolveAppID(appid)
-    LOG.info(s"Resolved appMaster $appid address $appMaster, sending command $command")
-    val future = (appMaster ? ShellCommand(command)).map { result =>
+    val future = context.askAppMaster[Any](appid, ShellCommand(command)).map { result =>
       LOG.info(s"Result: \n$result")
       context.close()
     }
-    Await.ready(future, Duration(60, TimeUnit.SECONDS))
+    Await.result(future, Duration(60, TimeUnit.SECONDS))
   }
 }

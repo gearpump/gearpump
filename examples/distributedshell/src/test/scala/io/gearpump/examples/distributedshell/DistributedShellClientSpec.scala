@@ -18,6 +18,7 @@ import io.gearpump.cluster.{MasterHarness, TestUtil}
 import io.gearpump.cluster.ClientToMaster.ResolveAppId
 import io.gearpump.cluster.MasterToClient.ResolveAppIdResult
 import io.gearpump.examples.distributedshell.DistShellAppMaster.ShellCommand
+import io.gearpump.security._
 import io.gearpump.util.LogUtil
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
@@ -56,7 +57,10 @@ class DistributedShellClientSpec
     val mockAppMaster = TestProbe()(getActorSystem)
     masterReceiver.reply(ResolveAppIdResult(Success(mockAppMaster.ref)))
     LOG.info(s"Reply back ResolveAppIdResult, current actorRef: ${mockAppMaster.ref.path.toString}")
-    mockAppMaster.expectMsg(PROCESS_BOOT_TIME, ShellCommand(command))
+    masterReceiver.expectMsgType[ControlRequest].message shouldBe GetApplicationControl(0)
+    val capability = ControlCapability.random()
+    masterReceiver.reply(ApplicationControl(0, capability))
+    mockAppMaster.expectMsg(PROCESS_BOOT_TIME, ControlRequest(capability, Some(0), ShellCommand(command)))
     mockAppMaster.reply("result")
   }
 }

@@ -138,8 +138,12 @@ object AppMasterRuntimeEnvironment {
             io.gearpump.security.ControlCapability.token(context.system.settings.config,
               io.gearpump.security.ControlCapability.AppKey), request.capability) &&
           request.appId.contains(context.system.settings.config.getInt(
-            io.gearpump.security.ControlCapability.AppId)) => appMaster.forward(request.message)
-      case _: io.gearpump.cluster.ClientToMaster.ShutdownApplication =>
+            io.gearpump.security.ControlCapability.AppId)) =>
+        if (request.message.isInstanceOf[io.gearpump.security.ApplicationMutation]) {
+          appMaster.forward(request)
+        } else appMaster.forward(request.message)
+      case _: io.gearpump.cluster.ClientToMaster.ShutdownApplication |
+          _: io.gearpump.security.ApplicationMutation =>
         sender() ! Status.Failure(new SecurityException("Application capability required"))
       case _: io.gearpump.security.ControlRequest =>
         sender() ! Status.Failure(new SecurityException("Application control denied"))

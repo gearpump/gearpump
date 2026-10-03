@@ -14,9 +14,10 @@
 
 package io.gearpump.streaming.appmaster
 
-import org.apache.pekko.actor.{ActorSystem, Props}
+import org.apache.pekko.actor.{ActorSystem, Props, Status}
 import org.apache.pekko.testkit.TestProbe
 import io.gearpump.cluster.{TestUtil, UserConfig}
+import io.gearpump.security._
 import io.gearpump.streaming._
 import io.gearpump.streaming.appmaster.DagManager.{DAGOperationFailed, DAGOperationSuccess, GetLatestDAG, GetTaskLaunchData, LatestDAG, NewDAGDeployed, ReplaceProcessor, TaskLaunchData, WatchChange}
 import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
@@ -38,8 +39,29 @@ class DagManagerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   val dag = DAG(graph)
   implicit var system: ActorSystem = null
   val appId = 0
+  val capability = ControlCapability.random()
+  def secured(message: Any): ControlRequest = ControlRequest(capability, Some(appId), message)
 
   lazy val userConfig = UserConfig.empty.withValue(StreamApplication.DAG, graph)
+
+  "Streaming AppMaster" should {
+    "deny raw and cross-application replacements at its public entry point" in {
+      val master = TestProbe()
+      val client = TestProbe()
+      val app = io.gearpump.cluster.AppDescription("auth", classOf[AppMaster].getName,
+        userConfig, clusterConfig = system.settings.config)
+      val appContext = io.gearpump.cluster.AppMasterContext(appId, "owner",
+        io.gearpump.cluster.scheduler.Resource(1), null, None, master.ref)
+      val actor = system.actorOf(Props(new AppMaster(appContext, app)))
+      val mutation = ReplaceProcessor(task2.id, task2.copy(id = 3), false)
+      Seq[Any](mutation, ControlRequest(ControlCapability.random(), Some(appId), mutation),
+        ControlRequest(capability, Some(appId + 1), mutation)).foreach { denied =>
+        client.send(actor, denied)
+        client.expectMsgType[Status.Failure]
+      }
+      system.stop(actor)
+    }
+  }
 
   "DagManager" should {
     import io.gearpump.streaming.appmaster.ClockServiceSpec.Store
@@ -63,7 +85,15 @@ class DagManagerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       client.send(dagManager, WatchChange(watcher.ref))
       val task3 = task2.copy(id = 3, life = LifeTime(100, Long.MaxValue))
 
-      client.send(dagManager, ReplaceProcessor(task2.id, task3, inheritConf = false))
+      val mutation = ReplaceProcessor(task2.id, task3, inheritConf = false)
+      Seq[Any](mutation, ControlRequest(ControlCapability.random(), Some(appId), mutation),
+        ControlRequest(capability, Some(appId + 1), mutation)).foreach { unauthorized =>
+        client.send(dagManager, unauthorized)
+        client.expectMsgType[Status.Failure]
+      }
+      client.send(dagManager, GetLatestDAG)
+      client.expectMsg(LatestDAG(dag))
+      client.send(dagManager, secured(mutation))
       client.expectMsg(DAGOperationSuccess)
 
       client.send(dagManager, GetLatestDAG)
@@ -74,11 +104,11 @@ class DagManagerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       watcher.expectMsgType[LatestDAG]
 
       val task4 = task3.copy(id = 4)
-      client.send(dagManager, ReplaceProcessor(task3.id, task4, inheritConf = false))
+      client.send(dagManager, secured(ReplaceProcessor(task3.id, task4, inheritConf = false)))
       client.expectMsgType[DAGOperationFailed]
 
       client.send(dagManager, NewDAGDeployed(newDag.version))
-      client.send(dagManager, ReplaceProcessor(task3.id, task4, inheritConf = false))
+      client.send(dagManager, secured(ReplaceProcessor(task3.id, task4, inheritConf = false)))
       client.expectMsg(DAGOperationSuccess)
     }
 
@@ -100,6 +130,6 @@ class DagManagerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   }
 
   override def beforeAll(): Unit = {
-    this.system = ActorSystem("DagManagerSpec", TestUtil.DEFAULT_CONFIG)
+    this.system = ActorSystem("DagManagerSpec", ControlCapability.runtimeConfig(TestUtil.DEFAULT_CONFIG, appId, capability))
   }
 }
