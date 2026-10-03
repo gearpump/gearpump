@@ -66,10 +66,10 @@ class DashboardSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRout
     var browser: HttpCookiePair = null
     var state: String = null
     Get("/login/oauth2/test/authorize") ~> service.route ~> check {
-      state = header[org.apache.pekko.http.scaladsl.model.headers.Location].get.uri.query()("state")
+      state = header[org.apache.pekko.http.scaladsl.model.headers.Location].get.uri.query().get("state").get
       val cookie = headers.collect { case value: `Set-Cookie`
         if value.cookie.name == "__Host-gearpump_oauth" => value.cookie }.head
-      assert(cookie.secure && cookie.httpOnly && cookie.maxAge.contains(300))
+      assert(cookie.secure && cookie.httpOnly && cookie.maxAge.contains(300L))
       browser = HttpCookiePair(cookie.name, cookie.value)
     }
     val callback = Get(s"/login/oauth2/test/callback?code=code&state=$state")
