@@ -118,7 +118,16 @@ object ActorUtil {
         Future.failed(result.appMaster.failed.get)
       }
     }
-    appMaster.flatMap(askActor[T](_, msg))
+    val secured = msg match {
+      case _: io.gearpump.security.ApplicationMutation =>
+        askActor[io.gearpump.security.ApplicationControl](master,
+          io.gearpump.security.GetApplicationControl(appId)).map { control =>
+          require(control.appId == appId, "Application capability scope mismatch")
+          io.gearpump.security.ControlRequest(control.capability, Some(appId), msg)
+        }
+      case _ => Future.successful(msg)
+    }
+    for (actor <- appMaster; request <- secured; result <- askActor[T](actor, request)) yield result
   }
 
   def askWorker[T](master: ActorRef, workerId: WorkerId, msg: Any)(implicit ex: ExecutionContext)

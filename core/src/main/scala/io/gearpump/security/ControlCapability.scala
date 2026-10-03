@@ -30,6 +30,7 @@ case class ControlRequest(capability: String, appId: Option[Int], message: Any) 
 case class KvReply(capability: String, message: Any) {
   override def toString: String = "KvReply(<redacted>," + message.getClass.getSimpleName + ")"
 }
+trait ApplicationMutation
 case class GetApplicationControl(appId: Int)
 case class ApplicationControl(appId: Int, capability: String) {
   override def toString: String = "ApplicationControl(" + appId + ",<redacted>)"
@@ -62,6 +63,8 @@ object ControlCapability {
          _: GetApplicationControl | RegisterNewWorker | _: RegisterWorker | _: ResourceUpdate => true
     case _ => false
   }
+  def owns(config: Config, appId: Int, request: ControlRequest): Boolean =
+    request.appId.contains(appId) && matches(token(config, AppKey), request.capability)
   def applicationId(message: Any): Option[Int] = message match {
     case m: RegisterAppMaster => Some(m.appId)
     case m: ApplicationStatusChanged => Some(m.appId)

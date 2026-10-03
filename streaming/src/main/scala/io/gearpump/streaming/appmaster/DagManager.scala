@@ -39,12 +39,24 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
   private val LOG: Logger = LogUtil.getLogger(getClass, app = appId)
   private val NOT_INITIALIZED = -1
 
+  private var initialized = false
   private var dags = List.empty[DAG]
   private var maxProcessorId = -1
   private implicit val system: org.apache.pekko.actor.ActorSystem = context.system
 
   private var watchers = List.empty[ActorRef]
   private val serializer = new JavaSerializer(system.asInstanceOf[ExtendedActorSystem])
+
+  override def aroundReceive(receive: Receive, message: Any): Unit = message match {
+    case request: io.gearpump.security.ControlRequest if
+        request.message.isInstanceOf[ReplaceProcessor] &&
+        io.gearpump.security.ControlCapability.owns(context.system.settings.config, appId, request) =>
+      if (initialized) super.aroundReceive(receive, request.message) else stash()
+    case _: ReplaceProcessor | _: io.gearpump.security.ControlRequest =>
+      sender() ! org.apache.pekko.actor.Status.Failure(
+        new SecurityException("Application capability required for DAG replacement"))
+    case _ => super.aroundReceive(receive, message)
+  }
 
   override def receive: Receive = null
 
@@ -73,6 +85,7 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
 
   def waitForDagInitiate: Receive = {
     case DagInitiated =>
+      initialized = true
       unstashAll()
       context.become(dagService)
     case _ =>
@@ -172,7 +185,7 @@ object DagManager {
   case class TaskLaunchData(processorDescription : ProcessorDescription,
       subscribers: List[Subscriber], context: AnyRef = null)
 
-  sealed trait DAGOperation
+  sealed trait DAGOperation extends io.gearpump.security.ApplicationMutation
 
   case class ReplaceProcessor(oldProcessorId: ProcessorId,
       newProcessorDescription: ProcessorDescription, inheritConf: Boolean) extends DAGOperation

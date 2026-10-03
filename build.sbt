@@ -31,7 +31,6 @@ lazy val aggregated: Seq[ProjectReference] = Seq[ProjectReference](
   gearpumpHadoop,
   packProject,
   complexdag,
-  distributedshell,
   pagerank,
   sol,
   wordcount,
@@ -211,4 +210,6 @@ lazy val distributedshell = Project(
   id = "gearpump-examples-distributedshell",
   base = file("examples/distributedshell"))
   .settings(exampleSettings("io.gearpump.examples.distributedshell.DistributedShell"))
+  // Explicitly built shell artifacts stay outside the directory shipped by Pack.
+  .settings(assembly / target := baseDirectory.value / "target" / "opt-in")
   .dependsOn(core % "compile; test->test")

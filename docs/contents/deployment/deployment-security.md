@@ -157,3 +157,13 @@ Embedded executors may share the JVM, but each now has its own ActorSystem and
 application configuration. They do not inherit the worker's administrative key or
 share an Express application key across unrelated applications. Master discovery
 canonicalizes configured and discovered addresses before checking endpoint identity.
+
+### Dynamic application changes
+
+`ReplaceProcessor` and `ShellCommand` require a `ControlRequest` with the target
+application ID and its live capability. The AppMaster and direct DAG/shell handlers
+check the envelope before mutating state or starting a process. `ClientContext`
+and HTTP services obtain this authority through the authenticated administrative
+master proxy; application principals cannot retrieve another application's key.
+Artifact downloads additionally require SHA-256 metadata from the authenticated
+artifact service. Recovered applications rotate their capability.

@@ -29,6 +29,16 @@ class ShellExecutor(executorContext: ExecutorContext) extends Actor {
 
   LOG.info(s"ShellExecutor started!")
 
+  override def aroundReceive(receive: Receive, message: Any): Unit = message match {
+    case request: io.gearpump.security.ControlRequest if
+        request.message.isInstanceOf[ShellCommand] &&
+        io.gearpump.security.ControlCapability.owns(context.system.settings.config, appId, request) =>
+      super.aroundReceive(receive, request.message)
+    case _: ShellCommand | _: io.gearpump.security.ControlRequest =>
+      sender() ! org.apache.pekko.actor.Status.Failure(new SecurityException("Shell command denied"))
+    case _ => super.aroundReceive(receive, message)
+  }
+
   override def receive: Receive = {
     case ShellCommand(command) =>
       val process = Try(s"$command".!!)

@@ -59,12 +59,17 @@ class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
       LOG.error(s"Failed to allocate resource in time")
       masterProxy ! ShutdownApplication(appId)
       context.stop(self)
-    case msg: ShellCommand =>
+    case request: io.gearpump.security.ControlRequest if
+        request.message.isInstanceOf[ShellCommand] &&
+        io.gearpump.security.ControlCapability.owns(context.system.settings.config, appId, request) =>
+      val msg = request
       Future.foldLeft(context.children.map(_ ? msg))(new ShellCommandResultAggregator) {
         (aggregator, response) => {
           aggregator.aggregate(response.asInstanceOf[ShellCommandResult])
         }
       }.map(_.toString()) pipeTo sender()
+    case _: ShellCommand | _: io.gearpump.security.ControlRequest =>
+      sender() ! org.apache.pekko.actor.Status.Failure(new SecurityException("Shell command denied"))
   }
 
   private def getExecutorJvmConfig: ExecutorSystemJvmConfig = {
@@ -77,7 +82,7 @@ class DistShellAppMaster(appContext: AppMasterContext, app: AppDescription)
 }
 
 object DistShellAppMaster {
-  case class ShellCommand(command: String)
+  case class ShellCommand(command: String) extends io.gearpump.security.ApplicationMutation
 
   case class ShellCommandResult(executorId: Int, msg: Any)
 
