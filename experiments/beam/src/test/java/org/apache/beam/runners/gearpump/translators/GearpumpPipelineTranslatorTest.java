@@ -28,6 +28,8 @@ import org.apache.beam.runners.gearpump.runtime.BeamParDoTask;
 import org.apache.beam.runners.gearpump.runtime.BeamTaggedOutputTask;
 import org.apache.beam.runners.gearpump.GearpumpPipelineOptions;
 import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.Coder;
+import io.gearpump.streaming.appmaster.ClockService;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.windowing.AfterPane;
@@ -39,6 +41,12 @@ import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.windowing.Repeatedly;
 import org.apache.beam.sdk.transforms.Sum;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
+import org.apache.beam.sdk.transforms.windowing.GlobalWindow;
+import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
+import org.apache.beam.sdk.transforms.windowing.NonMergingWindowFn;
+import org.apache.beam.sdk.transforms.windowing.WindowFn;
+import org.apache.beam.sdk.transforms.windowing.WindowMappingFn;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TimestampedValue;
@@ -49,6 +57,8 @@ import org.junit.jupiter.api.Test;
 import scala.collection.JavaConverters;
 
 import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 
@@ -173,6 +183,35 @@ public class GearpumpPipelineTranslatorTest {
   }
 
   @Test
+  public void rejectsCustomGlobalWindowFunctionOnUnboundedInput() {
+    Pipeline pipeline = Pipeline.create();
+    org.apache.beam.sdk.values.PCollection<KV<String, Integer>> input =
+        pipeline.apply(Create.of(KV.of("a", 1)));
+    input.setIsBoundedInternal(org.apache.beam.sdk.values.PCollection.IsBounded.UNBOUNDED);
+    input.apply(Window.into(new CustomGlobalWindows())).apply(GroupByKey.create());
+    TranslationContext context = new TranslationContext("beam-test", options, actorSystem);
+    try {
+      new GearpumpPipelineTranslator(context).translate(pipeline);
+      fail("Expected custom global-window grouping to be rejected");
+    } catch (UnsupportedOperationException e) {
+      assertTrue(e.getMessage().contains("FixedWindows or SlidingWindows"));
+    }
+    List<Processor<? extends Task>> processors =
+        JavaConverters.seqAsJavaListConverter(context.getGraph().getVertices()).asJava();
+    assertTrue(!containsProcessor(processors, BeamGroupByKeyTask.class));
+  }
+
+  @Test
+  public void groupingRequiresFullReplayOfVolatileState() {
+    Pipeline pipeline = Pipeline.create();
+    pipeline.apply(Create.of(KV.of("a", 1))).apply(GroupByKey.create());
+    TranslationContext context = new TranslationContext("beam-test", options, actorSystem);
+    new GearpumpPipelineTranslator(context).translate(pipeline);
+    assertTrue(Boolean.TRUE.equals(context.getOutputProcessor(context.getOutput()).taskConf()
+        .getBoolean(ClockService.REPLAY_FROM_START()).get()));
+  }
+
+  @Test
   public void rejectsGroupByKeyWithCustomTrigger() {
     Pipeline pipeline = Pipeline.create();
     pipeline
@@ -225,6 +264,29 @@ public class GearpumpPipelineTranslatorTest {
       }
     }
     return false;
+  }
+
+  private static final class CustomGlobalWindows
+      extends NonMergingWindowFn<KV<String, Integer>, GlobalWindow> {
+    @Override
+    public Collection<GlobalWindow> assignWindows(AssignContext context) {
+      return Collections.singletonList(GlobalWindow.INSTANCE);
+    }
+
+    @Override
+    public Coder<GlobalWindow> windowCoder() {
+      return GlobalWindow.Coder.INSTANCE;
+    }
+
+    @Override
+    public boolean isCompatible(WindowFn<?, ?> other) {
+      return other instanceof CustomGlobalWindows;
+    }
+
+    @Override
+    public WindowMappingFn<GlobalWindow> getDefaultWindowMappingFn() {
+      return new GlobalWindows().getDefaultWindowMappingFn();
+    }
   }
 
   private static final class UpperCaseFn extends DoFn<String, String> {

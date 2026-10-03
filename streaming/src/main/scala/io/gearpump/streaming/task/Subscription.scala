@@ -41,7 +41,8 @@ class Subscription(
     sessionId: Int,
     publisher: TaskActor,
     maxPendingMessageCount: Int = MAX_PENDING_MESSAGE_COUNT,
-    ackOnceEveryMessageCount: Int = ONE_ACKREQUEST_EVERY_MESSAGE_COUNT) {
+    ackOnceEveryMessageCount: Int = ONE_ACKREQUEST_EVERY_MESSAGE_COUNT,
+    enableIdleWatermarkProgress: Boolean = false) {
 
   assert(maxPendingMessageCount >= ackOnceEveryMessageCount)
   assert(maxPendingMessageCount < Short.MaxValue / 2)
@@ -186,8 +187,9 @@ class Subscription(
         allowSendingMoreMessages()) {
         sendAckRequest(i)
         sendLatencyProbe(i)
-      } else if (pendingMessageCount(i) == 0) {
-        // With no messages in flight, finite progress is safe even when the publisher is idle.
+      } else if (pendingMessageCount(i) == 0 &&
+        (enableIdleWatermarkProgress || publisher.getProcessingWatermark == Watermark.MAX)) {
+        // Finite idle progress requires an explicit opt-in and a safe replay frontier.
         outputWatermark(i) = Math.max(outputWatermark(i),
           publisher.getProcessingWatermark.toEpochMilli)
       }
@@ -222,6 +224,8 @@ class Subscription(
 }
 
 object Subscription {
+  final val ENABLE_IDLE_WATERMARK_PROGRESS = "streaming.enable-idle-watermark-progress"
+
   // Makes sure it is smaller than MAX_PENDING_MESSAGE_COUNT
   final val ONE_ACKREQUEST_EVERY_MESSAGE_COUNT = 100
   final val MAX_PENDING_MESSAGE_COUNT = 1000

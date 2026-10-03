@@ -14,13 +14,13 @@
 
 package io.gearpump.streaming.task
 
-import org.apache.pekko.actor.{ActorRef, ActorSystem, Cancellable, Props}
-import org.apache.pekko.actor.Actor._
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
 import io.gearpump.cluster.UserConfig
 import io.gearpump.util.LogUtil
 import java.time.Instant
+import org.apache.pekko.actor.{ActorRef, ActorSystem, Cancellable, Props}
+import org.apache.pekko.actor.Actor._
 import org.slf4j.Logger
 import scala.concurrent.duration.FiniteDuration
 
@@ -42,6 +42,10 @@ class TaskWrapper(
   private var task: Option[Task] = None
 
   def setTaskActor(actor: TaskActor): Unit = this.actor = actor
+
+  def enableIdleWatermarkProgress: Boolean = {
+    userConf.getBoolean(Subscription.ENABLE_IDLE_WATERMARK_PROGRESS).contains(true)
+  }
 
   override def appId: Int = context.appId
 

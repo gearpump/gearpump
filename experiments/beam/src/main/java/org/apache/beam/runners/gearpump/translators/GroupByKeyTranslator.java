@@ -18,6 +18,7 @@
 package org.apache.beam.runners.gearpump.translators;
 
 import io.gearpump.cluster.UserConfig;
+import io.gearpump.streaming.appmaster.ClockService;
 import io.gearpump.streaming.javaapi.Processor;
 import org.apache.beam.runners.gearpump.runtime.BeamGroupByKeySpec;
 import org.apache.beam.runners.gearpump.runtime.BeamGroupByKeyTask;
@@ -27,7 +28,8 @@ import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
-import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.SlidingWindows;
 import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
@@ -47,9 +49,11 @@ public class GroupByKeyTranslator<K, V> implements TransformTranslator<GroupByKe
               + "non-merging windows.");
     }
     if (input.isBounded() == PCollection.IsBounded.UNBOUNDED
-        && windowingStrategy.getWindowFn() instanceof GlobalWindows) {
+        && !(windowingStrategy.getWindowFn() instanceof FixedWindows)
+        && !(windowingStrategy.getWindowFn() instanceof SlidingWindows)) {
       throw new UnsupportedOperationException(
-          "The low-level Gearpump Beam runner requires finite windows for unbounded GroupByKey.");
+          "The low-level Gearpump Beam runner requires finite windows "
+              + "(FixedWindows or SlidingWindows) for unbounded GroupByKey.");
     }
     validateWindowingStrategy(windowingStrategy);
 
@@ -60,7 +64,7 @@ public class GroupByKeyTranslator<K, V> implements TransformTranslator<GroupByKe
         new BeamGroupByKeySpec<>(keyCoder, windowCoder, timestampCombiner);
     UserConfig userConfig =
         BeamUserConfig.withValue(
-            UserConfig.empty(),
+            UserConfig.empty().withBoolean(ClockService.REPLAY_FROM_START(), true),
             BeamGroupByKeyTask.GROUP_BY_KEY_SPEC,
             spec,
             context.getActorSystem());
