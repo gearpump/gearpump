@@ -99,6 +99,7 @@ object Server {
 
     override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = {
       LOG.error("server errors in handling the request", e.getCause)
+      e.getChannel.close()
       server ! CloseChannel(e.getChannel)
     }
   }
