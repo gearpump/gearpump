@@ -19,11 +19,18 @@ import io.gearpump.util.Constants
 
 class NettyConfig(conf: Config) {
 
+  val applicationCapability = io.gearpump.security.ControlCapability.token(conf,
+    io.gearpump.security.ControlCapability.AppKey)
+  require(applicationCapability.matches("[A-Za-z0-9_-]{43}"),
+    "Task transport requires an AppMaster-issued application capability")
+  lazy val tls = io.gearpump.security.ClusterTls.context(conf)
   val buffer_size = conf.getInt(Constants.NETTY_BUFFER_SIZE)
   val max_retries = conf.getInt(Constants.NETTY_MAX_RETRIES)
   val base_sleep_ms = conf.getInt(Constants.NETTY_BASE_SLEEP_MS)
   val max_sleep_ms = conf.getInt(Constants.NETTY_MAX_SLEEP_MS)
   val messageBatchSize = conf.getInt(Constants.NETTY_MESSAGE_BATCH_SIZE)
+  require(messageBatchSize > 0 && messageBatchSize <= AuthenticatedFrames.MaxBatchLength / 2,
+    "Task batch setting exceeds authenticated transport bounds")
   val flushCheckInterval = conf.getInt(Constants.NETTY_FLUSH_CHECK_INTERVAL)
 
   def newTransportSerializer: ITransportMessageSerializer = {

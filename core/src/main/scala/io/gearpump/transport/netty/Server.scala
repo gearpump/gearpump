@@ -22,7 +22,6 @@ import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
 import scala.jdk.CollectionConverters._
-import scala.collection.immutable.IntMap
 import scala.concurrent.Future
 
 /** Netty server actor, message received will be forward to the target on the address line. */
@@ -52,7 +51,9 @@ class Server(name: String, lookupActor: ActorLookupById)
   }
 
   def msgHandler: Receive = {
-    case MsgBatch(msgs) =>
+    case MsgBatch(msgs, capability) if io.gearpump.security.ControlCapability.matches(
+        io.gearpump.security.ControlCapability.token(system.settings.config,
+          io.gearpump.security.ControlCapability.AppKey), capability) =>
       msgs.asScala.groupBy(_.targetTask()).foreach { taskBatch =>
         val (taskId, taskMessages) = taskBatch
         val actor = lookupActor.lookupLocalActor(taskId)
@@ -61,9 +62,10 @@ class Server(name: String, lookupActor: ActorLookupById)
           LOG.error(s"Cannot find actor for id: $taskId...")
         } else taskMessages.foreach { taskMessage =>
           actor.get.tell(taskMessage.message(),
-            taskIdActorRefTranslation.translateToActorRef(taskMessage.sessionId()))
+            taskIdActorRefTranslation.translateToActorRef(taskMessage.sessionId(), taskMessage.sourceTask()))
         }
       }
+    case _: MsgBatch => // A remote actor cannot bypass transport authentication.
   }
 
   override def postStop(): Unit = {
@@ -76,14 +78,20 @@ object Server {
   class ServerPipelineFactory(server: ActorRef, conf: NettyConfig) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
       val pipeline: ChannelPipeline = Channels.pipeline
+      val engine = io.gearpump.security.ClusterTls.serverEngine(conf.tls)
+      // Netty 3 SSLEngine compatibility; TLS 1.2 remains authenticated AEAD encryption.
+      engine.setEnabledProtocols(Array("TLSv1.2"))
+      pipeline.addLast("tls", new org.jboss.netty.handler.ssl.SslHandler(engine))
+      pipeline.addLast("application-auth", new AuthenticatedFrames.Decoder(conf.applicationCapability))
+      pipeline.addLast("auth-encoder", new AuthenticatedFrames.Encoder(conf.applicationCapability))
       pipeline.addLast("decoder", new MessageDecoder(conf.newTransportSerializer))
       pipeline.addLast("encoder", new MessageEncoder)
-      pipeline.addLast("handler", new ServerHandler(server))
+      pipeline.addLast("handler", new ServerHandler(server, conf.applicationCapability))
       pipeline
     }
   }
 
-  class ServerHandler(server: ActorRef) extends SimpleChannelUpstreamHandler {
+  class ServerHandler(server: ActorRef, capability: String) extends SimpleChannelUpstreamHandler {
     private[netty] final val LOG: Logger = LogUtil.getLogger(getClass, context = server.path.name)
 
     override def channelConnected(ctx: ChannelHandlerContext, e: ChannelStateEvent): Unit = {
@@ -93,28 +101,32 @@ object Server {
     override def messageReceived(ctx: ChannelHandlerContext, e: MessageEvent): Unit = {
       val msgs: util.List[TaskMessage] = e.getMessage.asInstanceOf[util.List[TaskMessage]]
       if (msgs != null) {
-        server ! MsgBatch(msgs)
+        server ! MsgBatch(msgs, capability)
       }
     }
 
     override def exceptionCaught(ctx: ChannelHandlerContext, e: ExceptionEvent): Unit = {
       LOG.error("server errors in handling the request", e.getCause)
+      e.getChannel.close()
       server ! CloseChannel(e.getChannel)
     }
   }
 
   class TaskIdActorRefTranslation(context: ActorContext) {
-    private var taskIdtoActorRef = IntMap.empty[ActorRef]
+    private var taskIdtoActorRef = Map.empty[(Int, Long), ActorRef]
 
     /** 1-1 mapping from session id to fake ActorRef */
-    def translateToActorRef(sessionId: Int): ActorRef = {
-      if (!taskIdtoActorRef.contains(sessionId)) {
+    def translateToActorRef(sessionId: Int, sourceTask: Long): ActorRef = {
+      val key = (sessionId, sourceTask)
+      if (!taskIdtoActorRef.contains(key)) {
 
         // A fake ActorRef for performance optimization.
-        val actorRef = PekkoHelper.actorFor(context.system, s"/session#$sessionId")
-        taskIdtoActorRef += sessionId -> actorRef
+        val actorRef = PekkoHelper.sessionActorFor(context.system, sessionId, sourceTask)
+        // Bound the performance cache; an authenticated stream cannot grow it forever.
+        if (taskIdtoActorRef.size >= 65536) taskIdtoActorRef = Map.empty
+        taskIdtoActorRef += key -> actorRef
       }
-      taskIdtoActorRef.get(sessionId).get
+      taskIdtoActorRef.get(key).get
     }
   }
 
@@ -122,6 +134,8 @@ object Server {
 
   case class CloseChannel(channel: Channel)
 
-  case class MsgBatch(messages: java.lang.Iterable[TaskMessage])
+  case class MsgBatch(messages: java.lang.Iterable[TaskMessage], capability: String = "") {
+    override def toString: String = "MsgBatch(<redacted>)"
+  }
 
 }

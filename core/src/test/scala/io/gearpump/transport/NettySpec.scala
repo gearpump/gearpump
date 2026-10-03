@@ -30,7 +30,7 @@ import scala.concurrent.duration._
 class NettySpec extends AnyFlatSpec with Matchers with MockitoSugar {
 
   "Netty Transport" should "send and receive message correctly " in {
-    val conf = TestUtil.DEFAULT_CONFIG
+    val conf = io.gearpump.security.ControlCapability.runtimeConfig(TestUtil.DEFAULT_CONFIG, 0, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     val system = ActorSystem("transport", conf)
     val context = new Context(system, conf)
     val serverActor = TestProbe()(system)

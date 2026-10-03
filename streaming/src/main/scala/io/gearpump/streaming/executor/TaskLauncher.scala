@@ -50,7 +50,7 @@ class TaskLauncher(
     val taskContext = TaskContextData(executorId,
       appId, appName, appMaster,
       processorDescription.parallelism,
-      processorDescription.life, subscribers)
+      processorDescription.life, subscribers, argument.upstream)
 
     val taskClass = TaskUtil.loadClass(processorDescription.taskClass)
 
@@ -69,7 +69,7 @@ object TaskLauncher {
 
   case class TaskArgument(
       dagVersion: Int, processorDescription: ProcessorDescription,
-      subscribers: List[Subscriber])
+      subscribers: List[Subscriber], upstream: Map[Int, Int] = Map.empty)
 
   def apply(executorContext: ExecutorContext, userConf: UserConfig): TaskLauncher = {
     import executorContext.{appId, appMaster, appName, executorId}

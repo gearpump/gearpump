@@ -100,7 +100,10 @@ class DagManager(appId: Int, userConfig: UserConfig, store: AppDataStore, dag: O
   private def taskLaunchData(dag: DAG, processorId: Int, context: AnyRef): TaskLaunchData = {
     val processorDescription = dag.processors(processorId)
     val subscribers = Subscriber.of(processorId, dag)
-    TaskLaunchData(processorDescription, subscribers, context)
+    val upstream = dag.graph.incomingEdgesOf(processorId).map { case (source, _, _) =>
+      source -> dag.processors(source).parallelism
+    }.toMap
+    TaskLaunchData(processorDescription, subscribers, context, upstream)
   }
 
   def dagService: Receive = {
@@ -183,7 +186,7 @@ object DagManager {
 
   case class GetTaskLaunchData(dagVersion: Int, processorId: Int, context: AnyRef = null)
   case class TaskLaunchData(processorDescription : ProcessorDescription,
-      subscribers: List[Subscriber], context: AnyRef = null)
+      subscribers: List[Subscriber], context: AnyRef = null, upstream: Map[Int, Int] = Map.empty)
 
   sealed trait DAGOperation extends io.gearpump.security.ApplicationMutation
 

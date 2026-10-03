@@ -167,3 +167,25 @@ and HTTP services obtain this authority through the authenticated administrative
 master proxy; application principals cannot retrieve another application's key.
 Artifact downloads additionally require SHA-256 metadata from the authenticated
 artifact service. Recovered applications rotate their capability.
+
+### Task transport
+
+Express requires mutual TLS with hostname validation and an AppMaster-issued
+256-bit application capability. Each bounded batch has an HMAC over the complete
+header/payload and a monotonically increasing connection sequence. TLS authenticates
+and encrypts the stream, including session/source/target task IDs; record replay
+across connections fails TLS authentication. The application MAC is checked before
+any transport deserializer. Cleartext and older peers are rejected.
+
+Task launch/update messages carry predecessor processor IDs and parallelism from
+the DAG. Session enrollment checks the source task, index, session ID and local
+synthetic sender identity, and removes authority when predecessors change.
+Unknown senders are dropped before application payload deserialization. Session
+and translation inventories are bounded. Task actors do not accept remote Pekko
+references as synthetic data-plane senders. Application code remains trusted
+within its own executor account.
+
+Deploy all cluster capability, worker/application control and frame-bound changes
+together, generate independent application capabilities through the master, and
+restart/drain running jobs. Netty 3 task channels use TLS 1.2 for SSLEngine
+compatibility; there is no plaintext fallback.

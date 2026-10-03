@@ -39,7 +39,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
   private var channel: Channel = null
   private var batch = new util.ArrayList[TaskMessage]
   private val bootstrap = NettyUtil.createClientBootStrap(factory,
-    new ClientPipelineFactory(name, conf), conf.buffer_size)
+    new ClientPipelineFactory(name, conf, hostPort), conf.buffer_size)
 
   self ! Connect(0)
 
@@ -184,6 +184,7 @@ object Client {
   class ClientErrorHandler(name: String) extends SimpleChannelUpstreamHandler {
 
     override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent): Unit = {
+      event.getChannel.close()
       event.getCause match {
         case _: ConnectException => ()
         case ex: ClosedChannelException =>
@@ -193,9 +194,18 @@ object Client {
     }
   }
 
-  class ClientPipelineFactory(name: String, conf: NettyConfig) extends ChannelPipelineFactory {
+  class ClientPipelineFactory(name: String, conf: NettyConfig, peer: HostPort) extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
       val pipeline: ChannelPipeline = Channels.pipeline
+      val engine = conf.tls.createSSLEngine(peer.host, peer.port)
+      engine.setUseClientMode(true)
+      engine.setEnabledProtocols(Array("TLSv1.2"))
+      val parameters = engine.getSSLParameters
+      parameters.setEndpointIdentificationAlgorithm("HTTPS")
+      engine.setSSLParameters(parameters)
+      pipeline.addLast("tls", new org.jboss.netty.handler.ssl.SslHandler(engine))
+      pipeline.addLast("application-auth", new AuthenticatedFrames.Decoder(conf.applicationCapability))
+      pipeline.addLast("auth-encoder", new AuthenticatedFrames.Encoder(conf.applicationCapability))
       pipeline.addLast("decoder", new MessageDecoder(conf.newTransportSerializer))
       pipeline.addLast("encoder", new MessageEncoder)
       pipeline.addLast("handler", new ClientErrorHandler(name))
