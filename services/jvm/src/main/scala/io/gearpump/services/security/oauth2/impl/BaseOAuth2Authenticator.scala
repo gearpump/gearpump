@@ -31,7 +31,6 @@ import io.gearpump.services.SecurityService.UserSession
 import io.gearpump.services.security.oauth2.OAuth2Authenticator
 import io.gearpump.services.security.oauth2.impl.BaseOAuth2Authenticator.BaseApi20
 import io.gearpump.util.Constants._
-import io.gearpump.util.Util
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
@@ -70,7 +69,6 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
   protected var executionContext: ExecutionContext = null
 
-  private var oauthState: String = null
 
   private var defaultPermissionLevel = Authenticator.Guest.permissionLevel
 
@@ -104,8 +102,8 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
     }
   }
 
-  override def getAuthorizationUrl: String = {
-    oauthService.getAuthorizationUrl(oauthState)
+  override def getAuthorizationUrl(state: String): String = {
+    oauthService.getAuthorizationUrl(state)
   }
 
   protected def authenticateWithAccessToken(accessToken: OAuth2AccessToken): Future[UserSession] = {
@@ -173,7 +171,6 @@ abstract class BaseOAuth2Authenticator extends OAuth2Authenticator {
 
   private def buildOAuth2Service(clientId: String, clientSecret: String, callback: String)
     : OAuth20Service = {
-    oauthState = "state" + Util.randInt()
     val clientConfig: AsyncHttpClientConfig = new AsyncHttpClientConfig.Builder()
       .setMaxConnections(5)
       .setUseProxyProperties(true)

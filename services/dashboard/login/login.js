@@ -74,9 +74,16 @@ function displaySocialLoginIcons() {
   )
 }
 
+$.ajaxPrefilter(function (options, originalOptions, xhr) {
+  if (!/^(GET|HEAD|OPTIONS)$/i.test(options.type)) {
+    var cookie = document.cookie.split('; ').filter(function (value) {
+      return value.indexOf('__Host-XSRF-TOKEN=') === 0;
+    })[0];
+    if (cookie) xhr.setRequestHeader('X-XSRF-TOKEN', decodeURIComponent(cookie.split('=')[1]));
+  }
+});
+
 $(document).ready(function () {
-  // Send a initial logout to clear the sessions.
-  logout();
 
   // Fetch and display social login icons.
   displaySocialLoginIcons()

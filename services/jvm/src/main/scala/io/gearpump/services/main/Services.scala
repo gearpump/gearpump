@@ -15,6 +15,7 @@
 package io.gearpump.services.main
 
 import java.util.Base64
+import javax.net.ssl.SSLContext
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.Http
 import com.typesafe.config.ConfigValueFactory
@@ -22,6 +23,7 @@ import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.main.{ArgumentsParser, CLIOption, Gear}
 import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.services.{RestServices, SecurityService}
+import io.gearpump.services.security.DashboardDeployment
 import io.gearpump.util.{PekkoApp, Constants, LogUtil, Util}
 import io.gearpump.util.LogUtil.ProcessType
 import java.security.SecureRandom
@@ -84,6 +86,12 @@ object Services extends PekkoApp with ArgumentsParser {
     val masterCluster = pekkoConf.getStringList(Constants.GEARPUMP_CLUSTER_MASTERS).asScala
       .flatMap(Util.parseHostList)
 
+    DashboardDeployment.validate(pekkoConf)
+    val nativeTls = pekkoConf.getBoolean("gearpump.services.https-enabled")
+    if (nativeTls) {
+      require(Option(System.getProperty("javax.net.ssl.keyStore")).exists(_.nonEmpty),
+        "Native HTTPS requires a JSSE keyStore; see deployment-ui-authentication.md")
+    }
     implicit val system: ActorSystem = ActorSystem("services", pekkoConf)
 
     import scala.concurrent.duration._
@@ -93,14 +101,17 @@ object Services extends PekkoApp with ArgumentsParser {
 
     val services = new RestServices(master, system)
 
-    val bindFuture: Future[Http.ServerBinding] = Http().newServerAt(host, port).bind(services.route)
+    val builder = Http().newServerAt(host, port)
+    val secureBuilder = if (nativeTls) builder.enableHttps(
+      org.apache.pekko.http.scaladsl.ConnectionContext.httpsServer(SSLContext.getDefault)) else builder
+    val bindFuture: Future[Http.ServerBinding] = secureBuilder.bind(services.route)
     Await.result(bindFuture, 15.seconds)
 
     val displayHost = if (host == "0.0.0.0") "127.0.0.1" else host
-    LOG.info(s"Please browse to http://$displayHost:$port to see the web UI")
+    LOG.info(s"Please browse to https://$displayHost:$port to see the web UI")
 
     // scalastyle:off println
-    println(s"Please browse to http://$displayHost:$port to see the web UI")
+    println(s"Please browse to https://$displayHost:$port to see the web UI")
     // scalastyle:on println
 
     killFunction = Some { () =>

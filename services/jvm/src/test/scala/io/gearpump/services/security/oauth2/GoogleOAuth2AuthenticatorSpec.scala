@@ -53,7 +53,8 @@ class GoogleOAuth2AuthenticatorSpec extends AnyFlatSpec with ScalatestRouteTest 
   }
 
   it should "generate the correct authorization request" in {
-    val parameters = Uri(google.getAuthorizationUrl).query().toMap
+    val parameters = Uri(google.getAuthorizationUrl("test-login-state")).query().toMap
+    assert(parameters("state") == "test-login-state")
     assert(parameters("response_type") == "code")
     assert(parameters("client_id") == configMap("clientid"))
     assert(parameters("redirect_uri") == configMap("callback"))

@@ -16,7 +16,7 @@ package io.gearpump.services
 
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.model.{RemoteAddress, StatusCodes, Uri}
-import org.apache.pekko.http.scaladsl.model.headers.{HttpChallenge, HttpCookiePair}
+import org.apache.pekko.http.scaladsl.model.headers.{HttpChallenge, HttpCookie, HttpCookiePair, SameSite}
 import org.apache.pekko.http.scaladsl.server._
 import org.apache.pekko.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import org.apache.pekko.http.scaladsl.server.Directives._
@@ -24,6 +24,9 @@ import org.apache.pekko.stream.Materializer
 import com.softwaremill.pekkohttpsession.{MultiValueSessionSerializer, SessionConfig, SessionManager}
 import com.softwaremill.pekkohttpsession.SessionDirectives._
 import com.softwaremill.pekkohttpsession.SessionOptions._
+import com.softwaremill.pekkohttpsession.CsrfDirectives._
+import com.softwaremill.pekkohttpsession.CsrfOptions._
+import io.gearpump.services.security.OAuthState
 import com.typesafe.config.Config
 import io.gearpump.security.Authenticator
 import io.gearpump.services.SecurityService.{User, UserSession}
@@ -58,6 +61,8 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
   private val LOG = LogUtil.getLogger(getClass, "AUDIT")
 
   private val config = system.settings.config
+  private val oauthStates = new OAuthState()
+  private val oauthCookie = "__Host-gearpump_oauth"
   private val sessionConfig = SessionConfig.fromConfig(config)
   private implicit val sessionManager: SessionManager[UserSession] =
     new SessionManager[UserSession](sessionConfig)
@@ -121,7 +126,9 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
       val maxAgeMs = 1000 * sessionConfig.sessionMaxAgeSeconds.getOrElse(24 * 3600L)
       setCookie(HttpCookiePair("username", user).toCookie
         .withPath("/")
-        .withMaxAge(maxAgeMs)) {
+        .withSecure(true)
+        .withSameSite(SameSite.Lax)
+        .withMaxAge(maxAgeMs / 1000)) {
         LOG.info(s"user $user login from $ip")
         if (redirectToRoot) {
           redirect(Uri("/"), StatusCodes.TemporaryRedirect)
@@ -164,6 +171,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
 
   override val route: Route = {
 
+    hmacTokenCsrfProtection(checkHeader) {
     extractExecutionContext { implicit ec: ExecutionContext =>
       extractMaterializer { _: Materializer =>
         (extractClientIP | unknownIp) { ip =>
@@ -187,6 +195,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
             }
           }
         } ~
+        path("csrf") { get { complete("CSRF cookie issued") } } ~
         path ("oauth2" / "providers") {
           // Responds with a list of OAuth2 providers.
           complete(write(oauth2Providers))
@@ -212,22 +221,35 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
               }
             }
 
-            path ("authorize") {
-              // Redirects to OAuth2 service provider for authorization.
-              redirect(Uri(oauthService.getAuthorizationUrl), StatusCodes.TemporaryRedirect)
-            } ~
-            path ("accesstoken") {
-              post {
-                // Guest account don't have permission to submit new application in UI
-                formField("accesstoken") { accesstoken: String =>
-                  loginWithOAuth2Parameters(Map("accesstoken" -> accesstoken))
+            path("authorize") {
+              get {
+                oauthStates.begin(providerName) match {
+                  case Some(attempt) =>
+                    setCookie(HttpCookie(oauthCookie, attempt.browser, path = Some("/"),
+                      maxAge = Some(300), secure = true, httpOnly = true).withSameSite(SameSite.Lax)) {
+                      redirect(Uri(oauthService.getAuthorizationUrl(attempt.state)),
+                        StatusCodes.TemporaryRedirect)
+                    }
+                  case None => complete(StatusCodes.ServiceUnavailable)
                 }
               }
             } ~
             path("callback") {
-              // Login with authorization code or access token.
-              parameterMap {parameters =>
-                loginWithOAuth2Parameters(parameters)
+              get {
+                parameterMap { parameters =>
+                  optionalCookie(oauthCookie) { browser =>
+                    val valid = for {
+                      state <- parameters.get("state")
+                      cookie <- browser
+                    } yield oauthStates.consume(state, cookie.value, providerName)
+                    if (valid.contains(true) && parameters.contains("code") &&
+                        !parameters.contains("accesstoken")) {
+                      deleteCookie(oauthCookie, path = "/") {
+                        loginWithOAuth2Parameters(parameters)
+                      }
+                    } else rejectWrongCredentials
+                  }
+                }
               }
             }
           }
@@ -244,6 +266,7 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
         requireAuthorization(user, inner.route)
       }
     }}}
+    }
 
   }
 }

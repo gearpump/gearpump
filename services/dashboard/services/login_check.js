@@ -35,5 +35,6 @@ angular.module('dashboard')
     };
   }])
   .config(['$httpProvider', function ($httpProvider) {
+    $httpProvider.defaults.xsrfCookieName = '__Host-XSRF-TOKEN';
     $httpProvider.interceptors.push('authInterceptor');
   }]);
