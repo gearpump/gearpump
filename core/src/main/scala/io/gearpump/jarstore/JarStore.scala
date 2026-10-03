@@ -59,6 +59,12 @@ trait JarStore {
 
 object JarStore {
 
+  def validateFileName(name: String): Unit = {
+    require(name != null && name.length <= 128 && name != "." && name != ".." &&
+      name.matches("[A-Za-z0-9._-]+"), "Invalid artifact identifier")
+  }
+
+
   /**
    * Get a active JarStore by specifying a scheme.
    *

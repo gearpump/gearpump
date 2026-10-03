@@ -327,3 +327,12 @@ HTTP errors expose a correlation ID, with detailed exceptions retained in server
 Public assets remain available without a session. Requests outside the asset allowlist
 retain authentication and authorization rejections, so protected routes return 401 for
 missing credentials and 403 for insufficient permissions instead of a static-file 404.
+
+## Upload bounds
+
+Dashboard multipart uploads accept only the documented fields, reject duplicates,
+and use a 64 KiB text-field limit, 64 MiB file limit, 128 MiB request limit, and
+eight concurrent parser slots. Temporary files belong to the request and are
+deleted on successful completion or parsing/route failure. `uploadjar` accepts POST
+only. Artifact identifiers are opaque names; local/HDFS storage rejects path
+components, absolute paths, URI-qualified names, and symlink reads.

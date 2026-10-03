@@ -21,7 +21,11 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{FileIO, StreamConverters}
 import org.apache.pekko.util.ByteString
 import java.io.File
-import java.time.Instant
+import java.nio.file.Files
+import java.util.UUID
+import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
+import scala.jdk.CollectionConverters._
+import scala.util.control.NonFatal
 import scala.concurrent.{ExecutionContext, Future}
 
 
@@ -35,6 +39,12 @@ object FileDirective {
   type Name = String
 
   val CHUNK_SIZE = 262144
+  val MaxFieldBytes = 64 * 1024
+  val MaxFileBytes = 64L * 1024 * 1024
+  val MaxRequestBytes = 128L * 1024 * 1024
+  private val uploads = new Semaphore(8)
+  private val allowedFields = Set("jar", "configfile", "configstring", "executorcount", "args")
+  private class InvalidUpload extends java.io.IOException("Invalid multipart fields")
 
   /**
    * File information after a file is uploaded to server.
@@ -45,7 +55,9 @@ object FileDirective {
    */
   case class FileInfo(originFileName: String, file: File, length: Long)
 
-  class Form(val fields: Map[Name, FormField]) {
+  class Form(val fields: Map[Name, FormField], cleanup: () => Unit = () => ()) {
+    def cleanupTempFiles(): Unit = cleanup()
+
     def getFileInfo(fieldName: String): Option[FileInfo] = {
       fields.get(fieldName).flatMap {
         case Left(file) => Option(file)
@@ -71,9 +83,24 @@ object FileDirective {
     Directive[Tuple1[Form]] { inner =>
       extractMaterializer {implicit mat =>
         extractExecutionContext {implicit ec =>
-          uploadFileImpl(mat, ec) { formFuture =>
-            ctx => {
-              formFuture.map(form => inner(Tuple1(form))).flatMap(route => route(ctx))
+          if (!uploads.tryAcquire()) {
+            complete(org.apache.pekko.http.scaladsl.model.StatusCodes.ServiceUnavailable)
+          } else {
+            mapRouteResultFuture(_.andThen { case _ => uploads.release() }) {
+              uploadFileImpl(mat, ec) { formFuture =>
+                ctx => formFuture.flatMap { form =>
+                  val result = try inner(Tuple1(form))(ctx) catch {
+                    case NonFatal(ex) => Future.failed(ex)
+                  }
+                  result.andThen { case _ => form.cleanupTempFiles() }
+                }.recoverWith {
+                  case _: InvalidUpload =>
+                    complete(org.apache.pekko.http.scaladsl.model.StatusCodes.BadRequest,
+                      "Invalid multipart fields").apply(ctx)
+                  case _: org.apache.pekko.http.scaladsl.model.EntityStreamSizeException =>
+                    complete(org.apache.pekko.http.scaladsl.model.StatusCodes.PayloadTooLarge).apply(ctx)
+                }
+              }
             }
           }
         }
@@ -115,7 +142,7 @@ object FileDirective {
       entity(as[Multipart.FormData]) { (formdata: Multipart.FormData) =>
         val fileNameMap = formdata.parts.mapAsync(1) { p =>
           if (p.filename.isDefined) {
-            val path = s"${Instant.now().toEpochMilli}${p.filename.get}"
+            val path = UUID.randomUUID().toString + ".jar"
             val sink = StreamConverters.fromOutputStream(() => jarStore.createFile(path),
               autoFlush = true)
             p.entity.dataBytes.runWith(sink).map(written =>
@@ -136,31 +163,41 @@ object FileDirective {
   private def uploadFileImpl(implicit mat: Materializer, ec: ExecutionContext)
     : Directive1[Future[Form]] = {
     Directive[Tuple1[Future[Form]]] { inner =>
-      entity(as[Multipart.FormData]) { (formdata: Multipart.FormData) =>
-        val form = formdata.parts.mapAsync(1) { p =>
-          if (p.filename.isDefined) {
-            val targetPath = File.createTempFile(s"userfile_${p.name}_",
-              s"${p.filename.getOrElse("")}")
-            val writtenFuture = p.entity.dataBytes.runWith(FileIO.toPath(targetPath.toPath))
-            writtenFuture.map(written =>
-              if (written.count > 0) {
-                Map(p.name -> Left(FileInfo(p.filename.get, targetPath, written.count)))
-              } else {
-                Map.empty[Name, FormField]
-              })
-          } else {
-            val valueFuture = p.entity.dataBytes.runFold(ByteString.empty) {(total, input) =>
-              total ++ input
-            }
-            valueFuture.map{value =>
-              Map(p.name -> Right(value.utf8String))
-            }
+      withSizeLimit(MaxRequestBytes) {
+        entity(as[Multipart.FormData]) { formdata =>
+          val temporary = new ConcurrentLinkedQueue[File]()
+          def cleanup(): Unit = temporary.iterator().asScala.foreach { file =>
+            Files.deleteIfExists(file.toPath)
           }
-        }.runFold(new Form(Map.empty[Name, FormField])) {(set, value) =>
-          new Form(set.fields ++ value)
+          var seen = Set.empty[String]
+          val fields = formdata.parts.mapAsync(1) { part =>
+            if (!allowedFields.contains(part.name) || seen.contains(part.name)) {
+              part.entity.discardBytes()
+              throw new InvalidUpload
+            }
+            seen += part.name
+            if (part.filename.isDefined) {
+              val target = Files.createTempFile("gearpump-upload-", ".tmp").toFile
+              temporary.add(target)
+              val written = part.entity.withSizeLimit(MaxFileBytes).dataBytes
+                .runWith(FileIO.toPath(target.toPath))
+              written.map { result =>
+                result.status.get
+                Map(part.name -> Left(FileInfo(part.filename.get, target, result.count)))
+              }
+            } else {
+              part.entity.withSizeLimit(MaxFieldBytes).dataBytes.runFold(ByteString.empty) {
+                (total, chunk) => total ++ chunk
+              }.map(value => Map(part.name -> Right(value.utf8String)))
+            }
+          }.runFold(Map.empty[Name, FormField])(_ ++ _)
+          val form = fields.map(value => new Form(value, () => cleanup())).recoverWith {
+            case NonFatal(ex) =>
+              cleanup()
+              Future.failed(ex)
+          }
+          inner(Tuple1(form))
         }
-
-        inner(Tuple1(form))
       }
     }
   }

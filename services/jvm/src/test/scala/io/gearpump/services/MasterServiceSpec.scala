@@ -149,13 +149,13 @@ class MasterServiceSpec extends AnyFlatSpec with ScalatestRouteTest
     mockMaster.expectMsg(QueryMasterConfig)
   }
 
-  "submit invalid application" should "return an error" in {
+  "submit invalid application" should "reject unexpected multipart fields" in {
     implicit val routeTestTimeout = RouteTestTimeout(30.second)
     val tempfile = new File("foo")
     val request = entity(tempfile)
 
     Post(s"/api/$REST_VERSION/master/submitapp", request) ~> masterRoute ~> check {
-      assert(response.status.intValue == 500)
+      assert(response.status.intValue == 400)
     }
   }
 
@@ -203,6 +203,15 @@ class MasterServiceSpec extends AnyFlatSpec with ScalatestRouteTest
       val responseBody = responseAs[String]
       val partitioners = read[BuiltinPartitioners](responseBody)
       assert(partitioners.partitioners.length > 0, "invalid response")
+    }
+  }
+
+  it should "reject GET and HEAD before parsing an uploadjar entity" in {
+    Seq(HttpMethods.GET, HttpMethods.HEAD).foreach { method =>
+      HttpRequest(method = method, uri = s"/api/$REST_VERSION/master/uploadjar") ~>
+        org.apache.pekko.http.scaladsl.server.Route.seal(masterRoute) ~> check {
+          assert(status.intValue() == 405)
+        }
     }
   }
 }
