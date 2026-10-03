@@ -152,3 +152,8 @@ capability; resources can only decrease from their live allocation. Administrati
 control credentials are masked in generated executor configurations. Runtime
 capabilities and grants must not be logged. This changes allocation/launch message
 formats and requires upgrading every cluster component together.
+
+Embedded executors may share the JVM, but each now has its own ActorSystem and
+application configuration. They do not inherit the worker's administrative key or
+share an Express application key across unrelated applications. Master discovery
+canonicalizes configured and discovered addresses before checking endpoint identity.

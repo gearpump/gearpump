@@ -63,8 +63,9 @@ class MasterProxy(masters: Iterable[ActorPath], timeout: FiniteDuration)
   }
 
   def establishing(findMaster: Cancellable): Receive = {
-    case ActorIdentity(_, Some(receptionist)) if masters.exists(_.toString ==
-        receptionist.path.toString) =>
+    case ActorIdentity(_, Some(receptionist)) if masters.exists(path =>
+        ActorUtil.getFullPath(context.system, path) ==
+          ActorUtil.getFullPath(context.system, receptionist.path)) =>
       context watch receptionist
       LOG.info(s"Connected to [${receptionist.path}]")
       context.watch(receptionist)

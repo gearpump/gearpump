@@ -29,6 +29,16 @@ class MasterProxySpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll w
   override def config: Config = TestUtil.DEFAULT_CONFIG
   override def beforeAll(): Unit = startActorSystem()
   override def afterAll(): Unit = shutdownActorSystem()
+  it should "recognize a configured global path when discovery returns its local reference" in {
+    val master = TestProbe()(getActorSystem)
+    val client = TestProbe()(getActorSystem)
+    val fullPath = org.apache.pekko.actor.ActorPath.fromString(
+      io.gearpump.util.ActorUtil.getFullPath(getActorSystem, master.ref.path))
+    val proxy = getActorSystem.actorOf(Props(new MasterProxy(Seq(fullPath), 10.seconds)))
+    client.send(proxy, ShutdownApplication(2))
+    master.expectMsgType[ControlRequest].message shouldBe ShutdownApplication(2)
+  }
+
   it should "keep privileged messages queued until a configured master is discovered" in {
     val master = TestProbe()(getActorSystem)
     val attacker = TestProbe()(getActorSystem)

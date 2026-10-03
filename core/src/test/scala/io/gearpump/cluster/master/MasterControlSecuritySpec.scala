@@ -29,6 +29,30 @@ class MasterControlSecuritySpec extends AnyFlatSpec with Matchers with BeforeAnd
   override def config: Config = TestUtil.MASTER_CONFIG
   override def beforeAll(): Unit = startActorSystem()
   override def afterAll(): Unit = shutdownActorSystem()
+  it should "return installed grants to the original requestor after broker creation" in {
+    val master = getActorSystem.actorOf(Props(new Master), "allocation-master")
+    val worker = TestProbe()(getActorSystem)
+    val client = TestProbe()(getActorSystem)
+    worker.send(master, ControlCapability.wrap(config,
+      io.gearpump.cluster.WorkerToMaster.RegisterNewWorker))
+    val registered = worker.expectMsgType[ControlRequest].message
+      .asInstanceOf[io.gearpump.cluster.MasterToWorker.WorkerRegistered]
+    worker.send(master, ControlCapability.wrap(config,
+      io.gearpump.cluster.WorkerToMaster.ResourceUpdate(worker.ref, registered.workerId,
+        io.gearpump.cluster.scheduler.Resource(10))))
+    worker.expectMsgType[ControlRequest]
+    val request = io.gearpump.cluster.AppMasterToMaster.RequestResource(1,
+      io.gearpump.cluster.scheduler.ResourceRequest(io.gearpump.cluster.scheduler.Resource(1),
+        io.gearpump.cluster.worker.WorkerId.unspecified))
+    client.send(master, ControlCapability.wrap(config, io.gearpump.security.AllocateResource(
+      request, ControlCapability.random())))
+    val grant = worker.expectMsgType[io.gearpump.security.InstallLaunchGrant]
+    worker.reply(io.gearpump.security.LaunchGrantInstalled(grant.grant))
+    client.expectMsgType[io.gearpump.cluster.MasterToAppMaster.ResourceAllocated]
+      .allocations.head.allocationCapability shouldBe grant.grant
+    getActorSystem.stop(master)
+  }
+
   it should "deny unauthenticated submission and discovery without disrupting valid clients" in {
     val master = getActorSystem.actorOf(Props(new Master), "guarded-master")
     val client = TestProbe()(getActorSystem)
