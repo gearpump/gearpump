@@ -18,6 +18,7 @@ import org.apache.pekko.actor.Props
 import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.Config
 import io.gearpump.cluster.{MasterHarness, TestUtil}
+import io.gearpump.security.{ControlCapability, KvReply}
 import io.gearpump.cluster.master.InMemoryKVService
 import io.gearpump.cluster.master.InMemoryKVService._
 import org.scalatest.BeforeAndAfterEach
@@ -44,23 +45,29 @@ class InMemoryKVServiceSpec
     val group = "group"
 
     val client = TestProbe()(system)
-
-    client.send(kvService, PutKV(group, "key", 1))
-    client.expectMsg(PutKVSuccess)
-
-    client.send(kvService, PutKV(group, "key", 2))
-    client.expectMsg(PutKVSuccess)
+    def request(message: Any) = ControlCapability.wrap(config, message)
+    def response(message: Any) = KvReply(ControlCapability.token(config, ControlCapability.AdminKey),
+      message)
 
     client.send(kvService, GetKV(group, "key"))
-    client.expectMsg(GetKVSuccess("key", 2))
+    assert(client.expectMsgType[org.apache.pekko.actor.Status.Failure].cause
+      .isInstanceOf[SecurityException])
+    client.send(kvService, request(PutKV(group, "key", 1)))
+    client.expectMsg(response(PutKVSuccess))
 
-    client.send(kvService, DeleteKVGroup(group))
+    client.send(kvService, request(PutKV(group, "key", 2)))
+    client.expectMsg(response(PutKVSuccess))
+
+    client.send(kvService, request(GetKV(group, "key")))
+    client.expectMsg(response(GetKVSuccess("key", 2)))
+
+    client.send(kvService, request(DeleteKVGroup(group)))
 
     // After DeleteGroup, it no longer accept Get and Put message for this group.
-    client.send(kvService, GetKV(group, "key"))
+    client.send(kvService, request(GetKV(group, "key")))
     client.expectNoMessage(3.seconds)
 
-    client.send(kvService, PutKV(group, "key", 3))
+    client.send(kvService, request(PutKV(group, "key", 3)))
     client.expectNoMessage(3.seconds)
   }
 }

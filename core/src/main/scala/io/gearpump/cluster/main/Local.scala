@@ -68,7 +68,7 @@ object Local extends MasterClientCommand with ArgumentsParser {
 
       val hostPort = masters.head
       implicit val system: ActorSystem = ActorSystem(MASTER, pekkoConf.
-        withValue("pekko.remote.classic.netty.tcp.port", ConfigValueFactory.fromAnyRef(hostPort.port))
+        withValue("pekko.remote.classic.netty.ssl.port", ConfigValueFactory.fromAnyRef(hostPort.port))
       )
 
       val master = system.actorOf(Props[MasterActor](), MASTER)

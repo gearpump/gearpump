@@ -366,7 +366,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         jvmName = ManagementFactory.getRuntimeMXBean().getName())
 
     case _: QueryExecutorConfig =>
-      sender() ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
+      sender() ! ExecutorConfig(io.gearpump.security.ControlCapability.redact(ClusterConfig.filterOutDefaultConfig(systemConfig)))
     case HealthCheck =>
       context.system.scheduler.scheduleOnce(3.second)(HealthCheck)
       if (state != State.ACTIVE && (transitionEnd - transitionStart) > transitWarningThreshold) {

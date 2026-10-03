@@ -81,10 +81,10 @@ object ActorUtil {
     executorId
 
   // TODO: Currently we explicitly require the master contacts to be started with this path pattern
-  // pekko.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER
+  // pekko.ssl.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER
   def getMasterActorPath(master: HostPort): ActorPath = {
     import Constants.MASTER
-    ActorPath.fromString(s"pekko.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER")
+    ActorPath.fromString(s"pekko.ssl.tcp://$MASTER@${master.host}:${master.port}/user/$MASTER")
   }
 
   def launchExecutorOnEachWorker(master: ActorRef, executorJvmConfig: ExecutorSystemJvmConfig,

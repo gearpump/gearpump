@@ -35,8 +35,11 @@ class EmbeddedCluster(inputConfig: Config) {
   val system: ActorSystem = ActorSystem(MASTER, config)
   val master: ActorRef = system.actorOf(Props[Master](), MASTER)
 
+  private val workerMasterProxy = system.actorOf(Props(new io.gearpump.cluster.master.MasterProxy(
+    Seq(master.path), scala.concurrent.duration.Duration(30, "seconds"))))
+
   0.until(workerCount).foreach { id =>
-    system.actorOf(Props(classOf[WorkerActor], master), classOf[WorkerActor].getSimpleName + id)
+    system.actorOf(Props(classOf[WorkerActor], workerMasterProxy), classOf[WorkerActor].getSimpleName + id)
   }
 
   LOG.info("=================================")
@@ -46,7 +49,7 @@ class EmbeddedCluster(inputConfig: Config) {
 
   private def getConfig(inputConfig: Config, port: Int): Config = {
     val config = inputConfig.
-      withValue("pekko.remote.classic.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
+      withValue("pekko.remote.classic.netty.ssl.port", ConfigValueFactory.fromAnyRef(port)).
       withValue(GEARPUMP_CLUSTER_MASTERS,
         ConfigValueFactory.fromIterable(List(s"127.0.0.1:$port").asJava)).
       withValue(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS,

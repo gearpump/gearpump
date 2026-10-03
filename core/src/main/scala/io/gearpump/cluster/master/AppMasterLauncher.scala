@@ -52,7 +52,8 @@ class AppMasterLauncher(
   private val appMasterPekkoConfig: Config = app.clusterConfig
 
   LOG.info(s"Ask Master resource to start AppMaster $appId...")
-  master ! RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified))
+  master ! io.gearpump.security.ControlCapability.wrap(app.clusterConfig,
+    RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified)))
 
   def receive: Receive = waitForResourceAllocation
 
@@ -82,7 +83,8 @@ class AppMasterLauncher(
     case ExecutorLaunchRejected(reason, ex) =>
       LOG.error(s"Executor Launch failed reason: $reason", ex)
       LOG.info(s"reallocate resource $resource to start appmaster")
-      master ! RequestResource(appId, ResourceRequest(resource, WorkerId.unspecified))
+      master ! io.gearpump.security.ControlCapability.wrap(app.clusterConfig,
+        RequestResource(appId, ResourceRequest(resource, WorkerId.unspecified)))
       context.become(waitForResourceAllocation)
     case RegisterActorSystem(systemPath) =>
       LOG.info(s"Received RegisterActorSystem $systemPath for AppMaster")

@@ -146,7 +146,7 @@ lazy val beamRunner = Project(
   id = "gearpump-beam-runner",
   base = file("experiments/beam"))
   .settings(commonSettings ++ myAssemblySettings ++ javadocSettings ++ beamRunnerDependencies: _*)
-  .dependsOn(core % "provided", streaming % "provided")
+  .dependsOn(core % "provided;test->test", streaming % "provided")
 
 lazy val beamQuickStart = Project(
   id = "gearpump-examples-beam-quickstart",

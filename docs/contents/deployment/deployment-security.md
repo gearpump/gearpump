@@ -106,3 +106,33 @@ FilePath metadata now includes the uploader's immutable SHA-256 digest. Download
 require it, check HTTP and IO results, verify bytes before atomically publishing
 the local JAR, and delete partial files on failure. Older artifacts without digest
 metadata must be reuploaded. Restart the whole cluster for this protocol change.
+
+## Cluster and application control capabilities
+
+The actor control plane now uses mutual TLS (`pekko.ssl.tcp`); plain TCP actor
+addresses are unsupported. Its trust store must contain only operator-approved
+cluster/submission/runtime peers. Set `gearpump.security.control-secret` to an
+independent random base64url value of at least 43 characters on the master,
+workers and authorized administrative clients/dashboard service. These clients
+are cluster administrators. Their immutable audit identity comes from the
+master's `control-user` setting, not a submitted username. This does not implement
+separate per-human owner roles for administrative clients.
+
+MasterProxy attaches ControlRequest capabilities automatically. Application
+configurations receive a distinct random application capability and app ID,
+with administrative/worker secrets explicitly masked. Applications can access
+only their own state/resource/lifecycle messages. Registration/status/storage
+messages without authority are denied at both master and application-manager
+entry points. Recovery rotates application capabilities, invalidating old epochs.
+Application data uses a separate namespace from master/recovery metadata. Legacy
+checkpoint namespaces are not migrated; drain jobs before upgrading and restart
+from durable external state where required.
+
+`GetApplicationControl` is available only to administrative clients, allowing
+application management tools to obtain scoped authority. Never log or expose
+these credentials. Configuration queries strip credential sections.
+
+Applications still execute under the configured service OS account. Capabilities
+protect network/application message boundaries; they do not isolate malicious
+code that can read that account's private files or another process. Use separate
+OS identities/containers for untrusted tenant code and restrict certificate access.

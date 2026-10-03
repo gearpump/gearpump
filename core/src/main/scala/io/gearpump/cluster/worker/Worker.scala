@@ -133,7 +133,8 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
       this.LOG = LogUtil.getLogger(getClass, worker = id)
       LOG.info(s"Worker is registered. " +
         s"actor path: ${ActorUtil.getFullPath(context.system, self.path)} ....")
-      sendMsgWithTimeOutCallBack(masterInfo.master, ResourceUpdate(self, id, resource),
+      sendMsgWithTimeOutCallBack(masterInfo.master, io.gearpump.security.ControlCapability.wrap(systemConfig,
+        ResourceUpdate(self, id, resource)),
         resourceUpdateTimeoutMs, updateResourceTimeOut())
       context.become(service)
   }
@@ -219,7 +220,8 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
 
   private def reportResourceToMaster(): Unit = {
     sendMsgWithTimeOutCallBack(masterInfo.master,
-      ResourceUpdate(self, id, resource), resourceUpdateTimeoutMs, updateResourceTimeOut())
+      io.gearpump.security.ControlCapability.wrap(systemConfig,
+        ResourceUpdate(self, id, resource)), resourceUpdateTimeoutMs, updateResourceTimeOut())
   }
 
   private def executorActorRef(appId: Int, executorId: Int): Option[ActorRef] = {
@@ -230,7 +232,7 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
   def clientMessageHandler: Receive = {
     case QueryWorkerConfig(workerId) =>
       if (this.id == workerId) {
-        sender() ! WorkerConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
+        sender() ! WorkerConfig(io.gearpump.security.ControlCapability.redact(ClusterConfig.filterOutDefaultConfig(systemConfig)))
       } else {
         sender() ! WorkerConfig(ConfigFactory.empty)
       }
@@ -265,7 +267,8 @@ private[cluster] class Worker(masterProxy: ActorRef) extends Actor with TimeOutS
           resource = resource + allocated.get
           executorsInfo -= actor
           allocatedResources = allocatedResources - actor
-          sendMsgWithTimeOutCallBack(master, ResourceUpdate(self, id, resource),
+          sendMsgWithTimeOutCallBack(master, io.gearpump.security.ControlCapability.wrap(systemConfig,
+        ResourceUpdate(self, id, resource)),
             resourceUpdateTimeoutMs, updateResourceTimeOut())
         }
       }
