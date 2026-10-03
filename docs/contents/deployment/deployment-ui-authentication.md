@@ -288,3 +288,11 @@ You can follow the Google OAuth2 example code to define a custom OAuth2Authentic
     	
     
    The configuration entry is supposed to be used by class `SocialNetworkXAuthenticator`.
+## Upload bounds
+
+Dashboard multipart uploads accept only the documented fields, reject duplicates,
+and use a 64 KiB text-field limit, 64 MiB file limit, 128 MiB request limit, and
+eight concurrent parser slots. Temporary files belong to the request and are
+deleted on successful completion or parsing/route failure. `uploadjar` accepts POST
+only. Artifact identifiers are opaque names; local/HDFS storage rejects path
+components, absolute paths, URI-qualified names, and symlink reads.

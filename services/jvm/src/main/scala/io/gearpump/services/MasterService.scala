@@ -154,14 +154,16 @@ class MasterService(val master: ActorRef,
       }
     } ~
     path("uploadjar") {
-      uploadFile { form =>
-        val jar = form.getFileInfo("jar").map(_.file)
-        if (jar.isEmpty) {
-          complete(write(
-            MasterService.Status(success = false, reason = "Jar file not found")))
-        } else {
-          val jarFile = Util.uploadJar(jar.get, jarStoreClient)
-          complete(write(jarFile))
+      post {
+        uploadFile { form =>
+          val jar = form.getFileInfo("jar").map(_.file)
+          if (jar.isEmpty) {
+            complete(write(
+              MasterService.Status(success = false, reason = "Jar file not found")))
+          } else {
+            val jarFile = Util.uploadJar(jar.get, jarStoreClient)
+            complete(write(jarFile))
+          }
         }
       }
     } ~

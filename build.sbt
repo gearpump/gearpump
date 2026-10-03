@@ -122,6 +122,7 @@ lazy val gearpumpHadoop = Project(
   base = file("gearpump-hadoop"))
   .settings(commonSettings ++ noPublish ++ myAssemblySettings ++
     Seq(
+      libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test,
       libraryDependencies ++= Seq(
         "org.apache.hadoop" % "hadoop-hdfs" % hadoopVersion,
         "org.apache.hadoop" % "hadoop-common" % hadoopVersion
