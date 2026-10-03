@@ -14,7 +14,7 @@
 package io.gearpump.streaming.task
 
 import io.gearpump.streaming.{AckRequestSerializer, AckSerializer, InitialAckRequestSerializer, LatencyProbeSerializer}
-import io.gearpump.transport.netty.ITransportMessageSerializer
+import io.gearpump.transport.netty.{FrameDataInput, ITransportMessageSerializer}
 import io.gearpump.util.LogUtil
 import java.io.{DataInput, DataOutput}
 import org.slf4j.Logger
@@ -40,13 +40,15 @@ class StreamingTransportSerializer extends ITransportMessageSerializer {
   }
 
   override def deserialize(dataInput: DataInput, length: Int): Object = {
-    val classID = dataInput.readInt()
+    val input = new FrameDataInput(dataInput, length)
+    val classID = input.readInt()
     val registration = serializers.getRegistration(classID)
     if (registration != null) {
-      registration.serializer.asInstanceOf[TaskMessageSerializer[AnyRef]].read(dataInput)
+      val value = registration.serializer.asInstanceOf[TaskMessageSerializer[AnyRef]].read(input)
+      require(input.remaining() == 0, "Trailing bytes in transport message")
+      value
     } else {
-      log.error(s"Can not find serializer for class id $classID")
-      null
+      throw new java.io.IOException(s"Unknown transport serializer $classID")
     }
   }
 
