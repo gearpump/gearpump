@@ -88,7 +88,7 @@ class FileServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
       sizes.foreach { size =>
         val bytes = randomBytes(size)
-        val url = s"http://$host:${port.port}/$size"
+        val url = s"https://$host:${port.port}/$size"
         val remote = save(client, bytes)
         val fetchedBytes = get(client, remote)
         assert(fetchedBytes sameElements bytes, s"fetch data is coruppted, $url, $rootDir")
@@ -111,9 +111,65 @@ class FileServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       val port = Await.result(server.start, Duration(25, TimeUnit.SECONDS))
 
       val client = new Client(system, host, port.port)
-      val fetchedBytes = get(client, FilePath("noexist"))
-      assert(fetchedBytes.length == 0)
+      intercept[IllegalArgumentException] { get(client, FilePath("noexist")) }
+      server.stop
       rootDir.delete()
+    }
+  }
+
+  "The artifact client" should {
+    "reject altered bytes without replacing the destination and remove partial downloads" in {
+      val rootDir = java.nio.file.Files.createTempDirectory("artifact-tamper-")
+      val store = new LocalJarStore
+      store.init(TestUtil.DEFAULT_CONFIG.withValue("gearpump.jarstore.rootpath",
+        ConfigValueFactory.fromAnyRef(rootDir.toString)))
+      val server = new FileServer(system, host, 0, store)
+      val port = Await.result(server.start, Duration(25, TimeUnit.SECONDS))
+      val client = new Client(system, host, port.port)
+      val remote = save(client, Array[Byte](1, 2, 3))
+      java.nio.file.Files.write(rootDir.resolve(remote.path), Array[Byte](3, 2, 1))
+      val destinationDir = java.nio.file.Files.createTempDirectory("artifact-destination-")
+      val destination = destinationDir.resolve("application.jar")
+      java.nio.file.Files.write(destination, Array[Byte](9))
+      intercept[java.io.IOException] {
+        Await.result(client.download(remote, destination.toFile),
+          Duration(10, TimeUnit.SECONDS))
+      }
+      assert(java.nio.file.Files.readAllBytes(destination).sameElements(Array[Byte](9)))
+      val files = java.nio.file.Files.list(destinationDir)
+      try assert(files.count() == 1) finally files.close()
+      Await.result(client.delete(remote), Duration(10, TimeUnit.SECONDS))
+      assert(!java.nio.file.Files.exists(rootDir.resolve(remote.path)))
+      server.stop
+    }
+    "reject a TLS client without a certificate before accepting HTTP traffic" in {
+      val root = java.nio.file.Files.createTempDirectory("artifact-mtls-")
+      val store = new LocalJarStore
+      store.init(TestUtil.DEFAULT_CONFIG.withValue("gearpump.jarstore.rootpath",
+        ConfigValueFactory.fromAnyRef(root.toString)))
+      val server = new FileServer(system, host, 0, store)
+      val port = Await.result(server.start, Duration(25, TimeUnit.SECONDS))
+      val trust = java.security.KeyStore.getInstance("PKCS12")
+      val in = getClass.getResourceAsStream("/security-test-only.p12")
+      try trust.load(in, "gearpump-test-only".toCharArray) finally in.close()
+      val factory = javax.net.ssl.TrustManagerFactory.getInstance(
+        javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm)
+      factory.init(trust)
+      val anonymous = javax.net.ssl.SSLContext.getInstance("TLS")
+      anonymous.init(Array.empty[javax.net.ssl.KeyManager], factory.getTrustManagers,
+        new java.security.SecureRandom())
+      val response = org.apache.pekko.http.scaladsl.Http(system).singleRequest(
+        org.apache.pekko.http.scaladsl.model.HttpRequest(
+          uri = s"https://localhost:${port.port}/download?file=test.jar"),
+        connectionContext = org.apache.pekko.http.scaladsl.ConnectionContext.httpsClient(anonymous))
+      val error = intercept[Exception] { Await.result(response, Duration(10, TimeUnit.SECONDS)) }
+      val causes = Iterator.iterate[Throwable](error)(_.getCause).takeWhile(_ != null).toList
+      assert(causes.exists(_.isInstanceOf[javax.net.ssl.SSLException]))
+      assert(store.listFiles().isEmpty)
+      server.stop
+    }
+    "refuse cleartext endpoint discovery" in {
+      intercept[IllegalArgumentException] { new Client(system, "http://localhost:1/") }
     }
   }
 

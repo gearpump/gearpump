@@ -139,24 +139,35 @@ object FileDirective {
   private def uploadFileImpl(jarStore: JarStore)
     (implicit mat: Materializer, ec: ExecutionContext): Directive1[Future[Map[Name, FilePath]]] = {
     Directive[Tuple1[Future[Map[Name, FilePath]]]] { inner =>
-      entity(as[Multipart.FormData]) { (formdata: Multipart.FormData) =>
-        val fileNameMap = formdata.parts.mapAsync(1) { p =>
-          if (p.filename.isDefined) {
+      withSizeLimit(MaxRequestBytes) {
+      entity(as[Multipart.FormData]) { formdata =>
+        var parts = 0
+        val created = new ConcurrentLinkedQueue[String]()
+        val fileNameMap = formdata.parts.mapAsync(1) { part =>
+          parts += 1
+          if (parts != 1 || part.filename.isEmpty || part.name != "uploadfile") {
+            part.entity.discardBytes()
+            Future.failed(new InvalidUpload)
+          } else {
             val path = UUID.randomUUID().toString + ".jar"
+            created.add(path)
             val sink = StreamConverters.fromOutputStream(() => jarStore.createFile(path),
               autoFlush = true)
-            p.entity.dataBytes.runWith(sink).map(written =>
-              if (written.count > 0) {
-                Map(p.name -> FilePath(path))
-              } else {
-                Map.empty[Name, FilePath]
-              })
-          } else {
-            Future(Map.empty[Name, FilePath])
+            part.entity.withSizeLimit(MaxFileBytes).dataBytes.runWith(sink).map { written =>
+              written.status.get
+              if (written.count <= 0) throw new InvalidUpload
+              Map(part.name -> FilePath(path))
+            }.recoverWith { case NonFatal(ex) =>
+              jarStore.deleteFile(path)
+              Future.failed(ex)
+            }
           }
-        }.runFold(Map.empty[Name, FilePath])((set, value) => set ++ value)
+        }.runFold(Map.empty[Name, FilePath])(_ ++ _).recoverWith { case NonFatal(ex) =>
+          created.iterator().asScala.foreach(jarStore.deleteFile)
+          Future.failed(ex)
+        }
         inner(Tuple1(fileNameMap))
-      }
+      }}
     }
   }
 

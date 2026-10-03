@@ -36,15 +36,29 @@ import spray.json.JsonFormat
  * A simple file server implemented with Pekko HTTP to store/fetch large
  * binary files.
  */
-class FileServer(system: ActorSystem, host: String, port: Int = 0, jarStore: JarStore) {
+class FileServer(system: ActorSystem, host: String, port: Int = 0, underlyingStore: JarStore) {
   import system.dispatcher
   implicit val actorSystem: ActorSystem = system
   implicit val materializer: Materializer = Materializer(actorSystem)
   implicit def ec: ExecutionContext = system.dispatcher
 
-  val route: Route = {
+  private val config = system.settings.config
+  private val tls = io.gearpump.security.ClusterTls.context(config)
+  private val token = config.getString("gearpump.jarstore.access-token")
+  require(token.matches("[A-Za-z0-9_-]{43,128}"), "Configure a random JAR-store access-token")
+  private val jarStore = new QuotaJarStore(underlyingStore,
+    config.getLong("gearpump.jarstore.max-storage-bytes"),
+    config.getInt("gearpump.jarstore.max-artifacts"),
+    config.getLong("gearpump.jarstore.max-artifact-bytes"))
+  private def authenticated: Directive0 = optionalHeaderValueByName("Authorization").flatMap {
+    case Some(value) if java.security.MessageDigest.isEqual(
+        value.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+        ("Bearer " + token).getBytes(java.nio.charset.StandardCharsets.UTF_8)) => pass
+    case _ => reject(AuthorizationFailedRejection)
+  }
+  val route: Route = authenticated {
     path("upload") {
-      uploadFileTo(jarStore) { form =>
+      post { uploadFileTo(jarStore) { form =>
         val uploadedFilePath = form.headOption.map(_._2)
 
         if (uploadedFilePath.isDefined) {
@@ -52,12 +66,19 @@ class FileServer(system: ActorSystem, host: String, port: Int = 0, jarStore: Jar
         } else {
           failWith(new Exception("File not found in the uploaded form"))
         }
-      }
+      }}
     } ~
       path("download") {
+        get {
         parameters("file") { file: String =>
           downloadFileFrom(jarStore, file)
-        }
+        }}
+      } ~
+      path("artifact") {
+        delete { parameter("file") { file =>
+          jarStore.deleteFile(file)
+          complete(StatusCodes.NoContent)
+        }}
       } ~
       pathEndOrSingleSlash {
         extractUri { uri =>
@@ -82,7 +103,9 @@ class FileServer(system: ActorSystem, host: String, port: Int = 0, jarStore: Jar
   private var connection: Future[ServerBinding] = _
 
   def start: Future[Port] = {
-    connection = Http().newServerAt(host, port).bind(route)
+    connection = Http().newServerAt(host, port).enableHttps(
+      org.apache.pekko.http.scaladsl.ConnectionContext.httpsServer(
+        () => io.gearpump.security.ClusterTls.serverEngine(tls))).bind(route)
     connection.map(address => Port(address.localAddress.getPort))
   }
 
@@ -92,8 +115,15 @@ class FileServer(system: ActorSystem, host: String, port: Int = 0, jarStore: Jar
 }
 
 object FileServer {
+  private def requireHttps(url: String): Uri = {
+    val uri = Uri(url)
+    require(uri.scheme == "https" && uri.authority.userinfo.isEmpty,
+      "Artifact endpoints require HTTPS")
+    uri
+  }
 
-  implicit def filePathFormat: JsonFormat[FilePath] = jsonFormat1(FilePath.apply)
+
+  implicit def filePathFormat: JsonFormat[FilePath] = jsonFormat2(FilePath.apply)
 
   case class Port(port: Int)
 
@@ -103,39 +133,76 @@ object FileServer {
   class Client(system: ActorSystem, host: String, port: Int) {
 
     def this(system: ActorSystem, url: String) = {
-      this(system, Uri(url).authority.host.address(), Uri(url).authority.port)
+      this(system, FileServer.requireHttps(url).authority.host.address(),
+        FileServer.requireHttps(url).authority.port)
     }
 
     private implicit val actorSystem: ActorSystem = system
     private implicit val materializer: Materializer = Materializer(actorSystem)
     private implicit val ec: scala.concurrent.ExecutionContextExecutor = system.dispatcher
 
-    val server = Uri(s"http://$host:$port")
-    val httpClient = Http(system).outgoingConnection(server.authority.host.address(),
-      server.authority.port)
+    val server = Uri(s"https://$host:$port")
+    private val tls = io.gearpump.security.ClusterTls.context(system.settings.config)
+    private val credential = org.apache.pekko.http.scaladsl.model.headers.RawHeader(
+      "Authorization", "Bearer " + system.settings.config.getString("gearpump.jarstore.access-token"))
+    val httpClient = Http(system).outgoingConnectionHttps(server.authority.host.address(),
+      server.authority.port, connectionContext =
+        org.apache.pekko.http.scaladsl.ConnectionContext.httpsClient(tls))
 
     def upload(file: File): Future[FilePath] = {
       val target = server.withPath(Path("/upload"))
 
       val request = entity(file).map { entity =>
-        HttpRequest(HttpMethods.POST, uri = target, entity = entity)
+        HttpRequest(HttpMethods.POST, uri = target, entity = entity).addHeader(credential)
       }
 
       val response = Source.future(request).via(httpClient).runWith(Sink.head)
       response.flatMap { some =>
-        Unmarshal(some).to[String]
+        if (!some.status.isSuccess()) {
+          some.discardEntityBytes()
+          Future.failed(new java.io.IOException("Artifact upload rejected: " + some.status.intValue()))
+        } else Unmarshal(some).to[String]
       }.map { path =>
-        FilePath(path)
+        JarStore.validateFileName(path)
+        FilePath(path, ArtifactDigest.sha256(file))
       }
     }
 
     def download(remoteFile: FilePath, saveAs: File): Future[IOResult] = {
       val uri = server.withPath(Path("/download")).withQuery(Query("file" -> remoteFile.path))
-      // Download file to local
-      Source.single(HttpRequest(uri = uri)).via(httpClient).runWith(Sink.head).flatMap {
-        response =>
-          response.entity.dataBytes.runWith(FileIO.toPath(saveAs.toPath))
-      }
+      require(remoteFile.sha256.matches("[0-9a-f]{64}"), "Missing artifact digest")
+      JarStore.validateFileName(remoteFile.path)
+      val temporary = java.nio.file.Files.createTempFile(saveAs.toPath.toAbsolutePath.getParent,
+        "gearpump-download-", ".partial")
+      val result = Source.single(HttpRequest(uri = uri).addHeader(credential)).via(httpClient)
+        .runWith(Sink.head).flatMap { response =>
+          if (!response.status.isSuccess()) {
+            response.discardEntityBytes()
+            Future.failed(new java.io.IOException("Artifact download rejected: " +
+              response.status.intValue()))
+          } else response.entity.withSizeLimit(
+              system.settings.config.getLong("gearpump.jarstore.max-artifact-bytes"))
+            .dataBytes.runWith(FileIO.toPath(temporary)).map { written =>
+              written.status.get
+              ArtifactDigest.verify(temporary.toFile, remoteFile.sha256)
+              java.nio.file.Files.move(temporary, saveAs.toPath,
+                java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+              written
+            }
+        }
+      result.andThen { case _ => java.nio.file.Files.deleteIfExists(temporary) }
+    }
+
+    def delete(remoteFile: FilePath): Future[Unit] = {
+      JarStore.validateFileName(remoteFile.path)
+      val uri = server.withPath(Path("/artifact")).withQuery(Query("file" -> remoteFile.path))
+      Source.single(HttpRequest(HttpMethods.DELETE, uri = uri).addHeader(credential))
+        .via(httpClient).runWith(Sink.head).flatMap { response =>
+          response.discardEntityBytes()
+          if (response.status.isSuccess()) Future.successful(())
+          else Future.failed(new java.io.IOException("Artifact deletion rejected"))
+        }
     }
 
     private def entity(file: File)(implicit ec: ExecutionContext): Future[RequestEntity] = {

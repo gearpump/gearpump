@@ -21,7 +21,7 @@ import java.net.URI
 import java.util.ServiceLoader
 import scala.jdk.CollectionConverters._
 
-case class FilePath(path: String)
+case class FilePath(path: String, sha256: String = "")
 
 /**
  * JarStore is used to manage the upload/download of binary files,
@@ -55,6 +55,10 @@ trait JarStore {
    * @return InputStream returns a stream from which the data can be read.
    */
   def getFile(fileName: String): InputStream
+
+  /** Persistent inventory and deletion are required for quota-aware serving. */
+  def listFiles(): Map[String, Long] = throw new UnsupportedOperationException("Storage inventory")
+  def deleteFile(fileName: String): Unit = throw new UnsupportedOperationException("Storage deletion")
 }
 
 object JarStore {

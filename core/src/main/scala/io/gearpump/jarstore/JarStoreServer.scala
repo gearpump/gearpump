@@ -39,7 +39,7 @@ class JarStoreServer(jarStoreRootPath: String) extends Actor with Stash {
 
   def listen(port: Int): Receive = {
     case GetJarStoreServer =>
-      sender() ! JarStoreServerAddress(s"http://$host:$port/")
+      sender() ! JarStoreServerAddress(s"https://$host:$port/")
   }
 
   override def postStop(): Unit = {
