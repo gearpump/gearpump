@@ -80,7 +80,7 @@ trait OAuth2Authenticator {
    * NOTE:  '''Thread-Safety''': This can be called in a multi-thread environment. Developer
    *      need to ensure thread safety.
    */
-  def getAuthorizationUrl: String
+  def getAuthorizationUrl(state: String): String
 
   /**
    * After authorization, OAuth2 server redirects user back with tokens. This verify the

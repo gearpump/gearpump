@@ -24,6 +24,24 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest {
+  private var csrfToken: org.apache.pekko.http.scaladsl.model.headers.HttpCookiePair = null
+  private def csrf(security: SecurityService): Unit = {
+    Get("/login/csrf") ~> security.route ~> check {
+      val cookie = headers.collect {
+        case value: org.apache.pekko.http.scaladsl.model.headers.`Set-Cookie`
+            if value.cookie.name == "__Host-XSRF-TOKEN" => value.cookie
+      }.head
+      csrfToken = org.apache.pekko.http.scaladsl.model.headers.HttpCookiePair(
+        cookie.name, cookie.value)
+    }
+  }
+  private def protectedRequest(request: org.apache.pekko.http.scaladsl.model.HttpRequest,
+      session: Option[org.apache.pekko.http.scaladsl.model.headers.HttpCookiePair] = None) = {
+    request.addHeader(org.apache.pekko.http.scaladsl.model.headers.Cookie(
+      (session.toSeq :+ csrfToken).toList)).addHeader(
+      org.apache.pekko.http.scaladsl.model.headers.RawHeader("X-XSRF-TOKEN", csrfToken.value))
+  }
+
   override def testConfig: Config = TestUtil.UI_CONFIG.withValue(
     "gearpump.ui-security.config-file-based-authenticator.users.normal",
     com.typesafe.config.ConfigValueFactory.fromAnyRef(TestUtil.UI_CONFIG.getString(
@@ -78,17 +96,18 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
     implicit val timeout = RouteTestTimeout(20.seconds)
     val inner = new RouteService { override def route = complete("allowed") }
     val security = new SecurityService(inner, system)
+    csrf(security)
     Seq(("normal", "admin"), ("guest", "guest"), ("admin", "admin")).foreach {
       case (user, password) =>
         var cookie: HttpCookiePair = null
-        Post("/login", FormData("username" -> user, "password" -> password)) ~>
+        protectedRequest(Post("/login", FormData("username" -> user, "password" -> password))) ~>
           security.route ~> check {
             val value = header[`Set-Cookie`].get.cookie
             cookie = HttpCookiePair(value.name, value.value)
           }
         Seq(Post("/terminate"), Post("/api/v1.0/supervisor/addworker/1"),
           Get("/api/v1.0/master/config")).foreach { request =>
-          request.addHeader(Cookie(cookie)) ~> security.route ~> check {
+          protectedRequest(request, Some(cookie)) ~> security.route ~> check {
             if (user == "admin") assert(responseAs[String] == "allowed")
             else assert(rejection == AuthorizationFailedRejection)
           }

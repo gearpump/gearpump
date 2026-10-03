@@ -306,3 +306,27 @@ allowlist and omit application-supplied settings. Public dashboard serving uses
 `services/jvm/src/main/resources/dashboard-assets.txt`; add newly introduced dashboard
 assets to that manifest. Runtime configuration is never part of the public allowlist.
 HTTP errors expose a correlation ID, with detailed exceptions retained in server logs.
+
+## Required HTTPS deployment and CSRF
+
+Authentication cannot be disabled on the dashboard. No administrator is shipped;
+configure a freshly generated PBKDF2 password hash or an OAuth provider first.
+The default listener uses HTTPS. Configure `javax.net.ssl.keyStore`, its password,
+and type using protected JVM configuration; the keystore must contain the server
+certificate and private key. Browsers and clients must trust its certificate.
+Set `gearpump.services.public-origin` to the external HTTPS origin.
+
+Alternatively, set `https-enabled = false`, `tls-termination-proxy = true` and
+`host = "127.0.0.1"` (or `"::1"`) behind a TLS proxy on the same host. The proxy
+must expose HTTPS only; direct network access to the backend must be blocked.
+Other cleartext deployments fail startup. Session cookies are Secure and HttpOnly.
+
+GET `/login` first to obtain the Secure `__Host-XSRF-TOKEN` cookie. Every non-GET
+request, including password login and logout, must send its value in the
+`X-XSRF-TOKEN` header and include the cookie. Angular and the login page do this
+automatically. External API clients must follow the same exchange.
+
+OAuth authorizations have unique browser/provider-bound state, expire after five
+minutes, and can be consumed once. The direct access-token login endpoint is
+removed. OAuth callback URLs must use the public HTTPS origin; custom authenticator
+implementations must accept and forward the per-attempt `state` argument.

@@ -35,13 +35,12 @@ class RestServices(master: ActorRef, system: ActorSystem)
 
   private val jarStoreClient = new JarStoreClient(config, system)
 
-  private val securityEnabled = config.getBoolean(
-    Constants.GEARPUMP_UI_SECURITY_AUTHENTICATION_ENABLED)
+  require(config.getBoolean(Constants.GEARPUMP_UI_SECURITY_AUTHENTICATION_ENABLED),
+    "Dashboard authentication is required")
 
   private val supervisorPath = system.settings.config.getString(
     Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
 
-  private val myExceptionHandler = RestServices.exceptionHandler
 
   // Makes sure staticRoute is the final one, as it will try to lookup resource in local path
   // if there is no match in previous routes
@@ -57,15 +56,9 @@ class RestServices(master: ActorRef, system: ActorSystem)
   }
 
   override def route: Route = {
-    if (securityEnabled) {
-      val security = new SecurityService(services, system)
-      handleExceptions(myExceptionHandler) {
-        security.route ~ static
-      }
-    } else {
-      handleExceptions(myExceptionHandler) {
-        services.route ~ static
-      }
+    val security = new SecurityService(services, system)
+    handleExceptions(RestServices.exceptionHandler) {
+      security.route ~ static
     }
   }
 

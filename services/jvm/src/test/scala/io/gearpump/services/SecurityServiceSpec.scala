@@ -31,6 +31,24 @@ import scala.concurrent.duration._
 class SecurityServiceSpec
   extends AnyFlatSpec with ScalatestRouteTest with Matchers with BeforeAndAfterAll {
 
+  private var csrfToken: org.apache.pekko.http.scaladsl.model.headers.HttpCookiePair = null
+  private def csrf(security: SecurityService): Unit = {
+    Get("/login/csrf") ~> security.route ~> check {
+      val cookie = headers.collect {
+        case value: org.apache.pekko.http.scaladsl.model.headers.`Set-Cookie`
+            if value.cookie.name == "__Host-XSRF-TOKEN" => value.cookie
+      }.head
+      csrfToken = org.apache.pekko.http.scaladsl.model.headers.HttpCookiePair(
+        cookie.name, cookie.value)
+    }
+  }
+  private def protectedRequest(request: org.apache.pekko.http.scaladsl.model.HttpRequest,
+      session: Option[org.apache.pekko.http.scaladsl.model.headers.HttpCookiePair] = None) = {
+    request.addHeader(org.apache.pekko.http.scaladsl.model.headers.Cookie(
+      (session.toSeq :+ csrfToken).toList)).addHeader(
+      org.apache.pekko.http.scaladsl.model.headers.RawHeader("X-XSRF-TOKEN", csrfToken.value))
+  }
+
   override def testConfig: Config = TestUtil.UI_CONFIG
 
   implicit def actorSystem: ActorSystem = system
@@ -50,8 +68,9 @@ class SecurityServiceSpec
 
     implicit val customTimeout = RouteTestTimeout(15.seconds)
 
+    csrf(security)
     var cookie: HttpCookiePair = null
-    (Post(s"/login", FormData("username" -> "guest", "password" -> "guest"))
+    (protectedRequest(Post(s"/login", FormData("username" -> "guest", "password" -> "guest")))
       ~> security.route) ~> check {
       assert("{\"user\":\"guest\"}" == responseAs[String])
       assert(status.intValue() == 200)
@@ -67,12 +86,12 @@ class SecurityServiceSpec
     }
 
     // However, guest cannot access high-permission operations, like POST.
-    Post("/resource").addHeader(Cookie(cookie)) ~> security.route ~> check {
+    protectedRequest(Post("/resource"), Some(cookie)) ~> security.route ~> check {
       assert(rejection == AuthorizationFailedRejection)
     }
 
     // Logout, should clear the session
-    Post(s"/logout").addHeader(Cookie(cookie)) ~> security.route ~> check {
+    protectedRequest(Post(s"/logout"), Some(cookie)) ~> security.route ~> check {
       assert("{\"user\":\"guest\"}" == responseAs[String])
       assert(status.intValue() == 200)
       assert(header[`Set-Cookie`].isDefined)
@@ -86,7 +105,7 @@ class SecurityServiceSpec
       assert(rejection.isInstanceOf[AuthenticationFailedRejection])
     }
 
-    Post("/resource") ~> security.route ~> check {
+    protectedRequest(Post("/resource")) ~> security.route ~> check {
       assert(rejection.isInstanceOf[AuthenticationFailedRejection])
     }
   }
@@ -96,8 +115,9 @@ class SecurityServiceSpec
 
     implicit val customTimeout = RouteTestTimeout(15.seconds)
 
+    csrf(security)
     var cookie: HttpCookiePair = null
-    (Post(s"/login", FormData("username" -> "admin", "password" -> "admin"))
+    (protectedRequest(Post(s"/login", FormData("username" -> "admin", "password" -> "admin")))
       ~> security.route) ~> check {
       assert("{\"user\":\"admin\"}" == responseAs[String])
       assert(status.intValue() == 200)
@@ -113,12 +133,12 @@ class SecurityServiceSpec
     }
 
     // Not like guest, admimn can also access POST
-    Post("/resource").addHeader(Cookie(cookie)) ~> security.route ~> check {
+    protectedRequest(Post("/resource"), Some(cookie)) ~> security.route ~> check {
       responseAs[String] shouldEqual "OK"
     }
 
     // Logout, should clear the session
-    Post(s"/logout").addHeader(Cookie(cookie)) ~> security.route ~> check {
+    protectedRequest(Post(s"/logout"), Some(cookie)) ~> security.route ~> check {
       assert("{\"user\":\"admin\"}" == responseAs[String])
       assert(status.intValue() == 200)
       assert(header[`Set-Cookie`].isDefined)
@@ -132,7 +152,7 @@ class SecurityServiceSpec
       assert(rejection.isInstanceOf[AuthenticationFailedRejection])
     }
 
-    Post("/resource") ~> security.route ~> check {
+    protectedRequest(Post("/resource")) ~> security.route ~> check {
       assert(rejection.isInstanceOf[AuthenticationFailedRejection])
     }
   }

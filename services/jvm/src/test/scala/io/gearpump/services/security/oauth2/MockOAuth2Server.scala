@@ -40,7 +40,7 @@ class MockOAuth2Server(
 
   def start(): Unit = {
     _port = Util.findFreePort().get
-    bindingFuture = Http().newServerAt("127.0.0.1", _port).bindSync(requestHandler)
+    bindingFuture = Http().newServerAt("127.0.0.1", _port).bindSync(request => requestHandler(request))
   }
 
   def stop(): Unit = {
