@@ -32,4 +32,20 @@ class PasswordUtilSpec extends AnyFlatSpec with Matchers {
     assert(PasswordUtil.verify(password, digest1))
     assert(PasswordUtil.verify(password, digest2))
   }
+
+  it should "reject wrong passwords, malformed hashes, and legacy digests" in {
+    val digest = PasswordUtil.hash("correct password")
+    assert(digest.startsWith("pbkdf2-sha256:600000:"))
+    assert(!PasswordUtil.verify("wrong password", digest))
+    Seq(null, "", "not-base64", "AeGxGOxlU8QENdOXejCeLxy+isrCv0TrS37HwA==",
+      digest.replace(":600000:", ":1:"), digest.replace(":600000:", ":2147483647:"),
+      digest.replace("pbkdf2-sha256", "unknown"), digest + ":extra").foreach { stored =>
+      assert(!PasswordUtil.verify("correct password", stored))
+    }
+  }
+
+  it should "support unicode passwords" in {
+    val password = "\u5bc6\u7801-\ud83d\udd10"
+    assert(PasswordUtil.verify(password, PasswordUtil.hash(password)))
+  }
 }

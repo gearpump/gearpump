@@ -46,4 +46,14 @@ class ConfigFileBasedAuthenticatorSpec extends AnyFlatSpec with Matchers {
     system.terminate()
     Await.result(system.whenTerminated, Duration.Inf)
   }
+
+  it should "reject configured sample and legacy credentials at startup" in {
+    val config = TestUtil.UI_CONFIG.withValue(
+      "gearpump.ui-security.config-file-based-authenticator.admins.admin",
+      com.typesafe.config.ConfigValueFactory.fromAnyRef(
+        "AeGxGOxlU8QENdOXejCeLxy+isrCv0TrS37HwA=="))
+    intercept[IllegalArgumentException] {
+      new ConfigFileBasedAuthenticator(config)
+    }
+  }
 }

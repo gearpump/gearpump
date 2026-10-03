@@ -71,22 +71,8 @@ object ConfigFileBasedAuthenticator {
  * see conf/gear.conf section gearpump.ui-security.config-file-based-authenticator to find
  * information about how to configure this authenticator.
  *
- * [Security consideration]
- * It will keep one-way sha1 digest of password instead of password itself. The original password is
- * NOT kept in any way, so generally it is safe.
- *
- *
- * digesting flow (from original password to digest):
- * {{{
- * random salt byte array of length 8 -> byte array of (salt + sha1(salt, password)) ->
- * base64Encode.
- * }}}
- *
- * Verification user input password with stored digest:
- * {{{
- * base64Decode -> extract salt -> do sha1(salt, password) -> generate digest:
- * salt + sha1 -> compare the generated digest with the stored digest.
- * }}}
+ * Passwords are stored as versioned PBKDF2-HMAC-SHA256 hashes with cryptographic salts.
+ * Legacy SHA-1 hashes are rejected; generate replacements with PasswordUtil before upgrading.
  */
 class ConfigFileBasedAuthenticator(config: Config) extends Authenticator {
 
@@ -104,6 +90,10 @@ class ConfigFileBasedAuthenticator(config: Config) extends Authenticator {
     val admins = configToMap(config, ADMINS)
     val users = configToMap(config, USERS)
     val guests = configToMap(config, GUESTS)
+    (admins ++ users ++ guests).foreach { case (user, digest) =>
+      require(PasswordUtil.isSupportedHash(digest),
+        s"Unsupported password hash for $user; regenerate it with PasswordUtil")
+    }
     new Credentials(admins, users, guests)
   }
 

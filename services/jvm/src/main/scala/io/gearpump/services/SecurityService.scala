@@ -250,8 +250,8 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
 
 object SecurityService {
 
-  // The pekko-http-session library still reads akka.http.session.* keys.
-  val SESSION_MANAGER_KEY = "akka.http.session.server-secret"
+  // Configuration namespace used by pekko-http-session.
+  val SESSION_MANAGER_KEY = "pekko.http.session.server-secret"
 
   case class UserSession(user: String, permissionLevel: Int)
 

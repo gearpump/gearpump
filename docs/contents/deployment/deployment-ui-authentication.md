@@ -60,7 +60,7 @@ Suppose we want to add user jerry as an administrator, here are the steps:
     It will generate a digest value like this:
    
     	:::bash
-    	CgGxGOxlU8ggNdOXejCeLxy+isrCv0TrS37HwA==
+    <generated PBKDF2 hash>
     
 
 2. Change config file conf/gear.conf at path `gearpump-ui.gearpump.ui-security.config-file-based-authenticator.admins`,
@@ -68,10 +68,7 @@ Suppose we want to add user jerry as an administrator, here are the steps:
    
     	:::bash
 	    admins = {
-	      ## Default Admin. Username: admin, password: admin
-	      ## !!! Please replace this builtin account for production cluster for security reason. !!!
-	      "admin" = "AeGxGOxlU8QENdOXejCeLxy+isrCv0TrS37HwA=="
-	      "jerry" = "CgGxGOxlU8ggNdOXejCeLxy+isrCv0TrS37HwA=="
+	      "jerry" = "<generated PBKDF2 hash>"
 	    }
     
 
@@ -85,14 +82,8 @@ Suppose we want to add user jerry as an administrator, here are the steps:
    
 #### What is the default user and password?
 
-For ConfigFileBasedAuthenticator, Gearpump distribution is shipped with two default users:
-
-1. username: admin, password: admin
-2. username: guest, password: guest
-
-User `admin` has unlimited permissions, while `guest` can only view the application status.
-
-For security reason, you need to remove the default users `admin` and `guest` for cluster in production.
+The distribution contains no default users. Configure deployment-specific accounts and
+password hashes before enabling authentication.
 
 #### Is this secure?
 
@@ -288,3 +279,21 @@ You can follow the Google OAuth2 example code to define a custom OAuth2Authentic
     	
     
    The configuration entry is supposed to be used by class `SocialNetworkXAuthenticator`.
+## Password hash migration
+
+The distribution contains no default administrator account. Generate a unique password hash
+with `bin/gear io.gearpump.security.PasswordUtil -password <password>` and add it to the
+appropriate account map before enabling authentication.
+
+New hashes use the versioned format `pbkdf2-sha256:iterations:salt:key`, with 600,000
+PBKDF2-HMAC-SHA256 iterations and a random 16-byte salt. The work factor follows the
+[OWASP password storage guidance](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2).
+The authenticator rejects the old SHA-1 format at startup; regenerate every configured
+account hash before upgrading. Passwords are not available to automatically migrate
+existing hashes. Test-only accounts in `test.conf` are not distribution credentials.
+
+Session keys use `SecureRandom` and change whenever the services process restarts,
+invalidating sessions issued by the previous process.
+
+Session configuration uses `pekko.http.session.*`; replace any custom
+`akka.http.session.*` overrides when upgrading.
