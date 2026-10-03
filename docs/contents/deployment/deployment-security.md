@@ -153,6 +153,11 @@ control credentials are masked in generated executor configurations. Runtime
 capabilities and grants must not be logged. This changes allocation/launch message
 formats and requires upgrading every cluster component together.
 
+Embedded executors may share the JVM, but each now has its own ActorSystem and
+application configuration. They do not inherit the worker's administrative key or
+share an Express application key across unrelated applications. Master discovery
+canonicalizes configured and discovered addresses before checking endpoint identity.
+
 ### Dynamic application changes
 
 `ReplaceProcessor` and `ShellCommand` require a `ControlRequest` with the target

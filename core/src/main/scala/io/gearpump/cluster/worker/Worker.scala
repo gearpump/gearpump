@@ -428,14 +428,18 @@ private[cluster] object Worker {
 
       if (executorConfig.getBoolean(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS)) {
         new ExecutorHandler {
-          val exitPromise = Promise[Int]()
-          val app = context.actorOf(Props(new InJvmExecutor(launch, exitPromise)))
+          // Share the JVM, not the worker's privileged ActorSystem/config or data-plane key.
+          val runtime = executorConfig.withFallback(context.system.settings.config)
+            .withValue("pekko.remote.classic.netty.ssl.port", ConfigValueFactory.fromAnyRef(0))
+            .withValue("pekko.actor.provider", ConfigValueFactory.fromAnyRef("remote"))
+          val application = io.gearpump.util.ActorSystemBooter(runtime)
+            .boot(ctx.arguments(0), ctx.arguments(1))
 
           override def destroy(): Unit = {
-            context.stop(app)
+            application.terminate()
           }
           override def exitValue: Future[Int] = {
-            exitPromise.future
+            application.whenTerminated.map(_ => 0)(scala.concurrent.ExecutionContext.global)
           }
         }
       } else {
@@ -554,7 +558,7 @@ private[cluster] object Worker {
         procLauncher.cleanProcess(appId, executorId)
         val result = ExecutorResult(value)
         self ! result
-      }
+      }(scala.concurrent.ExecutionContext.global)
     }
 
     override def postStop(): Unit = {

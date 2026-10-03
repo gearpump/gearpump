@@ -58,6 +58,9 @@ class AppMasterLauncher(
   def receive: Receive = waitForResourceAllocation
 
   def waitForResourceAllocation: Receive = {
+    case org.apache.pekko.actor.Status.Failure(reason) =>
+      replyToClient(SubmitApplicationResult(Failure(reason)))
+      context.stop(self)
     case ResourceAllocated(allocations) =>
       val ResourceAllocation(resource, worker, workerId, grant) = allocations(0)
       LOG.info(s"Resource allocated for appMaster $appId on worker $workerId(${worker.path})")

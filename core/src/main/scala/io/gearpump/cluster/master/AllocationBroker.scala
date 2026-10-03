@@ -26,6 +26,7 @@ import scala.concurrent.duration._
 private[master] class AllocationBroker(allocation: AllocateResource, scheduler: ActorRef,
     requestor: ActorRef) extends Actor {
   import context.dispatcher
+  private val log = io.gearpump.util.LogUtil.getLogger(getClass)
   implicit val timeout: Timeout = Timeout(15.seconds)
   private val secret = ControlCapability.token(context.system.settings.config, ControlCapability.AdminKey)
   private var remaining = allocation.request.request.resource.slots
@@ -37,6 +38,7 @@ private[master] class AllocationBroker(allocation: AllocateResource, scheduler: 
   override def postStop(): Unit = deadline.cancel()
   override def receive: Receive = {
     case ResourceAllocated(resources) if sender() == scheduler =>
+      log.info(s"Installing ${resources.length} worker grants for app ${allocation.request.appId}")
       inFlight += 1
       remaining -= resources.map(_.resource.slots).sum
       val installed = Future.sequence(resources.toSeq.map { resource =>
@@ -53,6 +55,10 @@ private[master] class AllocationBroker(allocation: AllocateResource, scheduler: 
       requestor ! result
       inFlight -= 1
       if (remaining <= 0 && inFlight == 0) context.stop(self)
-    case failure: Status.Failure if sender() == self => requestor ! failure; context.stop(self)
+    case failure: Status.Failure if sender() == self =>
+      log.warn("Worker allocation failed", failure.cause)
+      requestor ! failure
+      context.stop(self)
+    case other => log.warn(s"Ignoring ${other.getClass.getSimpleName} from ${sender().path}")
   }
 }
