@@ -21,7 +21,6 @@ import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.stream.Materializer
 import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
-import io.gearpump.cluster.ClusterConfig
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.jarstore.FileDirective._
@@ -110,7 +109,7 @@ class AppMasterService(val master: ActorRef,
       path("config") {
         onComplete(askActor[AppMasterConfig](master, QueryAppMasterConfig(appId))) {
           case Success(value: AppMasterConfig) =>
-            val config = Option(value.config).map(ClusterConfig.render(_, concise)).getOrElse("{}")
+            val config = Option(value.config).map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
             complete(config)
           case Failure(ex) =>
             failWith(ex)
@@ -121,7 +120,7 @@ class AppMasterService(val master: ActorRef,
           val executorId = Integer.parseInt(executorIdString)
           onComplete(askAppMaster[ExecutorConfig](master, appId, QueryExecutorConfig(executorId))) {
             case Success(value) =>
-              val config = Option(value.config).map(ClusterConfig.render(_, concise))
+              val config = Option(value.config).map(ConfigDiagnostics.render(_, concise))
                 .getOrElse("{}")
               complete(config)
             case Failure(ex) =>

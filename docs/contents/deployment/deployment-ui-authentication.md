@@ -313,3 +313,12 @@ empty account maps; configure an operator account before enabling authentication
 
 The companion username cookie uses the session lifetime in seconds (seven days by
 default). Logout clears the session cookie and deletes the username cookie at path `/`.
+
+## Administrative diagnostics and assets
+
+Only Admin sessions may terminate services, access supervisor operations, or read
+configuration diagnostics. Configuration responses use an explicit operational
+allowlist and omit application-supplied settings. Public dashboard serving uses
+`services/jvm/src/main/resources/dashboard-assets.txt`; add newly introduced dashboard
+assets to that manifest. Runtime configuration is never part of the public allowlist.
+HTTP errors expose a correlation ID, with detailed exceptions retained in server logs.

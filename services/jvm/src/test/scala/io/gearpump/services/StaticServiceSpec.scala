@@ -52,4 +52,13 @@ class StaticServiceSpec
       assert(responseBody == defaultSupervisorPath)
     }
   }
+
+  it should "never serve runtime configuration through the public asset route" in {
+    Seq("gear.conf", "geardefault.conf", "test.conf", "masters", "workers",
+      "log4j2.properties", "webjars/../../geardefault.conf").foreach { path =>
+      Get("/" + path) ~> org.apache.pekko.http.scaladsl.server.Route.seal(route) ~> check {
+        assert(status.intValue() == 404)
+      }
+    }
+  }
 }
