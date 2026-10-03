@@ -38,6 +38,7 @@ import io.gearpump.util.HistoryMetricsService.HistoryMetricsConfig
 import java.lang.management.ManagementFactory
 import org.apache.commons.lang.exception.ExceptionUtils
 import org.slf4j.Logger
+import io.gearpump.security.{ControlCapability, ControlRequest, GetApplicationControl}
 import scala.annotation.nowarn
 import scala.collection.immutable
 
@@ -48,6 +49,28 @@ import scala.collection.immutable
 private[cluster] class Master extends Actor with Stash {
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private val systemConfig: Config = context.system.settings.config
+  private val adminSecret = ControlCapability.token(systemConfig, ControlCapability.AdminKey)
+  ControlCapability.ensureTransport(systemConfig)
+  require(ControlCapability.valid(adminSecret), "Configure a random cluster control-secret")
+  private def kvRequest(message: Any) = io.gearpump.security.ControlRequest(
+    ControlCapability.token(systemConfig, ControlCapability.AdminKey), None, message)
+  private def verifyKvReply(message: Any): Any = message match {
+    case reply: io.gearpump.security.KvReply if ControlCapability.matches(
+        ControlCapability.token(systemConfig, ControlCapability.AdminKey), reply.capability) =>
+      reply.message
+    case _ => throw new SecurityException("Unauthenticated metadata response")
+  }
+  override def aroundReceive(receive: Receive, message: Any): Unit = message match {
+    case reply: io.gearpump.security.KvReply if ControlCapability.matches(
+        ControlCapability.token(systemConfig, ControlCapability.AdminKey), reply.capability) =>
+      super.aroundReceive(receive, reply.message)
+    case _: io.gearpump.security.KvReply =>
+      sender() ! Status.Failure(new SecurityException("Metadata response denied"))
+    case _: GetKVResult | _: PutKVResult =>
+      sender() ! Status.Failure(new SecurityException("Metadata response capability required"))
+    case _ => super.aroundReceive(receive, message)
+  }
+
   private val kvService = context.actorOf(Props(new InMemoryKVService()), "kvService")
   // Resources and resourceRequests can be dynamically constructed by
   // heartbeat of worker and appmaster when master singleton is migrated.
@@ -97,7 +120,7 @@ private[cluster] class Master extends Actor with Stash {
     None
   }
 
-  kvService ! GetKV(MASTER_GROUP, WORKER_ID)
+  kvService ! kvRequest(GetKV(MASTER_GROUP, WORKER_ID))
   context.become(waitForNextWorkerId)
 
   def waitForNextWorkerId: Receive = {
@@ -117,7 +140,7 @@ private[cluster] class Master extends Actor with Stash {
       stash()
   }
 
-  def receiveHandler: Receive = workerMsgHandler orElse
+  private def authorizedHandlers: Receive = workerMsgHandler orElse
     appMasterMsgHandler orElse
     onMasterListChange orElse
     clientMsgHandler orElse
@@ -128,14 +151,37 @@ private[cluster] class Master extends Actor with Stash {
     kvServiceMsgHandler orElse
     ActorUtil.defaultMsgHandler(self)
 
+  def receiveHandler: Receive = {
+    case request: ControlRequest if request.appId.isEmpty &&
+        ControlCapability.matches(adminSecret, request.capability) =>
+      request.message match {
+        case _: GetApplicationControl => appManager.forward(request)
+        case message: io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished => scheduler ! message
+        case message if ControlCapability.protectedMessage(message) =>
+          message match {
+            case _: SubmitApplication | _: RestartApplication | _: ShutdownApplication |
+                 _: RegisterAppMaster | _: ApplicationStatusChanged | _: SaveAppData |
+                 _: GetAppData | _: QueryAppMasterConfig => appManager.forward(request)
+            case _ => authorizedHandlers.applyOrElse(message, unhandled _)
+          }
+        case _ => sender() ! Status.Failure(new SecurityException("Invalid control operation"))
+      }
+    case request: ControlRequest if request.appId.isDefined &&
+        ControlCapability.applicationRequest(request.message) => appManager.forward(request)
+    case _: ControlRequest => sender() ! Status.Failure(new SecurityException("Control denied"))
+    case message if ControlCapability.protectedMessage(message) =>
+      sender() ! Status.Failure(new SecurityException("Control capability required"))
+    case message => authorizedHandlers.applyOrElse(message, unhandled _)
+  }
+
   def workerMsgHandler: Receive = {
     case RegisterNewWorker =>
       val workerId = WorkerId(nextWorkerId, System.currentTimeMillis())
       nextWorkerId += 1
-      kvService ! PutKV(MASTER_GROUP, WORKER_ID, nextWorkerId)
+      kvService ! kvRequest(PutKV(MASTER_GROUP, WORKER_ID, nextWorkerId))
       val workerHostname = ActorUtil.getHostname(sender())
       LOG.info(s"Register new from $workerHostname ....")
-      self forward RegisterWorker(workerId)
+      workerMsgHandler.apply(RegisterWorker(workerId))
 
     case RegisterWorker(id) =>
       context.watch(sender())
@@ -248,7 +294,7 @@ private[cluster] class Master extends Actor with Stash {
       LOG.debug("Master received QueryAppMasterConfig")
       appManager forward query
     case QueryMasterConfig =>
-      sender() ! MasterConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
+      sender() ! MasterConfig(ControlCapability.redact(ClusterConfig.filterOutDefaultConfig(systemConfig)))
     case register: RegisterAppResultListener =>
       appManager forward register
   }

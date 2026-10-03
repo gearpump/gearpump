@@ -37,7 +37,7 @@ class ExecutorSystemLauncherSpec extends AnyFlatSpec with Matchers with BeforeAn
   val workerId: WorkerId = WorkerId(0, 0L)
   val appId = 0
   val executorId = 0
-  val url = "pekko.tcp://worker@127.0.0.1:3000"
+  val url = "pekko.ssl.tcp://worker@127.0.0.1:3000"
   val session = Session(null, null)
   val launchExecutorSystemTimeout = 3000
   val activeConfig = TestUtil.DEFAULT_CONFIG.

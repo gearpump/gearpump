@@ -46,7 +46,7 @@ class EmbeddedCluster(inputConfig: Config) {
 
   private def getConfig(inputConfig: Config, port: Int): Config = {
     val config = inputConfig.
-      withValue("pekko.remote.classic.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
+      withValue("pekko.remote.classic.netty.ssl.port", ConfigValueFactory.fromAnyRef(port)).
       withValue(GEARPUMP_CLUSTER_MASTERS,
         ConfigValueFactory.fromIterable(List(s"127.0.0.1:$port").asJava)).
       withValue(GEARPUMP_CLUSTER_EXECUTOR_WORKER_SHARE_SAME_PROCESS,

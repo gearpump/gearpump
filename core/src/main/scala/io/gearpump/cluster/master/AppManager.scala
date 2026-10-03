@@ -31,6 +31,7 @@ import io.gearpump.cluster.master.Master._
 import io.gearpump.util.{ActorUtil, Constants, LogUtil, RestartPolicy, TimeOutScheduler, Util}
 import io.gearpump.util.Constants._
 import org.slf4j.Logger
+import io.gearpump.security.{ApplicationControl, ControlCapability, ControlRequest, GetApplicationControl}
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -42,6 +43,25 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
 
   private val LOG: Logger = LogUtil.getLogger(getClass)
   private val systemConfig: Config = context.system.settings.config
+
+  private def kvRequest(message: Any) = io.gearpump.security.ControlRequest(
+    ControlCapability.token(systemConfig, ControlCapability.AdminKey), None, message)
+  private def verifyKvReply(message: Any): Any = message match {
+    case reply: io.gearpump.security.KvReply if ControlCapability.matches(
+        ControlCapability.token(systemConfig, ControlCapability.AdminKey), reply.capability) =>
+      reply.message
+    case _ => throw new SecurityException("Unauthenticated metadata response")
+  }
+  override def aroundReceive(receive: Receive, message: Any): Unit = message match {
+    case reply: io.gearpump.security.KvReply if ControlCapability.matches(
+        ControlCapability.token(systemConfig, ControlCapability.AdminKey), reply.capability) =>
+      super.aroundReceive(receive, reply.message)
+    case _: io.gearpump.security.KvReply =>
+      sender() ! Status.Failure(new SecurityException("Metadata response denied"))
+    case _: GetKVResult | _: PutKVResult =>
+      sender() ! Status.Failure(new SecurityException("Metadata response capability required"))
+    case _ => super.aroundReceive(receive, message)
+  }
 
   private val appTotalRetries: Int = systemConfig.getInt(Constants.APPLICATION_TOTAL_RETRIES)
 
@@ -59,7 +79,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
 
   def receive: Receive = null
 
-  kvService ! GetKV(MASTER_GROUP, MASTER_STATE)
+  kvService ! kvRequest(GetKV(MASTER_GROUP, MASTER_STATE))
   context.become(waitForMasterState)
 
   def waitForMasterState: Receive = {
@@ -82,12 +102,61 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
   def receiveHandler: Receive = {
     val msg = "Application Manager started. Ready for application submission..."
     LOG.info(msg)
-    clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse workerMessage orElse
+    capabilityHandler orElse clientMsgHandler orElse appMasterMessage orElse selfMsgHandler orElse workerMessage orElse
       appDataStoreService orElse terminationWatch
   }
 
+  private def admin(message: Any): ControlRequest = ControlRequest(
+    ControlCapability.token(systemConfig, ControlCapability.AdminKey), None, message)
+
+  private def dispatch(message: Any): Unit = {
+    (clientMsgHandler orElse appMasterMessage orElse appDataStoreService orElse selfMsgHandler)
+      .applyOrElse(message, unhandled _)
+  }
+  private def rejectControl(): Unit =
+    sender() ! Status.Failure(new SecurityException("Application control denied"))
+
+  private def capabilityHandler: Receive = {
+    case request: ControlRequest =>
+      val isAdmin = request.appId.isEmpty && ControlCapability.matches(
+        ControlCapability.token(systemConfig, ControlCapability.AdminKey), request.capability)
+      val ownsApp = request.appId.exists { id =>
+        ControlCapability.applicationRequest(request.message) &&
+          (request.message == GetJarStoreServer ||
+            ControlCapability.applicationId(request.message).contains(id)) &&
+          applicationRegistry.get(id).exists { info =>
+            !info.status.isInstanceOf[ApplicationTerminalStatus] && ControlCapability.matches(
+              ControlCapability.token(info.config, ControlCapability.AppKey), request.capability)
+          }
+      }
+      if (isAdmin || ownsApp) {
+        request.message match {
+          case GetApplicationControl(id) if isAdmin =>
+            applicationRegistry.get(id) match {
+              case Some(info) if !info.status.isInstanceOf[ApplicationTerminalStatus] =>
+                sender() ! ApplicationControl(id,
+                  ControlCapability.token(info.config, ControlCapability.AppKey))
+              case _ => rejectControl()
+            }
+          case message: RequestResource if message.request.resource.slots > 0 &&
+              message.request.executorNum > 0 => context.parent.tell(admin(message), sender())
+          case GetJarStoreServer => context.parent.tell(admin(GetJarStoreServer), sender())
+          case _: GetApplicationControl | _: RequestResource => rejectControl()
+          case SaveAppData(_, key, _) if key == APP_METADATA || key == MASTER_STATE => rejectControl()
+          case GetAppData(_, key) if key == APP_METADATA || key == MASTER_STATE => rejectControl()
+          case message => dispatch(message)
+        }
+      } else rejectControl()
+    case message if ControlCapability.protectedMessage(message) ||
+        message.isInstanceOf[RecoverApplication] => rejectControl()
+  }
+
   def clientMsgHandler: Receive = {
-    case SubmitApplication(app, jar, username) =>
+    case SubmitApplication(inputApp, jar, _) =>
+      // Strip privileged configuration and issue fresh app authority at every submission.
+      val username = systemConfig.getString("gearpump.security.control-user")
+      val app = inputApp.copy(clusterConfig = ControlCapability.runtimeConfig(
+        inputApp.clusterConfig, nextAppId, ControlCapability.random()))
       LOG.info(s"Submit Application ${app.name}($nextAppId) by $username...")
       val client = sender()
       if (applicationNameExist(app.name)) {
@@ -105,21 +174,21 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
           status = ApplicationStatus.PENDING)
         applicationRegistry += nextAppId -> appRuntimeInfo
         val appMetaData = ApplicationMetaData(nextAppId, 0, app, jar, username)
-        kvService ! PutKV(nextAppId.toString, APP_METADATA, appMetaData)
+        kvService ! kvRequest(PutKV(nextAppId.toString, APP_METADATA, appMetaData))
 
         nextAppId += 1
-        kvService ! PutKV(MASTER_GROUP, MASTER_STATE, MasterState(nextAppId, applicationRegistry))
+        kvService ! kvRequest(PutKV(MASTER_GROUP, MASTER_STATE, MasterState(nextAppId, applicationRegistry)))
       }
 
     case RestartApplication(appId) =>
       val client = sender()
-      (kvService ? GetKV(appId.toString, APP_METADATA)).asInstanceOf[Future[GetKVResult]].foreach {
+      (kvService ? kvRequest(GetKV(appId.toString, APP_METADATA))).map(verifyKvReply).asInstanceOf[Future[GetKVResult]].foreach {
         case GetKVSuccess(_, result) =>
           val metaData = result.asInstanceOf[ApplicationMetaData]
           if (metaData != null) {
             LOG.info(s"Shutting down the application (restart), $appId")
-            self ! ShutdownApplication(appId)
-            self.tell(SubmitApplication(metaData.appDesc, metaData.jar, metaData.username), client)
+            self ! admin(ShutdownApplication(appId))
+            self.tell(admin(SubmitApplication(metaData.appDesc, metaData.jar, metaData.username)), client)
           } else {
             client ! SubmitApplicationResult(Failure(
               new Exception(s"Failed to restart, because the application $appId does not exist.")
@@ -174,7 +243,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
 
     case QueryAppMasterConfig(appId) =>
       val config = applicationRegistry.get(appId).map(_.config).getOrElse(ConfigFactory.empty())
-      sender() ! AppMasterConfig(config)
+      sender() ! AppMasterConfig(ControlCapability.redact(config))
 
     case appMasterDataRequest: AppMasterDataRequest =>
       val appId = appMasterDataRequest.appId
@@ -212,7 +281,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
           val updatedInfo = info.onAppMasterRegistered(appMaster, workerInfo.ref)
           context.watch(appMaster)
           applicationRegistry += appId -> updatedInfo
-          kvService ! PutKV(MASTER_GROUP, MASTER_STATE, MasterState(nextAppId, applicationRegistry))
+          kvService ! kvRequest(PutKV(MASTER_GROUP, MASTER_STATE, MasterState(nextAppId, applicationRegistry)))
           sender() ! AppMasterRegistered(appId)
         case None =>
           LOG.error(s"Can not find submitted application $appId")
@@ -242,10 +311,12 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
           }
 
           if (newStatus.isInstanceOf[ApplicationTerminalStatus]) {
-            kvService ! DeleteKVGroup(appId.toString)
+            context.parent ! admin(io.gearpump.cluster.scheduler.Scheduler.ApplicationFinished(appId))
+            kvService ! kvRequest(DeleteKVGroup(appId.toString))
+            kvService ! kvRequest(DeleteKVGroup(s"app-data:$appId"))
           }
           applicationRegistry += appId -> updatedStatus
-          kvService ! PutKV(MASTER_GROUP, MASTER_STATE, MasterState(nextAppId, applicationRegistry))
+          kvService ! kvRequest(PutKV(MASTER_GROUP, MASTER_STATE, MasterState(nextAppId, applicationRegistry)))
         } else {
           LOG.error(s"Application $appId tries to switch status ${appRuntimeInfo.status} " +
             s"to $newStatus")
@@ -267,7 +338,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
   def appDataStoreService: Receive = {
     case SaveAppData(appId, key, value) =>
       val client = sender()
-      (kvService ? PutKV(appId.toString, key, value)).asInstanceOf[Future[PutKVResult]].map {
+      (kvService ? kvRequest(PutKV(s"app-data:$appId", key, value))).map(verifyKvReply).asInstanceOf[Future[PutKVResult]].map {
         case PutKVSuccess =>
           client ! AppDataSaved
         case PutKVFailed(_, _) =>
@@ -275,7 +346,7 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
       }
     case GetAppData(appId, key) =>
       val client = sender()
-      (kvService ? GetKV(appId.toString, key)).asInstanceOf[Future[GetKVResult]].map {
+      (kvService ? kvRequest(GetKV(s"app-data:$appId", key))).map(verifyKvReply).asInstanceOf[Future[GetKVResult]].map {
         case GetKVSuccess(_, value) =>
           client ! GetAppDataResult(key, value)
         case GetKVFailed(_) =>
@@ -296,15 +367,14 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
             case _: ApplicationTerminalStatus =>
               sendAppResultToListeners(appId, applicationResults(appId))
             case _ =>
-              (kvService ? GetKV(appId.toString, APP_METADATA))
-                .asInstanceOf[Future[GetKVResult]].map {
+              (kvService ? kvRequest(GetKV(appId.toString, APP_METADATA))).map(verifyKvReply).asInstanceOf[Future[GetKVResult]].map {
                 case GetKVSuccess(_, result) =>
                   val appMetadata = result.asInstanceOf[ApplicationMetaData]
                   if (appMetadata != null) {
                     LOG.info(s"Recovering application, $appId")
                     val updatedInfo = info.copy(status = ApplicationStatus.PENDING)
                     applicationRegistry += appId -> updatedInfo
-                    self ! RecoverApplication(appMetadata)
+                    self ! admin(RecoverApplication(appMetadata))
                   } else {
                     LOG.error(s"Cannot find application meta data for $appId")
                   }
@@ -316,12 +386,23 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
   }
 
   def selfMsgHandler: Receive = {
-    case RecoverApplication(state) =>
-      val appId = state.appId
-      if (appMasterRestartPolicies(appId).allowRestart) {
+    case RecoverApplication(previous) =>
+      val appId = previous.appId
+      val freshConfig = ControlCapability.runtimeConfig(previous.appDesc.clusterConfig,
+        appId, ControlCapability.random())
+      val state = previous.copy(appDesc = previous.appDesc.copy(clusterConfig = freshConfig))
+      applicationRegistry.get(appId).foreach { info =>
+        applicationRegistry += appId -> info.copy(config = freshConfig)
+      }
+      kvService ! kvRequest(PutKV(appId.toString, APP_METADATA, state))
+      if (appMasterRestartPolicies.getOrElse(appId, {
+        val policy = new RestartPolicy(appTotalRetries)
+        appMasterRestartPolicies += appId -> policy
+        policy
+      }).allowRestart) {
         LOG.info(s"AppManager Recovering Application $appId...")
-        kvService ! PutKV(MASTER_GROUP, MASTER_STATE,
-          MasterState(this.nextAppId, applicationRegistry))
+        kvService ! kvRequest(PutKV(MASTER_GROUP, MASTER_STATE,
+          MasterState(this.nextAppId, applicationRegistry)))
         context.actorOf(launcher.props(appId, APPMASTER_DEFAULT_EXECUTOR_ID, state.appDesc,
           state.jar, state.username, context.parent, None), s"launcher${appId}_${Util.randInt()}")
       } else {
@@ -330,7 +411,8 @@ private[cluster] class AppManager(kvService: ActorRef, launcher: AppMasterLaunch
   }
 
   private def shutdownApplication(info: ApplicationRuntimeInfo): Unit = {
-    info.appMaster ! ShutdownApplication(info.appId)
+    info.appMaster ! ControlRequest(ControlCapability.token(info.config, ControlCapability.AppKey),
+      Some(info.appId), ShutdownApplication(info.appId))
   }
 
   private def applicationNameExist(appName: String): Boolean = {

@@ -272,7 +272,7 @@ class AppMaster(appContext: AppMasterContext, app: AppDescription) extends Appli
       val client = sender()
       if (executorId == -1) {
         val systemConfig = context.system.settings.config
-        sender() ! ExecutorConfig(ClusterConfig.filterOutDefaultConfig(systemConfig))
+        sender() ! ExecutorConfig(io.gearpump.security.ControlCapability.redact(ClusterConfig.filterOutDefaultConfig(systemConfig)))
       } else {
         ActorUtil.askActor[Map[ExecutorId, ExecutorInfo]](executorManager, GetExecutorInfo)
           .map { map =>

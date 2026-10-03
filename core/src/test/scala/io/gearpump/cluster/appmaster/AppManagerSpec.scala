@@ -27,6 +27,7 @@ import io.gearpump.cluster.master.AppManager._
 import io.gearpump.cluster.master.InMemoryKVService.{GetKV, GetKVSuccess, PutKV, PutKVSuccess}
 import io.gearpump.cluster.worker.WorkerId
 import io.gearpump.util.LogUtil
+import io.gearpump.security.{ControlCapability, ControlRequest, KvReply}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -39,6 +40,12 @@ class AppManagerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach w
   var appManager: ActorRef = null
   private val LOG = LogUtil.getLogger(getClass)
 
+  private def authorized(message: Any): Any = {
+    if (ControlCapability.protectedMessage(message)) ControlCapability.wrap(config, message)
+    else message
+  }
+  private def kvReply(message: Any): KvReply = KvReply(
+    ControlCapability.token(config, ControlCapability.AdminKey), message)
   override def config: Config = TestUtil.DEFAULT_CONFIG
 
   override def beforeEach(): Unit = {
@@ -48,8 +55,8 @@ class AppManagerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach w
 
     appManager = getActorSystem.actorOf(Props(new AppManager(kvService.ref,
       new DummyAppMasterLauncherFactory(appLauncher))))
-    kvService.expectMsgType[GetKV]
-    kvService.reply(GetKVSuccess(MASTER_STATE, MasterState(0, Map.empty)))
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[GetKV]
+    kvService.reply(kvReply(GetKVSuccess(MASTER_STATE, MasterState(0, Map.empty))))
   }
 
   override def afterEach(): Unit = {
@@ -61,33 +68,33 @@ class AppManagerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach w
     val submit = SubmitApplication(app, None, "username")
     val client = TestProbe()(getActorSystem)
 
-    client.send(appManager, submit)
+    client.send(appManager, authorized(submit))
 
     val appMaster = TestProbe()(getActorSystem)
     val appId = 1
 
-    kvService.expectMsgType[PutKV]
-    kvService.expectMsgType[PutKV]
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[PutKV]
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[PutKV]
     appLauncher.expectMsg(LauncherStarted(appId))
     val register = RegisterAppMaster(appId, appMaster.ref, WorkerInfo(WorkerId(1, 0), null))
-    appMaster.send(appManager, register)
+    appMaster.send(appManager, authorized(register))
     appMaster.expectMsgType[AppMasterRegistered]
 
     val active = ApplicationStatusChanged(appId, ApplicationStatus.ACTIVE, 0)
-    appMaster.send(appManager, active)
+    appMaster.send(appManager, authorized(active))
     appMaster.expectMsgType[AppMasterActivated]
   }
 
   "DataStoreService" should "support Put and Get" in {
     val appMaster = TestProbe()(getActorSystem)
-    appMaster.send(appManager, SaveAppData(0, "key", 1))
-    kvService.expectMsgType[PutKV]
-    kvService.reply(PutKVSuccess)
+    appMaster.send(appManager, authorized(SaveAppData(0, "key", 1)))
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[PutKV]
+    kvService.reply(kvReply(PutKVSuccess))
     appMaster.expectMsg(AppDataSaved)
 
-    appMaster.send(appManager, GetAppData(0, "key"))
-    kvService.expectMsgType[GetKV]
-    kvService.reply(GetKVSuccess("key", 1))
+    appMaster.send(appManager, authorized(GetAppData(0, "key")))
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[GetKV]
+    kvService.reply(kvReply(GetKVSuccess("key", 1)))
     appMaster.expectMsg(GetAppDataResult("key", 1))
   }
 
@@ -102,13 +109,13 @@ class AppManagerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach w
 
   "AppManager" should "handle client message correctly" in {
     val mockClient = TestProbe()(getActorSystem)
-    mockClient.send(appManager, ShutdownApplication(1))
+    mockClient.send(appManager, authorized(ShutdownApplication(1)))
     assert(mockClient.receiveN(1).head.asInstanceOf[ShutdownApplicationResult].appId.isFailure)
 
-    mockClient.send(appManager, ResolveAppId(1))
+    mockClient.send(appManager, authorized(ResolveAppId(1)))
     assert(mockClient.receiveN(1).head.asInstanceOf[ResolveAppIdResult].appMaster.isFailure)
 
-    mockClient.send(appManager, AppMasterDataRequest(1))
+    mockClient.send(appManager, authorized(AppMasterDataRequest(1)))
     mockClient.expectMsg(AppMasterData(ApplicationStatus.NONEXIST))
   }
 
@@ -120,16 +127,16 @@ class AppManagerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach w
     val worker = TestProbe()(getActorSystem)
     val appId = 1
 
-    client.send(appManager, submit)
+    client.send(appManager, authorized(submit))
 
-    kvService.expectMsgType[PutKV]
-    kvService.expectMsgType[PutKV]
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[PutKV]
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[PutKV]
     appLauncher.expectMsg(LauncherStarted(appId))
     val register = RegisterAppMaster(appId, appMaster.ref, WorkerInfo(WorkerId(1, 0), worker.ref))
-    appMaster.send(appManager, register)
+    appMaster.send(appManager, authorized(register))
     appMaster.expectMsgType[AppMasterRegistered]
 
-    client.send(appManager, submit)
+    client.send(appManager, authorized(submit))
     assert(client.receiveN(1).head.asInstanceOf[SubmitApplicationResult].appId.isFailure)
   }
 
@@ -141,34 +148,34 @@ class AppManagerSpec extends AnyFlatSpec with Matchers with BeforeAndAfterEach w
     val worker = TestProbe()(getActorSystem)
     val appId = 1
 
-    client.send(appManager, submit)
+    client.send(appManager, authorized(submit))
 
-    kvService.expectMsgType[PutKV]
-    kvService.expectMsgType[PutKV]
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[PutKV]
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[PutKV]
     appLauncher.expectMsg(LauncherStarted(appId))
     val register = RegisterAppMaster(appId, appMaster.ref, WorkerInfo(WorkerId(1, 0), worker.ref))
-    appMaster.send(appManager, register)
-    kvService.expectMsgType[PutKV]
+    appMaster.send(appManager, authorized(register))
+    kvService.expectMsgType[ControlRequest].message.asInstanceOf[PutKV]
     appMaster.expectMsgType[AppMasterRegistered]
 
-    client.send(appManager, ResolveAppId(appId))
+    client.send(appManager, authorized(ResolveAppId(appId)))
     client.expectMsg(ResolveAppIdResult(Success(appMaster.ref)))
 
-    client.send(appManager, AppMastersDataRequest)
+    client.send(appManager, authorized(AppMastersDataRequest))
     client.expectMsgType[AppMastersData]
 
-    client.send(appManager, AppMasterDataRequest(appId, false))
+    client.send(appManager, authorized(AppMasterDataRequest(appId, false)))
     client.expectMsgType[AppMasterData]
 
     if (!withRecover) {
-      client.send(appManager, ShutdownApplication(appId))
+      client.send(appManager, authorized(ShutdownApplication(appId)))
       client.expectMsg(ShutdownApplicationResult(Success(appId)))
     } else {
       // Do recovery
       getActorSystem.stop(appMaster.ref)
-      kvService.expectMsgType[GetKV]
+      kvService.expectMsgType[ControlRequest].message.asInstanceOf[GetKV]
       val appState = ApplicationMetaData(appId, 1, app, None, "username")
-      kvService.reply(GetKVSuccess(APP_METADATA, appState))
+      kvService.reply(kvReply(GetKVSuccess(APP_METADATA, appState)))
       appLauncher.expectMsg(LauncherStarted(appId))
     }
   }

@@ -67,10 +67,10 @@ object Master extends PekkoApp with ArgumentsParser {
       System.exit(-1)
     }
 
-    val masterList = masters.map(master => s"pekko.tcp://${MASTER}@$master").toList.asJava
+    val masterList = masters.map(master => s"pekko.ssl.tcp://${MASTER}@$master").toList.asJava
     val quorum = masterList.size() / 2 + 1
     val masterConfig = pekkoConf.
-      withValue("pekko.remote.classic.netty.tcp.port", ConfigValueFactory.fromAnyRef(port)).
+      withValue("pekko.remote.classic.netty.ssl.port", ConfigValueFactory.fromAnyRef(port)).
       withValue(NETTY_TCP_HOSTNAME, ConfigValueFactory.fromAnyRef(ip)).
       withValue("pekko.cluster.seed-nodes", ConfigValueFactory.fromAnyRef(masterList)).
       withValue(s"pekko.cluster.role.${MASTER}.min-nr-of-members",

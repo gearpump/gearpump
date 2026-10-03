@@ -133,6 +133,16 @@ object AppMasterRuntimeEnvironment {
     }
 
     def appMasterService(appMaster: ActorRef): Receive = {
+      case request: io.gearpump.security.ControlRequest if
+          io.gearpump.security.ControlCapability.matches(
+            io.gearpump.security.ControlCapability.token(context.system.settings.config,
+              io.gearpump.security.ControlCapability.AppKey), request.capability) &&
+          request.appId.contains(context.system.settings.config.getInt(
+            io.gearpump.security.ControlCapability.AppId)) => appMaster.forward(request.message)
+      case _: io.gearpump.cluster.ClientToMaster.ShutdownApplication =>
+        sender() ! Status.Failure(new SecurityException("Application capability required"))
+      case _: io.gearpump.security.ControlRequest =>
+        sender() ! Status.Failure(new SecurityException("Application control denied"))
       case msg => appMaster forward msg
     }
   }

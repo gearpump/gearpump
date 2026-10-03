@@ -51,9 +51,10 @@ class AppMasterLauncherSpec extends AnyFlatSpec with Matchers
     worker = TestProbe()(getActorSystem)
     watcher = TestProbe()(getActorSystem)
     appMasterLauncher = getActorSystem.actorOf(AppMasterLauncher.props(appId, executorId,
-      TestUtil.dummyApp, None, "username", master.ref, Some(client.ref)))
+      TestUtil.dummyApp.copy(clusterConfig = TestUtil.DEFAULT_CONFIG), None, "username", master.ref, Some(client.ref)))
     watcher watch appMasterLauncher
-    master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified)))
+    master.expectMsg(io.gearpump.security.ControlCapability.wrap(config,
+      RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified))))
     val resource = ResourceAllocated(
       Array(ResourceAllocation(Resource(1), worker.ref, WorkerId(0, 0L))))
     master.reply(resource)
@@ -77,7 +78,8 @@ class AppMasterLauncherSpec extends AnyFlatSpec with Matchers
 
   "AppMasterLauncher" should "reallocate resource if executor launch rejected" in {
     worker.reply(ExecutorLaunchRejected(""))
-    master.expectMsg(RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified)))
+    master.expectMsg(io.gearpump.security.ControlCapability.wrap(config,
+      RequestResource(appId, ResourceRequest(Resource(1), WorkerId.unspecified))))
 
     val resource = ResourceAllocated(
       Array(ResourceAllocation(Resource(1), worker.ref, WorkerId(0, 0L))))

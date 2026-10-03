@@ -30,6 +30,7 @@ class MasterProxy(masters: Iterable[ActorPath], timeout: FiniteDuration)
 
   private val LOG: Logger = LogUtil.getLogger(getClass, name = self.path.name)
 
+  io.gearpump.security.ControlCapability.ensureTransport(context.system.settings.config)
   private val contacts = masters.map { url =>
     LOG.info(s"Contacts point URL: $url")
     context.actorSelection(url)
@@ -89,7 +90,10 @@ class MasterProxy(masters: Iterable[ActorPath], timeout: FiniteDuration)
   def messageHandler(master: ActorRef): Receive = {
     case msg =>
       LOG.debug(s"Get msg ${msg.getClass.getSimpleName}, forwarding to ${master.path}")
-      master forward msg
+      val secured = if (io.gearpump.security.ControlCapability.protectedMessage(msg)) {
+        io.gearpump.security.ControlCapability.wrap(context.system.settings.config, msg)
+      } else msg
+      master.tell(secured, sender())
   }
 
   def scheduler: Scheduler = context.system.scheduler

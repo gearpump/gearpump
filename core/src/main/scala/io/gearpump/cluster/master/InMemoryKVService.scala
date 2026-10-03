@@ -44,7 +44,23 @@ class InMemoryKVService extends Actor with Stash {
     LWWMapKey[Any, Any](KV_SERVICE + "_" + group)
   }
 
-  def receive: Receive = kvService
+  private val secret = io.gearpump.security.ControlCapability.token(context.system.settings.config,
+    io.gearpump.security.ControlCapability.AdminKey)
+  require(io.gearpump.security.ControlCapability.valid(secret), "Metadata requires control-secret")
+  private def reply(client: ActorRef, result: Any): Unit =
+    client ! io.gearpump.security.KvReply(secret, result)
+  def receive: Receive = {
+    case request: io.gearpump.security.ControlRequest if request.appId.isEmpty &&
+        io.gearpump.security.ControlCapability.matches(secret, request.capability) =>
+      request.message match {
+        case _: GetKV | _: PutKV | _: DeleteKVGroup => kvService.apply(request.message)
+        case _ => sender() ! Status.Failure(new SecurityException("Metadata operation denied"))
+      }
+    case _: GetKV | _: PutKV | _: DeleteKVGroup | _: io.gearpump.security.ControlRequest =>
+      sender() ! Status.Failure(new SecurityException("Metadata capability required"))
+    case message if sender() == replicator => kvService.applyOrElse(message, unhandled _)
+    case _ => sender() ! Status.Failure(new SecurityException("Metadata operation denied"))
+  }
 
   def kvService: Receive = {
 
@@ -55,14 +71,14 @@ class InMemoryKVService extends Actor with Stash {
     Some(request: Request)) =>
       val appData = success.get(group)
       LOG.info(s"Successfully retrived group: ${group.id}")
-      request.client ! GetKVSuccess(request.key, appData.get(request.key).orNull)
+      reply(request.client, GetKVSuccess(request.key, appData.get(request.key).orNull))
     case NotFound(group: LWWMapKey[Any @unchecked, Any @unchecked], Some(request: Request)) =>
       LOG.info(s"We cannot find group $group")
-      request.client ! GetKVSuccess(request.key, null)
+      reply(request.client, GetKVSuccess(request.key, null))
     case GetFailure(_, Some(request: Request)) =>
       val error = s"Failed to get application data, the request key is ${request.key}"
       LOG.error(error)
-      request.client ! GetKVFailed(new Exception(error))
+      reply(request.client, GetKVFailed(new Exception(error)))
 
     case PutKV(group: String, key: String, value: Any) =>
       val request = Request(sender(), key)
@@ -71,12 +87,12 @@ class InMemoryKVService extends Actor with Stash {
       }
       replicator ! update
     case UpdateSuccess(_, Some(request: Request)) =>
-      request.client ! PutKVSuccess
+      reply(request.client, PutKVSuccess)
     case ModifyFailure(_, error, cause,
     Some(request: Request)) =>
-      request.client ! PutKVFailed(request.key, new Exception(error, cause))
+      reply(request.client, PutKVFailed(request.key, new Exception(error, cause)))
     case UpdateTimeout(_, Some(request: Request)) =>
-      request.client ! PutKVFailed(request.key, new TimeoutException())
+      reply(request.client, PutKVFailed(request.key, new TimeoutException()))
 
     case DeleteKVGroup(group: String) =>
       replicator ! Delete(groupKey(group), writeMajority)

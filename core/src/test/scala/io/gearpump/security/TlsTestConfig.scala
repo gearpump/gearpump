@@ -21,6 +21,7 @@ object TlsTestConfig {
   private val path = java.nio.file.Paths.get(
     getClass.getResource("/security-test-only.p12").toURI).toString
   val config: Config = ConfigFactory.parseString("""
+    gearpump.security.control-secret = "test-only-admin-0123456789012345678901234567890"
     gearpump.security.tls.store-type = "PKCS12"
     gearpump.security.tls.password = "gearpump-test-only"
     gearpump.jarstore.access-token = "test-only-credential-012345678901234567890123456789"
