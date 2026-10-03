@@ -240,16 +240,16 @@ private[appmaster] class TaskManager(
 
     case StartExecutorsTimeOut =>
       appMaster ! AllocateResourceTimeOut
-    case TaskLaunchData(processorDescription, subscribers, command) =>
+    case TaskLaunchData(processorDescription, subscribers, command, upstream) =>
       command match {
         case StartTasksOnExecutor(executorId, tasks) =>
           LOG.info(s"Start tasks on Executor($executorId), tasks: " + tasks)
-          val launchTasks = LaunchTasks(tasks, state.dag.version, processorDescription, subscribers)
+          val launchTasks = LaunchTasks(tasks, state.dag.version, processorDescription, subscribers, upstream)
           executorManager ! UniCast(executorId, launchTasks)
         case ChangeTasksOnExecutor(executorId, tasks) =>
           LOG.info("change Task on executor: " + executorId + ", tasks: " + tasks)
           val changeTasks = ChangeTasks(tasks, state.dag.version, processorDescription.life,
-            subscribers)
+            subscribers, upstream)
           executorManager ! UniCast(executorId, changeTasks)
         case other =>
           LOG.error(s"severe error! we expect ExecutorStarted but get ${other.getClass.toString}")

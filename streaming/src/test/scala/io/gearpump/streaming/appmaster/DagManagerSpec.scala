@@ -32,11 +32,11 @@ import scala.concurrent.duration.Duration
 
 class DagManagerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  val hash = Partitioner[HashPartitioner]
+  lazy val hash = Partitioner[HashPartitioner]
   val task1 = ProcessorDescription(id = 1, taskClass = classOf[TaskActor].getName, parallelism = 1)
   val task2 = ProcessorDescription(id = 2, taskClass = classOf[TaskActor].getName, parallelism = 1)
-  val graph = Graph(task1 ~ hash ~> task2)
-  val dag = DAG(graph)
+  lazy val graph = Graph(task1 ~ hash ~> task2)
+  lazy val dag = DAG(graph)
   implicit var system: ActorSystem = null
   val appId = 0
   val capability = ControlCapability.random()
@@ -77,7 +77,7 @@ class DagManagerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       val task1LaunchData = TaskLaunchData(task1, Subscriber.of(task1.id, dag))
       client.expectMsg(task1LaunchData)
 
-      val task2LaunchData = TaskLaunchData(task2, Subscriber.of(task2.id, dag))
+      val task2LaunchData = TaskLaunchData(task2, Subscriber.of(task2.id, dag), upstream = Map(task1.id -> task1.parallelism))
       client.send(dagManager, GetTaskLaunchData(dag.version, task2.id, null))
       client.expectMsg(task2LaunchData)
 

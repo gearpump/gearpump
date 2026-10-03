@@ -45,6 +45,24 @@ public class PekkoHelper {
     return extendedSystem.provider().resolveActorRef(path);
   }
 
+  /** Synthetic local identity is created only after app authentication on the task channel. */
+  public static ActorRef sessionActorFor(ActorSystem system, int sessionId, long sourceTask) {
+    ExtendedActorSystem extended = (ExtendedActorSystem) system;
+    ActorPath path = extended.provider().rootPath().child("session-" + sourceTask).withUid(sessionId);
+    return new EmptyLocalActorRef(extended.provider(), path, extended.eventStream());
+  }
+
+  public static boolean isLocalSessionRef(ActorSystem system, ActorRef actor) {
+    ExtendedActorSystem extended = (ExtendedActorSystem) system;
+    return actor instanceof EmptyLocalActorRef &&
+        actor.path().address().equals(extended.provider().rootPath().address()) &&
+        actor.path().name().matches("session-[0-9]+");
+  }
+
+  public static long getSessionSource(ActorRef actor) {
+    return Long.parseLong(actor.path().name().substring("session-".length()));
+  }
+
   public static int getActorPathUid(ActorRef actorRef) {
     String path = actorRef.path().toStringWithoutAddress();
     int separator = path.lastIndexOf('#');

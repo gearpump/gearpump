@@ -50,11 +50,16 @@ class TaskLauncherSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll 
     val taskIds = List(TaskId(0, 0), TaskId(0, 1))
     val processor = ProcessorDescription(id = 0, taskClass = classOf[MockTask].getName,
       parallelism = 2)
-    val argument = TaskArgument(0, processor, null)
+    val argument = TaskArgument(0, processor, null, Map(9 -> 3))
 
     val tasks = launcher.launch(taskIds, argument, system, null,
       "gearpump.shared-thread-pool-dispatcher")
     tasks.keys.toSet shouldBe taskIds.toSet
+    val client = TestProbe()
+    tasks.values.foreach { task =>
+      client.send(task, "context")
+      client.expectMsgType[TaskContextData].upstream shouldBe Map(9 -> 3)
+    }
   }
 }
 
@@ -64,7 +69,7 @@ object TaskLauncherSpec {
       val taskContextData : TaskContextData,
       val task: TaskWrapper,
       val serializer: SerializationFramework) extends Actor {
-    def receive: Receive = null
+    def receive: Receive = { case "context" => sender() ! taskContextData }
   }
 
   class MockTask(taskContext: TaskContext, userConf: UserConfig)

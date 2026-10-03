@@ -67,7 +67,7 @@ class TaskActor(
   private val queue = new util.LinkedList[AnyRef]()
   // SecurityChecker will be responsible of dropping messages from
   // unknown sources
-  private val securityChecker = new SecurityChecker(taskId, self)
+  private val securityChecker = new SecurityChecker(taskId, self, context.system, taskContextData.upstream)
   private val stashQueue = new util.LinkedList[MessageAndSender]()
 
   // Latency probe
@@ -145,7 +145,7 @@ class TaskActor(
 
   def handleMessages(sender: => ActorRef): Receive = {
     case ackRequest: InitialAckRequest =>
-      val ackResponse = securityChecker.handleInitialAckRequest(ackRequest)
+      val ackResponse = securityChecker.handleInitialAckRequest(ackRequest, sender)
       if (null != ackResponse) {
         queue.add(SendAck(ackResponse, ackRequest.taskId))
         doHandleMessage()
@@ -164,10 +164,12 @@ class TaskActor(
       subscriptions.find(_._1 == ack.taskId.processorId).foreach(_._2.receiveAck(ack))
       doHandleMessage()
 
-    case inputMessage: SerializedMessage =>
+    case inputMessage: SerializedMessage if securityChecker.knownSender(sender) =>
       val message = Message(serializerPool.get().deserialize(inputMessage.bytes),
         inputMessage.timeStamp)
       receiveMessage(message, sender)
+
+    case _: SerializedMessage => // Discard before invoking any payload deserializer.
 
     case inputMessage: Message =>
       receiveMessage(inputMessage, sender)
@@ -190,7 +192,8 @@ class TaskActor(
       upstreamClock.foreach(clock => onUpstreamMinClock(Instant.ofEpochMilli(clock)))
       reportMinClock()
 
-    case ChangeTask(_, dagVersion, newLife, subscribers) =>
+    case ChangeTask(_, dagVersion, newLife, subscribers, upstream) =>
+      securityChecker.updateTopology(upstream)
       this.life = newLife
       subscribers.foreach { subscriber =>
         val processorId = subscriber.processorId
@@ -369,20 +372,44 @@ object TaskActor {
   val NONE_SESSION: Int = -1
 
   // If the message comes from an unknown source, securityChecker will drop it
-  class SecurityChecker(task_id: TaskId, self: ActorRef) {
+  class SecurityChecker(task_id: TaskId, self: ActorRef, system: ActorSystem, initialUpstream: Map[Int, Int]) {
 
     private val LOG: Logger = LogUtil.getLogger(getClass, task = task_id)
 
     // Uses mutable HashMap for performance optimization
     private val receivedMsgCount = new IntShortHashMap()
 
-    def handleInitialAckRequest(ackRequest: InitialAckRequest): Ack = {
+    private var upstream = initialUpstream
+    private var sources = Map.empty[Int, Long]
+    private def allowed(source: Long): Boolean = {
+      val task = TaskId.fromLong(source)
+      task.index >= 0 && upstream.get(task.processorId).exists(task.index < _)
+    }
+    def updateTopology(next: Map[Int, Int]): Unit = {
+      upstream = next
+      sources = sources.filter { case (session, source) =>
+        val keep = allowed(source)
+        if (!keep) receivedMsgCount.removeKey(session)
+        keep
+      }
+    }
+    def knownSender(sender: ActorRef): Boolean = sender == self ||
+      (PekkoHelper.isLocalSessionRef(system, sender) &&
+        sources.get(getSessionId(sender)).contains(PekkoHelper.getSessionSource(sender)))
+
+    def handleInitialAckRequest(ackRequest: InitialAckRequest, sender: ActorRef): Ack = {
       LOG.debug(s"Handle InitialAckRequest for session $ackRequest")
       val sessionId = ackRequest.sessionId
-      if (sessionId == NONE_SESSION) {
+      val source = TaskId.toLong(ackRequest.taskId)
+      if (sessionId == NONE_SESSION || !allowed(source) ||
+          !PekkoHelper.isLocalSessionRef(system, sender) ||
+          PekkoHelper.getSessionSource(sender) != source || getSessionId(sender) != sessionId ||
+          sources.get(sessionId).exists(_ != source) ||
+          (!sources.contains(sessionId) && sources.size >= 65536)) {
         LOG.error(s"SessionId is not initialized, ackRequest: $ackRequest")
         null
       } else {
+        sources += sessionId -> source
         receivedMsgCount.put(sessionId, 0)
         Ack(task_id, 0, 0, sessionId, Watermark.MIN.toEpochMilli)
       }
@@ -390,7 +417,7 @@ object TaskActor {
 
     def generateAckResponse(ackRequest: AckRequest, sender: ActorRef, incrementCount: Int): Ack = {
       val sessionId = ackRequest.sessionId
-      if (receivedMsgCount.containsKey(sessionId)) {
+      if (knownSender(sender) && sources.get(sessionId).contains(TaskId.toLong(ackRequest.taskId))) {
         // Increments more count for each AckRequest
         // to throttle the number of unacked AckRequest
         receivedMsgCount.put(sessionId, (receivedMsgCount.get(sessionId) + incrementCount).toShort)
@@ -408,7 +435,7 @@ object TaskActor {
         Some(message)
       } else {
         val sessionId = getSessionId(sender)
-        if (receivedMsgCount.containsKey(sessionId)) {
+        if (knownSender(sender)) {
           receivedMsgCount.put(sessionId, (receivedMsgCount.get(sessionId) + 1).toShort)
           Some(message)
         } else {

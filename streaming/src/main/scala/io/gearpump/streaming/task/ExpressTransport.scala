@@ -35,7 +35,7 @@ trait ExpressTransport {
   lazy val sourceId = TaskId.toLong(taskId)
 
   lazy val sessionRef: ActorRef = {
-    PekkoHelper.actorFor(system, s"/session#$sessionId")
+    PekkoHelper.sessionActorFor(system, sessionId, sourceId)
   }
 
   def transport(msg: AnyRef, remotes: TaskId*): Unit = {

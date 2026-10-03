@@ -140,11 +140,11 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
     state = State.DYNAMIC_DAG_PHASE1
     box({
       case launch@LaunchTasks(taskIds, version, processorDescription,
-      subscribers: List[Subscriber]) => {
+      subscribers: List[Subscriber], upstream) => {
         assertVersion(dagVersion, version, clue = launch)
 
         LOG.info(s"Launching Task $taskIds for app: $appId")
-        val taskArgument = TaskArgument(version, processorDescription, subscribers)
+        val taskArgument = TaskArgument(version, processorDescription, subscribers, upstream)
         taskIds.foreach(taskArgumentStore.add(_, taskArgument))
         val newAdded = launcher.launch(taskIds, taskArgument, context, serializerPool,
           taskDispatcher)
@@ -155,7 +155,7 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
         sender() ! TasksLaunched
         context.become(dynamicDagPhase1(version, launched ++ taskIds, changed, registered))
       }
-      case change@ChangeTasks(taskIds, version, life, subscribers) =>
+      case change@ChangeTasks(taskIds, version, life, subscribers, upstream) =>
         assertVersion(dagVersion, version, clue = change)
 
         LOG.info(s"Change Tasks $taskIds for app: $appId, verion: $life, $dagVersion, $subscribers")
@@ -164,9 +164,9 @@ class Executor(executorContext: ExecutorContext, userConf : UserConfig, launcher
           for (taskArgument <- taskArgumentStore.get(dagVersion, taskId)) {
             val processorDescription = taskArgument.processorDescription.copy(life = life)
             taskArgumentStore.add(taskId, TaskArgument(dagVersion, processorDescription,
-              subscribers))
+              subscribers, upstream))
           }
-          ChangeTask(taskId, dagVersion, life, subscribers)
+          ChangeTask(taskId, dagVersion, life, subscribers, upstream)
         }
         sender() ! TasksChanged(taskIds)
         context.become(dynamicDagPhase1(dagVersion, launched, changed ++ newChangedTasks,

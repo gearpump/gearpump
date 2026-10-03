@@ -24,4 +24,4 @@ case class TaskContextData(
     appMaster: ActorRef,
     parallelism: Int,
     life: LifeTime,
-    subscribers: List[Subscriber])
+    subscribers: List[Subscriber], upstream: Map[Int, Int] = Map.empty)

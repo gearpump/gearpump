@@ -36,7 +36,7 @@ class TaskActorSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach wi
       """ pekko.loggers = ["org.apache.pekko.testkit.TestEventListener"]
         | pekko.test.filter-leeway = 20000
       """.stripMargin).
-      withFallback(TestUtil.DEFAULT_CONFIG)
+      withFallback(io.gearpump.security.ControlCapability.runtimeConfig(TestUtil.DEFAULT_CONFIG, 0, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))
   }
 
   val appId = 0
@@ -68,6 +68,34 @@ class TaskActorSpec extends AnyWordSpec with Matchers with BeforeAndAfterEach wi
   }
 
   "TaskActor" should {
+    "deserialize and deliver records after a valid predecessor session enrolls" in {
+      val mockTask = mock(classOf[TaskWrapper])
+      val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1,
+        taskContext1.copy(upstream = Map(2 -> 1)), mockTask, mockSerializerPool)))(getActorSystem)
+      testActor ! TaskRegistered(taskId1, 0, Util.randInt())
+      testActor ! StartTask(taskId1)
+      val source = TaskId(2, 0)
+      val identity = io.gearpump.util.PekkoHelper.sessionActorFor(getActorSystem, 123,
+        TaskId.toLong(source))
+      val serializer = new FastKryoSerializer(getActorSystem.asInstanceOf[ExtendedActorSystem])
+      val bytes = serializer.serialize("allowed")
+      testActor.tell(InitialAckRequest(source, 123), identity)
+      testActor.tell(SerializedMessage(0L, bytes), identity)
+      verify(mockSerializerPool, times(1)).get()
+      verify(mockTask, times(1)).onNext(Message("allowed", 0L))
+    }
+
+    "discard serialized records before deserializing an unknown sender" in {
+      val mockTask = mock(classOf[TaskWrapper])
+      val testActor = TestActorRef[TaskActor](Props(new TaskActor(taskId1, taskContext1,
+        mockTask, mockSerializerPool)))(getActorSystem)
+      testActor ! TaskRegistered(taskId1, 0, Util.randInt())
+      testActor ! StartTask(taskId1)
+      mockMaster.send(testActor, SerializedMessage(0L, Array[Byte](1, 2)))
+      verify(mockSerializerPool, org.mockito.Mockito.never()).get()
+      verify(mockTask, org.mockito.Mockito.never()).onNext(org.mockito.ArgumentMatchers.any[Message]())
+    }
+
     "register itself to AppMaster when started" in {
       val mockTask = mock(classOf[TaskWrapper])
       val testActor = TestActorRef[TaskActor](Props(
