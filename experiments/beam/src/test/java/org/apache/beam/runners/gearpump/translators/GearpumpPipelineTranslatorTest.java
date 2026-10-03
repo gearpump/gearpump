@@ -67,7 +67,8 @@ public class GearpumpPipelineTranslatorTest {
   public void setUp() {
     options = PipelineOptionsFactory.as(GearpumpPipelineOptions.class);
     options.setParallelism(1);
-    Config config = GearpumpRunner.configureRunnerConfig(ClusterConfig.defaultConfig(), null);
+    Config config = GearpumpRunner.configureRunnerConfig(
+        io.gearpump.security.TlsTestConfig$.MODULE$.config().withFallback(ClusterConfig.defaultConfig()), null);
     actorSystem = ActorSystem.create("beam-runner-translator-test", config);
   }
 
