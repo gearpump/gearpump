@@ -27,6 +27,7 @@ import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
+import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
 import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
@@ -44,6 +45,11 @@ public class GroupByKeyTranslator<K, V> implements TransformTranslator<GroupByKe
       throw new UnsupportedOperationException(
           "The low-level Gearpump Beam runner currently supports GroupByKey only for "
               + "non-merging windows.");
+    }
+    if (input.isBounded() == PCollection.IsBounded.UNBOUNDED
+        && windowingStrategy.getWindowFn() instanceof GlobalWindows) {
+      throw new UnsupportedOperationException(
+          "The low-level Gearpump Beam runner requires finite windows for unbounded GroupByKey.");
     }
     validateWindowingStrategy(windowingStrategy);
 

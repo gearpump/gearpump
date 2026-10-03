@@ -186,9 +186,10 @@ class Subscription(
         allowSendingMoreMessages()) {
         sendAckRequest(i)
         sendLatencyProbe(i)
-      } else if (publisher.getProcessingWatermark == Watermark.MAX &&
-        pendingMessageCount(i) == 0) {
-        outputWatermark(i) = Watermark.MAX.toEpochMilli
+      } else if (pendingMessageCount(i) == 0) {
+        // With no messages in flight, finite progress is safe even when the publisher is idle.
+        outputWatermark(i) = Math.max(outputWatermark(i),
+          publisher.getProcessingWatermark.toEpochMilli)
       }
     }
   }
