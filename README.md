@@ -73,13 +73,9 @@ export HTTP_PROXY=http://host:port
 export HTTPS_PROXY=http://host:port
 ```
 
-## How to do style check before submitting a pull request?
+## Contributing
 
-Before submitting a PR, you should always run style check first:
-```
-  ## Run style check for compile, test, and integration test.
-  sbt scalastyle test:scalastyle it:scalastyle
-```
+See the [contributing guide](CONTRIBUTING.md) for the contribution workflow, tests, and style checks.
 
 ## How to generate the license report to generate a list of all dependencies 
 ```

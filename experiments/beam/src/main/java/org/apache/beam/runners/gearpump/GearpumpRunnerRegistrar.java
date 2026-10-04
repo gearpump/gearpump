@@ -25,7 +25,7 @@ import org.apache.beam.sdk.runners.PipelineRunnerRegistrar;
 
 /** Service registration hooks for the Gearpump Beam runner. */
 public class GearpumpRunnerRegistrar {
-  private GearpumpRunnerRegistrar() {}
+  private GearpumpRunnerRegistrar() { }
 
   /** Registers {@link GearpumpRunner}. */
   public static class Runner implements PipelineRunnerRegistrar {

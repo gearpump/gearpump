@@ -17,45 +17,44 @@
  */
 package org.apache.beam.runners.gearpump.translators;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import com.typesafe.config.Config;
 import io.gearpump.cluster.ClusterConfig;
 import io.gearpump.streaming.Processor;
 import io.gearpump.streaming.task.Task;
+import java.util.List;
+import org.apache.beam.runners.gearpump.GearpumpPipelineOptions;
 import org.apache.beam.runners.gearpump.GearpumpRunner;
 import org.apache.beam.runners.gearpump.runtime.BeamAssignWindowsTask;
 import org.apache.beam.runners.gearpump.runtime.BeamGroupByKeyTask;
 import org.apache.beam.runners.gearpump.runtime.BeamParDoTask;
 import org.apache.beam.runners.gearpump.runtime.BeamTaggedOutputTask;
-import org.apache.beam.runners.gearpump.GearpumpPipelineOptions;
-import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.windowing.AfterPane;
 import org.apache.beam.sdk.transforms.Combine;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.GroupByKey;
 import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.transforms.windowing.Repeatedly;
 import org.apache.beam.sdk.transforms.Sum;
+import org.apache.beam.sdk.transforms.windowing.AfterPane;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Repeatedly;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TimestampedValue;
 import org.apache.pekko.actor.ActorSystem;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.collection.JavaConverters;
-
-import java.util.List;
-import org.joda.time.Duration;
-import org.joda.time.Instant;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /** Tests for low-level Beam-to-Gearpump graph translation. */
 public class GearpumpPipelineTranslatorTest {

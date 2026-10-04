@@ -19,3 +19,8 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 addSbtPlugin("org.scalastyle" % "scalastyle-sbt-plugin" % "1.0.0")
 
 addSbtPlugin("com.github.sbt.junit" % "sbt-jupiter-interface" % "0.19.0")
+
+addSbtPlugin("software.purpledragon" % "sbt-checkstyle-plugin" % "4.0.1")
+
+// Keep Checkstyle compatible with the Java 17 build runtime.
+dependencyOverrides += "com.puppycrawl.tools" % "checkstyle" % "10.26.1"
