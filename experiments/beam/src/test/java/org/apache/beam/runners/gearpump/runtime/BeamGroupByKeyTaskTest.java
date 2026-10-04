@@ -169,6 +169,87 @@ public class BeamGroupByKeyTaskTest {
     assertEquals(1, outputs.size());
   }
 
+  @Test
+  public void doesNotRevisitBufferedWindowsOnWatermarkProgress() {
+    BeamGroupByKeyTask<String, Integer> task = task(TimestampCombiner.EARLIEST);
+    CountingWindow window = new CountingWindow(0, 1_000_000);
+    for (int key = 0; key < 1_000; key++) {
+      add(task, "key-" + key, key, 1_000, window);
+    }
+    int initialWindowChecks = window.maxTimestampCalls;
+    for (int update = 1; update <= 100; update++) {
+      task.onWatermarkProgress(Instant.ofEpochMilli(1_000 + update * 1_000));
+    }
+    assertTrue(outputs.isEmpty());
+    assertWatermark(1_000);
+    assertEquals(initialWindowChecks, window.maxTimestampCalls);
+    task.onWatermarkProgress(Instant.ofEpochMilli(1_000_000));
+    assertEquals(1_000, outputs.size());
+    assertEquals(
+        1_000L, outputs.stream().map(output -> output.getValue().getKey()).distinct().count());
+    assertWatermark(1_000_000);
+  }
+
+  @Test
+  public void expiresWindowsOutOfArrivalOrderAndRetainsSharedTimestampHolds() {
+    BeamGroupByKeyTask<String, Integer> task = task(TimestampCombiner.EARLIEST);
+    IntervalWindow first = window(0, 10_000);
+    IntervalWindow second = window(0, 20_000);
+    add(task, "b", 2, 1_000, second);
+    add(task, "a", 1, 1_000, first, second);
+    task.onWatermarkProgress(Instant.ofEpochMilli(10_000));
+    assertEquals(1, outputs.size());
+    assertOutput(0, first, 1_000, 1);
+    assertWatermark(1_000);
+    task.onWatermarkProgress(Instant.ofEpochMilli(15_000));
+    assertEquals(1, outputs.size());
+    assertWatermark(1_000);
+    task.onWatermarkProgress(Instant.ofEpochMilli(20_000));
+    assertEquals(3, outputs.size());
+    assertOutput(1, second, 1_000, 2);
+    assertOutput(2, second, 1_000, 1);
+    assertWatermark(20_000);
+  }
+
+  @Test
+  public void replacesEarliestHoldWithoutRemovingAnotherGroupsHold() {
+    BeamGroupByKeyTask<String, Integer> task = task(TimestampCombiner.EARLIEST);
+    IntervalWindow first = window(0, 10_000);
+    IntervalWindow second = window(0, 20_000);
+    add(task, "a", 1, 5_000, first);
+    add(task, "b", 2, 5_000, second);
+    add(task, "a", 3, 1_000, first);
+    task.onWatermarkProgress(Instant.ofEpochMilli(9_000));
+    assertWatermark(1_000);
+    task.onWatermarkProgress(Instant.ofEpochMilli(10_000));
+    assertOutput(0, first, 1_000, 1, 3);
+    assertWatermark(5_000);
+    task.onWatermarkProgress(Instant.ofEpochMilli(20_000));
+    assertOutput(1, second, 5_000, 2);
+    assertWatermark(20_000);
+  }
+
+  @Test
+  public void advancesLatestHoldWhenPendingGroupTimestampsChange() {
+    BeamGroupByKeyTask<String, Integer> task = task(TimestampCombiner.LATEST);
+    IntervalWindow first = window(0, 10_000);
+    IntervalWindow second = window(0, 20_000);
+    add(task, "a", 1, 1_000, first);
+    add(task, "a", 2, 5_000, first);
+    add(task, "b", 3, 3_000, second);
+    task.onWatermarkProgress(Instant.ofEpochMilli(9_000));
+    assertWatermark(3_000);
+    add(task, "b", 4, 7_000, second);
+    task.onWatermarkProgress(Instant.ofEpochMilli(9_500));
+    assertWatermark(5_000);
+    task.onWatermarkProgress(Instant.ofEpochMilli(10_000));
+    assertOutput(0, first, 5_000, 1, 2);
+    assertWatermark(7_000);
+    task.onWatermarkProgress(Instant.ofEpochMilli(20_000));
+    assertOutput(1, second, 7_000, 3, 4);
+    assertWatermark(20_000);
+  }
+
   private void assertTimestampHold(TimestampCombiner combiner, long expectedTimestamp) {
     BeamGroupByKeyTask<String, Integer> task = task(combiner);
     IntervalWindow first = window(0, 10_000);
@@ -200,13 +281,40 @@ public class BeamGroupByKeyTaskTest {
       int value,
       long timestamp,
       BoundedWindow... windows) {
+    add(task, "a", value, timestamp, windows);
+  }
+
+  private static void add(
+      BeamGroupByKeyTask<String, Integer> task,
+      String key,
+      int value,
+      long timestamp,
+      BoundedWindow... windows) {
     WindowedValue<KV<String, Integer>> input =
         WindowedValues.of(
-            KV.of("a", value),
+            KV.of(key, value),
             new org.joda.time.Instant(timestamp),
             Arrays.asList(windows),
             PaneInfo.NO_FIRING);
     task.onNext(new DefaultMessage(input, Instant.ofEpochMilli(timestamp)));
+  }
+
+  private void assertWatermark(long timestamp) {
+    assertEquals(Instant.ofEpochMilli(timestamp), watermarks.get(watermarks.size() - 1));
+  }
+
+  private static final class CountingWindow extends IntervalWindow {
+    private int maxTimestampCalls;
+
+    private CountingWindow(long start, long end) {
+      super(new org.joda.time.Instant(start), new org.joda.time.Instant(end));
+    }
+
+    @Override
+    public org.joda.time.Instant maxTimestamp() {
+      maxTimestampCalls++;
+      return super.maxTimestamp();
+    }
   }
 
   private void assertOutput(int index, BoundedWindow window, long timestamp, Integer... values) {
