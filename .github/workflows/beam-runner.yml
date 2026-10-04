@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/beam-runner.yml"
       - "build.sbt"
+      - "scalastyle-config.xml"
       - "project/**"
       - "experiments/beam/**"
       - "core/**"
@@ -15,6 +16,7 @@ on:
     paths:
       - ".github/workflows/beam-runner.yml"
       - "build.sbt"
+      - "scalastyle-config.xml"
       - "project/**"
       - "experiments/beam/**"
       - "core/**"
@@ -39,6 +41,12 @@ jobs:
 
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
+
+      - name: Check Beam runner Scala style
+        run: >-
+          sbt -Dsbt.log.noformat=true
+          gearpump-beam-runner/scalastyle
+          gearpump-beam-runner/Test/scalastyle
 
       - name: Run Beam runner tests
         run: sbt -Dsbt.log.noformat=true gearpump-beam-runner/test
