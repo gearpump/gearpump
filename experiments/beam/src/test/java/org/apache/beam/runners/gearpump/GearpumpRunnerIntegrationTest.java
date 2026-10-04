@@ -16,6 +16,9 @@
  */
 package org.apache.beam.runners.gearpump;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,14 +38,11 @@ import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TimestampedValue;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.joda.time.Duration;
-import org.joda.time.Instant;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /** Embedded-runner integration tests for the low-level Gearpump Beam runner. */
 public class GearpumpRunnerIntegrationTest {
@@ -187,10 +187,7 @@ public class GearpumpRunnerIntegrationTest {
 
   private static void waitForOutputs(int expectedCount) {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-    while (System.nanoTime() < deadline) {
-      if (CAPTURED.size() >= expectedCount) {
-        return;
-      }
+    while (CAPTURED.size() < expectedCount && System.nanoTime() < deadline) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
@@ -198,7 +195,9 @@ public class GearpumpRunnerIntegrationTest {
         fail("Interrupted while waiting for Beam pipeline output");
       }
     }
-    fail("Timed out waiting for Beam pipeline output. Captured: " + CAPTURED);
+    if (CAPTURED.size() < expectedCount) {
+      fail("Timed out waiting for Beam pipeline output. Captured: " + CAPTURED);
+    }
   }
 
   private static void shutdown(GearpumpPipelineResult result) {

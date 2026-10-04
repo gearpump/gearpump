@@ -107,7 +107,8 @@ public class GearpumpRunner extends PipelineRunner<GearpumpPipelineResult> {
     serializers.put("org.apache.beam.sdk.values.WindowedValues$ValueInGlobalWindow", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedValueInSingleWindow", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedValueInGlobalWindow", "");
-    serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedValueInMultipleWindows", "");
+    serializers.put(
+        "org.apache.beam.sdk.values.WindowedValues$TimestampedValueInMultipleWindows", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$SingleWindowedValue", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedWindowedValue", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$SimpleWindowedValue", "");
