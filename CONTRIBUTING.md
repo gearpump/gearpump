@@ -283,6 +283,15 @@ Before submitting a PR, you should always run style check first:
   sbt scalastyle test:scalastyle it:scalastyle
 ```
 
+The Beam runner also checks Java sources with Checkstyle. Its main and test compilation
+run both Java and Scala style checks automatically. Java rules check imports, whitespace,
+braces, and line length, and reject `continue` and bare `return` statements.
+To run just its Java checks:
+
+```bash
+sbt gearpump-beam-runner/checkstyle gearpump-beam-runner/Test/checkstyle
+```
+
 <a name="write-unittest"></a>
 ## How to write unit test
 TBD

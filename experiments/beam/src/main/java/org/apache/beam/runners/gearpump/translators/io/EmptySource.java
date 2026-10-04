@@ -27,7 +27,7 @@ import java.time.Instant;
 public class EmptySource implements DataSource {
 
   @Override
-  public void open(TaskContext context, Instant startTime) {}
+  public void open(TaskContext context, Instant startTime) { }
 
   @Override
   public Message read() {
@@ -35,7 +35,7 @@ public class EmptySource implements DataSource {
   }
 
   @Override
-  public void close() {}
+  public void close() { }
 
   @Override
   public Instant getWatermark() {

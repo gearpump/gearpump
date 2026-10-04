@@ -145,6 +145,16 @@ lazy val beamRunner = Project(
   id = "gearpump-beam-runner",
   base = file("experiments/beam"))
   .settings(commonSettings ++ myAssemblySettings ++ javadocSettings ++ beamRunnerDependencies: _*)
+  .settings(
+    checkstyleConfigLocation := CheckstyleConfigLocation.File(
+      ((LocalRootProject / baseDirectory).value / "checkstyle-config.xml").getAbsolutePath),
+    checkstyleSeverityLevel := CheckstyleSeverityLevel.Error,
+    // Gate Zinc compiler inputs so style checks finish before compilation starts.
+    Compile / compile / compileInputs := (Compile / compile / compileInputs).dependsOn(
+      (Compile / scalastyle).toTask(""), checkstyle).value,
+    Test / compile / compileInputs := (Test / compile / compileInputs).dependsOn(
+      (Test / scalastyle).toTask(""), Test / checkstyle).value
+  )
   .dependsOn(core % "provided", streaming % "provided")
 
 lazy val beamQuickStart = Project(

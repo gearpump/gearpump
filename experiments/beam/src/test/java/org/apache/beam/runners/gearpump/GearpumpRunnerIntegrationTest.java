@@ -16,6 +16,9 @@
  */
 package org.apache.beam.runners.gearpump;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -44,14 +47,11 @@ import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TimestampedValue;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.joda.time.Duration;
-import org.joda.time.Instant;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /** Embedded-runner integration tests for the low-level Gearpump Beam runner. */
 public class GearpumpRunnerIntegrationTest {
@@ -219,10 +219,7 @@ public class GearpumpRunnerIntegrationTest {
 
   private static void waitForOutputs(int expectedCount) {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-    while (System.nanoTime() < deadline) {
-      if (CAPTURED.size() >= expectedCount) {
-        return;
-      }
+    while (CAPTURED.size() < expectedCount && System.nanoTime() < deadline) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
@@ -230,7 +227,9 @@ public class GearpumpRunnerIntegrationTest {
         fail("Interrupted while waiting for Beam pipeline output");
       }
     }
-    fail("Timed out waiting for Beam pipeline output. Captured: " + CAPTURED);
+    if (CAPTURED.size() < expectedCount) {
+      fail("Timed out waiting for Beam pipeline output. Captured: " + CAPTURED);
+    }
   }
 
   private static void shutdown(GearpumpPipelineResult result) {
@@ -261,19 +260,27 @@ public class GearpumpRunnerIntegrationTest {
         private int index;
 
         @Override
-        public boolean start() { return true; }
+        public boolean start() {
+          return true;
+        }
 
         @Override
         public boolean advance() {
-          if (index < timestamps.length) { index++; }
+          if (index < timestamps.length) {
+            index++;
+          }
           return index < timestamps.length;
         }
 
         @Override
-        public KV<String, Integer> getCurrent() { return KV.of("a", values[index]); }
+        public KV<String, Integer> getCurrent() {
+          return KV.of("a", values[index]);
+        }
 
         @Override
-        public Instant getCurrentTimestamp() { return new Instant(timestamps[index]); }
+        public Instant getCurrentTimestamp() {
+          return new Instant(timestamps[index]);
+        }
 
         @Override
         public Instant getWatermark() {
@@ -281,7 +288,9 @@ public class GearpumpRunnerIntegrationTest {
         }
 
         @Override
-        public CheckpointMark getCheckpointMark() { return new TestCheckpoint(); }
+        public CheckpointMark getCheckpointMark() {
+          return new TestCheckpoint();
+        }
 
         @Override
         public UnboundedSource<KV<String, Integer>, ?> getCurrentSource() {
@@ -289,7 +298,7 @@ public class GearpumpRunnerIntegrationTest {
         }
 
         @Override
-        public void close() {}
+        public void close() { }
       };
     }
 
@@ -304,9 +313,10 @@ public class GearpumpRunnerIntegrationTest {
     }
   }
 
-  private static final class TestCheckpoint implements UnboundedSource.CheckpointMark, Serializable {
+  private static final class TestCheckpoint
+      implements UnboundedSource.CheckpointMark, Serializable {
     @Override
-    public void finalizeCheckpoint() {}
+    public void finalizeCheckpoint() { }
   }
 
   private static final class UpperCaseFn extends DoFn<String, String> {

@@ -23,7 +23,7 @@ import org.apache.beam.sdk.values.WindowedValue;
 /** Utility methods used by the low-level Gearpump Beam runner. */
 public final class TranslatorUtils {
 
-  private TranslatorUtils() {}
+  private TranslatorUtils() { }
 
   public static Instant jodaTimeToJava8Time(org.joda.time.Instant time) {
     return Instant.ofEpochMilli(time.getMillis());
