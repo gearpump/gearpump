@@ -302,3 +302,8 @@ Password verification runs on a process-wide pool of two dedicated workers with 
 16 queued attempts. When this pool is full, further attempts fail authentication immediately
 without running PBKDF2 on the HTTP dispatcher. Custom authenticators must likewise keep
 expensive password checks off the request-processing execution context.
+
+Unknown usernames verify against a fixed process-local dummy PBKDF2 hash at the normal
+password cost before authentication fails. They cannot authenticate even if that dummy
+comparison succeeds. Both the packaged `conf/gear.conf` and built-in defaults start with
+empty account maps; configure an operator account before enabling authentication.

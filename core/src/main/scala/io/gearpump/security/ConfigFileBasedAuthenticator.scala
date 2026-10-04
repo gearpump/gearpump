@@ -22,42 +22,27 @@ import scala.concurrent.{ExecutionContext, Future}
 object ConfigFileBasedAuthenticator {
 
   private val passwordVerifier = new PasswordVerificationExecutor(2, 16)
+  private val dummyPasswordHash = PasswordUtil.hash("gearpump-unknown-account-placeholder")
 
   private val ROOT = "gearpump.ui-security.config-file-based-authenticator"
   private val ADMINS = ROOT + "." + "admins"
   private val USERS = ROOT + "." + "users"
   private val GUESTS = ROOT + "." + "guests"
 
-  private case class Credentials(
+  private[security] case class Credentials(
       admins: Map[String, String], users: Map[String, String], guests: Map[String, String]) {
 
-    def verify(user: String, password: String): AuthenticationResult = {
-      if (admins.contains(user)) {
-        if (verify(user, password, admins)) {
-          Authenticator.Admin
-        } else {
-          Authenticator.UnAuthenticated
-        }
-      } else if (users.contains(user)) {
-        if (verify(user, password, users)) {
-          Authenticator.User
-        } else {
-          Authenticator.UnAuthenticated
-        }
-      } else if (guests.contains(user)) {
-        if (verify(user, password, guests)) {
-          Authenticator.Guest
-        } else {
-          Authenticator.UnAuthenticated
-        }
-      } else {
-        Authenticator.UnAuthenticated
-      }
-    }
-
-    private def verify(user: String, password: String, map: Map[String, String]): Boolean = {
-      val storedPass = map(user)
-      PasswordUtil.verify(password, storedPass)
+    def verify(user: String, password: String,
+        verifyPassword: (String, String) => Boolean = PasswordUtil.verify _)
+        : AuthenticationResult = {
+      val account: Option[(String, AuthenticationResult)] =
+        admins.get(user).map(_ -> Authenticator.Admin)
+          .orElse(users.get(user).map(_ -> Authenticator.User))
+          .orElse(guests.get(user).map(_ -> Authenticator.Guest))
+      // Unknown users perform the same password check, but can never become authenticated.
+      val stored = account.map(_._1).getOrElse(dummyPasswordHash)
+      val valid = verifyPassword(password, stored)
+      account.filter(_ => valid).map(_._2).getOrElse(Authenticator.UnAuthenticated)
     }
   }
 }

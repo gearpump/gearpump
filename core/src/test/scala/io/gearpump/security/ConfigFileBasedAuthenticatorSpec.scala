@@ -14,8 +14,9 @@
 
 package io.gearpump.security
 
-import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
-import io.gearpump.cluster.TestUtil
+import com.typesafe.config.{ConfigFactory, ConfigParseOptions, ConfigValueFactory}
+import io.gearpump.cluster.{ClusterConfig, TestUtil}
+import java.io.File
 import org.apache.pekko.actor.ActorSystem
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -98,6 +99,63 @@ class ConfigFileBasedAuthenticatorSpec extends AnyFlatSpec with Matchers {
       .shouldBe(Authenticator.Admin)
     Await.result(authenticator.authenticate("admin", "wrong", forbidden), 10.seconds)
       .shouldBe(Authenticator.UnAuthenticated)
+  }
+
+  it should "enable an operator account using the configuration shipped in the distribution" in {
+    val shippedFile = new File("conf/gear.conf")
+    assert(shippedFile.isFile)
+    val shipped = ConfigFactory.parseFile(shippedFile,
+      ConfigParseOptions.defaults().setAllowMissing(false))
+    val root = "gearpump.ui-security.config-file-based-authenticator"
+    Seq("admins", "users", "guests").foreach { role =>
+      assert(shipped.getConfig("gearpump-ui." + root + "." + role).isEmpty)
+    }
+    val config = ClusterConfig.ui(shippedFile.getAbsolutePath)
+      .withValue("gearpump.ui-security.authentication-enabled", ConfigValueFactory.fromAnyRef(true))
+      .withValue(root + ".admins.operator", ConfigValueFactory.fromAnyRef(
+        TestUtil.UI_CONFIG.getString(root + ".admins.admin")))
+    val authenticator = new ConfigFileBasedAuthenticator(config)
+    Await.result(authenticator.authenticate("operator", "admin", ExecutionContext.global),
+      10.seconds)
+      .shouldBe(Authenticator.Admin)
+    Await.result(authenticator.authenticate("guest", "guest", ExecutionContext.global), 10.seconds)
+      .shouldBe(Authenticator.UnAuthenticated)
+  }
+
+  it should "perform one supported password check for both known and unknown usernames" in {
+    val hash = TestUtil.UI_CONFIG.getString(
+      "gearpump.ui-security.config-file-based-authenticator.admins.admin")
+    val credentials = ConfigFileBasedAuthenticator.Credentials(
+      Map("admin" -> hash), Map.empty, Map.empty)
+    val checks = scala.collection.mutable.ArrayBuffer.empty[(String, String)]
+    val rejectPassword = (password: String, stored: String) => {
+      checks += ((password, stored))
+      false
+    }
+    credentials.verify("admin", "wrong", rejectPassword) shouldBe Authenticator.UnAuthenticated
+    credentials.verify("missing", "wrong", rejectPassword) shouldBe Authenticator.UnAuthenticated
+    checks.size shouldBe 2
+    checks.head shouldBe (("wrong", hash))
+    checks.last._1 shouldBe "wrong"
+    assert(PasswordUtil.isSupportedHash(checks.last._2))
+    checks.last._2.split(":")(1) shouldBe hash.split(":")(1)
+    // Even a successful dummy comparison cannot create an account or assign a role.
+    credentials.verify("missing", "any", (_, _) => true) shouldBe Authenticator.UnAuthenticated
+    credentials.verify("missing", "gearpump-unknown-account-placeholder")
+      .shouldBe(Authenticator.UnAuthenticated)
+  }
+
+  it should "preserve role permissions and administrator precedence for overlapping usernames" in {
+    val credentials = ConfigFileBasedAuthenticator.Credentials(
+      Map("overlap" -> "admin hash", "admin" -> "admin hash"),
+      Map("overlap" -> "user hash", "user" -> "user hash"),
+      Map("overlap" -> "guest hash", "guest" -> "guest hash"))
+    Seq("admin" -> Authenticator.Admin, "user" -> Authenticator.User,
+      "guest" -> Authenticator.Guest).foreach { case (user, role) =>
+      credentials.verify(user, "password", (_, stored) => stored == user + " hash") shouldBe role
+    }
+    credentials.verify("overlap", "password", (_, stored) => stored == "admin hash")
+      .shouldBe(Authenticator.Admin)
   }
 
 }
