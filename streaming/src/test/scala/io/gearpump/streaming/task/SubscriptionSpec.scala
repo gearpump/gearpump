@@ -20,12 +20,12 @@ import io.gearpump.streaming.{LifeTime, ProcessorDescription}
 import io.gearpump.streaming.partitioner.{HashPartitioner, Partitioner}
 import io.gearpump.streaming.source.Watermark
 import io.gearpump.streaming.task.SubscriptionSpec.NextTask
+import io.gearpump.testkit.MockitoSugar
 import java.time.Instant
 import java.util.Random
 import org.mockito.Mockito._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import io.gearpump.testkit.MockitoSugar
 
 class SubscriptionSpec extends AnyFlatSpec with Matchers with MockitoSugar {
 
@@ -43,10 +43,13 @@ class SubscriptionSpec extends AnyFlatSpec with Matchers with MockitoSugar {
   val subscriber = Subscriber(downstreamProcessorId, partitioner, downstreamProcessor.parallelism,
     downstreamProcessor.life)
 
-  private def prepare: (Subscription, TaskActor) = {
+  private def prepare: (Subscription, TaskActor) = prepare(enableIdleProgress = false)
+
+  private def prepare(enableIdleProgress: Boolean): (Subscription, TaskActor) = {
     val sender = mock[TaskActor]
 
-    val subscription = new Subscription(appId, executorId, taskId, subscriber, session, sender)
+    val subscription = new Subscription(appId, executorId, taskId, subscriber, session, sender,
+      enableIdleWatermarkProgress = enableIdleProgress)
     subscription.start()
 
     val expectedAckRequest = InitialAckRequest(taskId, session)
@@ -127,6 +130,54 @@ class SubscriptionSpec extends AnyFlatSpec with Matchers with MockitoSugar {
     }
 
     assert(!subscription.allowSendingMoreMessages())
+  }
+
+  it should "advance finite watermarks on idle connections without regressing" in {
+    val (subscription, sender) = prepare(enableIdleProgress = true)
+    when(sender.getProcessingWatermark).thenReturn(Instant.ofEpochMilli(20000))
+    subscription.onStallingTime(Watermark.MIN.toEpochMilli)
+    assert(subscription.watermark == 20000)
+
+    when(sender.getProcessingWatermark).thenReturn(Instant.ofEpochMilli(10000))
+    subscription.onStallingTime(20000)
+    assert(subscription.watermark == 20000)
+
+    when(sender.getProcessingWatermark).thenReturn(Watermark.MAX)
+    subscription.onStallingTime(20000)
+    assert(subscription.watermark == Watermark.MAX.toEpochMilli)
+  }
+
+  it should "wait for all pending messages before advancing an idle watermark" in {
+    val (subscription, sender) = prepare(enableIdleProgress = true)
+    when(sender.getProcessingWatermark).thenReturn(Instant.ofEpochMilli(10000))
+    subscription.sendMessage(Message("1", Instant.ofEpochMilli(1000)))
+    subscription.sendMessage(Message("2", Instant.ofEpochMilli(1000)))
+    subscription.onStallingTime(Watermark.MIN.toEpochMilli)
+    assert(subscription.watermark == Watermark.MIN.toEpochMilli)
+
+    subscription.receiveAck(Ack(TaskId(1, 0), 101, 101, session, 10000))
+    subscription.onStallingTime(Watermark.MIN.toEpochMilli)
+    assert(subscription.watermark == Watermark.MIN.toEpochMilli)
+
+    verify(sender).transport(AckRequest(taskId, 201, session, 10000), TaskId(1, 1))
+    subscription.receiveAck(Ack(TaskId(1, 1), 201, 201, session, 10000))
+    assert(subscription.watermark == 10000)
+    when(sender.getProcessingWatermark).thenReturn(Instant.ofEpochMilli(20000))
+    subscription.onStallingTime(10000)
+    assert(subscription.watermark == 20000)
+  }
+
+  it should "preserve acknowledged progress by default when idle" in {
+    val (subscription, sender) = prepare
+    subscription.receiveAck(Ack(TaskId(1, 0), 0, 0, session, 1000))
+    subscription.receiveAck(Ack(TaskId(1, 1), 0, 0, session, 1000))
+    when(sender.getProcessingWatermark).thenReturn(Instant.ofEpochMilli(10000))
+    subscription.onStallingTime(1000)
+    assert(subscription.watermark == 1000)
+
+    when(sender.getProcessingWatermark).thenReturn(Watermark.MAX)
+    subscription.onStallingTime(1000)
+    assert(subscription.watermark == Watermark.MAX.toEpochMilli)
   }
 
   private def randomMessage: String = new Random().nextInt.toString

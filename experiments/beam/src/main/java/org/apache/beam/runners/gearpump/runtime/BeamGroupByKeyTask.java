@@ -31,9 +31,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import org.apache.beam.runners.gearpump.translators.utils.TranslatorUtils;
 import org.apache.beam.sdk.coders.Coder;
-import org.apache.beam.sdk.transforms.windowing.GlobalWindow;
 import org.apache.beam.sdk.transforms.windowing.BoundedWindow;
 import org.apache.beam.sdk.transforms.windowing.PaneInfo;
 import org.apache.beam.sdk.util.CoderUtils;
@@ -44,8 +45,8 @@ import org.apache.beam.sdk.values.WindowedValues;
 /**
  * Minimal in-memory Beam GroupByKey task.
  *
- * <p>This implementation emits one final pane per key/window when the input watermark reaches
- * {@link Watermark#MAX()}.
+ * <p>Emits one final pane per key/window when the input watermark passes the window end,
+ * then releases its state. Only default triggers and zero allowed lateness are supported.
  */
 @SuppressWarnings("unchecked")
 public class BeamGroupByKeyTask<K, V> extends Task {
@@ -55,7 +56,9 @@ public class BeamGroupByKeyTask<K, V> extends Task {
   private final TaskContext taskContext;
   private final BeamGroupByKeySpec<K> spec;
   private final Map<ByteArrayKey, GroupedValues<K, V>> groups = new LinkedHashMap<>();
-  private boolean emitted = false;
+  private final NavigableMap<Instant, List<ByteArrayKey>> groupsByWindowEnd = new TreeMap<>();
+  private final NavigableMap<org.joda.time.Instant, Integer> timestampHolds = new TreeMap<>();
+  private Instant inputWatermark = Watermark.MIN();
 
   public BeamGroupByKeyTask(TaskContext taskContext, UserConfig userConfig) {
     super(taskContext, userConfig);
@@ -72,14 +75,20 @@ public class BeamGroupByKeyTask<K, V> extends Task {
       for (WindowedValue<KV<K, V>> explodedWindow : windowedValue.explodeWindows()) {
         KV<K, V> value = explodedWindow.getValue();
         BoundedWindow window = (BoundedWindow) explodedWindow.getWindows().iterator().next();
-        ByteArrayKey key = createGroupingKey(value.getKey(), window);
-        GroupedValues<K, V> grouped = groups.get(key);
-        if (grouped == null) {
-          grouped = new GroupedValues<>(value.getKey(), window);
-          groups.put(key, grouped);
+        if (!isClosed(window, inputWatermark)) {
+          ByteArrayKey key = createGroupingKey(value.getKey(), window);
+          GroupedValues<K, V> grouped = groups.get(key);
+          if (grouped == null) {
+            grouped = new GroupedValues<>(value.getKey(), window);
+            groups.put(key, grouped);
+            Instant windowEnd = TranslatorUtils.jodaTimeToJava8Time(window.maxTimestamp());
+            groupsByWindowEnd.computeIfAbsent(windowEnd, ignored -> new ArrayList<>()).add(key);
+          }
+          grouped.values.add(value.getValue());
+          org.joda.time.Instant timestamp =
+              spec.getTimestampCombiner().assign(window, explodedWindow.getTimestamp());
+          updateTimestampHold(grouped, timestamp);
         }
-        grouped.values.add(value.getValue());
-        grouped.timestamps.add(explodedWindow.getTimestamp());
       }
     } catch (Exception e) {
       throw new RuntimeException("Failed to group Beam values by key", e);
@@ -88,28 +97,68 @@ public class BeamGroupByKeyTask<K, V> extends Task {
 
   @Override
   public void onWatermarkProgress(Instant watermark) {
-    if (!emitted && Watermark.MAX().equals(watermark)) {
-      emitAll();
-      emitted = true;
-      groups.clear();
+    if (!watermark.isBefore(inputWatermark)) {
+      inputWatermark = watermark;
+      while (!groupsByWindowEnd.isEmpty()
+          && (Watermark.MAX().equals(watermark)
+              || watermark.isAfter(groupsByWindowEnd.firstKey()))) {
+        for (ByteArrayKey key : groupsByWindowEnd.pollFirstEntry().getValue()) {
+          GroupedValues<K, V> grouped = groups.remove(key);
+          emit(grouped);
+          removeTimestampHold(grouped.timestamp);
+        }
+      }
+      Instant outputWatermark = watermark;
+      if (!timestampHolds.isEmpty()) {
+        // Pending groups may produce timestamps earlier than the input watermark.
+        Instant hold = TranslatorUtils.jodaTimeToJava8Time(timestampHolds.firstKey());
+        if (hold.isBefore(outputWatermark)) {
+          outputWatermark = hold;
+        }
+      }
+      taskContext.updateWatermark(outputWatermark);
     }
-    taskContext.updateWatermark(watermark);
   }
 
-  private void emitAll() {
-    for (GroupedValues<K, V> grouped : groups.values()) {
-      KV<K, Iterable<V>> output = KV.of(grouped.key, (Iterable<V>) new ArrayList<>(grouped.values));
-      org.joda.time.Instant outputTimestamp =
-          spec.getTimestampCombiner().merge(grouped.window, grouped.timestamps);
-      Instant javaTimestamp = TranslatorUtils.jodaTimeToJava8Time(outputTimestamp);
-      WindowedValue<KV<K, Iterable<V>>> windowedValue =
-          WindowedValues.of(
-              output,
-              outputTimestamp,
-              Collections.singletonList(grouped.window),
-              PaneInfo.ON_TIME_AND_ONLY_FIRING);
-      taskContext.output(new DefaultMessage(windowedValue, javaTimestamp));
+  private static boolean isClosed(BoundedWindow window, Instant watermark) {
+    return Watermark.MAX().equals(watermark)
+        || watermark.isAfter(TranslatorUtils.jodaTimeToJava8Time(window.maxTimestamp()));
+  }
+
+  private void updateTimestampHold(
+      GroupedValues<K, V> grouped, org.joda.time.Instant timestamp) {
+    org.joda.time.Instant combined =
+        grouped.timestamp == null
+            ? timestamp
+            : spec.getTimestampCombiner().combine(grouped.timestamp, timestamp);
+    if (!combined.equals(grouped.timestamp)) {
+      if (grouped.timestamp != null) {
+        removeTimestampHold(grouped.timestamp);
+      }
+      grouped.timestamp = combined;
+      timestampHolds.merge(combined, 1, Integer::sum);
     }
+  }
+
+  private void removeTimestampHold(org.joda.time.Instant timestamp) {
+    int remaining = timestampHolds.get(timestamp) - 1;
+    if (remaining == 0) {
+      timestampHolds.remove(timestamp);
+    } else {
+      timestampHolds.put(timestamp, remaining);
+    }
+  }
+
+  private void emit(GroupedValues<K, V> grouped) {
+    KV<K, Iterable<V>> output = KV.of(grouped.key, (Iterable<V>) new ArrayList<>(grouped.values));
+    WindowedValue<KV<K, Iterable<V>>> windowedValue =
+        WindowedValues.of(
+            output,
+            grouped.timestamp,
+            Collections.singletonList(grouped.window),
+            PaneInfo.ON_TIME_AND_ONLY_FIRING);
+    taskContext.output(
+        new DefaultMessage(windowedValue, TranslatorUtils.jodaTimeToJava8Time(grouped.timestamp)));
   }
 
   private ByteArrayKey createGroupingKey(K key, BoundedWindow window) throws IOException {
@@ -123,7 +172,7 @@ public class BeamGroupByKeyTask<K, V> extends Task {
     private final K key;
     private final BoundedWindow window;
     private final List<V> values = new ArrayList<>();
-    private final List<org.joda.time.Instant> timestamps = new ArrayList<>();
+    private org.joda.time.Instant timestamp;
 
     private GroupedValues(K key, BoundedWindow window) {
       this.key = key;

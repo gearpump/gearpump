@@ -14,7 +14,6 @@
 
 package io.gearpump.streaming.task
 
-import org.apache.pekko.actor._
 import com.gs.collections.impl.map.mutable.primitive.IntShortHashMap
 import io.gearpump.Message
 import io.gearpump.Time.MilliSeconds
@@ -30,9 +29,10 @@ import io.gearpump.util.{LogUtil, PekkoHelper, TimeOutScheduler}
 import java.time.Instant
 import java.util
 import java.util.concurrent.TimeUnit
+import org.apache.pekko.actor._
 import org.slf4j.Logger
-import scala.jdk.CollectionConverters._
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 
 
 /**
@@ -201,7 +201,8 @@ class TaskActor(
           case None =>
             val subscription = new Subscription(taskContextData.appId,
               taskContextData.executorId, taskId, subscriber,
-              sessionId, this, maxPendingMessageCount, ackOnceEveryMessageCount)
+              sessionId, this, maxPendingMessageCount, ackOnceEveryMessageCount,
+              task.enableIdleWatermarkProgress)
             subscription.start()
             subscriptions :+= subscriber.processorId -> subscription
             // Sorting, keep the order
@@ -267,7 +268,8 @@ class TaskActor(
     subscriptions = taskContextData.subscribers.map { subscriber =>
       (subscriber.processorId,
         new Subscription(taskContextData.appId, taskContextData.executorId, taskId, subscriber,
-          sessionId, this, maxPendingMessageCount, ackOnceEveryMessageCount))
+          sessionId, this, maxPendingMessageCount, ackOnceEveryMessageCount,
+          task.enableIdleWatermarkProgress))
     }.sortBy(_._1)
 
     subscriptions.foreach(_._2.start())

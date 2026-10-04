@@ -13,8 +13,6 @@
  */
 package io.gearpump.streaming.appmaster
 
-import org.apache.pekko.actor.{ActorSystem, Props}
-import org.apache.pekko.testkit.{ImplicitSender, TestKit, TestProbe}
 import io.gearpump.cluster.{TestUtil, UserConfig}
 import io.gearpump.streaming.{DAG, LifeTime, ProcessorDescription}
 import io.gearpump.streaming.appmaster.ClockService.{ChangeToNewDAG, ChangeToNewDAGSuccess, HealthChecker, ProcessorClock}
@@ -24,9 +22,11 @@ import io.gearpump.streaming.storage.AppDataStore
 import io.gearpump.streaming.task.{GetLatestMinClock, GetStartClock, UpstreamMinClock, _}
 import io.gearpump.util.Graph
 import io.gearpump.util.Graph._
+import org.apache.pekko.actor.{ActorSystem, Props}
+import org.apache.pekko.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.{Future, Promise}
 
 class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with ImplicitSender
@@ -110,6 +110,34 @@ class ClockServiceSpec(_system: ActorSystem) extends TestKit(_system) with Impli
 
       // For source task, set the initial clock as startClock
       assert(clocks(task5.id) == startClock)
+    }
+
+    "persist the original replay frontier while volatile tasks advance event time" in {
+      val store = new Store()
+      val startClock = 100L
+      store.put(ClockService.START_CLOCK, startClock)
+      val replayConf = UserConfig.empty.withBoolean(ClockService.REPLAY_FROM_START, value = true)
+      val bufferedTask = task2.copy(taskConf = replayConf)
+      val bufferedDag = DAG(Graph(task1 ~ hash ~> bufferedTask))
+      val clockService = system.actorOf(Props(new ClockService(bufferedDag, appMaster, store)))
+
+      clockService ! UpdateClock(TaskId(0, 0), 200L)
+      expectMsgType[UpstreamMinClock]
+      clockService ! UpdateClock(TaskId(1, 0), 200L)
+      expectMsgType[UpstreamMinClock]
+      clockService ! GetLatestMinClock
+      expectMsg(LatestMinClock(200L))
+      clockService ! GetStartClock
+      expectMsg(StartClock(startClock))
+
+      clockService ! ClockService.SnapshotStartClock
+      clockService ! GetStartClock
+      expectMsg(StartClock(startClock))
+      system.stop(clockService)
+      val recovered = system.actorOf(Props(new ClockService(bufferedDag, appMaster, store)))
+      recovered ! GetStartClock
+      expectMsg(StartClock(startClock))
+      system.stop(recovered)
     }
 
     "maintain global checkpoint time" in {

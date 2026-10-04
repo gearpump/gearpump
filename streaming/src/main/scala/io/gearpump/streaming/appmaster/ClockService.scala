@@ -14,7 +14,6 @@
 
 package io.gearpump.streaming.appmaster
 
-import org.apache.pekko.actor.{Actor, ActorRef, Cancellable, Stash}
 import com.google.common.primitives.Longs
 import io.gearpump.Time
 import io.gearpump.Time.MilliSeconds
@@ -30,6 +29,7 @@ import java.time.Instant
 import java.util
 import java.util.Date
 import java.util.concurrent.TimeUnit
+import org.apache.pekko.actor.{Actor, ActorRef, Cancellable, Stash}
 import org.slf4j.Logger
 import scala.concurrent.duration.FiniteDuration
 
@@ -48,6 +48,7 @@ class ClockService(
   private val healthChecker = new HealthChecker(stallingThresholdSeconds = 60)
   private var healthCheckScheduler: Cancellable = _
   private var snapshotScheduler: Cancellable = _
+  private var initialStartClock = Time.MIN_TIME_MILLIS
 
   override def receive: Receive = null
 
@@ -58,6 +59,7 @@ class ClockService(
       // (null).asInstanceOf[MilliSeconds] is zero
       val startClock = if (clock != null) clock.asInstanceOf[MilliSeconds] else Time.MIN_TIME_MILLIS
 
+      initialStartClock = startClock
       minClock = startClock
       minCheckpointClock = Some(startClock)
 
@@ -313,7 +315,16 @@ class ClockService(
   }
 
   private def getStartClock: MilliSeconds = {
-    minCheckpointClock.getOrElse(minClock)
+    val requiresFullReplay = dag.processors.valuesIterator.exists { processor =>
+      processor.taskConf != null && processor.taskConf.getBoolean(REPLAY_FROM_START).contains(true)
+    }
+    if (requiresFullReplay) {
+      // Volatile state may depend on source records older than its output timestamps,
+      // especially after chained transforms. Event-time progress cannot certify recovery.
+      initialStartClock
+    } else {
+      minCheckpointClock.getOrElse(minClock)
+    }
   }
 
   private def snapshotStartClock(): Unit = {
@@ -335,6 +346,7 @@ class ClockService(
 
 object ClockService {
   val START_CLOCK = "startClock"
+  val REPLAY_FROM_START = "state.replay-from-start"
 
   case object HealthCheck
 

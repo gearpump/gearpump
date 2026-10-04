@@ -16,13 +16,25 @@
  */
 package org.apache.beam.runners.gearpump;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.coders.Coder;
+import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.SerializableCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.coders.VarIntCoder;
+import org.apache.beam.sdk.io.Read;
+import org.apache.beam.sdk.io.UnboundedSource;
+import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -35,14 +47,11 @@ import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.TimestampedValue;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.joda.time.Duration;
-import org.joda.time.Instant;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /** Embedded-runner integration tests for the low-level Gearpump Beam runner. */
 public class GearpumpRunnerIntegrationTest {
@@ -166,6 +175,29 @@ public class GearpumpRunnerIntegrationTest {
     assertPipelineOutputs(pipeline, "a=3", "b=5");
   }
 
+  @Test
+  public void emitsUnboundedWindowedGroupsWithoutTerminalWatermark() {
+    options.setParallelism(2);
+    Pipeline pipeline = Pipeline.create(options);
+    pipeline.apply(Read.from(new WindowedTestSource()))
+        .apply(Window.into(FixedWindows.of(Duration.standardSeconds(10))))
+        .apply(GroupByKey.create())
+        .apply("captureStreamingSums", ParDo.of(new CaptureGroupedSumsFn()));
+    assertPipelineOutputs(pipeline, "a=3", "a=5");
+  }
+
+  @Test
+  public void emitsChainedUnboundedCombinesWithEarliestTimestamps() {
+    Pipeline pipeline = Pipeline.create(options);
+    pipeline.apply(Read.from(new WindowedTestSource()))
+        .apply(Window.<KV<String, Integer>>into(FixedWindows.of(Duration.standardSeconds(10)))
+            .withTimestampCombiner(TimestampCombiner.EARLIEST))
+        .apply("firstSum", Sum.integersPerKey())
+        .apply("secondSum", Sum.integersPerKey())
+        .apply("captureChainedStreamingSums", ParDo.of(new CaptureCombinedSumsFn()));
+    assertPipelineOutputs(pipeline, "a=3", "a=5");
+  }
+
   private static List<String> asSortedList(String... values) {
     List<String> list = new ArrayList<>();
     Collections.addAll(list, values);
@@ -187,10 +219,7 @@ public class GearpumpRunnerIntegrationTest {
 
   private static void waitForOutputs(int expectedCount) {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-    while (System.nanoTime() < deadline) {
-      if (CAPTURED.size() >= expectedCount) {
-        return;
-      }
+    while (CAPTURED.size() < expectedCount && System.nanoTime() < deadline) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
@@ -198,7 +227,9 @@ public class GearpumpRunnerIntegrationTest {
         fail("Interrupted while waiting for Beam pipeline output");
       }
     }
-    fail("Timed out waiting for Beam pipeline output. Captured: " + CAPTURED);
+    if (CAPTURED.size() < expectedCount) {
+      fail("Timed out waiting for Beam pipeline output. Captured: " + CAPTURED);
+    }
   }
 
   private static void shutdown(GearpumpPipelineResult result) {
@@ -209,6 +240,83 @@ public class GearpumpRunnerIntegrationTest {
     } finally {
       result.getClientContext().close();
     }
+  }
+
+  /** Emits two windows, then stays idle with a finite watermark instead of ending the source. */
+  private static final class WindowedTestSource
+      extends UnboundedSource<KV<String, Integer>, TestCheckpoint> {
+    @Override
+    public List<? extends UnboundedSource<KV<String, Integer>, TestCheckpoint>> split(
+        int desiredNumSplits, PipelineOptions options) {
+      return Collections.singletonList(this);
+    }
+
+    @Override
+    public UnboundedReader<KV<String, Integer>> createReader(
+        PipelineOptions options, TestCheckpoint checkpoint) {
+      return new UnboundedReader<KV<String, Integer>>() {
+        private final long[] timestamps = {1_000, 5_000, 15_000};
+        private final int[] values = {1, 2, 5};
+        private int index;
+
+        @Override
+        public boolean start() {
+          return true;
+        }
+
+        @Override
+        public boolean advance() {
+          if (index < timestamps.length) {
+            index++;
+          }
+          return index < timestamps.length;
+        }
+
+        @Override
+        public KV<String, Integer> getCurrent() {
+          return KV.of("a", values[index]);
+        }
+
+        @Override
+        public Instant getCurrentTimestamp() {
+          return new Instant(timestamps[index]);
+        }
+
+        @Override
+        public Instant getWatermark() {
+          return new Instant(index < timestamps.length ? timestamps[index] : 20_000);
+        }
+
+        @Override
+        public CheckpointMark getCheckpointMark() {
+          return new TestCheckpoint();
+        }
+
+        @Override
+        public UnboundedSource<KV<String, Integer>, ?> getCurrentSource() {
+          return WindowedTestSource.this;
+        }
+
+        @Override
+        public void close() { }
+      };
+    }
+
+    @Override
+    public Coder<KV<String, Integer>> getOutputCoder() {
+      return KvCoder.of(StringUtf8Coder.of(), VarIntCoder.of());
+    }
+
+    @Override
+    public Coder<TestCheckpoint> getCheckpointMarkCoder() {
+      return SerializableCoder.of(TestCheckpoint.class);
+    }
+  }
+
+  private static final class TestCheckpoint
+      implements UnboundedSource.CheckpointMark, Serializable {
+    @Override
+    public void finalizeCheckpoint() { }
   }
 
   private static final class UpperCaseFn extends DoFn<String, String> {

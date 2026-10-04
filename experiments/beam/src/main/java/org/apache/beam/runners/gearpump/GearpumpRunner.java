@@ -26,6 +26,7 @@ import io.gearpump.cluster.client.BeamClientContext;
 import io.gearpump.cluster.client.ClientContext;
 import io.gearpump.cluster.client.RunningApplication;
 import io.gearpump.streaming.javaapi.StreamApplication;
+import io.gearpump.streaming.task.Subscription;
 import io.gearpump.util.Constants;
 import java.util.HashMap;
 import java.util.Map;
@@ -89,7 +90,10 @@ public class GearpumpRunner extends PipelineRunner<GearpumpPipelineResult> {
       options.setClientContext(clientContext);
 
       StreamApplication app =
-          new StreamApplication(appName, UserConfig.empty(), translationContext.getGraph());
+          new StreamApplication(
+              appName,
+              UserConfig.empty().withBoolean(Subscription.ENABLE_IDLE_WATERMARK_PROGRESS(), true),
+              translationContext.getGraph());
       RunningApplication running = clientContext.submit(app);
       return new GearpumpPipelineResult(clientContext, running);
     } finally {
@@ -107,7 +111,8 @@ public class GearpumpRunner extends PipelineRunner<GearpumpPipelineResult> {
     serializers.put("org.apache.beam.sdk.values.WindowedValues$ValueInGlobalWindow", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedValueInSingleWindow", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedValueInGlobalWindow", "");
-    serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedValueInMultipleWindows", "");
+    serializers.put(
+        "org.apache.beam.sdk.values.WindowedValues$TimestampedValueInMultipleWindows", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$SingleWindowedValue", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$TimestampedWindowedValue", "");
     serializers.put("org.apache.beam.sdk.values.WindowedValues$SimpleWindowedValue", "");
