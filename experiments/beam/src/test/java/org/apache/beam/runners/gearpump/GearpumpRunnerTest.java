@@ -17,9 +17,6 @@
  */
 package org.apache.beam.runners.gearpump;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import com.typesafe.config.Config;
 import io.gearpump.cluster.ClusterConfig;
 import io.gearpump.cluster.client.RunningApplication;
@@ -31,6 +28,9 @@ import org.apache.pekko.actor.ActorRef;
 import org.apache.pekko.util.Timeout;
 import org.joda.time.Duration;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GearpumpRunnerTest {
 
@@ -45,8 +45,7 @@ public class GearpumpRunnerTest {
 
     assertTrue(config.hasPath(GEARPUMP_SERIALIZERS + ".\"[B\""));
     assertTrue(config.hasPath(GEARPUMP_SERIALIZERS + ".\"scala.Tuple2\""));
-    assertTrue(
-        config.hasPath(GEARPUMP_SERIALIZERS + ".\"" + TaggedOutputValue.class.getName() + "\""));
+    assertTrue(config.hasPath(GEARPUMP_SERIALIZERS + ".\"" + TaggedOutputValue.class.getName() + "\""));
     assertTrue(config.hasPath(GEARPUMP_SERIALIZERS + ".\"com.example.CustomValue\""));
   }
 

@@ -19,9 +19,9 @@ package org.apache.beam.runners.gearpump.translators;
 
 import io.gearpump.cluster.UserConfig;
 import io.gearpump.streaming.javaapi.Processor;
-import io.gearpump.streaming.source.DataSourceTask;
 import org.apache.beam.runners.gearpump.translators.io.BoundedSourceWrapper;
 import org.apache.beam.sdk.io.Read;
+import io.gearpump.streaming.source.DataSourceTask;
 
 /** Translates a Beam {@link Read.Bounded} into a Gearpump source processor. */
 public class ReadBoundedTranslator<T> implements TransformTranslator<Read.Bounded<T>> {

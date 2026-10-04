@@ -20,11 +20,11 @@ package org.apache.beam.runners.gearpump.translators;
 import io.gearpump.cluster.UserConfig;
 import io.gearpump.streaming.javaapi.Processor;
 import io.gearpump.streaming.partitioner.CoLocationPartitioner;
-import io.gearpump.streaming.source.DataSourceTask;
 import org.apache.beam.runners.gearpump.runtime.BeamFlattenTask;
 import org.apache.beam.runners.gearpump.translators.io.EmptySource;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.values.PValue;
+import io.gearpump.streaming.source.DataSourceTask;
 
 /** Translates Beam {@link Flatten.PCollections} into a low-level Gearpump union node. */
 public class FlattenPCollectionsTranslator<T>
@@ -42,16 +42,20 @@ public class FlattenPCollectionsTranslator<T>
               context.getActorSystem());
       context.getGraph().addVertex(source);
       context.setOutputProcessor(context.getOutput(), source);
-    } else if (context.getInputs().size() == 1) {
+      return;
+    }
+
+    if (context.getInputs().size() == 1) {
       Processor<?> inputProcessor = context.getOutputProcessor(context.getInput());
       context.setOutputProcessor(context.getOutput(), (Processor) inputProcessor);
-    } else {
-      Processor<BeamFlattenTask> flatten =
-          context.addProcessor(BeamFlattenTask.class, UserConfig.empty(), transform.getName());
-      for (PValue input : context.getInputs().values()) {
-        context.connect(input, new CoLocationPartitioner(), flatten);
-      }
-      context.setOutputProcessor(context.getOutput(), flatten);
+      return;
     }
+
+    Processor<BeamFlattenTask> flatten =
+        context.addProcessor(BeamFlattenTask.class, UserConfig.empty(), transform.getName());
+    for (PValue input : context.getInputs().values()) {
+      context.connect(input, new CoLocationPartitioner(), flatten);
+    }
+    context.setOutputProcessor(context.getOutput(), flatten);
   }
 }

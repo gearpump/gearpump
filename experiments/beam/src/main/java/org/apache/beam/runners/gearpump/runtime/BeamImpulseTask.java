@@ -30,10 +30,10 @@ import org.apache.beam.sdk.values.WindowedValues;
 import org.apache.pekko.actor.Cancellable;
 import scala.Function1;
 import scala.PartialFunction;
+import scala.runtime.AbstractPartialFunction;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.AbstractFunction0;
-import scala.runtime.AbstractPartialFunction;
 import scala.runtime.BoxedUnit;
 
 /** Emits the single Beam impulse element after task startup stabilizes. */
@@ -109,8 +109,7 @@ public class BeamImpulseTask extends Task {
 
   private void emitImpulse() {
     WindowedValue<byte[]> impulse = WindowedValues.valueInGlobalWindow(new byte[0]);
-    taskContext.output(
-        new DefaultMessage(impulse, TranslatorUtils.windowedValueTimestamp(impulse)));
+    taskContext.output(new DefaultMessage(impulse, TranslatorUtils.windowedValueTimestamp(impulse)));
   }
 
   private void scheduleWatermarkAdvance() {

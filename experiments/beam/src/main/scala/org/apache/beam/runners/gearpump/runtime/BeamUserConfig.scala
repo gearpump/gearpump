@@ -14,8 +14,8 @@
 
 package org.apache.beam.runners.gearpump.runtime
 
-import io.gearpump.cluster.UserConfig
 import org.apache.pekko.actor.ActorSystem
+import io.gearpump.cluster.UserConfig
 
 object BeamUserConfig {
 

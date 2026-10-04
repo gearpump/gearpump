@@ -74,7 +74,7 @@ public class CreateValuesSource<T> implements DataSource {
   }
 
   @Override
-  public void close() { }
+  public void close() {}
 
   @Override
   public Instant getWatermark() {
