@@ -14,11 +14,12 @@
 
 package io.gearpump.security
 
-import org.apache.pekko.actor.ActorSystem
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import io.gearpump.cluster.TestUtil
+import org.apache.pekko.actor.ActorSystem
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 
 class ConfigFileBasedAuthenticatorSpec extends AnyFlatSpec with Matchers {
@@ -56,4 +57,47 @@ class ConfigFileBasedAuthenticatorSpec extends AnyFlatSpec with Matchers {
       new ConfigFileBasedAuthenticator(config)
     }
   }
+
+  it should "start with shipped empty role maps and deny the former default accounts" in {
+    val defaults = ConfigFactory.parseResources("geardefault.conf").resolve()
+    val config = defaults.getConfig("gearpump-ui").withFallback(defaults)
+    val root = "gearpump.ui-security.config-file-based-authenticator"
+    Seq("admins", "users", "guests").foreach { role =>
+      assert(config.getConfig(root + "." + role).isEmpty)
+    }
+    val authenticator = new ConfigFileBasedAuthenticator(config)
+    Seq("admin", "guest").foreach { user =>
+      Await.result(authenticator.authenticate(user, user, ExecutionContext.global), 5.seconds)
+        .shouldBe(Authenticator.UnAuthenticated)
+    }
+  }
+
+  it should "validate every role entry even when another role contains the same username" in {
+    val root = "gearpump.ui-security.config-file-based-authenticator"
+    val valid = TestUtil.UI_CONFIG.getString(root + ".admins.admin")
+    val legacy = "AeGxGOxlU8QENdOXejCeLxy+isrCv0TrS37HwA=="
+    Seq("admins", "users", "guests").foreach { invalidRole =>
+      val roles = Seq("admins", "users", "guests").foldLeft(TestUtil.UI_CONFIG) { (conf, role) =>
+        conf.withValue(root + "." + role, ConfigValueFactory.fromMap(
+          java.util.Collections.singletonMap("duplicate",
+            if (role == invalidRole) legacy else valid)))
+      }
+      intercept[IllegalArgumentException] { new ConfigFileBasedAuthenticator(roles) }
+    }
+  }
+
+  it should "verify passwords without scheduling work on the caller execution context" in {
+    val forbidden = new ExecutionContext {
+      override def execute(work: Runnable): Unit = {
+        throw new AssertionError("Password verification used the HTTP executor")
+      }
+      override def reportFailure(error: Throwable): Unit = throw new AssertionError(error)
+    }
+    val authenticator = new ConfigFileBasedAuthenticator(TestUtil.UI_CONFIG)
+    Await.result(authenticator.authenticate("admin", "admin", forbidden), 10.seconds)
+      .shouldBe(Authenticator.Admin)
+    Await.result(authenticator.authenticate("admin", "wrong", forbidden), 10.seconds)
+      .shouldBe(Authenticator.UnAuthenticated)
+  }
+
 }

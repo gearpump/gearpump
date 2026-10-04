@@ -21,6 +21,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object ConfigFileBasedAuthenticator {
 
+  private val passwordVerifier = new PasswordVerificationExecutor(2, 16)
+
   private val ROOT = "gearpump.ui-security.config-file-based-authenticator"
   private val ADMINS = ROOT + "." + "admins"
   private val USERS = ROOT + "." + "users"
@@ -80,19 +82,18 @@ class ConfigFileBasedAuthenticator(config: Config) extends Authenticator {
 
   override def authenticate(user: String, password: String, ec: ExecutionContext)
     : Future[AuthenticationResult] = {
-    implicit val ctx = ec
-    Future {
-      credentials.verify(user, password)
-    }
+    passwordVerifier.verify(credentials.verify(user, password))
   }
 
   private def loadCredentials(config: Config): Credentials = {
     val admins = configToMap(config, ADMINS)
     val users = configToMap(config, USERS)
     val guests = configToMap(config, GUESTS)
-    (admins ++ users ++ guests).foreach { case (user, digest) =>
-      require(PasswordUtil.isSupportedHash(digest),
-        s"Unsupported password hash for $user; regenerate it with PasswordUtil")
+    Seq(admins, users, guests).foreach { role =>
+      role.foreach { case (user, digest) =>
+        require(PasswordUtil.isSupportedHash(digest),
+          s"Unsupported password hash for $user; regenerate it with PasswordUtil")
+      }
     }
     new Credentials(admins, users, guests)
   }

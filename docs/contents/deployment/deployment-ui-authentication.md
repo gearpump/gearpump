@@ -281,7 +281,7 @@ You can follow the Google OAuth2 example code to define a custom OAuth2Authentic
    The configuration entry is supposed to be used by class `SocialNetworkXAuthenticator`.
 ## Password hash migration
 
-The distribution contains no default administrator account. Generate a unique password hash
+The distribution contains no default administrator or guest account. Generate a unique password hash
 with `bin/gear io.gearpump.security.PasswordUtil -password <password>` and add it to the
 appropriate account map before enabling authentication.
 
@@ -297,3 +297,8 @@ invalidating sessions issued by the previous process.
 
 Session configuration uses `pekko.http.session.*`; replace any custom
 `akka.http.session.*` overrides when upgrading.
+
+Password verification runs on a process-wide pool of two dedicated workers with at most
+16 queued attempts. When this pool is full, further attempts fail authentication immediately
+without running PBKDF2 on the HTTP dispatcher. Custom authenticators must likewise keep
+expensive password checks off the request-processing execution context.
