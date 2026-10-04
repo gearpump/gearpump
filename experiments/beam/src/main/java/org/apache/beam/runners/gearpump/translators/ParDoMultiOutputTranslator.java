@@ -88,7 +88,8 @@ public class ParDoMultiOutputTranslator<InputT, OutputT>
     for (Map.Entry<TupleTag<?>, PValue> output : outputs.entrySet()) {
       String outputTagId =
           output.getKey() == null ? mainOutputTag.getId() : output.getKey().getId();
-      UserConfig selectorConfig = UserConfig.empty().withString(BeamTaggedOutputTask.OUTPUT_TAG, outputTagId);
+      UserConfig selectorConfig =
+          UserConfig.empty().withString(BeamTaggedOutputTask.OUTPUT_TAG, outputTagId);
       Processor<BeamTaggedOutputTask> selector =
           context.addProcessor(
               BeamTaggedOutputTask.class,

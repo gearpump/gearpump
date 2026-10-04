@@ -29,7 +29,8 @@ public class BeamCombineGroupedValuesSpec<K, InputT, OutputT> implements Seriali
   private final CombineFnBase.GlobalCombineFn<? super InputT, ?, OutputT> combineFn;
 
   public BeamCombineGroupedValuesSpec(
-      PipelineOptions options, CombineFnBase.GlobalCombineFn<? super InputT, ?, OutputT> combineFn) {
+      PipelineOptions options,
+      CombineFnBase.GlobalCombineFn<? super InputT, ?, OutputT> combineFn) {
     this.options = new SerializablePipelineOptions(options);
     this.combineFn = combineFn;
   }
