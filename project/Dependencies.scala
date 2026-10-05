@@ -35,7 +35,7 @@ object Dependencies {
   val slf4jVersion = "2.0.20"
   val slf4jSimpleVersion = "2.0.19"
   val log4jVersion = "2.25.2"
-  val guavaVersion = "33.7.1-jre"
+  val guavaVersion = "33.7.2-jre"
   val codahaleVersion = "3.0.2"
   val pekkoKryoVersion = "1.5.2"
   val pekkoNettyVersion = "4.2.7.Final"
