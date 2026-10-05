@@ -286,7 +286,10 @@ with `bin/gear io.gearpump.security.PasswordUtil -password <password>` and add i
 appropriate account map before enabling authentication.
 
 New hashes use the versioned format `pbkdf2-sha256:iterations:salt:key`, with 600,000
-PBKDF2-HMAC-SHA256 iterations and a random 16-byte salt. The work factor follows the
+PBKDF2-HMAC-SHA256 iterations and a random 16-byte salt. Only this exact iteration count
+is supported so configured accounts and unknown-user dummy checks use the same work
+factor. Hashes with any other cost are rejected at startup; regenerate them with
+PasswordUtil before enabling authentication. The work factor follows the
 [OWASP password storage guidance](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2).
 The authenticator rejects the old SHA-1 format at startup; regenerate every configured
 account hash before upgrading. Passwords are not available to automatically migrate

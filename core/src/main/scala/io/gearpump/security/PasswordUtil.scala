@@ -24,7 +24,6 @@ import scala.util.Try
 object PasswordUtil {
   private val Algorithm = "pbkdf2-sha256"
   private val Iterations = 600000
-  private val MaxIterations = 1000000
   private val SaltLength = 16
   private val KeyLength = 32
   private val random = new SecureRandom()
@@ -53,7 +52,8 @@ object PasswordUtil {
     val fields = stored.split(":", -1)
     require(fields.length == 4 && fields(0) == Algorithm, "Unsupported password hash")
     val iterations = fields(1).toInt
-    require(iterations >= Iterations && iterations <= MaxIterations, "Invalid password cost")
+    // Configured accounts and unknown-user dummy checks must perform the same work.
+    require(iterations == Iterations, "Unsupported password cost; regenerate with PasswordUtil")
     val salt = Base64.getDecoder.decode(fields(2))
     val key = Base64.getDecoder.decode(fields(3))
     require(salt.length == SaltLength && key.length == KeyLength, "Invalid password hash size")

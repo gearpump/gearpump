@@ -158,4 +158,16 @@ class ConfigFileBasedAuthenticatorSpec extends AnyFlatSpec with Matchers {
       .shouldBe(Authenticator.Admin)
   }
 
+  it should "reject startup when any account uses a different password work factor" in {
+    val root = "gearpump.ui-security.config-file-based-authenticator"
+    val digest = TestUtil.UI_CONFIG.getString(root + ".admins.admin")
+    Seq("admins.admin", "users.user", "guests.guest").foreach { account =>
+      Seq(599999, 600001, 800000, 1000000).foreach { iterations =>
+        val config = TestUtil.UI_CONFIG.withValue(root + "." + account,
+          ConfigValueFactory.fromAnyRef(digest.replace(":600000:", s":$iterations:")))
+        intercept[IllegalArgumentException] { new ConfigFileBasedAuthenticator(config) }
+      }
+    }
+  }
+
 }
