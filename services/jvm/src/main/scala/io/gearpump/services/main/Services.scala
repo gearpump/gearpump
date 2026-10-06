@@ -24,7 +24,7 @@ import io.gearpump.cluster.master.MasterProxy
 import io.gearpump.services.{RestServices, SecurityService}
 import io.gearpump.util.{PekkoApp, Constants, LogUtil, Util}
 import io.gearpump.util.LogUtil.ProcessType
-import java.util.Random
+import java.security.SecureRandom
 import org.slf4j.Logger
 import scala.jdk.CollectionConverters._
 import scala.concurrent.Await
@@ -111,8 +111,8 @@ object Services extends PekkoApp with ArgumentsParser {
     Await.result(system.whenTerminated, Duration.Inf)
   }
 
-  private def randomSeverSecret(): String = {
-    val random = new Random()
+  private[main] def randomSeverSecret(): String = {
+    val random = new SecureRandom()
     val length = 64 // Required
     val bytes = new Array[Byte](length)
     random.nextBytes(bytes)

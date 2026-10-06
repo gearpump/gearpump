@@ -14,14 +14,14 @@
 
 package io.gearpump.services
 
+import com.typesafe.config.Config
+import io.gearpump.cluster.TestUtil
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.http.scaladsl.model.FormData
+import org.apache.pekko.http.scaladsl.model.{DateTime, FormData}
 import org.apache.pekko.http.scaladsl.model.headers.{`Set-Cookie`, Cookie, _}
 import org.apache.pekko.http.scaladsl.server.{AuthorizationFailedRejection, _}
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import com.typesafe.config.Config
-import io.gearpump.cluster.TestUtil
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -34,6 +34,20 @@ class SecurityServiceSpec
   override def testConfig: Config = TestUtil.UI_CONFIG
 
   implicit def actorSystem: ActorSystem = system
+
+  private def assertUsernameCookie(value: String, maxAgeSeconds: Option[Long]): Unit = {
+    val usernameCookies = headers.collect {
+      case `Set-Cookie`(cookie) if cookie.name == "username" => cookie
+    }
+    usernameCookies.size shouldBe 1
+    val username = usernameCookies.head
+    username.value shouldBe value
+    username.path shouldBe Some("/")
+    username.maxAge shouldBe maxAgeSeconds
+    if (maxAgeSeconds.isEmpty) {
+      username.expires.exists(_ < DateTime.now) shouldBe true
+    }
+  }
 
   it should "return 401 if not authenticated" in {
     val security = new SecurityService(SecurityServiceSpec.resource, actorSystem)
@@ -56,9 +70,12 @@ class SecurityServiceSpec
       assert("{\"user\":\"guest\"}" == responseAs[String])
       assert(status.intValue() == 200)
       assert(header[`Set-Cookie`].isDefined)
-      val httpCookie = header[`Set-Cookie`].get.cookie
+      val httpCookie = headers.collectFirst {
+        case `Set-Cookie`(value) if value.name == "gearpump_token" => value
+      }.get
       assert(httpCookie.name == "gearpump_token")
       cookie = HttpCookiePair.apply(httpCookie.name, httpCookie.value)
+      assertUsernameCookie("guest", Some(604800L))
     }
 
     // After authentication, everything is fine.
@@ -76,9 +93,12 @@ class SecurityServiceSpec
       assert("{\"user\":\"guest\"}" == responseAs[String])
       assert(status.intValue() == 200)
       assert(header[`Set-Cookie`].isDefined)
-      val httpCookie = header[`Set-Cookie`].get.cookie
+      val httpCookie = headers.collectFirst {
+        case `Set-Cookie`(value) if value.name == "gearpump_token" => value
+      }.get
       assert(httpCookie.name == "gearpump_token")
       assert(httpCookie.value == "deleted")
+      assertUsernameCookie("deleted", None)
     }
 
     // Access again, rejected this time.
@@ -102,9 +122,12 @@ class SecurityServiceSpec
       assert("{\"user\":\"admin\"}" == responseAs[String])
       assert(status.intValue() == 200)
       assert(header[`Set-Cookie`].isDefined)
-      val httpCookie = header[`Set-Cookie`].get.cookie
+      val httpCookie = headers.collectFirst {
+        case `Set-Cookie`(value) if value.name == "gearpump_token" => value
+      }.get
       assert(httpCookie.name == "gearpump_token")
       cookie = HttpCookiePair(httpCookie.name, httpCookie.value)
+      assertUsernameCookie("admin", Some(604800L))
     }
 
     // After authentication, everything is fine.
@@ -122,9 +145,12 @@ class SecurityServiceSpec
       assert("{\"user\":\"admin\"}" == responseAs[String])
       assert(status.intValue() == 200)
       assert(header[`Set-Cookie`].isDefined)
-      val httpCookie = header[`Set-Cookie`].get.cookie
+      val httpCookie = headers.collectFirst {
+        case `Set-Cookie`(value) if value.name == "gearpump_token" => value
+      }.get
       assert(httpCookie.name == "gearpump_token")
       assert(httpCookie.value == "deleted")
+      assertUsernameCookie("deleted", None)
     }
 
     // Access again, rejected this time.

@@ -14,65 +14,62 @@
 
 package io.gearpump.security
 
-import java.security.MessageDigest
+import java.security.{MessageDigest, SecureRandom}
 import java.util.Base64
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.PBEKeySpec
 import scala.util.Try
 
-/**
- * Util to verify whether user input password is valid or not.
- * It use sha1 to do the digesting.
- */
+/** Versioned password hashes; legacy SHA-1 digests must be regenerated. */
 object PasswordUtil {
-  private val SALT_LENGTH = 8
+  private val Algorithm = "pbkdf2-sha256"
+  private val Iterations = 600000
+  private val SaltLength = 16
+  private val KeyLength = 32
+  private val random = new SecureRandom()
 
-  /**
-   * Verifies user input password with stored digest:
-   * {{{
-   * base64Decode -> extract salt -> do sha1(salt, password) ->
-   * generate digest: salt + sha1 -> compare the generated digest with the stored digest.
-   * }}}
-   */
+  def hash(password: String): String = {
+    require(password != null && password.nonEmpty, "Password must not be empty")
+    val salt = new Array[Byte](SaltLength)
+    random.nextBytes(salt)
+    val key = derive(password, salt, Iterations)
+    s"$Algorithm:$Iterations:${encode(salt)}:${encode(key)}"
+  }
+
   def verify(password: String, stored: String): Boolean = {
     Try {
-      val decoded = base64Decode(stored)
-      val salt = new Array[Byte](SALT_LENGTH)
-      Array.copy(decoded, 0, salt, 0, SALT_LENGTH)
-
-      hash(password, salt) == stored
+      val (iterations, salt, expected) = parse(stored)
+      MessageDigest.isEqual(expected, derive(password, salt, iterations))
     }.getOrElse(false)
   }
-  /**
-   * digesting flow (from original password to digest):
-   * {{{
-   * random salt byte array of length 8 ->
-   * byte array of (salt + sha1(salt, password)) -> base64Encode
-   * }}}
-   */
-  def hash(password: String): String = {
-    // Salt generation 64 bits long
-    val salt = new Array[Byte](SALT_LENGTH)
-    new java.util.Random().nextBytes(salt)
-    hash(password, salt)
+
+  private[security] def isSupportedHash(stored: String): Boolean = {
+    Try(parse(stored)).isSuccess
   }
 
-  private def hash(password: String, salt: Array[Byte]): String = {
-    val digest = MessageDigest.getInstance("SHA-1")
-    digest.reset()
-    digest.update(salt)
-    var input = digest.digest(password.getBytes("UTF-8"))
-    digest.reset()
-    input = digest.digest(input)
-    val withSalt = salt ++ input
-    base64Encode(withSalt)
+  private def parse(stored: String): (Int, Array[Byte], Array[Byte]) = {
+    require(stored != null && stored.length <= 256, "Invalid password hash")
+    val fields = stored.split(":", -1)
+    require(fields.length == 4 && fields(0) == Algorithm, "Unsupported password hash")
+    val iterations = fields(1).toInt
+    // Configured accounts and unknown-user dummy checks must perform the same work.
+    require(iterations == Iterations, "Unsupported password cost; regenerate with PasswordUtil")
+    val salt = Base64.getDecoder.decode(fields(2))
+    val key = Base64.getDecoder.decode(fields(3))
+    require(salt.length == SaltLength && key.length == KeyLength, "Invalid password hash size")
+    (iterations, salt, key)
   }
 
-  private def base64Encode(data: Array[Byte]): String = {
-    Base64.getEncoder.encodeToString(data)
+  private def derive(password: String, salt: Array[Byte], iterations: Int): Array[Byte] = {
+    val spec = new PBEKeySpec(password.toCharArray, salt, iterations, KeyLength * 8)
+    try {
+      SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).getEncoded
+    } finally {
+      spec.clearPassword()
+    }
   }
 
-  private def base64Decode(data: String): Array[Byte] = {
-    Base64.getDecoder.decode(data)
-  }
+  private def encode(bytes: Array[Byte]): String = Base64.getEncoder.encodeToString(bytes)
 
   // scalastyle:off println
   private def help() = {

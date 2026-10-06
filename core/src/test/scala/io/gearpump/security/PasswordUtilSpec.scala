@@ -32,4 +32,32 @@ class PasswordUtilSpec extends AnyFlatSpec with Matchers {
     assert(PasswordUtil.verify(password, digest1))
     assert(PasswordUtil.verify(password, digest2))
   }
+
+  it should "reject wrong passwords, malformed hashes, and legacy digests" in {
+    val digest = PasswordUtil.hash("correct password")
+    assert(digest.startsWith("pbkdf2-sha256:600000:"))
+    assert(!PasswordUtil.verify("wrong password", digest))
+    Seq(null, "", "not-base64", "AeGxGOxlU8QENdOXejCeLxy+isrCv0TrS37HwA==",
+      digest.replace(":600000:", ":1:"), digest.replace(":600000:", ":2147483647:"),
+      digest.replace("pbkdf2-sha256", "unknown"), digest + ":extra").foreach { stored =>
+      assert(!PasswordUtil.verify("correct password", stored))
+    }
+  }
+
+  it should "support unicode passwords" in {
+    val password = new String(Array(0x5bc6, 0x7801, 0x2d, 0x1f510), 0, 4)
+    assert(PasswordUtil.verify(password, PasswordUtil.hash(password)))
+  }
+
+  it should "accept only the work factor used for generated and dummy hashes" in {
+    val digest = PasswordUtil.hash("uniform password cost")
+    assert(PasswordUtil.isSupportedHash(digest))
+    assert(PasswordUtil.verify("uniform password cost", digest))
+    Seq(599999, 600001, 800000, 1000000, 1000001).foreach { iterations =>
+      val differentCost = digest.replace(":600000:", s":$iterations:")
+      assert(!PasswordUtil.isSupportedHash(differentCost))
+      assert(!PasswordUtil.verify("uniform password cost", differentCost))
+    }
+  }
+
 }

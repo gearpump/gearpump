@@ -21,41 +21,28 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object ConfigFileBasedAuthenticator {
 
+  private val passwordVerifier = new PasswordVerificationExecutor(2, 16)
+  private val dummyPasswordHash = PasswordUtil.hash("gearpump-unknown-account-placeholder")
+
   private val ROOT = "gearpump.ui-security.config-file-based-authenticator"
   private val ADMINS = ROOT + "." + "admins"
   private val USERS = ROOT + "." + "users"
   private val GUESTS = ROOT + "." + "guests"
 
-  private case class Credentials(
+  private[security] case class Credentials(
       admins: Map[String, String], users: Map[String, String], guests: Map[String, String]) {
 
-    def verify(user: String, password: String): AuthenticationResult = {
-      if (admins.contains(user)) {
-        if (verify(user, password, admins)) {
-          Authenticator.Admin
-        } else {
-          Authenticator.UnAuthenticated
-        }
-      } else if (users.contains(user)) {
-        if (verify(user, password, users)) {
-          Authenticator.User
-        } else {
-          Authenticator.UnAuthenticated
-        }
-      } else if (guests.contains(user)) {
-        if (verify(user, password, guests)) {
-          Authenticator.Guest
-        } else {
-          Authenticator.UnAuthenticated
-        }
-      } else {
-        Authenticator.UnAuthenticated
-      }
-    }
-
-    private def verify(user: String, password: String, map: Map[String, String]): Boolean = {
-      val storedPass = map(user)
-      PasswordUtil.verify(password, storedPass)
+    def verify(user: String, password: String,
+        verifyPassword: (String, String) => Boolean = PasswordUtil.verify _)
+        : AuthenticationResult = {
+      val account: Option[(String, AuthenticationResult)] =
+        admins.get(user).map(_ -> Authenticator.Admin)
+          .orElse(users.get(user).map(_ -> Authenticator.User))
+          .orElse(guests.get(user).map(_ -> Authenticator.Guest))
+      // Unknown users perform the same password check, but can never become authenticated.
+      val stored = account.map(_._1).getOrElse(dummyPasswordHash)
+      val valid = verifyPassword(password, stored)
+      account.filter(_ => valid).map(_._2).getOrElse(Authenticator.UnAuthenticated)
     }
   }
 }
@@ -71,22 +58,8 @@ object ConfigFileBasedAuthenticator {
  * see conf/gear.conf section gearpump.ui-security.config-file-based-authenticator to find
  * information about how to configure this authenticator.
  *
- * [Security consideration]
- * It will keep one-way sha1 digest of password instead of password itself. The original password is
- * NOT kept in any way, so generally it is safe.
- *
- *
- * digesting flow (from original password to digest):
- * {{{
- * random salt byte array of length 8 -> byte array of (salt + sha1(salt, password)) ->
- * base64Encode.
- * }}}
- *
- * Verification user input password with stored digest:
- * {{{
- * base64Decode -> extract salt -> do sha1(salt, password) -> generate digest:
- * salt + sha1 -> compare the generated digest with the stored digest.
- * }}}
+ * Passwords are stored as versioned PBKDF2-HMAC-SHA256 hashes with cryptographic salts.
+ * Legacy SHA-1 hashes are rejected; generate replacements with PasswordUtil before upgrading.
  */
 class ConfigFileBasedAuthenticator(config: Config) extends Authenticator {
 
@@ -94,16 +67,19 @@ class ConfigFileBasedAuthenticator(config: Config) extends Authenticator {
 
   override def authenticate(user: String, password: String, ec: ExecutionContext)
     : Future[AuthenticationResult] = {
-    implicit val ctx = ec
-    Future {
-      credentials.verify(user, password)
-    }
+    passwordVerifier.verify(credentials.verify(user, password))
   }
 
   private def loadCredentials(config: Config): Credentials = {
     val admins = configToMap(config, ADMINS)
     val users = configToMap(config, USERS)
     val guests = configToMap(config, GUESTS)
+    Seq(admins, users, guests).foreach { role =>
+      role.foreach { case (user, digest) =>
+        require(PasswordUtil.isSupportedHash(digest),
+          s"Unsupported password hash for $user; regenerate it with PasswordUtil")
+      }
+    }
     new Credentials(admins, users, guests)
   }
 

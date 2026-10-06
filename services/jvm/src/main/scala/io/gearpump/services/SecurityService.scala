@@ -14,13 +14,6 @@
 
 package io.gearpump.services
 
-import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.http.scaladsl.model.{RemoteAddress, StatusCodes, Uri}
-import org.apache.pekko.http.scaladsl.model.headers.{HttpChallenge, HttpCookiePair}
-import org.apache.pekko.http.scaladsl.server._
-import org.apache.pekko.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
-import org.apache.pekko.http.scaladsl.server.Directives._
-import org.apache.pekko.stream.Materializer
 import com.softwaremill.pekkohttpsession.{MultiValueSessionSerializer, SessionConfig, SessionManager}
 import com.softwaremill.pekkohttpsession.SessionDirectives._
 import com.softwaremill.pekkohttpsession.SessionOptions._
@@ -30,6 +23,13 @@ import io.gearpump.services.SecurityService.{User, UserSession}
 import io.gearpump.services.security.oauth2.OAuth2Authenticator
 import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.util.{Constants, LogUtil}
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.model.{RemoteAddress, StatusCodes, Uri}
+import org.apache.pekko.http.scaladsl.model.headers.{HttpChallenge, HttpCookiePair}
+import org.apache.pekko.http.scaladsl.server._
+import org.apache.pekko.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.stream.Materializer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import upickle.default.write
@@ -118,10 +118,10 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
     setSession(oneOff, usingCookies, session) {
       val user = session.user
       // Default: 1 day
-      val maxAgeMs = 1000 * sessionConfig.sessionMaxAgeSeconds.getOrElse(24 * 3600L)
+      val maxAgeSeconds = sessionConfig.sessionMaxAgeSeconds.getOrElse(24 * 3600L)
       setCookie(HttpCookiePair("username", user).toCookie
         .withPath("/")
-        .withMaxAge(maxAgeMs)) {
+        .withMaxAge(maxAgeSeconds)) {
         LOG.info(s"user $user login from $ip")
         if (redirectToRoot) {
           redirect(Uri("/"), StatusCodes.TemporaryRedirect)
@@ -133,9 +133,11 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
   }
 
   private def logout(user: UserSession, ip: String): Route = {
-    invalidateSession(oneOff, usingCookies) { ctx =>
-      LOG.info(s"user ${user.user} logout from $ip")
-      ctx.complete(write(User(user.user)))
+    invalidateSession(oneOff, usingCookies) {
+      deleteCookie("username", path = "/") { ctx =>
+        LOG.info(s"user ${user.user} logout from $ip")
+        ctx.complete(write(User(user.user)))
+      }
     }
   }
 
@@ -250,8 +252,8 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
 
 object SecurityService {
 
-  // The pekko-http-session library still reads akka.http.session.* keys.
-  val SESSION_MANAGER_KEY = "akka.http.session.server-secret"
+  // Configuration namespace used by pekko-http-session.
+  val SESSION_MANAGER_KEY = "pekko.http.session.server-secret"
 
   case class UserSession(user: String, permissionLevel: Int)
 
