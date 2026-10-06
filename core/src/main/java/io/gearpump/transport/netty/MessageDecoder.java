@@ -14,17 +14,18 @@
 
 package io.gearpump.transport.netty;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.handler.codec.frame.CorruptedFrameException;
 import org.jboss.netty.handler.codec.frame.FrameDecoder;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.jboss.netty.handler.codec.frame.TooLongFrameException;
 
 public class MessageDecoder extends FrameDecoder {
-  private ITransportMessageSerializer serializer;
-  private WrappedChannelBuffer dataInput = new WrappedChannelBuffer();
+  public static final int MAX_FRAME_LENGTH = 1024 * 1024;
+  private final ITransportMessageSerializer serializer;
 
   public MessageDecoder(ITransportMessageSerializer serializer) {
     this.serializer = serializer;
@@ -39,14 +40,13 @@ public class MessageDecoder extends FrameDecoder {
    *  payload ... byte[]     *
    */
   protected List<TaskMessage> decode(ChannelHandlerContext ctx, Channel channel,
-      ChannelBuffer buf) {
-    this.dataInput.setChannelBuffer(buf);
-
+      ChannelBuffer buf) throws Exception {
     final int SESSION_LENGTH = 4; //int
     final int SOURCE_TASK_LENGTH = 8; //long
     final int TARGET_TASK_LENGTH = 8; //long
     final int MESSAGE_LENGTH = 4; //int
-    final int HEADER_LENGTH = SESSION_LENGTH + SOURCE_TASK_LENGTH + TARGET_TASK_LENGTH + MESSAGE_LENGTH;
+    final int HEADER_LENGTH =
+        SESSION_LENGTH + SOURCE_TASK_LENGTH + TARGET_TASK_LENGTH + MESSAGE_LENGTH;
 
     // Make sure that we have received at least a short message
     long available = buf.readableBytes();
@@ -74,7 +74,13 @@ public class MessageDecoder extends FrameDecoder {
 
       available -= HEADER_LENGTH;
 
-      if (length <= 0) {
+      if (length < 0) {
+        throw new CorruptedFrameException("Negative frame length");
+      }
+      if (length > MAX_FRAME_LENGTH) {
+        throw new TooLongFrameException("Frame exceeds maximum length");
+      }
+      if (length == 0) {
         taskMessageList.add(new TaskMessage(sessionId, targetTask, sourceTask, null));
         break;
       }
@@ -88,7 +94,13 @@ public class MessageDecoder extends FrameDecoder {
       available -= length;
 
       // There's enough bytes in the buffer. Read it.
-      Object message = serializer.deserialize(dataInput, length);
+      // A serializer must not read into the next frame in the cumulative buffer.
+      FrameDataInput input = new FrameDataInput(
+          new WrappedChannelBuffer(buf.readSlice(length)), length);
+      Object message = serializer.deserialize(input, length);
+      if (input.remaining() != 0) {
+        throw new CorruptedFrameException("Serializer did not consume the complete frame");
+      }
 
       // Successfully decoded a frame.
       // Return a TaskMessage object

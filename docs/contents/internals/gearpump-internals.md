@@ -233,3 +233,16 @@ When there is message loss, the AppMaster will first pause the global clock serv
 Kafka queue only expose the offset information for each partition. What KafkaSource do is to maintain its own mapping from Kafka offset to  Application timestamp, so that we can map from a application timestamp to a Kafka offset, and replay Kafka messages from that Kafka offset.
 
 The mapping between Application timestamp with Kafka offset is stored in a distributed file system or as a Kafka topic.
+
+### Express frame limits
+
+Express rejects negative payload lengths and payloads larger than 1 MiB before waiting
+for the payload. Each serializer reads only its own frame. Nested streaming-record
+lengths must fit within that frame before allocation. Applications producing records
+above this limit must split them before transmission. All peers must be upgraded to
+use these validation rules; the valid wire format is unchanged.
+
+Malformed frames close the receiving connection. Clients establish a fresh connection
+after decoder failures instead of reusing a partially consumed stream. Direct streaming
+serializer callers can continue to use any `DataInput`; the 1-MiB cap always applies,
+and transport callers additionally enforce the enclosing frame boundary.

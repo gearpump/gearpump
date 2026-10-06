@@ -14,6 +14,7 @@
 
 package io.gearpump.streaming.task
 
+import io.gearpump.transport.netty.{FrameDataInput, MessageDecoder}
 import java.io.{DataInput, DataOutput}
 
 class SerializedMessageSerializer extends TaskMessageSerializer[SerializedMessage] {
@@ -28,6 +29,13 @@ class SerializedMessageSerializer extends TaskMessageSerializer[SerializedMessag
   override def read(dataInput: DataInput): SerializedMessage = {
     val timestamp = dataInput.readLong()
     val length = dataInput.readInt()
+    val exceedsFrame = dataInput match {
+      case bounded: FrameDataInput => length > bounded.remaining()
+      case _ => false
+    }
+    if (length < 0 || length > MessageDecoder.MAX_FRAME_LENGTH || exceedsFrame) {
+      throw new java.io.IOException("Invalid serialized message length")
+    }
     val bytes = new Array[Byte](length)
     dataInput.readFully(bytes)
     SerializedMessage(timestamp, bytes)
