@@ -14,7 +14,6 @@
 
 package io.gearpump.transport.netty
 
-import org.apache.pekko.actor.Actor
 import io.gearpump.transport.HostPort
 import io.gearpump.util.LogUtil
 import java.net.{ConnectException, InetSocketAddress}
@@ -22,6 +21,7 @@ import java.nio.channels.ClosedChannelException
 import java.util
 import java.util.Random
 import java.util.concurrent.TimeUnit
+import org.apache.pekko.actor.{Actor, ActorRef}
 import org.jboss.netty.channel._
 import org.slf4j.Logger
 import scala.concurrent.duration.FiniteDuration
@@ -39,7 +39,7 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
   private var channel: Channel = null
   private var batch = new util.ArrayList[TaskMessage]
   private val bootstrap = NettyUtil.createClientBootStrap(factory,
-    new ClientPipelineFactory(name, conf), conf.buffer_size)
+    new ClientPipelineFactory(name, conf, self), conf.buffer_size)
 
   self ! Connect(0)
 
@@ -64,8 +64,12 @@ class Client(conf: NettyConfig, factory: ChannelFactory, hostPort: HostPort) ext
 
   def connectionHandler: Receive = {
     case ChannelReady(channel) =>
-      this.channel = channel
-      self ! Flush(channel)
+      if (channel.isOpen) {
+        this.channel = channel
+        self ! Flush(channel)
+      } else {
+        self ! Connect(0)
+      }
     case Connect(tries) =>
       if (null == channel) {
         connect(tries)
@@ -181,24 +185,28 @@ object Client {
 
   case class Flush(channel: Channel)
 
-  class ClientErrorHandler(name: String) extends SimpleChannelUpstreamHandler {
+  class ClientErrorHandler(name: String, client: ActorRef) extends SimpleChannelUpstreamHandler {
 
     override def exceptionCaught(ctx: ChannelHandlerContext, event: ExceptionEvent): Unit = {
       event.getCause match {
         case _: ConnectException => ()
         case ex: ClosedChannelException =>
           LOG.warn("exception found when trying to close netty connection", ex.getMessage)
-        case ex => LOG.error("Connection failed " + name, ex)
+        case ex =>
+          LOG.error("Connection failed " + name, ex)
+          event.getChannel.close()
+          client ! CompareAndReconnectIfEqual(event.getChannel)
       }
     }
   }
 
-  class ClientPipelineFactory(name: String, conf: NettyConfig) extends ChannelPipelineFactory {
+  class ClientPipelineFactory(name: String, conf: NettyConfig, client: ActorRef)
+    extends ChannelPipelineFactory {
     def getPipeline: ChannelPipeline = {
       val pipeline: ChannelPipeline = Channels.pipeline
       pipeline.addLast("decoder", new MessageDecoder(conf.newTransportSerializer))
       pipeline.addLast("encoder", new MessageEncoder)
-      pipeline.addLast("handler", new ClientErrorHandler(name))
+      pipeline.addLast("handler", new ClientErrorHandler(name, client))
       pipeline
     }
   }

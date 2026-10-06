@@ -29,12 +29,11 @@ class SerializedMessageSerializer extends TaskMessageSerializer[SerializedMessag
   override def read(dataInput: DataInput): SerializedMessage = {
     val timestamp = dataInput.readLong()
     val length = dataInput.readInt()
-    val remaining = dataInput match {
-      case bounded: FrameDataInput => bounded.remaining()
-      case stream: java.io.DataInputStream => stream.available()
-      case _ => throw new java.io.IOException("Unbounded serialized message input")
+    val exceedsFrame = dataInput match {
+      case bounded: FrameDataInput => length > bounded.remaining()
+      case _ => false
     }
-    if (length < 0 || length > MessageDecoder.MAX_FRAME_LENGTH || length > remaining) {
+    if (length < 0 || length > MessageDecoder.MAX_FRAME_LENGTH || exceedsFrame) {
       throw new java.io.IOException("Invalid serialized message length")
     }
     val bytes = new Array[Byte](length)

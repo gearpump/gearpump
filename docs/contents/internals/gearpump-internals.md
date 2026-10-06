@@ -241,3 +241,8 @@ for the payload. Each serializer reads only its own frame. Nested streaming-reco
 lengths must fit within that frame before allocation. Applications producing records
 above this limit must split them before transmission. All peers must be upgraded to
 use these validation rules; the valid wire format is unchanged.
+
+Malformed frames close the receiving connection. Clients establish a fresh connection
+after decoder failures instead of reusing a partially consumed stream. Direct streaming
+serializer callers can continue to use any `DataInput`; the 1-MiB cap always applies,
+and transport callers additionally enforce the enclosing frame boundary.

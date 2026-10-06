@@ -14,16 +14,16 @@
 
 package io.gearpump.transport.netty
 
-import org.apache.pekko.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import io.gearpump.transport.ActorLookupById
-import io.gearpump.util.{PekkoHelper, LogUtil}
+import io.gearpump.util.{LogUtil, PekkoHelper}
 import java.util
+import org.apache.pekko.actor.{Actor, ActorContext, ActorRef, ExtendedActorSystem}
 import org.jboss.netty.channel._
 import org.jboss.netty.channel.group.{ChannelGroup, DefaultChannelGroup}
 import org.slf4j.Logger
-import scala.jdk.CollectionConverters._
 import scala.collection.immutable.IntMap
 import scala.concurrent.Future
+import scala.jdk.CollectionConverters._
 
 /** Netty server actor, message received will be forward to the target on the address line. */
 class Server(name: String, lookupActor: ActorLookupById)

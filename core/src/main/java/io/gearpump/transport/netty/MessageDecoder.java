@@ -14,15 +14,14 @@
 
 package io.gearpump.transport.netty;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.frame.FrameDecoder;
 import org.jboss.netty.handler.codec.frame.CorruptedFrameException;
+import org.jboss.netty.handler.codec.frame.FrameDecoder;
 import org.jboss.netty.handler.codec.frame.TooLongFrameException;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class MessageDecoder extends FrameDecoder {
   public static final int MAX_FRAME_LENGTH = 1024 * 1024;
@@ -46,7 +45,8 @@ public class MessageDecoder extends FrameDecoder {
     final int SOURCE_TASK_LENGTH = 8; //long
     final int TARGET_TASK_LENGTH = 8; //long
     final int MESSAGE_LENGTH = 4; //int
-    final int HEADER_LENGTH = SESSION_LENGTH + SOURCE_TASK_LENGTH + TARGET_TASK_LENGTH + MESSAGE_LENGTH;
+    final int HEADER_LENGTH =
+        SESSION_LENGTH + SOURCE_TASK_LENGTH + TARGET_TASK_LENGTH + MESSAGE_LENGTH;
 
     // Make sure that we have received at least a short message
     long available = buf.readableBytes();
