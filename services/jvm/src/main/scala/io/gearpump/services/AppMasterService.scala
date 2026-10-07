@@ -14,11 +14,6 @@
 
 package io.gearpump.services
 
-import org.apache.pekko.actor.{ActorRef, ActorSystem}
-import org.apache.pekko.http.scaladsl.model.{FormData, Multipart}
-import org.apache.pekko.http.scaladsl.server.Directives._
-import org.apache.pekko.http.scaladsl.server.Route
-import org.apache.pekko.stream.Materializer
 import io.gearpump.cluster.AppMasterToMaster.{AppMasterSummary, GeneralAppMasterSummary}
 import io.gearpump.cluster.ClientToMaster._
 import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetailRequest, AppMasterDataRequest}
@@ -33,6 +28,11 @@ import io.gearpump.streaming.appmaster.StreamAppMasterSummary
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
 import io.gearpump.util.{Constants, Util}
 import io.gearpump.util.ActorUtil.{askActor, askAppMaster}
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.http.scaladsl.model.{FormData, Multipart}
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.stream.Materializer
 import scala.util.{Failure, Success, Try}
 import upickle.default.{read, write}
 
@@ -109,7 +109,8 @@ class AppMasterService(val master: ActorRef,
       path("config") {
         onComplete(askActor[AppMasterConfig](master, QueryAppMasterConfig(appId))) {
           case Success(value: AppMasterConfig) =>
-            val config = Option(value.config).map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
+            val config = Option(value.config)
+              .map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
             complete(config)
           case Failure(ex) =>
             failWith(ex)

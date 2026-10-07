@@ -14,11 +14,11 @@
 
 package io.gearpump.services
 
-import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
-import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.Constants
+import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
+import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

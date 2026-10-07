@@ -14,20 +14,31 @@
 
 package io.gearpump.services
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
+import io.gearpump.cluster.ClientToMaster.QueryMasterConfig
+import io.gearpump.cluster.MasterToClient.MasterConfig
 import io.gearpump.cluster.TestUtil
 import io.gearpump.security.Authenticator
-import org.apache.pekko.http.scaladsl.model.Uri
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.http.scaladsl.model.{FormData, Uri}
+import org.apache.pekko.http.scaladsl.model.headers.{`Set-Cookie`, Cookie, HttpCookiePair}
 import org.apache.pekko.http.scaladsl.server.Directives._
-import org.apache.pekko.http.scaladsl.testkit.ScalatestRouteTest
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import org.apache.pekko.testkit.TestActor.{AutoPilot, KeepRunning}
+import org.apache.pekko.testkit.TestProbe
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.concurrent.duration._
 
 class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest {
-  override def testConfig: Config = TestUtil.UI_CONFIG.withValue(
-    "gearpump.ui-security.config-file-based-authenticator.users.normal",
-    com.typesafe.config.ConfigValueFactory.fromAnyRef(TestUtil.UI_CONFIG.getString(
-      "gearpump.ui-security.config-file-based-authenticator.admins.admin")))
+  override def testConfig: Config = {
+    val enabled = TestUtil.UI_CONFIG.withValue(
+      "gearpump.ui-security.authentication-enabled", ConfigValueFactory.fromAnyRef(true))
+    enabled.withValue("gearpump.ui-security.config-file-based-authenticator.users.normal",
+      ConfigValueFactory.fromAnyRef(TestUtil.UI_CONFIG.getString(
+        "gearpump.ui-security.config-file-based-authenticator.admins.admin")))
+  }
 
   it should "require Admin for every privileged route including encoded segments" in {
     Seq("/terminate", "/api/v1.0/master/config", "/api/v1.0/master/%63onfig",
@@ -70,11 +81,7 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
   }
 
   it should "deny User and Guest sessions before privileged routes execute" in {
-    import org.apache.pekko.http.scaladsl.model.FormData
-    import org.apache.pekko.http.scaladsl.model.headers.{Cookie, HttpCookiePair, `Set-Cookie`}
     import org.apache.pekko.http.scaladsl.server.AuthorizationFailedRejection
-    import org.apache.pekko.http.scaladsl.testkit.RouteTestTimeout
-    import scala.concurrent.duration._
     implicit val timeout = RouteTestTimeout(20.seconds)
     val inner = new RouteService { override def route = complete("allowed") }
     val security = new SecurityService(inner, system)
@@ -83,7 +90,9 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
         var cookie: HttpCookiePair = null
         Post("/login", FormData("username" -> user, "password" -> password)) ~>
           security.route ~> check {
-            val value = header[`Set-Cookie`].get.cookie
+            val value = headers.collectFirst {
+              case `Set-Cookie`(cookie) if cookie.name == "gearpump_token" => cookie
+            }.get
             cookie = HttpCookiePair(value.name, value.value)
           }
         Seq(Post("/terminate"), Post("/api/v1.0/supervisor/addworker/1"),
@@ -94,5 +103,73 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
           }
         }
     }
+  }
+
+  private def login(route: Route, user: String, password: String)
+    (implicit timeout: RouteTestTimeout): HttpCookiePair = {
+    var session: HttpCookiePair = null
+    Post("/login", FormData("username" -> user, "password" -> password)) ~> route ~> check {
+      assert(status.intValue() == 200)
+      val cookie = headers.collectFirst {
+        case `Set-Cookie`(value) if value.name == "gearpump_token" => value
+      }.get
+      session = HttpCookiePair(cookie.name, cookie.value)
+    }
+    session
+  }
+
+  it should "preserve forbidden responses through the complete REST and static routes" in {
+    implicit val timeout = RouteTestTimeout(20.seconds)
+    val master = TestProbe()(system)
+    val route = Route.seal(new RestServices(master.ref, system).route)
+    Seq(("normal", "admin"), ("guest", "guest")).foreach { case (user, password) =>
+      val cookie = login(route, user, password)
+      Seq(Post("/terminate"), Post("/api/v1.0/supervisor/addworker/1"),
+        Get("/api/v1.0/master/config"), Get("/api/v1.0/master/%63onfig"),
+        Get("/api/v1.0/worker/0/config"), Get("/api/v1.0/appmaster/1/executor/2/config"))
+        .foreach { request =>
+          request.addHeader(Cookie(cookie)) ~> route ~> check {
+            assert(status.intValue() == 403)
+          }
+        }
+    }
+    master.expectNoMessage(100.millis)
+  }
+
+  it should "allow Admin diagnostics through the complete REST route" in {
+    implicit val timeout = RouteTestTimeout(20.seconds)
+    val master = TestProbe()(system)
+    master.setAutoPilot(new AutoPilot {
+      override def run(sender: ActorRef, message: Any): AutoPilot = {
+        message match {
+          case QueryMasterConfig => sender ! MasterConfig(testConfig)
+        }
+        KeepRunning
+      }
+    })
+    val route = Route.seal(new RestServices(master.ref, system).route)
+    val cookie = login(route, "admin", "admin")
+    Get("/api/v1.0/master/config").addHeader(Cookie(cookie)) ~> route ~> check {
+      assert(status.intValue() == 200)
+      assert(!responseAs[String].contains("pbkdf2"))
+    }
+    master.expectMsg(QueryMasterConfig)
+  }
+
+  it should "retain unauthenticated responses and public assets in the complete REST route" in {
+    implicit val timeout = RouteTestTimeout(20.seconds)
+    val master = TestProbe()(system)
+    val route = Route.seal(new RestServices(master.ref, system).route)
+    Seq(Post("/terminate"), Get("/api/v1.0/master/config")).foreach { request =>
+      request ~> route ~> check {
+        assert(status.intValue() == 401)
+      }
+    }
+    Seq("/", "/login/login.html", "/login/login.js").foreach { path =>
+      Get(path) ~> route ~> check {
+        assert(status.intValue() == 200)
+      }
+    }
+    master.expectNoMessage(100.millis)
   }
 }

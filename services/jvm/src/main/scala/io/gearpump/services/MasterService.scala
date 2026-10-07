@@ -14,17 +14,12 @@
 
 package io.gearpump.services
 
-import org.apache.pekko.actor.{ActorRef, ActorSystem}
-import org.apache.pekko.http.scaladsl.server.Directives._
-import org.apache.pekko.http.scaladsl.server.Route
-import org.apache.pekko.http.scaladsl.unmarshalling.Unmarshaller._
-import org.apache.pekko.stream.Materializer
 import com.typesafe.config.Config
-import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ReadOption}
 import io.gearpump.cluster.MasterToAppMaster.{AppMastersData, AppMastersDataRequest, WorkerList}
 import io.gearpump.cluster.MasterToClient.{HistoryMetrics, MasterConfig, SubmitApplicationResultValue}
+import io.gearpump.cluster.UserConfig
 import io.gearpump.cluster.client.ClientContext
 import io.gearpump.cluster.worker.WorkerSummary
 import io.gearpump.jarstore.FileDirective._
@@ -39,8 +34,13 @@ import java.io.{File, IOException}
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption.{APPEND, WRITE}
-import scala.jdk.CollectionConverters._
+import org.apache.pekko.actor.{ActorRef, ActorSystem}
+import org.apache.pekko.http.scaladsl.server.Directives._
+import org.apache.pekko.http.scaladsl.server.Route
+import org.apache.pekko.http.scaladsl.unmarshalling.Unmarshaller._
+import org.apache.pekko.stream.Materializer
 import scala.concurrent.Future
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success}
 
 /** Manages service for master node */
@@ -89,7 +89,8 @@ class MasterService(val master: ActorRef,
     path("config") {
       onComplete(askActor[MasterConfig](master, QueryMasterConfig)) {
         case Success(value: MasterConfig) =>
-          val config = Option(value.config).map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
+          val config = Option(value.config)
+            .map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
           complete(config)
         case Failure(ex) =>
           failWith(ex)

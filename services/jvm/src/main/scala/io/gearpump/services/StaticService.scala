@@ -14,13 +14,13 @@
 
 package io.gearpump.services
 
+import io.gearpump.util.Util
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.marshalling.ToResponseMarshallable
 import org.apache.pekko.http.scaladsl.marshalling.ToResponseMarshallable._
 import org.apache.pekko.http.scaladsl.model._
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.stream.Materializer
-import io.gearpump.util.Util
 
 /**
  * static resource files.
@@ -79,7 +79,7 @@ class StaticService(override val system: ActorSystem, supervisorPath: String)
       if (publicAssets.contains(path) && safeAssetPath(path)) {
         getFromResource(path)
       } else {
-        complete(StatusCodes.NotFound)
+        reject
       }
     }
   }

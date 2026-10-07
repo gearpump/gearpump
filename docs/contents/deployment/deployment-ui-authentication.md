@@ -322,3 +322,7 @@ allowlist and omit application-supplied settings. Public dashboard serving uses
 `services/jvm/src/main/resources/dashboard-assets.txt`; add newly introduced dashboard
 assets to that manifest. Runtime configuration is never part of the public allowlist.
 HTTP errors expose a correlation ID, with detailed exceptions retained in server logs.
+
+Public assets remain available without a session. Requests outside the asset allowlist
+retain authentication and authorization rejections, so protected routes return 401 for
+missing credentials and 403 for insufficient permissions instead of a static-file 404.

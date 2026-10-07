@@ -14,14 +14,14 @@
 
 package io.gearpump.services
 
+import io.gearpump.jarstore.JarStoreClient
+import io.gearpump.util.{Constants, LogUtil}
 import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.StatusCodes._
 import org.apache.pekko.http.scaladsl.server.{Route, _}
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.util.Timeout
-import io.gearpump.jarstore.JarStoreClient
-import io.gearpump.util.{Constants, LogUtil}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
