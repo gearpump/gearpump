@@ -52,6 +52,25 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
       Authenticator.Guest.permissionLevel)
   }
 
+  it should "preserve path boundaries and slash handling when classifying permissions" in {
+    Seq("terminate", "///terminate//", "/%74erminate/", "/api/v1.0/supervisor/",
+      "/%61pi/v1%2E0/%73upervisor/addworker/1", "/api///v1.0//master///config//",
+      "/api/v1.0/config", "/api/v1.0/master%2Fchild/config")
+      .foreach { path =>
+        assert(HttpAuthorization.requiredPermission(Uri.Path(path)) ==
+          Authenticator.Admin.permissionLevel, path)
+      }
+    Seq("", "/", "/terminate/extra", "/termination", "/api/v1X0/master/config",
+      "/api/v1.0/supervisors/addworker/1", "/other/api/v1.0/master/config",
+      "/api/v1.0/master/configuration", "/api%2Fv1.0/master/config",
+      "/api/v1.0/master%2Fconfig", "/api/v1.0/supervisor%2Faddworker/1",
+      "/api/v1.0/master/%2563onfig")
+      .foreach { path =>
+        assert(HttpAuthorization.requiredPermission(Uri.Path(path)) ==
+          Authenticator.Guest.permissionLevel, path)
+      }
+  }
+
   it should "render only the diagnostic allowlist, excluding arbitrary application secrets" in {
     val config = ConfigFactory.parseString("""
       gearpump.worker.slots = 4

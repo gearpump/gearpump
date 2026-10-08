@@ -15,22 +15,19 @@
 package io.gearpump.services
 
 import io.gearpump.security.Authenticator
+import java.util.regex.Pattern
 import org.apache.pekko.http.scaladsl.model.Uri
 
 private[services] object HttpAuthorization {
-  def requiredPermission(path: Uri.Path): Int = {
-    def segments(rest: Uri.Path): List[String] = rest match {
-      case Uri.Path.Empty => Nil
-      case Uri.Path.Slash(tail) => segments(tail)
-      case Uri.Path.Segment(head, tail) => head :: segments(tail)
-    }
-    val parts = segments(path)
-    val apiPrefix = List("api", REST_VERSION)
-    val isTerminationRoute = parts == List("terminate")
-    val isSupervisorRoute = parts.startsWith(apiPrefix :+ "supervisor")
-    val isConfigRoute = parts.startsWith(apiPrefix) && parts.lastOption.contains("config")
+  private val apiPrefix = s"/*api/+${Pattern.quote(REST_VERSION)}"
+  private val terminationRoute = Pattern.compile("/*terminate/*")
+  private val supervisorRoute = Pattern.compile(s"$apiPrefix/+supervisor(?:/.*)?")
+  private val configRoute = Pattern.compile(s"$apiPrefix(?:/+[^/]+)*/+config/*")
+  private val adminRoutes = Seq(terminationRoute, supervisorRoute, configRoute)
 
-    if (isTerminationRoute || isSupervisorRoute || isConfigRoute) {
+  def requiredPermission(path: Uri.Path): Int = {
+    val renderedPath = path.toString
+    if (adminRoutes.exists(_.matcher(renderedPath).matches())) {
       Authenticator.Admin.permissionLevel
     } else {
       Authenticator.Guest.permissionLevel
