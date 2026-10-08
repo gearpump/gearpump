@@ -90,7 +90,7 @@ class MasterService(val master: ActorRef,
       onComplete(askActor[MasterConfig](master, QueryMasterConfig)) {
         case Success(value: MasterConfig) =>
           val config = Option(value.config)
-            .map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
+            .map(SafeConfigRenderer.render(_, concise)).getOrElse("{}")
           complete(config)
         case Failure(ex) =>
           failWith(ex)

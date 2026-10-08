@@ -50,7 +50,7 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
       onComplete(askWorker[WorkerConfig](master, workerId, QueryWorkerConfig(workerId))) {
         case Success(value: WorkerConfig) =>
           val config = Option(value.config)
-            .map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
+            .map(SafeConfigRenderer.render(_, concise)).getOrElse("{}")
           complete(config)
         case Failure(ex) =>
           failWith(ex)

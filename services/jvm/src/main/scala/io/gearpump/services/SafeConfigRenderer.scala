@@ -18,7 +18,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.ClusterConfig
 
 /** Deliberately small public diagnostic schema; never render arbitrary application config. */
-private[services] object ConfigDiagnostics {
+private[services] object SafeConfigRenderer {
   private val allowed = Set("gearpump.hostname", "gearpump.worker.slots",
     "gearpump.services.host", "gearpump.services.http",
     "gearpump.transport.max-retries", "gearpump.transport.message-batch-size")

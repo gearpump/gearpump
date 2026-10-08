@@ -60,7 +60,7 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
       application.custom-api-key = "hidden-key"
       application.safe-looking-value = "hidden-token"
     """)
-    val rendered = ConfigDiagnostics.render(config, concise = true)
+    val rendered = SafeConfigRenderer.render(config, concise = true)
     assert(rendered.contains("8090"))
     assert(!rendered.contains("hidden"))
     assert(!rendered.contains("application"))

@@ -110,7 +110,7 @@ class AppMasterService(val master: ActorRef,
         onComplete(askActor[AppMasterConfig](master, QueryAppMasterConfig(appId))) {
           case Success(value: AppMasterConfig) =>
             val config = Option(value.config)
-              .map(ConfigDiagnostics.render(_, concise)).getOrElse("{}")
+              .map(SafeConfigRenderer.render(_, concise)).getOrElse("{}")
             complete(config)
           case Failure(ex) =>
             failWith(ex)
@@ -121,7 +121,7 @@ class AppMasterService(val master: ActorRef,
           val executorId = Integer.parseInt(executorIdString)
           onComplete(askAppMaster[ExecutorConfig](master, appId, QueryExecutorConfig(executorId))) {
             case Success(value) =>
-              val config = Option(value.config).map(ConfigDiagnostics.render(_, concise))
+              val config = Option(value.config).map(SafeConfigRenderer.render(_, concise))
                 .getOrElse("{}")
               complete(config)
             case Failure(ex) =>
