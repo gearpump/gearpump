@@ -85,6 +85,12 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
     assert(!rendered.contains("application"))
   }
 
+  it should "render missing configuration as an empty JSON object" in {
+    Seq(true, false).foreach { concise =>
+      assert(SafeConfigRenderer.render(null, concise) == "{}")
+    }
+  }
+
   it should "return bounded errors without exception details or stack frames" in {
     val route = handleExceptions(RestServices.exceptionHandler) {
       get { throw new IllegalArgumentException("SECRET /private/path") }

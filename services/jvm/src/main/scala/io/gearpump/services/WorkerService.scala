@@ -49,9 +49,7 @@ class WorkerService(val master: ActorRef, override val system: ActorSystem)
       val workerId = WorkerId.parse(workerIdString)
       onComplete(askWorker[WorkerConfig](master, workerId, QueryWorkerConfig(workerId))) {
         case Success(value: WorkerConfig) =>
-          val config = Option(value.config)
-            .map(SafeConfigRenderer.render(_, concise)).getOrElse("{}")
-          complete(config)
+          complete(SafeConfigRenderer.render(value.config, concise))
         case Failure(ex) =>
           failWith(ex)
       }

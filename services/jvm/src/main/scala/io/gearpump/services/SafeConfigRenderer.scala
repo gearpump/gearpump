@@ -24,9 +24,11 @@ private[services] object SafeConfigRenderer {
     "gearpump.transport.max-retries", "gearpump.transport.message-batch-size")
 
   def render(config: Config, concise: Boolean): String = {
-    val safe = allowed.foldLeft(ConfigFactory.empty()) { (result, path) =>
-      if (config.hasPath(path)) result.withValue(path, config.getValue(path)) else result
+    Option(config).fold("{}") { value =>
+      val safe = allowed.foldLeft(ConfigFactory.empty()) { (result, path) =>
+        if (value.hasPath(path)) result.withValue(path, value.getValue(path)) else result
+      }
+      ClusterConfig.render(safe, concise)
     }
-    ClusterConfig.render(safe, concise)
   }
 }
