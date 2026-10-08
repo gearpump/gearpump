@@ -16,12 +16,13 @@ package io.gearpump.services
 
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.ClusterConfig
+import io.gearpump.util.Constants
 
 /** Deliberately small public diagnostic schema; never render arbitrary application config. */
 private[services] object SafeConfigRenderer {
   private val allowed = Set("gearpump.hostname", "gearpump.worker.slots",
     "gearpump.services.host", "gearpump.services.http",
-    "gearpump.transport.max-retries", "gearpump.transport.message-batch-size")
+    Constants.NETTY_MAX_RETRIES, Constants.NETTY_MESSAGE_BATCH_SIZE)
 
   def render(config: Config, concise: Boolean): String = {
     Option(config).fold("{}") { value =>

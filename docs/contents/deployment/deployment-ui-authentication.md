@@ -316,9 +316,10 @@ default). Logout clears the session cookie and deletes the username cookie at pa
 
 ## Administrative diagnostics and assets
 
-Only Admin sessions may terminate services, access supervisor operations, or read
-configuration diagnostics. Configuration responses use an explicit operational
-allowlist and omit application-supplied settings. Public dashboard serving uses
+Only Admin sessions may terminate services, add or remove workers through the supervisor,
+or read configuration diagnostics. User and Guest sessions may read the supervisor
+endpoint used by the Workers dashboard. Configuration responses use an explicit
+operational allowlist and omit application-supplied settings. Public dashboard serving uses
 `services/jvm/src/main/resources/dashboard-assets.txt`; add newly introduced dashboard
 assets to that manifest. Runtime configuration is never part of the public allowlist.
 HTTP errors expose a correlation ID, with detailed exceptions retained in server logs.

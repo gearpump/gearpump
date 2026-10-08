@@ -19,6 +19,7 @@ import io.gearpump.cluster.ClientToMaster.QueryMasterConfig
 import io.gearpump.cluster.MasterToClient.MasterConfig
 import io.gearpump.cluster.TestUtil
 import io.gearpump.security.Authenticator
+import io.gearpump.util.Constants
 import org.apache.pekko.actor.ActorRef
 import org.apache.pekko.http.scaladsl.model.{FormData, Uri}
 import org.apache.pekko.http.scaladsl.model.headers.{`Set-Cookie`, Cookie, HttpCookiePair}
@@ -53,9 +54,11 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
   }
 
   it should "preserve path boundaries and slash handling when classifying permissions" in {
-    Seq("terminate", "///terminate//", "/%74erminate/", "/api/v1.0/supervisor/",
+    Seq("terminate", "///terminate//", "/%74erminate/",
       "/%61pi/v1%2E0/%73upervisor/addworker/1", "/api///v1.0//master///config//",
-      "/api/v1.0/config", "/api/v1.0/master%2Fchild/config")
+      "/api/v1.0/config", "/api/v1.0/master%2Fchild/config",
+      "/api/v1.0/supervisor/%72emoveworker/0",
+      "/api///v1.0//supervisor///addworker/1//")
       .foreach { path =>
         assert(HttpAuthorization.requiredPermission(Uri.Path(path)) ==
           Authenticator.Admin.permissionLevel, path)
@@ -64,7 +67,9 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
       "/api/v1.0/supervisors/addworker/1", "/other/api/v1.0/master/config",
       "/api/v1.0/master/configuration", "/api%2Fv1.0/master/config",
       "/api/v1.0/master%2Fconfig", "/api/v1.0/supervisor%2Faddworker/1",
-      "/api/v1.0/master/%2563onfig")
+      "/api/v1.0/master/%2563onfig", "/api/v1.0/supervisor", "/api/v1.0/supervisor/",
+      "/api/v1.0/%73upervisor", "/api/v1.0/supervisor/status",
+      "/api/v1.0/supervisor/addworkers/1")
       .foreach { path =>
         assert(HttpAuthorization.requiredPermission(Uri.Path(path)) ==
           Authenticator.Guest.permissionLevel, path)
@@ -83,6 +88,15 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
     assert(rendered.contains("8090"))
     assert(!rendered.contains("hidden"))
     assert(!rendered.contains("application"))
+  }
+
+  it should "include the packaged Netty settings in diagnostic output" in {
+    Seq(true, false).foreach { concise =>
+      val rendered = ConfigFactory.parseString(SafeConfigRenderer.render(testConfig, concise))
+      Seq(Constants.NETTY_MAX_RETRIES, Constants.NETTY_MESSAGE_BATCH_SIZE).foreach { path =>
+        assert(rendered.getInt(path) == testConfig.getInt(path), path)
+      }
+    }
   }
 
   it should "render missing configuration as an empty JSON object" in {
@@ -121,6 +135,9 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
             cookie = HttpCookiePair(value.name, value.value)
           }
         Seq(Post("/terminate"), Post("/api/v1.0/supervisor/addworker/1"),
+          Post("/api/v1.0/supervisor/removeworker/0"),
+          Post("/api/v1.0/supervisor/%61ddworker/1"),
+          Post("/api/v1.0/supervisor/%72emoveworker/0"),
           Get("/api/v1.0/master/config")).foreach { request =>
           request.addHeader(Cookie(cookie)) ~> security.route ~> check {
             if (user == "admin") assert(responseAs[String] == "allowed")
@@ -150,6 +167,9 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
     Seq(("normal", "admin"), ("guest", "guest")).foreach { case (user, password) =>
       val cookie = login(route, user, password)
       Seq(Post("/terminate"), Post("/api/v1.0/supervisor/addworker/1"),
+        Post("/api/v1.0/supervisor/removeworker/0"),
+        Post("/api/v1.0/supervisor/%61ddworker/1"),
+        Post("/api/v1.0/supervisor/%72emoveworker/0"),
         Get("/api/v1.0/master/config"), Get("/api/v1.0/master/%63onfig"),
         Get("/api/v1.0/worker/0/config"), Get("/api/v1.0/appmaster/1/executor/2/config"))
         .foreach { request =>
@@ -157,6 +177,22 @@ class HttpSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTest
             assert(status.intValue() == 403)
           }
         }
+    }
+    master.expectNoMessage(100.millis)
+  }
+
+  it should "allow User and Guest to read supervisor diagnostics through the REST route" in {
+    implicit val timeout = RouteTestTimeout(20.seconds)
+    val master = TestProbe()(system)
+    val route = Route.seal(new RestServices(master.ref, system).route)
+    Seq(("normal", "admin"), ("guest", "guest")).foreach { case (user, password) =>
+      val cookie = login(route, user, password)
+      Seq("/api/v1.0/supervisor", "/api/v1.0/%73upervisor").foreach { path =>
+        Get(path).addHeader(Cookie(cookie)) ~> route ~> check {
+          assert(status.intValue() == 200)
+          assert(ujson.read(responseAs[String])("path") == ujson.Null)
+        }
+      }
     }
     master.expectNoMessage(100.millis)
   }

@@ -21,9 +21,10 @@ import org.apache.pekko.http.scaladsl.model.Uri
 private[services] object HttpAuthorization {
   private val apiPrefix = s"/*api/+${Pattern.quote(REST_VERSION)}"
   private val terminationRoute = Pattern.compile("/*terminate/*")
-  private val supervisorRoute = Pattern.compile(s"$apiPrefix/+supervisor(?:/.*)?")
+  private val supervisorMutationRoute =
+    Pattern.compile(s"$apiPrefix/+supervisor/+(?:addworker|removeworker)(?:/.*)?")
   private val configRoute = Pattern.compile(s"$apiPrefix(?:/+[^/]+)*/+config/*")
-  private val adminRoutes = Seq(terminationRoute, supervisorRoute, configRoute)
+  private val adminRoutes = Seq(terminationRoute, supervisorMutationRoute, configRoute)
 
   def requiredPermission(path: Uri.Path): Int = {
     val renderedPath = path.toString
