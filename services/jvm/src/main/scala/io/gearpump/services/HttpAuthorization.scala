@@ -25,9 +25,15 @@ private[services] object HttpAuthorization {
       case Uri.Path.Segment(head, tail) => head :: segments(tail)
     }
     val parts = segments(path)
-    val admin = parts == List("terminate") ||
-      parts.take(3) == List("api", REST_VERSION, "supervisor") ||
-      (parts.take(2) == List("api", REST_VERSION) && parts.lastOption.contains("config"))
-    if (admin) Authenticator.Admin.permissionLevel else Authenticator.Guest.permissionLevel
+    val apiPrefix = List("api", REST_VERSION)
+    val isTerminationRoute = parts == List("terminate")
+    val isSupervisorRoute = parts.startsWith(apiPrefix :+ "supervisor")
+    val isConfigRoute = parts.startsWith(apiPrefix) && parts.lastOption.contains("config")
+
+    if (isTerminationRoute || isSupervisorRoute || isConfigRoute) {
+      Authenticator.Admin.permissionLevel
+    } else {
+      Authenticator.Guest.permissionLevel
+    }
   }
 }
