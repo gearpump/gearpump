@@ -18,6 +18,7 @@ import java.io.File
 import java.nio.file.Files
 import java.util.UUID
 import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
+import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.pekko.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
 import org.apache.pekko.http.scaladsl.server._
 import org.apache.pekko.http.scaladsl.server.Directives._
@@ -89,9 +90,17 @@ object FileDirective {
               complete(org.apache.pekko.http.scaladsl.model.StatusCodes.ServiceUnavailable)
             }
           } else {
-            mapRouteResultFuture(_.andThen { case _ => uploads.release() }) {
+            val released = new AtomicBoolean(false)
+            def releasePermit(): Unit = {
+              if (released.compareAndSet(false, true)) {
+                uploads.release()
+              }
+            }
+            // Entity rejection can bypass formFuture, so route completion is a fallback.
+            mapRouteResultFuture(_.andThen { case _ => releasePermit() }) {
               uploadFileImpl(mat, ec) { formFuture =>
-                ctx => formFuture.flatMap { form =>
+                val parsed = formFuture.andThen { case _ => releasePermit() }
+                ctx => parsed.flatMap { form =>
                   val result = try inner(Tuple1(form))(ctx) catch {
                     case NonFatal(ex) => Future.failed(ex)
                   }
