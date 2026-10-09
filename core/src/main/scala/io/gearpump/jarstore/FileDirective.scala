@@ -14,19 +14,19 @@
 
 package io.gearpump.jarstore
 
+import java.io.File
+import java.nio.file.Files
+import java.util.UUID
+import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
 import org.apache.pekko.http.scaladsl.model.{HttpEntity, MediaTypes, Multipart}
 import org.apache.pekko.http.scaladsl.server._
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{FileIO, StreamConverters}
 import org.apache.pekko.util.ByteString
-import java.io.File
-import java.nio.file.Files
-import java.util.UUID
-import java.util.concurrent.{ConcurrentLinkedQueue, Semaphore}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
-import scala.concurrent.{ExecutionContext, Future}
 
 
 /**
@@ -84,7 +84,10 @@ object FileDirective {
       extractMaterializer {implicit mat =>
         extractExecutionContext {implicit ec =>
           if (!uploads.tryAcquire()) {
-            complete(org.apache.pekko.http.scaladsl.model.StatusCodes.ServiceUnavailable)
+            extractRequest { request =>
+              request.discardEntityBytes()
+              complete(org.apache.pekko.http.scaladsl.model.StatusCodes.ServiceUnavailable)
+            }
           } else {
             mapRouteResultFuture(_.andThen { case _ => uploads.release() }) {
               uploadFileImpl(mat, ec) { formFuture =>
@@ -98,7 +101,8 @@ object FileDirective {
                     complete(org.apache.pekko.http.scaladsl.model.StatusCodes.BadRequest,
                       "Invalid multipart fields").apply(ctx)
                   case _: org.apache.pekko.http.scaladsl.model.EntityStreamSizeException =>
-                    complete(org.apache.pekko.http.scaladsl.model.StatusCodes.PayloadTooLarge).apply(ctx)
+                    complete(org.apache.pekko.http.scaladsl.model.StatusCodes.PayloadTooLarge)
+                      .apply(ctx)
                 }
               }
             }
@@ -183,7 +187,11 @@ object FileDirective {
                 .runWith(FileIO.toPath(target.toPath))
               written.map { result =>
                 result.status.get
-                Map(part.name -> Left(FileInfo(part.filename.get, target, result.count)))
+                if (result.count > 0) {
+                  Map(part.name -> Left(FileInfo(part.filename.get, target, result.count)))
+                } else {
+                  Map.empty[Name, FormField]
+                }
               }
             } else {
               part.entity.withSizeLimit(MaxFieldBytes).dataBytes.runFold(ByteString.empty) {

@@ -42,13 +42,27 @@ class UploadSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTe
       if (file) Map("filename" -> "uploaded.jar") else Map.empty)
   }
 
-  it should "remove successful and empty upload temporary files after route completion" in {
-    Seq("bytes", "").foreach { value =>
-      val form = Multipart.FormData(Source.single(part("jar", value, file = true)))
-      Post("/", form) ~> route ~> check {
-        assert(status.intValue() == 200)
-        assert(!Files.exists(java.nio.file.Paths.get(responseAs[String])))
-      }
+  it should "remove successful upload temporary files after route completion" in {
+    val form = Multipart.FormData(Source.single(part("jar", "bytes", file = true)))
+    Post("/", form) ~> route ~> check {
+      assert(status.intValue() == 200)
+      assert(!Files.exists(java.nio.file.Paths.get(responseAs[String])))
+    }
+  }
+
+  it should "omit empty file parts and clean up their temporary files" in {
+    val before = temporaryFiles()
+    val emptyRoute = FileDirective.uploadFile { form =>
+      assert(form.getFileInfo("jar").isEmpty)
+      assert(form.getFileInfo("configfile").isEmpty)
+      complete("empty")
+    }
+    val form = Multipart.FormData(Source(List(part("jar", "", file = true),
+      part("configfile", "", file = true))))
+    Post("/", form) ~> emptyRoute ~> check {
+      assert(status.intValue() == 200)
+      assert(responseAs[String] == "empty")
+      assert((temporaryFiles() -- before).isEmpty)
     }
   }
 
@@ -69,7 +83,8 @@ class UploadSecuritySpec extends AnyFlatSpec with Matchers with ScalatestRouteTe
   it should "remove temporary files when route construction throws" in {
     var file: java.nio.file.Path = null
     val failing = handleExceptions(org.apache.pekko.http.scaladsl.server.ExceptionHandler {
-      case _: IllegalStateException => complete(org.apache.pekko.http.scaladsl.model.StatusCodes.InternalServerError)
+      case _: IllegalStateException =>
+        complete(org.apache.pekko.http.scaladsl.model.StatusCodes.InternalServerError)
     }) {
       FileDirective.uploadFile { form =>
         file = form.getFileInfo("jar").get.file.toPath

@@ -14,14 +14,6 @@
 
 package io.gearpump.services
 
-import org.apache.pekko.actor.ActorRef
-import org.apache.pekko.http.scaladsl.marshalling.Marshal
-import org.apache.pekko.http.scaladsl.model._
-import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
-import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import org.apache.pekko.stream.scaladsl.{FileIO, Source}
-import org.apache.pekko.testkit.TestActor.{AutoPilot, KeepRunning}
-import org.apache.pekko.testkit.TestProbe
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.AppMasterToMaster.{GetAllWorkers, GetMasterData, GetWorkerData, MasterData, WorkerData}
 import io.gearpump.cluster.ClientToMaster.{QueryHistoryMetrics, QueryMasterConfig, ResolveWorkerId, SubmitApplication}
@@ -35,6 +27,14 @@ import io.gearpump.services.util.UpickleUtil._
 import io.gearpump.streaming.ProcessorDescription
 import io.gearpump.util.Graph
 import java.io.File
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.http.scaladsl.marshalling.Marshal
+import org.apache.pekko.http.scaladsl.model._
+import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
+import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import org.apache.pekko.stream.scaladsl.{FileIO, Source}
+import org.apache.pekko.testkit.TestActor.{AutoPilot, KeepRunning}
+import org.apache.pekko.testkit.TestProbe
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -203,6 +203,17 @@ class MasterServiceSpec extends AnyFlatSpec with ScalatestRouteTest
       val responseBody = responseAs[String]
       val partitioners = read[BuiltinPartitioners](responseBody)
       assert(partitioners.partitioners.length > 0, "invalid response")
+    }
+  }
+
+  it should "return the missing JAR response for an empty multipart file" in {
+    val body = Multipart.FormData(Source.single(Multipart.FormData.BodyPart.Strict(
+      "jar", HttpEntity(""), Map("filename" -> "empty.jar"))))
+    Post(s"/api/$REST_VERSION/master/uploadjar", body) ~> masterRoute ~> check {
+      assert(status.intValue() == 200)
+      val result = ujson.read(responseAs[String])
+      assert(!result("success").bool)
+      assert(result("reason").str == "Jar file not found")
     }
   }
 
