@@ -14,11 +14,11 @@
 
 package io.gearpump.services
 
-import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
-import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import com.typesafe.config.Config
 import io.gearpump.cluster.TestUtil
 import io.gearpump.util.Constants
+import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
+import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -50,6 +50,15 @@ class StaticServiceSpec
       val responseBody = responseAs[String]
       val defaultSupervisorPath = ""
       assert(responseBody == defaultSupervisorPath)
+    }
+  }
+
+  it should "never serve runtime configuration through the public asset route" in {
+    Seq("gear.conf", "geardefault.conf", "test.conf", "masters", "workers",
+      "log4j2.properties", "webjars/../../geardefault.conf").foreach { path =>
+      Get("/" + path) ~> org.apache.pekko.http.scaladsl.server.Route.seal(route) ~> check {
+        assert(status.intValue() == 404)
+      }
     }
   }
 }

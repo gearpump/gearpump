@@ -14,23 +14,20 @@
 
 package io.gearpump.services
 
+import io.gearpump.jarstore.JarStoreClient
+import io.gearpump.util.{Constants, LogUtil}
 import org.apache.pekko.actor.{ActorRef, ActorSystem}
 import org.apache.pekko.http.scaladsl.model.HttpResponse
 import org.apache.pekko.http.scaladsl.model.StatusCodes._
 import org.apache.pekko.http.scaladsl.server.{Route, _}
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.util.Timeout
-import io.gearpump.jarstore.JarStoreClient
-import io.gearpump.util.{Constants, LogUtil}
-import org.apache.commons.lang.exception.ExceptionUtils
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 /** Contains all REST API service endpoints */
 class RestServices(master: ActorRef, system: ActorSystem)
   extends RouteService {
-
-  private val LOG = LogUtil.getLogger(getClass)
 
   implicit val timeout: Timeout = Constants.FUTURE_TIMEOUT
 
@@ -44,14 +41,7 @@ class RestServices(master: ActorRef, system: ActorSystem)
   private val supervisorPath = system.settings.config.getString(
     Constants.GEARPUMP_SERVICE_SUPERVISOR_PATH)
 
-  private val myExceptionHandler: ExceptionHandler = ExceptionHandler {
-    case ex: Throwable => {
-      extractUri { uri =>
-        LOG.error(s"Request to $uri could not be handled normally", ex)
-        complete(HttpResponse(InternalServerError, entity = ExceptionUtils.getStackTrace(ex)))
-      }
-    }
-  }
+  private val myExceptionHandler = RestServices.exceptionHandler
 
   // Makes sure staticRoute is the final one, as it will try to lookup resource in local path
   // if there is no match in previous routes
@@ -92,5 +82,17 @@ class RestServices(master: ActorRef, system: ActorSystem)
         admin.route ~ sup.route ~ masterService.route ~ worker.route ~ app.route
       }
     }
+  }
+}
+
+object RestServices {
+  private val LOG = LogUtil.getLogger(getClass)
+
+  private[services] val exceptionHandler: ExceptionHandler = ExceptionHandler {
+    case scala.util.control.NonFatal(ex) =>
+      val id = java.util.UUID.randomUUID().toString
+      LOG.error(s"HTTP request failed; errorId=$id", ex)
+      complete(HttpResponse(InternalServerError,
+        entity = s"Internal server error; errorId=$id"))
   }
 }

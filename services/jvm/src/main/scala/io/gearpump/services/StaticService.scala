@@ -14,13 +14,13 @@
 
 package io.gearpump.services
 
+import io.gearpump.util.Util
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.marshalling.ToResponseMarshallable
 import org.apache.pekko.http.scaladsl.marshalling.ToResponseMarshallable._
 import org.apache.pekko.http.scaladsl.model._
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.stream.Materializer
-import io.gearpump.util.Util
 
 /**
  * static resource files.
@@ -29,6 +29,17 @@ class StaticService(override val system: ActorSystem, supervisorPath: String)
   extends BasicService {
 
   private val version = Util.version
+  private val publicAssets = {
+    val input = getClass.getResourceAsStream("/dashboard-assets.txt")
+    require(input != null, "Missing dashboard asset manifest")
+    val source = scala.io.Source.fromInputStream(input, "UTF-8")
+    try source.getLines().toSet finally source.close()
+  }
+
+  private def safeAssetPath(path: String): Boolean = {
+    path.split("/", -1).forall(part => part.nonEmpty && part != "." && part != ".." &&
+      part.matches("[A-Za-z0-9._-]+"))
+  }
 
   protected override def prefix = Neutral
 
@@ -55,11 +66,21 @@ class StaticService(override val system: ActorSystem, supervisorPath: String)
     } ~
     pathPrefix("webjars") {
       get {
-        getFromResourceDirectory("META-INF/resources/webjars")
+        path(Remaining) { path =>
+          if (safeAssetPath(path)) {
+            getFromResource(s"META-INF/resources/webjars/$path")
+          } else {
+            complete(StatusCodes.NotFound)
+          }
+        }
       }
     } ~
     path(Remaining) { path =>
-      getFromResource("%s" format path)
+      if (publicAssets.contains(path) && safeAssetPath(path)) {
+        getFromResource(path)
+      } else {
+        reject
+      }
     }
   }
 }

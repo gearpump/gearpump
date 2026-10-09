@@ -143,17 +143,17 @@ class SecurityService(inner: RouteService, implicit val system: ActorSystem) ext
 
   // Only admin are able to access operation like post/delete/put
   private def requireAuthorization(user: UserSession, route: => Route): Route = {
-    // Valid user
-    if (user.permissionLevel >= Authenticator.User.permissionLevel) {
-      route
-    } else {
-      // Possibly a guest or not authenticated.
-      (put | delete | post) {
-        // Reject with 405 authorization error
+    extractRequest { request =>
+      val required = HttpAuthorization.requiredPermission(request.uri.path)
+      if (user.permissionLevel < required) {
         reject(AuthorizationFailedRejection)
-      } ~
-      get {
+      } else if (user.permissionLevel >= Authenticator.User.permissionLevel) {
         route
+      } else {
+        extractMethod { method =>
+          if (method == org.apache.pekko.http.scaladsl.model.HttpMethods.GET) route
+          else reject(AuthorizationFailedRejection)
+        }
       }
     }
   }

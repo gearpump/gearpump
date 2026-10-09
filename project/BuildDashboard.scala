@@ -22,6 +22,8 @@ object BuildDashboard {
 
   lazy val serviceJvmSettings = commonSettings ++ noPublish ++ myAssemblySettings ++
     javadocSettings ++ Seq(
+      // Match the dashboard classpath supplied by distribution packaging in route tests.
+      Test / unmanagedResourceDirectories += baseDirectory.value.getParentFile / "dashboard",
       libraryDependencies ++= Seq(
         "org.apache.pekko" %% "pekko-http-testkit" % pekkoHttpVersion % "test",
         "org.apache.pekko" %% "pekko-stream-testkit" % pekkoVersion % "test",
