@@ -14,11 +14,6 @@
 
 package io.gearpump.services
 
-import org.apache.pekko.actor.ActorRef
-import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
-import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
-import org.apache.pekko.testkit.{TestKit, TestProbe}
-import org.apache.pekko.testkit.TestActor.{AutoPilot, KeepRunning}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.gearpump.cluster.{ApplicationStatus, TestUtil}
 import io.gearpump.cluster.AppMasterToMaster.GeneralAppMasterSummary
@@ -27,7 +22,16 @@ import io.gearpump.cluster.MasterToAppMaster.{AppMasterData, AppMasterDataDetail
 import io.gearpump.cluster.MasterToClient._
 import io.gearpump.jarstore.JarStoreClient
 import io.gearpump.services.util.UpickleUtil._
+import io.gearpump.streaming.ProcessorDescription
+import io.gearpump.streaming.appmaster.DagManager.{DAGOperation, DAGOperationResult, DAGOperationSuccess, ReplaceProcessor}
 import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary, GetExecutorSummary, QueryExecutorConfig}
+import org.apache.pekko.actor.ActorRef
+import org.apache.pekko.http.scaladsl.model.{HttpEntity, Multipart}
+import org.apache.pekko.http.scaladsl.model.headers.`Cache-Control`
+import org.apache.pekko.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.testkit.{TestKit, TestProbe}
+import org.apache.pekko.testkit.TestActor.{AutoPilot, KeepRunning}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -51,6 +55,9 @@ class AppMasterServiceSpec extends AnyFlatSpec with ScalatestRouteTest
   mockAppMaster.setAutoPilot {
     new AutoPilot {
       def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
+        case _: DAGOperation =>
+          sender ! DAGOperationSuccess
+          KeepRunning
         case AppMasterDataDetailRequest(appId) =>
           sender ! GeneralAppMasterSummary(appId)
           KeepRunning
@@ -127,6 +134,32 @@ class AppMasterServiceSpec extends AnyFlatSpec with ScalatestRouteTest
       val responseBody = responseAs[String]
       val config = Try(ConfigFactory.parseString(responseBody))
       assert(config.isSuccess)
+    }
+  }
+
+  it should "apply a dynamic DAG operation without uploading an empty file part" in {
+    implicit val timeout = RouteTestTimeout(30.seconds)
+    implicit val replaceWriter: upickle.default.Writer[ReplaceProcessor] =
+      upickle.default.macroW[ReplaceProcessor]
+    implicit val operationWriter: upickle.default.Writer[DAGOperation] =
+      upickle.default.macroW[DAGOperation]
+    val operation = ReplaceProcessor(0,
+      ProcessorDescription(0, "A", parallelism = 1), inheritConf = false)
+    val args = java.net.URLEncoder.encode(upickle.default.write[DAGOperation](operation), "UTF-8")
+    val body = Multipart.FormData(Source.single(Multipart.FormData.BodyPart.Strict(
+      "jar", HttpEntity(""), Map("filename" -> "empty.jar"))))
+    Post(s"/api/$REST_VERSION/appmaster/0/dynamicdag?args=$args", body) ~>
+      appMasterRoute ~> check {
+        assert(status.intValue() == 200)
+        assert(read[DAGOperationResult](responseAs[String]) == DAGOperationSuccess)
+      }
+    mockAppMaster.fishForMessage(3.seconds) {
+      case message: ReplaceProcessor =>
+        assert(message.oldProcessorId == operation.oldProcessorId)
+        assert(message.newProcessorDescription.jar == operation.newProcessorDescription.jar)
+        assert(message.inheritConf == operation.inheritConf)
+        true
+      case _ => false
     }
   }
 
