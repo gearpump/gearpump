@@ -31,7 +31,10 @@ object BuildGearpump {
       crossScalaVersions := crossScalaVersionNumbers,
       organization := "io.github.gearpump",
       updateOptions := updateOptions.value.withGigahorse(false),
+      // Keep artifacts built with JDK 21 usable on JDK 17.
+      javacOptions ++= Seq("--release", "17"),
       scalacOptions ++= Seq(
+        "-release:17",
         // scalastyle:off line.size.limit
         "-deprecation",                      // Emit warning and location for usages of deprecated APIs
         "-encoding", "UTF-8",                // Specify character encoding used by source files

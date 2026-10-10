@@ -1,3 +1,10 @@
+## JVM configuration
+
+Use JDK 17 or 21. The distribution uses G1 for AppMaster and executor JVMs.
+When reusing an older `gear.conf`, replace `-XX:+UseConcMarkSweepGC`,
+`-XX:CMSInitiatingOccupancyFraction=80`, `-XX:+UseParNewGC`, and `-XX:NewRatio=3`
+with `-XX:+UseG1GC` in both `gearpump.appmaster.vmargs` and `gearpump.executor.vmargs`.
+
 ## Master and Worker configuration
 
 Master and Worker daemons will only read configuration from `conf/gear.conf`.
@@ -63,9 +70,9 @@ This is the default configuration for `gear.conf`.
 | gearpump.log.application.dir | "logs" | The log directory for applications(relative to current working directory) |
 | gearpump.serializers | a map | custom serializer for streaming application, e.g. `"scala.Array" = ""` |
 | gearpump.worker.slots | 1000 | How many slots each worker contains |
-| gearpump.appmaster.vmargs | "-server  -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3 -Djava.rmi.server.hostname=localhost" | JVM arguments for AppMaster |
+| gearpump.appmaster.vmargs | "-server -Xms512M -Xmx1024M -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -Djava.rmi.server.hostname=localhost" | JVM arguments for AppMaster |
 | gearpump.appmaster.extraClasspath | "" | JVM default class path for AppMaster |
-| gearpump.executor.vmargs | "-server -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+UseParNewGC -XX:NewRatio=3  -Djava.rmi.server.hostname=localhost" | JVM arguments for executor |
+| gearpump.executor.vmargs | "-server -Xms512M -Xmx1024M -Xss1M -XX:+HeapDumpOnOutOfMemoryError -XX:+UseG1GC -Djava.rmi.server.hostname=localhost" | JVM arguments for executor |
 | gearpump.executor.extraClasspath | "" | JVM default class path for executor |
 | gearpump.jarstore.rootpath | "jarstore/" |   Define where the submitted jar file will be stored. This path follows the hadoop path schema. For HDFS, use `hdfs://host:port/path/`, and HDFS HA, `hdfs://namespace/path/`; if you want to store on master nodes, then use local directory. `jarstore.rootpath = "jarstore/"` will point to relative directory where master is started. `jarstore.rootpath = "/jarstore/"` will point to absolute directory on master server |
 | gearpump.scheduling.scheduler-class |"io.gearpump.cluster.scheduler.PriorityScheduler" | Class to schedule the applications. |

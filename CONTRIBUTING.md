@@ -211,6 +211,10 @@ No development work should ever be done in the forked master.
 
 <a name="build"></a>
 ## How to build
+Use JDK 17 or 21 and set `JAVA_HOME` to the JDK installation. Both versions are
+covered by CI. Java and Scala compilation target Java 17 bytecode and APIs, so
+artifacts built on JDK 21 also run on JDK 17.
+
 To make a compilation of Gearpump, you can execute:
 ```bash
   sbt compile pack
