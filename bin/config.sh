@@ -11,20 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GEARPUMP_PID_DIR=""                                 # Directory to store *.pid files to
-DEFAULT_ENV_PID_DIR="/tmp"                          # Default directory to store *.pid files to
-
-GEARPUMP_LOG_DIR=""
-DEFAULT_ENV_LOG_DIR="/tmp/gear-logs"
-
-if [ "$GEARPUMP_PID_DIR" = "" ]; then
-    GEARPUMP_PID_DIR=${DEFAULT_ENV_PID_DIR}
-fi
-
-if [ "$GEARPUMP_LOG_DIR" = "" ]; then
-    GEARPUMP_LOG_DIR=${DEFAULT_ENV_LOG_DIR}
-fi
-
 bin=`dirname "$0"`
 SYMLINK_RESOLVED=`cd "$bin"; pwd -P`
 
@@ -32,6 +18,11 @@ SYMLINK_RESOLVED=`cd "$bin"; pwd -P`
 export GEAR_ROOT_DIR=`dirname "$SYMLINK_RESOLVED"`
 export GEAR_BIN_DIR="$GEAR_ROOT_DIR/bin"
 export GEAR_CONF_DIR="$GEAR_ROOT_DIR/conf"
+
+# Use service-owned state directories; preserve explicit operator overrides.
+GEARPUMP_PID_DIR=${GEARPUMP_PID_DIR:-"$GEAR_ROOT_DIR/run"}
+GEARPUMP_LOG_DIR=${GEARPUMP_LOG_DIR:-"$GEAR_ROOT_DIR/logs"}
+
 
 readMasters() {
     MASTERS_FILE="${GEAR_CONF_DIR}/masters"
