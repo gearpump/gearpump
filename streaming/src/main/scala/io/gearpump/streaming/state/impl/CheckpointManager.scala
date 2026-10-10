@@ -30,7 +30,7 @@ class CheckpointManager(checkpointInterval: Long,
 
   def checkpoint(timestamp: MilliSeconds, checkpoint: Array[Byte]): Option[MilliSeconds] = {
     checkpointStore.persist(timestamp, checkpoint)
-    checkpointTime = checkpointTime.collect { case time if maxMessageTime > time =>
+    checkpointTime = checkpointTime.collect { case time if maxMessageTime >= time =>
       time + (1 + (maxMessageTime - time) / checkpointInterval) * checkpointInterval
     }
 
