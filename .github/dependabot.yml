@@ -51,6 +51,9 @@ updates:
           - "org.scoverage:*"
           - "org.xerial.sbt:*"
     ignore:
+      # Checkstyle 13+ requires Java 21; the build runs on Java 17.
+      - dependency-name: "com.puppycrawl.tools:checkstyle"
+        versions: [">=13.0.0"]
       - dependency-name: "org.scala-sbt:sbt"
         update-types:
           - "version-update:semver-major"
