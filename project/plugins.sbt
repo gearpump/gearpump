@@ -22,5 +22,5 @@ addSbtPlugin("com.github.sbt.junit" % "sbt-jupiter-interface" % "0.19.0")
 
 addSbtPlugin("software.purpledragon" % "sbt-checkstyle-plugin" % "4.0.1")
 
-// Keep Checkstyle compatible with the Java 17 build runtime.
-dependencyOverrides += "com.puppycrawl.tools" % "checkstyle" % "14.3.0"
+// Checkstyle 13+ requires Java 21; use the latest release for the Java 17 build runtime.
+dependencyOverrides += "com.puppycrawl.tools" % "checkstyle" % "12.3.1"
