@@ -1,5 +1,6 @@
 ### Prepare the binary
 You can either download pre-build release package or choose to build from source code.
+Gearpump supports JDK 17 and 21 for building and running the distribution.
 
 #### Download Release Binary
 

@@ -60,6 +60,13 @@ lazy val core = Project(
   .settings(commonSettings ++ myAssemblySettings ++ javadocSettings ++ coreDependencies ++
     addArtifact(Compile / assembly / artifact, assembly) ++
     Seq(
+      // Test the JVM options shipped in the distribution without overriding test defaults.
+      Test / resourceGenerators += Def.task {
+        val config = (LocalRootProject / baseDirectory).value / "conf" / "gear.conf"
+        val destination = (Test / resourceManaged).value / "distribution-gear.conf"
+        IO.copyFile(config, destination)
+        Seq(destination)
+      }.taskValue,
       assembly / assemblyOption ~= {
         _.withIncludeScala(true)
       },

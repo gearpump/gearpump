@@ -44,7 +44,7 @@ For steps to reproduce the performance test, please check [Performance benchmark
 2). Build package
 
 ```bash
-  ## Please use JDK 17; the build currently uses Scala 2.13.
+  ## Please use JDK 17 or 21; the build currently uses Scala 2.13.
   ## The target package path is under output/target/.
   sbt clean +assembly 'gearpump-pack / packArchiveZip'
 ```

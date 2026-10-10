@@ -28,17 +28,21 @@ on:
 jobs:
   beam-runner-test:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [17, 21]
     timeout-minutes: 45
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Set up Temurin JDK 17
+      - name: Set up Temurin JDK ${{ matrix.java }}
         uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: ${{ matrix.java }}
           cache: sbt
 
       - name: Set up sbt
