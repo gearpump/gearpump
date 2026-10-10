@@ -39,6 +39,11 @@ public class GroupByKeyTranslator<K, V> implements TransformTranslator<GroupByKe
   @Override
   public void translate(GroupByKey<K, V> transform, TranslationContext context) {
     PCollection<KV<K, V>> input = (PCollection<KV<K, V>>) context.getInput();
+    if (input.isBounded() == PCollection.IsBounded.UNBOUNDED) {
+      throw new UnsupportedOperationException(
+          "The low-level Gearpump Beam runner supports GroupByKey only on bounded input; "
+              + "unbounded window eviction and state limits are not implemented.");
+    }
     WindowingStrategy<?, ?> windowingStrategy = input.getWindowingStrategy();
     if (!windowingStrategy.getWindowFn().isNonMerging()) {
       throw new UnsupportedOperationException(
