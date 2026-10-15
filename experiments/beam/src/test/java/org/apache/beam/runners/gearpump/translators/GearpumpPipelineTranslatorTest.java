@@ -137,6 +137,26 @@ public class GearpumpPipelineTranslatorTest {
   }
 
   @Test
+  public void rejectsGroupByKeyOnUnboundedInputBeforeCreatingAGroupingTask() {
+    Pipeline pipeline = Pipeline.create();
+    org.apache.beam.sdk.values.PCollection<KV<String, Integer>> input =
+        pipeline.apply(Create.of(KV.of("a", 1)));
+    input.setIsBoundedInternal(org.apache.beam.sdk.values.PCollection.IsBounded.UNBOUNDED);
+    input.apply(Window.into(FixedWindows.of(Duration.standardSeconds(10))))
+        .apply(GroupByKey.create());
+    TranslationContext context = new TranslationContext("beam-test", options, actorSystem);
+    try {
+      new GearpumpPipelineTranslator(context).translate(pipeline);
+      fail("Expected unbounded GroupByKey to be rejected");
+    } catch (UnsupportedOperationException e) {
+      assertTrue(e.getMessage().contains("bounded input"));
+    }
+    List<Processor<? extends Task>> processors =
+        JavaConverters.seqAsJavaListConverter(context.getGraph().getVertices()).asJava();
+    assertTrue(!containsProcessor(processors, BeamGroupByKeyTask.class));
+  }
+
+  @Test
   public void rejectsGroupByKeyWithCustomTrigger() {
     Pipeline pipeline = Pipeline.create();
     pipeline
