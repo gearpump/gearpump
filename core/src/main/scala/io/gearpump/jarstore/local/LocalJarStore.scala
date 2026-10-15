@@ -17,6 +17,7 @@ import com.typesafe.config.Config
 import io.gearpump.jarstore.JarStore
 import io.gearpump.util.{Constants, FileUtils, LogUtil, Util}
 import java.io._
+import java.nio.file.{Files, LinkOption, NoSuchFileException, StandardOpenOption}
 import org.slf4j.Logger
 
 /**
@@ -44,9 +45,11 @@ class LocalJarStore extends JarStore {
    * @return OutputStream returns a stream into which the data can be written.
    */
   override def createFile(fileName: String): OutputStream = {
+    JarStore.validateFileName(fileName)
     createDirIfNotExists(rootPath)
     val localFile = new File(rootPath, fileName)
-    new FileOutputStream(localFile)
+    Files.newOutputStream(localFile.toPath, StandardOpenOption.CREATE_NEW,
+      StandardOpenOption.WRITE, LinkOption.NOFOLLOW_LINKS)
   }
 
   /**
@@ -56,11 +59,12 @@ class LocalJarStore extends JarStore {
    * @return InputStream returns a stream from which the data can be read.
    */
   override def getFile(fileName: String): InputStream = {
+    JarStore.validateFileName(fileName)
     val localFile = new File(rootPath, fileName)
     val is = try {
-      new FileInputStream(localFile)
+      Files.newInputStream(localFile.toPath, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
     } catch {
-      case ex: Exception =>
+      case ex: NoSuchFileException =>
         LOG.error(s"Fetch file $fileName failed: ${ex.getStackTrace}")
         new ClosedInputStream
     }
