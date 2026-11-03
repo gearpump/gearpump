@@ -40,10 +40,11 @@ class DFSJarStore extends JarStore {
    * @return OutputStream returns a stream into which the data can be written.
    */
   override def createFile(fileName: String): OutputStream = {
+    JarStore.validateFileName(fileName)
     createDirIfNotExists(rootPath)
     val filePath = new Path(rootPath, fileName)
     val fs = filePath.getFileSystem(new Configuration())
-    fs.create(filePath)
+    fs.create(filePath, false)
   }
 
   /**
@@ -53,15 +54,17 @@ class DFSJarStore extends JarStore {
    * @return InputStream returns a stream from which the data can be read.
    */
   override def getFile(fileName: String): InputStream = {
+    JarStore.validateFileName(fileName)
     val filePath = new Path(rootPath, fileName)
     val fs = filePath.getFileSystem(new Configuration())
+    require(!fs.getFileLinkStatus(filePath).isSymlink, "Artifact symlinks are not allowed")
     fs.open(filePath)
   }
 
   private def createDirIfNotExists(path: Path): Unit = {
     val fs = path.getFileSystem(new Configuration())
     if (!fs.exists(path)) {
-      fs.mkdirs(path, new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.ALL))
+      fs.mkdirs(path, new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE))
     }
   }
 }

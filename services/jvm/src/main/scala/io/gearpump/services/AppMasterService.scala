@@ -29,7 +29,7 @@ import io.gearpump.streaming.executor.Executor.{ExecutorConfig, ExecutorSummary,
 import io.gearpump.util.{Constants, Util}
 import io.gearpump.util.ActorUtil.{askActor, askAppMaster}
 import org.apache.pekko.actor.{ActorRef, ActorSystem}
-import org.apache.pekko.http.scaladsl.model.{FormData, Multipart}
+import org.apache.pekko.http.scaladsl.model.FormData
 import org.apache.pekko.http.scaladsl.server.Directives._
 import org.apache.pekko.http.scaladsl.server.Route
 import org.apache.pekko.stream.Materializer
@@ -61,7 +61,7 @@ class AppMasterService(val master: ActorRef,
 
           val msg = java.net.URLDecoder.decode(args, "UTF-8")
           val dagOperation = read[DAGOperation](msg)
-          (post & entity(as[Multipart.FormData])) { _ =>
+          post {
             uploadFile { form =>
               val jar = form.getFileInfo("jar").map(_.file)
 
