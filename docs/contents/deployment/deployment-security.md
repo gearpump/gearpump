@@ -78,3 +78,17 @@ Only authenticated users can submit the application to Gearpump's Master.
 
 ### Authorization
 Hopefully more on this soon
+
+## Daemon state directories
+
+Daemon scripts default to `run` and `logs` under the installation directory. Both
+directories must belong to the service account with mode 0700; PID files must be
+private regular files. Set `GEARPUMP_PID_DIR` and `GEARPUMP_LOG_DIR` to service-owned
+locations when the installation is read-only. Shared predictable `/tmp` defaults
+are no longer used. Logs are created atomically with unique names.
+
+PID records include UID, process start time, and daemon role. Stop operations verify
+all three and the expected main class before signaling. Existing plain-PID records
+are rejected: verify and stop the old processes before removing those records.
+Concurrent daemon operations acquire a directory lock; after a crashed operation,
+verify no operation is running before removing its `.lock` directory.
