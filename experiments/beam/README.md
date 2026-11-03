@@ -9,13 +9,15 @@ Current scope:
 - `ParDo`, including multi-output `ParDo` without side inputs
 - `Flatten.pCollections()`
 - `Window.into(...)` for non-merging windows
-- `GroupByKey` in non-merging windows with a single final pane
+- `GroupByKey` on bounded input in non-merging windows with a single final pane
 - `Combine.GroupedValues` and common keyed combines such as `Sum.integersPerKey()`
 
 Current limitations:
 
 - No side inputs
 - No merging windows
+- Unbounded `GroupByKey` and keyed combines are rejected during translation because
+  closed-window eviction and bounded state are not implemented
 - No checkpoint restoration for unbounded sources
 - No Beam state/timers support
 - No custom trigger/pane semantics beyond one final emission at watermark max
